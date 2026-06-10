@@ -24,6 +24,9 @@ import {
 import { getPublicServices } from "@/lib/legacy-services";
 import type { RequestStatus } from "@/types/request";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type RequestsPageProps = {
   searchParams: Promise<{
     service?: string;

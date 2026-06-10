@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/table";
 import { getDashboardSummary } from "@/lib/legacy-request-stats";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("id-ID").format(value);
 }

@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { adminNavItems } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminLayout({
   children,
 }: Readonly<{
