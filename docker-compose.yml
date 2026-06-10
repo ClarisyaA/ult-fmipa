@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: ult-fmipa-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ult_fmipa
+      MYSQL_USER: ult_user
+      MYSQL_PASSWORD: ult_password
+    ports:
+      - "13306:3306"
+    volumes:
+      - ult_fmipa_db_data:/var/lib/mysql
+
+volumes:
+  ult_fmipa_db_data:
