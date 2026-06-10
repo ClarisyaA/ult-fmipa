@@ -2,22 +2,27 @@ name: CI
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches:
+      - main
+      - dev
+      - "feature/**"
   pull_request:
-    branches: ["main", "dev"]
+    branches:
+      - main
+      - dev
 
 jobs:
   check:
-    name: Lint, Typecheck, and Build
+    name: Typecheck, Lint, and Build
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: "mysql://ult_user:ult_password@localhost:13306/ult_fmipa"
+      DATABASE_URL: "mysql://ult_user:ult_password@localhost:13306/fmipa_sbpk"
       DB_HOST: "localhost"
       DB_PORT: "13306"
       DB_USER: "ult_user"
       DB_PASSWORD: "ult_password"
-      DB_NAME: "ult_fmipa"
+      DB_NAME: "fmipa_sbpk"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: "ci-secret-placeholder"
 
@@ -42,11 +47,11 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm prisma generate
 
-      - name: Run ESLint
-        run: pnpm lint
-
-      - name: Run TypeScript check
+      - name: Typecheck
         run: pnpm typecheck
 
-      - name: Build Next.js
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
         run: pnpm build

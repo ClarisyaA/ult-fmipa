@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const users = await prisma.user.findMany();
+    const result = await prisma.$queryRaw<{ ok: number }[]>`
+      SELECT 1 AS ok
+    `;
 
     return NextResponse.json({
       status: "ok",
       message: "Database connected",
-      users,
+      result,
     });
   } catch (error) {
     return NextResponse.json(
