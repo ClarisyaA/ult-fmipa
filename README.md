@@ -1,36 +1,172 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ULT FMIPA Unpad
 
-## Getting Started
+Website ULT FMIPA Unpad adalah aplikasi layanan berbasis Next.js App Router untuk kebutuhan halaman publik, survei, serta dashboard admin dan staff.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- shadcn/ui
+- Prisma 7
+- MariaDB
+- Docker Compose
+- Adminer
+
+Package manager yang digunakan: `pnpm`.
+
+## Requirements
+
+Pastikan tools berikut sudah terpasang:
+
+- Node.js 22 LTS
+- pnpm
+- Docker Desktop
+- Git
+
+## Setup Lokal Windows / PowerShell
+
+1. Clone repository.
+
+```powershell
+git clone <repo-url>
+cd ult-fmipa
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Checkout branch `dev`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+git checkout dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Install dependency.
 
-## Learn More
+```powershell
+pnpm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Buat file environment lokal dari contoh yang sudah tersedia.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+Copy-Item .env.example .env
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Isi atau sesuaikan nilai di `.env` jika diperlukan. File `.env` bersifat lokal dan tidak boleh di-commit.
 
-## Deploy on Vercel
+5. Jalankan database lokal dan Adminer.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+docker compose up -d
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Service database lokal:
+
+- Container MariaDB: `ult-fmipa-db`
+- Database legacy: `fmipa_sbpk`
+- Host port: `13306`
+- Container port: `3306`
+- Adminer: <http://localhost:8081>
+
+6. Import SQL legacy hanya jika developer memiliki file `fmipa_sbpk.sql` secara lokal.
+
+Letakkan file dump di:
+
+```text
+database\fmipa_sbpk.sql
+```
+
+Lalu jalankan:
+
+```powershell
+cmd /c "docker exec -i ult-fmipa-db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
+```
+
+Jika tidak memiliki dump SQL, lewati langkah import dan minta file database melalui kanal internal tim. File dump bersifat sensitif dan tidak boleh masuk repository.
+
+7. Tarik schema Prisma dari database legacy.
+
+```powershell
+pnpm prisma db pull
+```
+
+Schema Prisma dihasilkan dari introspeksi database legacy. Jangan edit `prisma/schema.prisma` sembarangan tanpa koordinasi.
+
+8. Generate Prisma Client.
+
+```powershell
+pnpm prisma generate
+```
+
+9. Jalankan development server.
+
+```powershell
+pnpm dev
+```
+
+Aplikasi dapat dibuka di <http://localhost:3000>.
+
+## Adminer
+
+Adminer dapat digunakan untuk inspeksi database lokal:
+
+- URL: <http://localhost:8081>
+- System: `MySQL / MariaDB`
+- Server: `db`
+- Username: `ult_user`
+- Password: `ult_password`
+- Database: `fmipa_sbpk`
+
+Jika Prisma Studio mengalami metadata error karena struktur database legacy, Prisma Studio boleh dilewati. Gunakan Adminer untuk inspeksi tabel dan data.
+
+## Perintah Berguna
+
+```powershell
+pnpm dev
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm prisma generate
+pnpm prisma db pull
+docker compose up -d
+docker compose down
+```
+
+## Workflow Git
+
+- `main` = branch stable
+- `dev` = branch integration
+- `feature/*` = branch untuk pengembangan fitur
+
+Developer FE sebaiknya selalu membuat branch dari `dev`.
+
+Contoh:
+
+```powershell
+git checkout dev
+git pull origin dev
+git checkout -b feature/nama-fitur
+```
+
+GitHub Actions CI sudah menjalankan `typecheck`, `lint`, dan `build`. Husky pre-push juga menjalankan pengecekan lokal sebelum push.
+
+## Overview Route
+
+- `/`
+- `/profil`
+- `/layanan`
+- `/informasi`
+- `/survei`
+- `/admin/dashboard`
+- `/staff/dashboard`
+- `/api/health`
+
+## Keamanan File Lokal
+
+Jangan commit file berikut:
+
+- `.env`
+- `database/*.sql`
+- `database/*.zip`
+
+File `.env.example` sudah tersedia sebagai referensi konfigurasi environment yang aman untuk dibagikan.
