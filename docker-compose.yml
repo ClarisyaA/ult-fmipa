@@ -5,13 +5,22 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ult_fmipa
+      MYSQL_DATABASE: fmipa_sbpk
       MYSQL_USER: ult_user
       MYSQL_PASSWORD: ult_password
     ports:
       - "13306:3306"
     volumes:
       - ult_fmipa_db_data:/var/lib/mysql
+
+  adminer:
+    image: adminer:latest
+    container_name: ult-fmipa-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
 
 volumes:
   ult_fmipa_db_data:
