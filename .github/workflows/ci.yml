@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  check:
+    name: Lint, Typecheck, and Build
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: "mysql://ult_user:ult_password@localhost:13306/ult_fmipa"
+      DB_HOST: "localhost"
+      DB_PORT: "13306"
+      DB_USER: "ult_user"
+      DB_PASSWORD: "ult_password"
+      DB_NAME: "ult_fmipa"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXTAUTH_SECRET: "ci-secret-placeholder"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Run TypeScript check
+        run: pnpm typecheck
+
+      - name: Build Next.js
+        run: pnpm build
