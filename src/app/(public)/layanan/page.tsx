@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Clock } from "lucide-react";
 
 import { SectionHeading } from "@/components/sections/section-heading";
@@ -65,29 +66,37 @@ export default function LayananPage() {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {group.items.map((service) => (
-                  <Card key={service.slug} className="flex flex-col">
-                    <CardHeader>
-                      <div className="mb-2">
-                        <Badge variant="outline">{service.category}</Badge>
-                      </div>
-                      <CardTitle className="text-lg">{service.title}</CardTitle>
-                      <CardDescription>{service.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col justify-between gap-5">
-                      <div>
-                        <p className="text-sm font-medium">
-                          Persyaratan awal
+                  <Link
+                    key={service.slug}
+                    href={`/layanan/${service.slug}`}
+                    className="group block"
+                  >
+                    <Card className="flex h-full flex-col transition-colors group-hover:bg-muted/30">
+                      <CardHeader>
+                        <div className="mb-2">
+                          <Badge variant="outline">{service.category}</Badge>
+                        </div>
+                        <CardTitle className="text-lg transition-colors group-hover:text-primary">
+                          {service.title}
+                        </CardTitle>
+                        <CardDescription>{service.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-1 flex-col justify-between gap-5">
+                        <div>
+                          <p className="text-sm font-medium">
+                            Persyaratan awal
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                            {service.requirements.join(", ")}
+                          </p>
+                        </div>
+                        <p className="flex items-center gap-2 text-sm font-medium">
+                          <Clock className="size-4 text-primary" />
+                          {service.processingTime}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                          {service.requirements.join(", ")}
-                        </p>
-                      </div>
-                      <p className="flex items-center gap-2 text-sm font-medium">
-                        <Clock className="size-4 text-primary" />
-                        {service.processingTime}
-                      </p>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </div>

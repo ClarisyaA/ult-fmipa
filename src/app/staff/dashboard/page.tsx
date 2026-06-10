@@ -13,35 +13,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getDashboardSummary } from "@/lib/legacy-request-stats";
 
-const metrics = [
-  { label: "Tugas hari ini", value: "8", description: "Data contoh" },
-  { label: "Butuh tindak lanjut", value: "5", description: "Belum real-time" },
-  { label: "Selesai dicek", value: "17", description: "Dummy minggu ini" },
-];
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("id-ID").format(value);
+}
 
-const taskList = [
-  {
-    id: "TASK-001",
-    layanan: "Surat Rekomendasi Beasiswa",
-    prioritas: "Normal",
-    status: "Review dokumen",
-  },
-  {
-    id: "TASK-002",
-    layanan: "Bebas Pinjaman Perpustakaan",
-    prioritas: "Tinggi",
-    status: "Konfirmasi unit",
-  },
-  {
-    id: "TASK-003",
-    layanan: "Unggah Karya Ilmiah",
-    prioritas: "Normal",
-    status: "Menunggu kelengkapan",
-  },
-];
+export default async function StaffDashboardPage() {
+  const summary = await getDashboardSummary();
+  const metrics = [
+    {
+      label: "Total Pengajuan",
+      value: summary.totalRequests,
+      description: `${summary.totalServices} layanan aktif dihitung`,
+    },
+    {
+      label: "Menunggu Proses",
+      value: summary.totalPending,
+      description: "Belum masuk tahap proses",
+    },
+    {
+      label: "Sedang Diproses",
+      value: summary.totalInProgress,
+      description: "Sudah diproses, belum selesai",
+    },
+    {
+      label: "Selesai",
+      value: summary.totalCompleted,
+      description: "Sudah memiliki tanggal selesai",
+    },
+    {
+      label: "Diambil/Dikirim",
+      value: summary.totalDelivered,
+      description: "Sudah diterima atau dikirim",
+    },
+  ];
 
-export default function StaffDashboardPage() {
   return (
     <div className="grid gap-6">
       <div>
@@ -49,16 +56,19 @@ export default function StaffDashboardPage() {
           Dashboard Staff
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ringkasan statis untuk fondasi dashboard operasional staff ULT.
+          Ringkasan agregat read-only untuk monitoring layanan. Belum ada auth
+          atau role filtering.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {metrics.map((metric) => (
           <Card key={metric.label}>
             <CardHeader>
               <CardDescription>{metric.label}</CardDescription>
-              <CardTitle className="text-3xl">{metric.value}</CardTitle>
+              <CardTitle className="text-3xl">
+                {formatNumber(metric.value)}
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               {metric.description}
@@ -69,28 +79,42 @@ export default function StaffDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar tugas layanan</CardTitle>
+          <CardTitle>Ringkasan per layanan</CardTitle>
           <CardDescription>
-            Tabel placeholder memakai data dummy, belum mengambil data legacy.
+            Hanya menampilkan angka agregat, tanpa data mahasiswa atau alumni.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Layanan</TableHead>
-                <TableHead>Prioritas</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Menunggu</TableHead>
+                <TableHead className="text-right">Diproses</TableHead>
+                <TableHead className="text-right">Selesai</TableHead>
+                <TableHead className="text-right">Diambil/Dikirim</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {taskList.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>{task.id}</TableCell>
-                  <TableCell>{task.layanan}</TableCell>
-                  <TableCell>{task.prioritas}</TableCell>
-                  <TableCell>{task.status}</TableCell>
+              {summary.services.map((service) => (
+                <TableRow key={service.slug}>
+                  <TableCell className="font-medium">{service.title}</TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber(service.total)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber(service.pending)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber(service.inProgress)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber(service.completed)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber(service.delivered)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
