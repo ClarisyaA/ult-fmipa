@@ -1,13 +1,17 @@
 import Link from "next/link";
 
+import { LogoutButton } from "@/components/layout/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { staffNavItems } from "@/constants/navigation";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function StaffLayout({
+export default async function StaffLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl">
@@ -16,6 +20,15 @@ export default function StaffLayout({
           <Badge variant="secondary" className="mt-3">
             Mode pengembangan
           </Badge>
+          <div className="mt-5 rounded-lg border bg-muted/30 p-3">
+            <p className="text-sm font-medium">{user?.name ?? "Staff"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Role: {user?.role ?? "staff"}
+            </p>
+            <div className="mt-3">
+              <LogoutButton />
+            </div>
+          </div>
           <nav className="mt-8 grid gap-2">
             {staffNavItems.map((item) => (
               <Link
@@ -32,8 +45,13 @@ export default function StaffLayout({
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="border-b bg-background px-4 py-4 sm:px-6 md:hidden">
             <div className="flex items-center justify-between gap-4">
-              <p className="font-semibold">Staff ULT</p>
-              <Badge variant="secondary">Mode pengembangan</Badge>
+              <div>
+                <p className="font-semibold">Staff ULT</p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.name ?? "Staff"} · {user?.role ?? "staff"}
+                </p>
+              </div>
+              <LogoutButton />
             </div>
           </header>
           <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
