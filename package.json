@@ -3,15 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "eslint .",
-  "typecheck": "tsc --noEmit",
-  "format": "prettier --write .",
-  "format:check": "prettier --check .",
-  "db:push": "prisma db push",
-  "db:generate": "prisma generate"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -44,6 +45,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "husky": "^9.1.7",
     "prettier": "^3.8.4",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
