@@ -13,8 +13,10 @@ export const publicNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard" },
+  { label: "Pengajuan", href: "/admin/requests" },
 ];
 
 export const staffNavItems: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard" },
+  { label: "Pengajuan", href: "/staff/requests" },
 ];
