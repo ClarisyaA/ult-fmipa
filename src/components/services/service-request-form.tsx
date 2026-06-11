@@ -11,7 +11,6 @@ import type { CreateServiceRequestResult } from "@/types/submission";
 
 type ServiceRequestFormProps = {
   serviceSlug: string;
-  isScholarshipService: boolean;
   defaultValues?: {
     npm?: string;
     email?: string | null;
@@ -32,7 +31,6 @@ function getFormString(formData: FormData, key: string) {
 
 export function ServiceRequestForm({
   serviceSlug,
-  isScholarshipService,
   defaultValues,
 }: ServiceRequestFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +60,12 @@ export function ServiceRequestForm({
           phone: getFormString(formData, "phone"),
           description: getFormString(formData, "description"),
           scholarshipName: getFormString(formData, "scholarshipName"),
+          semester: getFormString(formData, "semester"),
+          tahunAkademik: getFormString(formData, "tahunAkademik"),
+          namaOrangTua: getFormString(formData, "namaOrangTua"),
+          nipNrp: getFormString(formData, "nipNrp"),
+          pangkatGolongan: getFormString(formData, "pangkatGolongan"),
+          instansi: getFormString(formData, "instansi"),
         }),
       });
 
@@ -116,6 +120,13 @@ export function ServiceRequestForm({
     );
   }
 
+  const isScholarshipService = serviceSlug === "rekomendasi-beasiswa";
+  const needsAcademicFields = [
+    "ket-tunjangan-orang-tua",
+    "keterangan-masih-kuliah",
+  ].includes(serviceSlug);
+  const needsParentFields = serviceSlug === "ket-tunjangan-orang-tua";
+
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-2">
@@ -169,6 +180,79 @@ export function ServiceRequestForm({
               {fieldErrors.scholarshipName}
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {needsAcademicFields ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="semester">Semester</Label>
+            <Input id="semester" name="semester" maxLength={25} />
+            {fieldErrors.semester ? (
+              <p className="text-sm text-destructive">
+                {fieldErrors.semester}
+              </p>
+            ) : null}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="tahunAkademik">Tahun Akademik</Label>
+            <Input id="tahunAkademik" name="tahunAkademik" maxLength={10} />
+            {fieldErrors.tahunAkademik ? (
+              <p className="text-sm text-destructive">
+                {fieldErrors.tahunAkademik}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {needsParentFields ? (
+        <div className="grid gap-4 rounded-lg border bg-muted/20 p-4">
+          <p className="text-sm font-medium">Data Orang Tua</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="namaOrangTua">Nama Orang Tua</Label>
+              <Input id="namaOrangTua" name="namaOrangTua" maxLength={100} />
+              {fieldErrors.namaOrangTua ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.namaOrangTua}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="nipNrp">NIP/NRP</Label>
+              <Input id="nipNrp" name="nipNrp" maxLength={100} />
+              {fieldErrors.nipNrp ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.nipNrp}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="pangkatGolongan">Pangkat/Golongan</Label>
+              <Input
+                id="pangkatGolongan"
+                name="pangkatGolongan"
+                maxLength={100}
+              />
+              {fieldErrors.pangkatGolongan ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.pangkatGolongan}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="instansi">Instansi</Label>
+              <Input id="instansi" name="instansi" maxLength={100} />
+              {fieldErrors.instansi ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.instansi}
+                </p>
+              ) : null}
+            </div>
+          </div>
         </div>
       ) : null}
 

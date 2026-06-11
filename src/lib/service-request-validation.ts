@@ -28,4 +28,10 @@ export const createServiceRequestSchema = z.object({
   ),
   description: optionalText(100),
   scholarshipName: optionalText(100),
+  semester: optionalText(25),
+  tahunAkademik: optionalText(10),
+  namaOrangTua: optionalText(100),
+  nipNrp: optionalText(100),
+  pangkatGolongan: optionalText(100),
+  instansi: optionalText(100),
 });

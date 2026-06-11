@@ -74,7 +74,6 @@ export default async function SubmitServiceRequestPage({
           {supported ? (
             <ServiceRequestForm
               serviceSlug={service.slug}
-              isScholarshipService={service.slug === "rekomendasi-beasiswa"}
               defaultValues={{
                 npm: user.npm,
                 email: user.email,

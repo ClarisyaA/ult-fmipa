@@ -8,15 +8,37 @@ import type {
 type SupportedSubmissionTable =
   | "beasiswa"
   | "bebas_pinjaman"
+  | "kelakuan_baik"
+  | "kks"
+  | "kpa"
+  | "masih_kuliah"
+  | "masih_kuliah_aktif"
   | "plagiarisme"
   | "referensi";
 
 const supportedSubmissionTables = {
   beasiswa: "beasiswa",
   bebas_pinjaman: "bebas_pinjaman",
+  kelakuan_baik: "kelakuan_baik",
+  kks: "kks",
+  kpa: "kpa",
+  masih_kuliah: "masih_kuliah",
+  masih_kuliah_aktif: "masih_kuliah_aktif",
   plagiarisme: "plagiarisme",
   referensi: "referensi",
 } satisfies Record<SupportedSubmissionTable, SupportedSubmissionTable>;
+
+const supportedSubmissionSlugs = new Set([
+  "rekomendasi-beasiswa",
+  "bebas-peminjaman",
+  "cek-plagiarisme",
+  "referensi",
+  "kartu-prestasi-akademik",
+  "kartu-kemajuan-studi",
+  "ket-tunjangan-orang-tua",
+  "keterangan-masih-kuliah",
+  "keterangan-kelakuan-baik",
+]);
 
 export class ServiceRequestSubmitError extends Error {
   statusCode: number;
@@ -35,12 +57,7 @@ export function isSubmissionSupported(serviceSlug: string) {
     service &&
       service.sourceTable in supportedSubmissionTables &&
       service.slug === serviceSlug &&
-      [
-        "rekomendasi-beasiswa",
-        "bebas-peminjaman",
-        "cek-plagiarisme",
-        "referensi",
-      ].includes(service.slug)
+      supportedSubmissionSlugs.has(service.slug)
   );
 }
 
@@ -73,7 +90,7 @@ async function insertBeasiswa(input: CreateServiceRequestInput) {
 }
 
 async function insertSimpleRequest(
-  sourceTable: SupportedSubmissionTable,
+  sourceTable: "bebas_pinjaman" | "plagiarisme" | "referensi",
   input: CreateServiceRequestInput
 ) {
   const data = {
@@ -103,6 +120,84 @@ async function insertSimpleRequest(
   return String(created.ID);
 }
 
+async function insertCardRequest(
+  sourceTable: "kpa" | "kks",
+  input: CreateServiceRequestInput
+) {
+  const data = {
+    NPM: input.npm,
+    EMAIL: normalizeOptional(input.email),
+    NO_HP: normalizeOptional(input.phone),
+    KEPERLUAN: normalizeOptional(input.description),
+    PERMINTAAN_TGL: new Date(),
+    PERMINTAAN_ENTRY: "Website ULT",
+    PERMINTAAN_IP: null,
+  };
+
+  if (sourceTable === "kpa") {
+    const created = await prisma.kpa.create({ data });
+
+    return String(created.ID);
+  }
+
+  const created = await prisma.kks.create({ data });
+
+  return String(created.ID);
+}
+
+async function insertMasihKuliah(input: CreateServiceRequestInput) {
+  const created = await prisma.masih_kuliah.create({
+    data: {
+      NPM: input.npm,
+      SEMESTER: normalizeOptional(input.semester),
+      EMAIL: normalizeOptional(input.email),
+      NO_HP: normalizeOptional(input.phone),
+      TAHUN_AKADEMIK: normalizeOptional(input.tahunAkademik),
+      NAMA_ORANG_TUA: normalizeOptional(input.namaOrangTua),
+      NIP_NRP: normalizeOptional(input.nipNrp),
+      PANGKAT_GOLONGAN: normalizeOptional(input.pangkatGolongan),
+      INSTANSI: normalizeOptional(input.instansi),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertMasihKuliahAktif(input: CreateServiceRequestInput) {
+  const created = await prisma.masih_kuliah_aktif.create({
+    data: {
+      NPM: input.npm,
+      SEMESTER: normalizeOptional(input.semester),
+      TAHUN_AKADEMIK: normalizeOptional(input.tahunAkademik),
+      KEPERLUAN: normalizeOptional(input.description),
+      EMAIL: normalizeOptional(input.email),
+      NO_HP: normalizeOptional(input.phone),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertKelakuanBaik(input: CreateServiceRequestInput) {
+  const created = await prisma.kelakuan_baik.create({
+    data: {
+      NPM: input.npm,
+      KEPERLUAN: normalizeOptional(input.description),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
 export async function createServiceRequest(
   serviceSlug: string,
   input: CreateServiceRequestInput
@@ -120,10 +215,36 @@ export async function createServiceRequest(
     );
   }
 
-  const id =
-    service.sourceTable === "beasiswa"
-      ? await insertBeasiswa(input)
-      : await insertSimpleRequest(service.sourceTable, input);
+  let id: string;
+
+  switch (service.sourceTable) {
+    case "beasiswa":
+      id = await insertBeasiswa(input);
+      break;
+    case "bebas_pinjaman":
+    case "plagiarisme":
+    case "referensi":
+      id = await insertSimpleRequest(service.sourceTable, input);
+      break;
+    case "kpa":
+    case "kks":
+      id = await insertCardRequest(service.sourceTable, input);
+      break;
+    case "masih_kuliah":
+      id = await insertMasihKuliah(input);
+      break;
+    case "masih_kuliah_aktif":
+      id = await insertMasihKuliahAktif(input);
+      break;
+    case "kelakuan_baik":
+      id = await insertKelakuanBaik(input);
+      break;
+    default:
+      throw new ServiceRequestSubmitError(
+        "Pengajuan untuk layanan ini belum tersedia.",
+        400
+      );
+  }
 
   return {
     id,

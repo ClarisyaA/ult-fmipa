@@ -4,6 +4,12 @@ export type CreateServiceRequestInput = {
   phone?: string;
   description?: string;
   scholarshipName?: string;
+  semester?: string;
+  tahunAkademik?: string;
+  namaOrangTua?: string;
+  nipNrp?: string;
+  pangkatGolongan?: string;
+  instansi?: string;
 };
 
 export type CreateServiceRequestResult = {
