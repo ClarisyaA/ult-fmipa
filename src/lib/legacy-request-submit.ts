@@ -8,24 +8,32 @@ import type {
 type SupportedSubmissionTable =
   | "beasiswa"
   | "bebas_pinjaman"
+  | "ijazah"
+  | "keterangan_lulus"
   | "kelakuan_baik"
   | "kks"
   | "kpa"
+  | "legalisir"
   | "masih_kuliah"
   | "masih_kuliah_aktif"
   | "plagiarisme"
-  | "referensi";
+  | "referensi"
+  | "surat_pengantar";
 
 const supportedSubmissionTables = {
   beasiswa: "beasiswa",
   bebas_pinjaman: "bebas_pinjaman",
+  ijazah: "ijazah",
+  keterangan_lulus: "keterangan_lulus",
   kelakuan_baik: "kelakuan_baik",
   kks: "kks",
   kpa: "kpa",
+  legalisir: "legalisir",
   masih_kuliah: "masih_kuliah",
   masih_kuliah_aktif: "masih_kuliah_aktif",
   plagiarisme: "plagiarisme",
   referensi: "referensi",
+  surat_pengantar: "surat_pengantar",
 } satisfies Record<SupportedSubmissionTable, SupportedSubmissionTable>;
 
 const supportedSubmissionSlugs = new Set([
@@ -38,6 +46,10 @@ const supportedSubmissionSlugs = new Set([
   "ket-tunjangan-orang-tua",
   "keterangan-masih-kuliah",
   "keterangan-kelakuan-baik",
+  "surat-pengantar",
+  "keterangan-lulus",
+  "penerbitan-ijazah",
+  "legalisir-ijazah-transkrip",
 ]);
 
 export class ServiceRequestSubmitError extends Error {
@@ -71,6 +83,16 @@ function normalizeOptional(value?: string) {
   const trimmed = value?.trim();
 
   return trimmed ? trimmed : null;
+}
+
+function normalizeDate(value?: string) {
+  const trimmed = value?.trim();
+
+  return trimmed ? new Date(trimmed) : null;
+}
+
+function normalizeCount(value?: number, fallback = 1) {
+  return value ?? fallback;
 }
 
 async function insertBeasiswa(input: CreateServiceRequestInput) {
@@ -198,6 +220,73 @@ async function insertKelakuanBaik(input: CreateServiceRequestInput) {
   return String(created.ID);
 }
 
+async function insertSuratPengantar(input: CreateServiceRequestInput) {
+  const created = await prisma.surat_pengantar.create({
+    data: {
+      NPM: input.npm,
+      PERMINTAAN_IP: null,
+      PENGANTAR: normalizeOptional(input.pengantar),
+      DITUJUKAN: normalizeOptional(input.ditujukan),
+      DASAR_SURAT_NO: normalizeOptional(input.dasarSuratNo),
+      DASAR_SURAT_PERIHAL: normalizeOptional(input.dasarSuratPerihal),
+      DASAR_SURAT_TGL: normalizeDate(input.dasarSuratTgl),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertKeteranganLulus(input: CreateServiceRequestInput) {
+  const created = await prisma.keterangan_lulus.create({
+    data: {
+      NPM: input.npm,
+      TEMPAT_LAHIR: normalizeOptional(input.tempatLahir),
+      TGL_LAHIR: normalizeDate(input.tanggalLahir),
+      TGL_LULUS: normalizeDate(input.tanggalLulus),
+      IPK: normalizeOptional(input.ipk),
+      YUDISIUM: normalizeOptional(input.yudisium),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertIjazah(input: CreateServiceRequestInput) {
+  const created = await prisma.ijazah.create({
+    data: {
+      NPM: input.npm,
+      TGL_LULUS: normalizeDate(input.tanggalLulus),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertLegalisir(input: CreateServiceRequestInput) {
+  const created = await prisma.legalisir.create({
+    data: {
+      NPM: input.npm,
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+      JUMLAH_TRANSKRIP: normalizeCount(input.jumlahTranskrip),
+      JUMLAH_IJAZAH: normalizeCount(input.jumlahIjazah),
+      JUMLAH_TRANSLET: normalizeCount(input.jumlahTranslet),
+      KEPERLUAN: normalizeOptional(input.description),
+    },
+  });
+
+  return String(created.ID);
+}
+
 export async function createServiceRequest(
   serviceSlug: string,
   input: CreateServiceRequestInput
@@ -238,6 +327,18 @@ export async function createServiceRequest(
       break;
     case "kelakuan_baik":
       id = await insertKelakuanBaik(input);
+      break;
+    case "surat_pengantar":
+      id = await insertSuratPengantar(input);
+      break;
+    case "keterangan_lulus":
+      id = await insertKeteranganLulus(input);
+      break;
+    case "ijazah":
+      id = await insertIjazah(input);
+      break;
+    case "legalisir":
+      id = await insertLegalisir(input);
       break;
     default:
       throw new ServiceRequestSubmitError(
