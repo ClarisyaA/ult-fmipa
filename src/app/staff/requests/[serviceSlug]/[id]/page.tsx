@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import type { ServiceRequestDetail } from "@/types/request-detail";
 
@@ -85,6 +87,7 @@ export default async function StaffRequestDetailPage({
 }: RequestDetailPageProps) {
   const { serviceSlug, id } = await params;
   const detail = await getRequestDetail(serviceSlug, id);
+  const user = await getCurrentUser();
 
   if (!detail) {
     notFound();
@@ -106,9 +109,17 @@ export default async function StaffRequestDetailPage({
           <Badge variant="secondary">{detail.statusLabel}</Badge>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Mode baca saja. Perubahan status belum diaktifkan.
+          Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
       </div>
+
+      <RequestStatusActions
+        serviceSlug={detail.serviceSlug}
+        id={detail.id}
+        currentStatus={detail.status}
+        rolePrefix="staff"
+        staffName={user?.name ?? "Staff ULT"}
+      />
 
       <OptionalDetails detail={detail} />
 
@@ -133,7 +144,7 @@ export default async function StaffRequestDetailPage({
                 <p className="text-sm font-medium">{item.label}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatDate(item.date)}
-                  {item.staff ? ` · ${item.staff}` : ""}
+                  {item.staff ? ` - ${item.staff}` : ""}
                 </p>
               </div>
             </div>
