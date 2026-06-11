@@ -119,6 +119,21 @@ Adminer dapat digunakan untuk inspeksi database lokal:
 
 Jika Prisma Studio mengalami metadata error karena struktur database legacy, Prisma Studio boleh dilewati. Gunakan Adminer untuk inspeksi tabel dan data.
 
+## PAUS OAuth Preparation
+
+Autentikasi production nantinya disiapkan menggunakan PAUS OAuth Unpad. Untuk saat ini, login lokal masih menggunakan NextAuth Credentials Provider khusus development untuk role `admin`, `staff`, dan `student`.
+
+PAUS OAuth belum aktif secara default di development. Provider PAUS hanya boleh diaktifkan setelah kredensial resmi dan format profile dari Unpad tersedia, termasuk mapping `name`, `email`, `npm` atau identifier mahasiswa, dan role jika disediakan.
+
+Placeholder konfigurasi PAUS tersedia di `.env.example`:
+
+- `PAUS_CLIENT_ID`
+- `PAUS_CLIENT_SECRET`
+- `PAUS_ISSUER`
+- `PAUS_AUTHORIZATION_URL`
+- `PAUS_TOKEN_URL`
+- `PAUS_USERINFO_URL`
+
 ## Perintah Berguna
 
 ```powershell
