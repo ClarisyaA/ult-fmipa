@@ -211,8 +211,12 @@ export default async function AdminRequestsPage({
                       <Badge variant="secondary">{request.statusLabel}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" disabled>
-                        Detail
+                      <Button asChild variant="outline" size="sm">
+                        <Link
+                          href={`/admin/requests/${request.serviceSlug}/${request.id}`}
+                        >
+                          Detail
+                        </Link>
                       </Button>
                     </TableCell>
                   </TableRow>

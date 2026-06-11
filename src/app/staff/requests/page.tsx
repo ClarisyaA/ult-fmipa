@@ -210,8 +210,12 @@ export default async function StaffRequestsPage({
                       <Badge variant="secondary">{request.statusLabel}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" disabled>
-                        Detail
+                      <Button asChild variant="outline" size="sm">
+                        <Link
+                          href={`/staff/requests/${request.serviceSlug}/${request.id}`}
+                        >
+                          Detail
+                        </Link>
                       </Button>
                     </TableCell>
                   </TableRow>
