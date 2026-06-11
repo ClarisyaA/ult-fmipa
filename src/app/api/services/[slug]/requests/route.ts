@@ -26,7 +26,10 @@ export async function POST(
       return NextResponse.json(
         {
           error: "Input pengajuan tidak valid.",
-          issues: error.issues,
+          issues: error.issues.map((issue) => ({
+            field: issue.path.join("."),
+            message: issue.message,
+          })),
         },
         { status: 400 }
       );

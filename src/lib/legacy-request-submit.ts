@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-
 import { getPublicServiceBySlug } from "@/lib/legacy-services";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -46,10 +44,6 @@ export function isSubmissionSupported(serviceSlug: string) {
   );
 }
 
-function quoteIdentifier(identifier: string) {
-  return `\`${identifier.replaceAll("`", "``")}\``;
-}
-
 function isSupportedTable(
   sourceTable: string
 ): sourceTable is SupportedSubmissionTable {
@@ -62,40 +56,51 @@ function normalizeOptional(value?: string) {
   return trimmed ? trimmed : null;
 }
 
-async function insertBeasiswa(
-  sourceTable: SupportedSubmissionTable,
-  input: CreateServiceRequestInput
-) {
-  const table = Prisma.raw(quoteIdentifier(sourceTable));
-  await prisma.$executeRaw`
-    INSERT INTO ${table}
-      (\`NPM\`, \`BEASISWA\`, \`PERMINTAAN_TGL\`, \`PERMINTAAN_ENTRY\`, \`PERMINTAAN_IP\`)
-    VALUES
-      (${input.npm}, ${normalizeOptional(input.scholarshipName) ?? normalizeOptional(input.description)}, NOW(), ${"Website ULT"}, NULL)
-  `;
-  const rows = await prisma.$queryRaw<{ id: bigint | number | string }[]>`
-    SELECT LAST_INSERT_ID() AS id
-  `;
+async function insertBeasiswa(input: CreateServiceRequestInput) {
+  const created = await prisma.beasiswa.create({
+    data: {
+      NPM: input.npm,
+      BEASISWA:
+        normalizeOptional(input.scholarshipName) ??
+        normalizeOptional(input.description),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
 
-  return String(rows[0]?.id);
+  return String(created.ID);
 }
 
 async function insertSimpleRequest(
   sourceTable: SupportedSubmissionTable,
   input: CreateServiceRequestInput
 ) {
-  const table = Prisma.raw(quoteIdentifier(sourceTable));
-  await prisma.$executeRaw`
-    INSERT INTO ${table}
-      (\`NPM\`, \`EMAIL\`, \`HP_WA\`, \`KETERANGAN\`, \`PERMINTAAN_TGL\`, \`PERMINTAAN_ENTRY\`, \`PERMINTAAN_IP\`)
-    VALUES
-      (${input.npm}, ${normalizeOptional(input.email)}, ${normalizeOptional(input.phone)}, ${normalizeOptional(input.description)}, NOW(), ${"Website ULT"}, NULL)
-  `;
-  const rows = await prisma.$queryRaw<{ id: bigint | number | string }[]>`
-    SELECT LAST_INSERT_ID() AS id
-  `;
+  const data = {
+    NPM: input.npm,
+    EMAIL: normalizeOptional(input.email),
+    HP_WA: normalizeOptional(input.phone),
+    KETERANGAN: normalizeOptional(input.description),
+    PERMINTAAN_TGL: new Date(),
+    PERMINTAAN_ENTRY: "Website ULT",
+    PERMINTAAN_IP: null,
+  };
 
-  return String(rows[0]?.id);
+  if (sourceTable === "bebas_pinjaman") {
+    const created = await prisma.bebas_pinjaman.create({ data });
+
+    return String(created.ID);
+  }
+
+  if (sourceTable === "plagiarisme") {
+    const created = await prisma.plagiarisme.create({ data });
+
+    return String(created.ID);
+  }
+
+  const created = await prisma.referensi.create({ data });
+
+  return String(created.ID);
 }
 
 export async function createServiceRequest(
@@ -117,7 +122,7 @@ export async function createServiceRequest(
 
   const id =
     service.sourceTable === "beasiswa"
-      ? await insertBeasiswa(service.sourceTable, input)
+      ? await insertBeasiswa(input)
       : await insertSimpleRequest(service.sourceTable, input);
 
   return {

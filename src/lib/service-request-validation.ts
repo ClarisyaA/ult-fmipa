@@ -1,29 +1,31 @@
 import { z } from "zod";
 
+const optionalText = (maxLength: number) =>
+  z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().max(maxLength).optional()
+  );
+
 export const createServiceRequestSchema = z.object({
-  npm: z.string().trim().min(8).max(15),
-  email: z
+  npm: z
     .string()
     .trim()
-    .email()
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  phone: z
-    .string()
-    .trim()
-    .max(20)
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  description: z
-    .string()
-    .trim()
-    .max(100)
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  scholarshipName: z
-    .string()
-    .trim()
-    .max(100)
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
+    .min(8, "NPM minimal 8 digit.")
+    .max(15, "NPM maksimal 15 digit.")
+    .regex(/^\d+$/, "NPM hanya boleh berisi angka."),
+  email: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().email("Email tidak valid.").optional()
+  ),
+  phone: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z
+      .string()
+      .trim()
+      .max(30, "Nomor HP maksimal 30 karakter.")
+      .regex(/^[0-9+\-\s]+$/, "Nomor HP tidak valid.")
+      .optional()
+  ),
+  description: optionalText(100),
+  scholarshipName: optionalText(100),
 });

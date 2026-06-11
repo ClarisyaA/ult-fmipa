@@ -14,12 +14,24 @@ type ServiceRequestFormProps = {
   isScholarshipService: boolean;
 };
 
+type ApiIssue = {
+  field: string;
+  message: string;
+};
+
+function getFormString(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  return typeof value === "string" ? value : "";
+}
+
 export function ServiceRequestForm({
   serviceSlug,
   isScholarshipService,
 }: ServiceRequestFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CreateServiceRequestResult | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -27,6 +39,7 @@ export function ServiceRequestForm({
     const form = event.currentTarget;
 
     setError("");
+    setFieldErrors({});
     setResult(null);
     setIsSubmitting(true);
 
@@ -38,21 +51,32 @@ export function ServiceRequestForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          npm: formData.get("npm"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          description: formData.get("description"),
-          scholarshipName: formData.get("scholarshipName"),
+          npm: getFormString(formData, "npm"),
+          email: getFormString(formData, "email"),
+          phone: getFormString(formData, "phone"),
+          description: getFormString(formData, "description"),
+          scholarshipName: getFormString(formData, "scholarshipName"),
         }),
       });
 
       const body = (await response.json().catch(() => null)) as {
         data?: CreateServiceRequestResult;
         error?: string;
+        issues?: ApiIssue[];
       } | null;
 
       if (!response.ok || !body?.data) {
-        setError(body?.error ?? "Pengajuan layanan gagal dikirim.");
+        const issues = body?.issues ?? [];
+        const nextFieldErrors = Object.fromEntries(
+          issues.map((issue) => [issue.field, issue.message])
+        );
+
+        setFieldErrors(nextFieldErrors);
+        setError(
+          issues[0]?.message ??
+            body?.error ??
+            "Pengajuan layanan gagal dikirim."
+        );
         return;
       }
 
@@ -84,16 +108,25 @@ export function ServiceRequestForm({
       <div className="grid gap-2">
         <Label htmlFor="npm">NPM</Label>
         <Input id="npm" name="npm" minLength={8} maxLength={15} required />
+        {fieldErrors.npm ? (
+          <p className="text-sm text-destructive">{fieldErrors.npm}</p>
+        ) : null}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" />
+          {fieldErrors.email ? (
+            <p className="text-sm text-destructive">{fieldErrors.email}</p>
+          ) : null}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="phone">No HP/WhatsApp</Label>
-          <Input id="phone" name="phone" maxLength={20} />
+          <Input id="phone" name="phone" maxLength={30} />
+          {fieldErrors.phone ? (
+            <p className="text-sm text-destructive">{fieldErrors.phone}</p>
+          ) : null}
         </div>
       </div>
 
@@ -101,12 +134,20 @@ export function ServiceRequestForm({
         <div className="grid gap-2">
           <Label htmlFor="scholarshipName">Nama Beasiswa</Label>
           <Input id="scholarshipName" name="scholarshipName" maxLength={100} />
+          {fieldErrors.scholarshipName ? (
+            <p className="text-sm text-destructive">
+              {fieldErrors.scholarshipName}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
       <div className="grid gap-2">
         <Label htmlFor="description">Keterangan/Keperluan</Label>
         <Textarea id="description" name="description" maxLength={100} />
+        {fieldErrors.description ? (
+          <p className="text-sm text-destructive">{fieldErrors.description}</p>
+        ) : null}
       </div>
 
       {error ? (
