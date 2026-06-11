@@ -74,6 +74,7 @@ export function ServiceRequestForm({
           tempatLahir: getFormString(formData, "tempatLahir"),
           tanggalLahir: getFormString(formData, "tanggalLahir"),
           tanggalLulus: getFormString(formData, "tanggalLulus"),
+          tglLulus: getFormString(formData, "tanggalLulus"),
           ipk: getFormString(formData, "ipk"),
           yudisium: getFormString(formData, "yudisium"),
           jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
@@ -142,8 +143,11 @@ export function ServiceRequestForm({
   const isSuratPengantar = serviceSlug === "surat-pengantar";
   const isKeteranganLulus = serviceSlug === "keterangan-lulus";
   const isIjazah = serviceSlug === "penerbitan-ijazah";
+  const isTranskrip = serviceSlug === "penerbitan-transkrip";
   const isLegalisir = serviceSlug === "legalisir-ijazah-transkrip";
-  const showDescription = !isSuratPengantar && !isKeteranganLulus && !isIjazah;
+  const isUnggahKaryaIlmiah = serviceSlug === "unggah-karya-ilmiah";
+  const showDescription =
+    !isSuratPengantar && !isKeteranganLulus && !isIjazah && !isTranskrip;
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
@@ -331,7 +335,7 @@ export function ServiceRequestForm({
         </div>
       ) : null}
 
-      {isKeteranganLulus || isIjazah ? (
+      {isKeteranganLulus || isIjazah || isTranskrip ? (
         <div className="grid gap-4 rounded-lg border bg-muted/20 p-4">
           <p className="text-sm font-medium">Data Kelulusan</p>
           {isKeteranganLulus ? (
@@ -390,6 +394,12 @@ export function ServiceRequestForm({
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {isUnggahKaryaIlmiah ? (
+        <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          Unggah file karya ilmiah akan ditambahkan pada tahap berikutnya.
+        </p>
       ) : null}
 
       {isLegalisir ? (

@@ -18,7 +18,9 @@ type SupportedSubmissionTable =
   | "masih_kuliah_aktif"
   | "plagiarisme"
   | "referensi"
-  | "surat_pengantar";
+  | "surat_pengantar"
+  | "transkrip"
+  | "unggah_karya_ilmiah";
 
 const supportedSubmissionTables = {
   beasiswa: "beasiswa",
@@ -34,6 +36,8 @@ const supportedSubmissionTables = {
   plagiarisme: "plagiarisme",
   referensi: "referensi",
   surat_pengantar: "surat_pengantar",
+  transkrip: "transkrip",
+  unggah_karya_ilmiah: "unggah_karya_ilmiah",
 } satisfies Record<SupportedSubmissionTable, SupportedSubmissionTable>;
 
 const supportedSubmissionSlugs = new Set([
@@ -50,6 +54,8 @@ const supportedSubmissionSlugs = new Set([
   "keterangan-lulus",
   "penerbitan-ijazah",
   "legalisir-ijazah-transkrip",
+  "penerbitan-transkrip",
+  "unggah-karya-ilmiah",
 ]);
 
 export class ServiceRequestSubmitError extends Error {
@@ -95,6 +101,10 @@ function normalizeCount(value?: number, fallback = 1) {
   return value ?? fallback;
 }
 
+function normalizeTanggalLulus(input: CreateServiceRequestInput) {
+  return normalizeDate(input.tanggalLulus ?? input.tglLulus);
+}
+
 async function insertBeasiswa(input: CreateServiceRequestInput) {
   const created = await prisma.beasiswa.create({
     data: {
@@ -112,7 +122,11 @@ async function insertBeasiswa(input: CreateServiceRequestInput) {
 }
 
 async function insertSimpleRequest(
-  sourceTable: "bebas_pinjaman" | "plagiarisme" | "referensi",
+  sourceTable:
+    | "bebas_pinjaman"
+    | "plagiarisme"
+    | "referensi"
+    | "unggah_karya_ilmiah",
   input: CreateServiceRequestInput
 ) {
   const data = {
@@ -133,6 +147,12 @@ async function insertSimpleRequest(
 
   if (sourceTable === "plagiarisme") {
     const created = await prisma.plagiarisme.create({ data });
+
+    return String(created.ID);
+  }
+
+  if (sourceTable === "unggah_karya_ilmiah") {
+    const created = await prisma.unggah_karya_ilmiah.create({ data });
 
     return String(created.ID);
   }
@@ -244,7 +264,7 @@ async function insertKeteranganLulus(input: CreateServiceRequestInput) {
       NPM: input.npm,
       TEMPAT_LAHIR: normalizeOptional(input.tempatLahir),
       TGL_LAHIR: normalizeDate(input.tanggalLahir),
-      TGL_LULUS: normalizeDate(input.tanggalLulus),
+      TGL_LULUS: normalizeTanggalLulus(input),
       IPK: normalizeOptional(input.ipk),
       YUDISIUM: normalizeOptional(input.yudisium),
       PERMINTAAN_TGL: new Date(),
@@ -260,7 +280,21 @@ async function insertIjazah(input: CreateServiceRequestInput) {
   const created = await prisma.ijazah.create({
     data: {
       NPM: input.npm,
-      TGL_LULUS: normalizeDate(input.tanggalLulus),
+      TGL_LULUS: normalizeTanggalLulus(input),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
+async function insertTranskrip(input: CreateServiceRequestInput) {
+  const created = await prisma.transkrip.create({
+    data: {
+      NPM: input.npm,
+      TGL_LULUS: normalizeTanggalLulus(input),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
       PERMINTAAN_IP: null,
@@ -313,6 +347,7 @@ export async function createServiceRequest(
     case "bebas_pinjaman":
     case "plagiarisme":
     case "referensi":
+    case "unggah_karya_ilmiah":
       id = await insertSimpleRequest(service.sourceTable, input);
       break;
     case "kpa":
@@ -336,6 +371,9 @@ export async function createServiceRequest(
       break;
     case "ijazah":
       id = await insertIjazah(input);
+      break;
+    case "transkrip":
+      id = await insertTranskrip(input);
       break;
     case "legalisir":
       id = await insertLegalisir(input);

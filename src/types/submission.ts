@@ -18,6 +18,7 @@ export type CreateServiceRequestInput = {
   tempatLahir?: string;
   tanggalLahir?: string;
   tanggalLulus?: string;
+  tglLulus?: string;
   ipk?: string;
   yudisium?: string;
   jumlahTranskrip?: number;

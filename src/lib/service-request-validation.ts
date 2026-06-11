@@ -66,6 +66,7 @@ export const createServiceRequestSchema = z.object({
   tempatLahir: optionalText(100),
   tanggalLahir: optionalDate,
   tanggalLulus: optionalDate,
+  tglLulus: optionalDate,
   ipk: optionalText(5),
   yudisium: optionalText(25),
   jumlahTranskrip: optionalPositiveInteger,
