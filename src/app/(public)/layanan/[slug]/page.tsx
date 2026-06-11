@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Clock, LockKeyhole } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getPublicServiceBySlug } from "@/lib/legacy-services";
+import {
+  getCanonicalServiceSlug,
+  getPublicServiceBySlug,
+} from "@/lib/legacy-services";
 
 export default async function ServiceDetailPage({
   params,
@@ -19,6 +22,12 @@ export default async function ServiceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const canonicalSlug = getCanonicalServiceSlug(slug);
+
+  if (canonicalSlug !== slug) {
+    redirect(`/layanan/${canonicalSlug}`);
+  }
+
   const service = getPublicServiceBySlug(slug);
 
   if (!service) {
@@ -68,16 +77,16 @@ export default async function ServiceDetailPage({
             <CardHeader>
               <CardTitle>Pengajuan layanan</CardTitle>
               <CardDescription>
-                Form pengajuan akan tersedia setelah autentikasi PAUS
-                diaktifkan.
+                Beberapa layanan sederhana sudah dapat diajukan melalui form
+                awal. Autentikasi PAUS akan diaktifkan pada tahap berikutnya.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <LockKeyhole className="mt-0.5 size-4 text-primary" />
                 <p>
-                  Tahap ini hanya menyiapkan halaman detail layanan. Belum ada
-                  submission, autentikasi, atau pengambilan data legacy.
+                  Form awal hanya menyimpan data pengajuan minimum ke tabel
+                  layanan yang sudah diizinkan. Belum ada unggah berkas.
                 </p>
               </div>
             </CardContent>
@@ -105,7 +114,7 @@ export default async function ServiceDetailPage({
           </Card>
 
           <Button asChild size="lg">
-            <Link href="#pengajuan">Ajukan Layanan</Link>
+            <Link href={`/layanan/${service.slug}/ajukan`}>Ajukan Layanan</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/layanan">Kembali ke Daftar Layanan</Link>

@@ -88,9 +88,7 @@ export default async function AdminRequestsPage({
     page,
     limit,
   });
-  const services = getPublicServices().filter(
-    (service) => service.sourceTable !== "yudisium"
-  );
+  const services = getPublicServices();
 
   return (
     <div className="grid gap-6">
