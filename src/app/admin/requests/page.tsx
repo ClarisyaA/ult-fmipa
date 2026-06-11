@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { InlineStatusAction } from "@/components/requests/inline-status-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
   parseRequestStatus,
 } from "@/lib/legacy-request-list";
 import { getPublicServices } from "@/lib/legacy-services";
+import { getCurrentUser } from "@/lib/auth";
 import type { RequestStatus } from "@/types/request";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +44,7 @@ const statusOptions: { value: RequestStatus; label: string }[] = [
   { value: "completed", label: "Selesai" },
   { value: "delivered", label: "Diambil/Dikirim" },
 ];
+const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -89,6 +92,8 @@ export default async function AdminRequestsPage({
     limit,
   });
   const services = getPublicServices();
+  const user = await getCurrentUser();
+  const staffName = user?.name ?? "Admin ULT";
 
   return (
     <div className="grid gap-6">
@@ -209,13 +214,27 @@ export default async function AdminRequestsPage({
                       <Badge variant="secondary">{request.statusLabel}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Button asChild variant="outline" size="sm">
+                      <div className="flex flex-wrap gap-2">
+                        <InlineStatusAction
+                          rolePrefix="admin"
+                          serviceSlug={request.serviceSlug}
+                          id={request.id}
+                          status={request.status}
+                          staffName={staffName}
+                          supported={
+                            !unsupportedInlineStatusTables.has(
+                              request.sourceTable
+                            )
+                          }
+                        />
+                        <Button asChild variant="outline" size="sm">
                         <Link
                           href={`/admin/requests/${request.serviceSlug}/${request.id}`}
                         >
                           Detail
                         </Link>
-                      </Button>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

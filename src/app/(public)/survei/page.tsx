@@ -1,6 +1,8 @@
-import { MessageSquareText, Send } from "lucide-react";
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { ClipboardCheck } from "lucide-react";
 
-import { SectionHeading } from "@/components/sections/section-heading";
+import { StudentSurveyPage } from "@/components/student/student-survey-page";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,11 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { authOptions } from "@/lib/auth";
 
-export default function SurveiPage() {
+export default async function SurveiPage() {
+  const session = await getServerSession(authOptions);
+  const role = session?.user.role;
+
   return (
     <>
       <section className="border-b bg-muted/30">
@@ -22,62 +25,72 @@ export default function SurveiPage() {
             Survei
           </p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-normal">
-            Survei kepuasan layanan
+            Survei Kepuasan Layanan
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Bantu tim ULT mengevaluasi kualitas layanan. Form berikut masih
-            placeholder statis dan belum memiliki logic submission.
+            Survei dapat diisi untuk pengajuan layanan yang sudah selesai
+            diproses.
           </p>
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <div>
-          <SectionHeading
-            title="Masukan pengguna layanan"
-            description="Struktur ini dapat diteruskan menjadi form survei final setelah kebutuhan field dan penyimpanan disepakati."
-          />
-          <Card className="mt-8">
+      <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+        {role === "student" ? <StudentSurveyPage /> : null}
+
+        {role === "admin" ? (
+          <Card>
             <CardHeader>
-              <MessageSquareText className="size-6 text-primary" />
-              <CardTitle>Catatan implementasi</CardTitle>
+              <ClipboardCheck className="size-6 text-primary" />
+              <CardTitle>Ringkasan Survei Admin</CardTitle>
               <CardDescription>
-                Tidak ada data yang dikirim pada tahap layout foundation.
+                Admin dapat melihat ringkasan respons survei dari halaman
+                khusus admin.
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link href="/admin/surveys">Buka Ringkasan Survei</Link>
+              </Button>
+            </CardContent>
           </Card>
-        </div>
+        ) : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Form survei placeholder</CardTitle>
-            <CardDescription>
-              Field contoh untuk membantu slicing dan validasi tampilan.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="nama">Nama</Label>
-              <Input id="nama" placeholder="Nama responden" disabled />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="layanan">Layanan yang digunakan</Label>
-              <Input id="layanan" placeholder="Contoh: Surat Aktif Kuliah" disabled />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="pesan">Masukan</Label>
-              <Textarea
-                id="pesan"
-                placeholder="Tulis masukan layanan"
-                disabled
-              />
-            </div>
-            <Button type="button" disabled>
-              <Send className="size-4" />
-              Kirim Survei
-            </Button>
-          </CardContent>
-        </Card>
+        {role === "staff" ? (
+          <Card>
+            <CardHeader>
+              <ClipboardCheck className="size-6 text-primary" />
+              <CardTitle>Ringkasan Survei Staff</CardTitle>
+              <CardDescription>
+                Staff dapat melihat ringkasan respons survei dari halaman
+                khusus staff.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link href="/staff/surveys">Buka Ringkasan Survei</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {!session ? (
+          <Card>
+            <CardHeader>
+              <ClipboardCheck className="size-6 text-primary" />
+              <CardTitle>Survei Kepuasan Layanan</CardTitle>
+              <CardDescription>
+                Login sebagai mahasiswa untuk mengisi survei dari layanan yang
+                sudah selesai. Admin dan staff dapat melihat ringkasan survei
+                setelah login.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
       </section>
     </>
   );

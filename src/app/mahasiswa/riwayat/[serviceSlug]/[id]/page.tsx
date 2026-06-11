@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
 import { getDefaultRedirectByRole } from "@/lib/auth-redirect";
+import { getStudentRequestAttachments } from "@/lib/request-attachments";
+import { getSurveyForRequest } from "@/lib/service-surveys";
 import { getStudentRequestDetail } from "@/lib/student-request-history";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +65,20 @@ export default async function StudentHistoryDetailPage({
     notFound();
   }
 
+  const attachments = await getStudentRequestAttachments(
+    detail.serviceSlug,
+    detail.sourceTable,
+    detail.id,
+    session.user.npm
+  );
+  const canSubmitSurvey = ["completed", "delivered"].includes(detail.status);
+  const survey = await getSurveyForRequest(
+    detail.serviceSlug,
+    detail.sourceTable,
+    detail.id,
+    session.user.npm
+  );
+
   return (
     <div className="mx-auto grid w-full max-w-4xl gap-6 px-4 py-12 sm:px-6 lg:px-8">
       <div>
@@ -100,6 +117,28 @@ export default async function StudentHistoryDetailPage({
             </div>
           ) : null}
         </CardContent>
+      </Card>
+
+      <RequestAttachmentsList attachments={attachments} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Survei Kepuasan</CardTitle>
+          <CardDescription>
+            {canSubmitSurvey
+              ? survey
+                ? "Survei untuk pengajuan ini sudah diisi."
+                : "Isi survei kepuasan dari halaman survei."
+              : "Survei dapat diisi setelah layanan selesai diproses."}
+          </CardDescription>
+        </CardHeader>
+        {canSubmitSurvey && !survey ? (
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href="/survei">Isi Survei Kepuasan</Link>
+            </Button>
+          </CardContent>
+        ) : null}
       </Card>
 
       <Card>

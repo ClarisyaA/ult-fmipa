@@ -536,3 +536,38 @@ model yudisium {
   ID       BigInt  @id @default(autoincrement())
   YUDISIUM String? @db.VarChar(255)
 }
+
+model ult_request_attachments {
+  ID            BigInt   @id @default(autoincrement())
+  SERVICE_SLUG  String   @db.VarChar(100)
+  SOURCE_TABLE  String   @db.VarChar(100)
+  REQUEST_ID    BigInt
+  ORIGINAL_NAME String   @db.VarChar(255)
+  STORED_NAME   String   @db.VarChar(255)
+  MIME_TYPE     String   @db.VarChar(100)
+  SIZE_BYTES    Int
+  STORAGE_PATH  String   @db.VarChar(500)
+  UPLOADED_BY   String?  @db.VarChar(100)
+  UPLOADED_AT   DateTime @default(now())
+}
+
+model ult_service_surveys {
+  ID                    BigInt    @id @default(autoincrement())
+  SERVICE_SLUG          String    @db.VarChar(100)
+  SOURCE_TABLE          String    @db.VarChar(100)
+  REQUEST_ID            BigInt
+  NPM                   String    @db.VarChar(50)
+  RATING_TANGIBILITY    Int?
+  RATING_RELIABILITY    Int?
+  RATING_RESPONSIVENESS Int?
+  RATING_ASSURANCE      Int?
+  RATING_EMPATHY        Int?
+  OVERALL_RATING        Int
+  COMMENT               String?   @db.Text
+  CREATED_AT            DateTime  @default(now()) @db.DateTime(0)
+  UPDATED_AT            DateTime? @db.DateTime(0)
+
+  @@unique([SERVICE_SLUG, SOURCE_TABLE, REQUEST_ID, NPM], map: "uniq_ult_service_surveys_request_npm")
+  @@index([SERVICE_SLUG], map: "idx_ult_service_surveys_service_slug")
+  @@index([CREATED_AT], map: "idx_ult_service_surveys_created_at")
+}

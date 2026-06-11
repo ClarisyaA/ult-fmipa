@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,49 @@ type ApiIssue = {
   message: string;
 };
 
+const maxAttachmentCount = 3;
+const maxAttachmentSizeBytes = 5 * 1024 * 1024;
+const supportedAttachmentMimeTypes = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+]);
+const supportedAttachmentExtensions = new Set([
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
+]);
+
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
 
   return typeof value === "string" ? value : "";
+}
+
+function formatFileSizeMb(sizeBytes: number) {
+  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getFileExtension(filename: string) {
+  const dotIndex = filename.lastIndexOf(".");
+
+  return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
+}
+
+function validateAttachmentFile(file: File) {
+  if (file.size > maxAttachmentSizeBytes) {
+    return `File ${file.name} melebihi 5 MB.`;
+  }
+
+  if (
+    !supportedAttachmentMimeTypes.has(file.type) ||
+    !supportedAttachmentExtensions.has(getFileExtension(file.name))
+  ) {
+    return `Format file ${file.name} tidak didukung.`;
+  }
+
+  return "";
 }
 
 export function ServiceRequestForm({
@@ -37,6 +76,66 @@ export function ServiceRequestForm({
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CreateServiceRequestResult | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  function setAttachmentValidationError(message: string) {
+    setError(message);
+    setFieldErrors((current) => ({
+      ...current,
+      attachments: message,
+    }));
+  }
+
+  function clearAttachmentValidationError() {
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next.attachments;
+      return next;
+    });
+    setError((current) =>
+      current.startsWith("File ") ||
+      current.startsWith("Format file ") ||
+      current === "Maksimal 3 file lampiran."
+        ? ""
+        : current
+    );
+  }
+
+  function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? []).filter(
+      (file) => file.size > 0
+    );
+
+    event.currentTarget.value = "";
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const invalidMessage = files
+      .map(validateAttachmentFile)
+      .find((message) => message);
+
+    if (invalidMessage) {
+      setAttachmentValidationError(invalidMessage);
+      return;
+    }
+
+    if (selectedFiles.length + files.length > maxAttachmentCount) {
+      setAttachmentValidationError("Maksimal 3 file lampiran.");
+      return;
+    }
+
+    setSelectedFiles((current) => [...current, ...files]);
+    clearAttachmentValidationError();
+  }
+
+  function handleRemoveAttachment(indexToRemove: number) {
+    setSelectedFiles((current) =>
+      current.filter((_, index) => index !== indexToRemove)
+    );
+    clearAttachmentValidationError();
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,38 +148,63 @@ export function ServiceRequestForm({
 
     try {
       const formData = new FormData(form);
+      const payload = {
+        npm: getFormString(formData, "npm"),
+        email: getFormString(formData, "email"),
+        phone: getFormString(formData, "phone"),
+        description: getFormString(formData, "description"),
+        scholarshipName: getFormString(formData, "scholarshipName"),
+        semester: getFormString(formData, "semester"),
+        tahunAkademik: getFormString(formData, "tahunAkademik"),
+        namaOrangTua: getFormString(formData, "namaOrangTua"),
+        nipNrp: getFormString(formData, "nipNrp"),
+        pangkatGolongan: getFormString(formData, "pangkatGolongan"),
+        instansi: getFormString(formData, "instansi"),
+        pengantar: getFormString(formData, "pengantar"),
+        ditujukan: getFormString(formData, "ditujukan"),
+        dasarSuratNo: getFormString(formData, "dasarSuratNo"),
+        dasarSuratPerihal: getFormString(formData, "dasarSuratPerihal"),
+        dasarSuratTgl: getFormString(formData, "dasarSuratTgl"),
+        tempatLahir: getFormString(formData, "tempatLahir"),
+        tanggalLahir: getFormString(formData, "tanggalLahir"),
+        tanggalLulus: getFormString(formData, "tanggalLulus"),
+        tglLulus: getFormString(formData, "tanggalLulus"),
+        ipk: getFormString(formData, "ipk"),
+        yudisium: getFormString(formData, "yudisium"),
+        jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
+        jumlahIjazah: getFormString(formData, "jumlahIjazah"),
+        jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+      };
+
+      if (selectedFiles.length > maxAttachmentCount) {
+        setError("Maksimal 3 file lampiran.");
+        setFieldErrors({
+          attachments: "Maksimal 3 file lampiran.",
+        });
+        return;
+      }
+
+      const invalidMessage = selectedFiles
+        .map(validateAttachmentFile)
+        .find((message) => message);
+
+      if (invalidMessage) {
+        setAttachmentValidationError(invalidMessage);
+        return;
+      }
+
+      const requestBody = new FormData();
+
+      Object.entries(payload).forEach(([key, value]) => {
+        requestBody.append(key, value);
+      });
+      selectedFiles.forEach((file) => {
+        requestBody.append("attachments", file);
+      });
+
       const response = await fetch(`/api/services/${serviceSlug}/requests`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          npm: getFormString(formData, "npm"),
-          email: getFormString(formData, "email"),
-          phone: getFormString(formData, "phone"),
-          description: getFormString(formData, "description"),
-          scholarshipName: getFormString(formData, "scholarshipName"),
-          semester: getFormString(formData, "semester"),
-          tahunAkademik: getFormString(formData, "tahunAkademik"),
-          namaOrangTua: getFormString(formData, "namaOrangTua"),
-          nipNrp: getFormString(formData, "nipNrp"),
-          pangkatGolongan: getFormString(formData, "pangkatGolongan"),
-          instansi: getFormString(formData, "instansi"),
-          pengantar: getFormString(formData, "pengantar"),
-          ditujukan: getFormString(formData, "ditujukan"),
-          dasarSuratNo: getFormString(formData, "dasarSuratNo"),
-          dasarSuratPerihal: getFormString(formData, "dasarSuratPerihal"),
-          dasarSuratTgl: getFormString(formData, "dasarSuratTgl"),
-          tempatLahir: getFormString(formData, "tempatLahir"),
-          tanggalLahir: getFormString(formData, "tanggalLahir"),
-          tanggalLulus: getFormString(formData, "tanggalLulus"),
-          tglLulus: getFormString(formData, "tanggalLulus"),
-          ipk: getFormString(formData, "ipk"),
-          yudisium: getFormString(formData, "yudisium"),
-          jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
-          jumlahIjazah: getFormString(formData, "jumlahIjazah"),
-          jumlahTranslet: getFormString(formData, "jumlahTranslet"),
-        }),
+        body: requestBody,
       });
 
       const body = (await response.json().catch(() => null)) as {
@@ -105,6 +229,7 @@ export function ServiceRequestForm({
       }
 
       form.reset();
+      setSelectedFiles([]);
       setResult(body.data);
     } finally {
       setIsSubmitting(false);
@@ -119,6 +244,11 @@ export function ServiceRequestForm({
           <p className="mt-1 text-sm text-muted-foreground">
             Nomor pengajuan: {result.id}. Status awal: Menunggu Proses.
           </p>
+          {result.attachmentCount ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Lampiran tersimpan: {result.attachmentCount} file.
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
@@ -466,6 +596,54 @@ export function ServiceRequestForm({
           ) : null}
         </div>
       ) : null}
+
+      <div className="grid gap-2">
+        <Label htmlFor="attachments">Lampiran Dokumen Pendukung</Label>
+        <Input
+          id="attachments"
+          name="attachments"
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          onChange={handleAttachmentChange}
+        />
+        <p className="text-sm text-muted-foreground">
+          Maksimal 3 file, masing-masing 5 MB. Format PDF, JPG, atau PNG.
+        </p>
+        <div className="grid gap-2 rounded-md border bg-muted/20 px-3 py-2">
+          <p className="text-sm font-medium">
+            {selectedFiles.length} dari {maxAttachmentCount} file dipilih
+          </p>
+          {selectedFiles.length > 0 ? (
+            <ul className="grid gap-1">
+              {selectedFiles.map((file, index) => (
+                <li
+                  key={`${file.name}-${file.size}-${index}`}
+                  className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+                >
+                  <span className="min-w-0 flex-1 break-all">
+                    {file.name}
+                  </span>
+                  <span>{formatFileSizeMb(file.size)}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveAttachment(index)}
+                  >
+                    Hapus
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        {fieldErrors.attachments ? (
+          <p className="text-sm text-destructive">
+            {fieldErrors.attachments}
+          </p>
+        ) : null}
+      </div>
 
       {error ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

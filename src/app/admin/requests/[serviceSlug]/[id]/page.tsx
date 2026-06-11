@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
+import { getRequestAttachments } from "@/lib/request-attachments";
 import type { ServiceRequestDetail } from "@/types/request-detail";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +95,12 @@ export default async function AdminRequestDetailPage({
     notFound();
   }
 
+  const attachments = await getRequestAttachments(
+    detail.serviceSlug,
+    detail.sourceTable,
+    detail.id
+  );
+
   return (
     <div className="grid gap-6">
       <div>
@@ -122,6 +130,8 @@ export default async function AdminRequestDetailPage({
       />
 
       <OptionalDetails detail={detail} />
+
+      <RequestAttachmentsList attachments={attachments} />
 
       <Card>
         <CardHeader>

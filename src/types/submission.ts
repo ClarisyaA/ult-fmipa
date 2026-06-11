@@ -28,7 +28,9 @@ export type CreateServiceRequestInput = {
 
 export type CreateServiceRequestResult = {
   id: string;
+  requestId?: string;
   serviceSlug: string;
   serviceTitle: string;
   status: "pending";
+  attachmentCount?: number;
 };

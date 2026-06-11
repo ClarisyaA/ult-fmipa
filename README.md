@@ -84,7 +84,13 @@ cmd /c "docker exec -i ult-fmipa-db mariadb -u root -proot fmipa_sbpk < database
 
 Jika tidak memiliki dump SQL, lewati langkah import dan minta file database melalui kanal internal tim. File dump bersifat sensitif dan tidak boleh masuk repository.
 
-7. Tarik schema Prisma dari database legacy.
+7. Buat tabel support aplikasi non-legacy untuk survei layanan.
+
+```powershell
+docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database/migrations/002_create_ult_service_surveys.sql
+```
+
+8. Tarik schema Prisma dari database legacy.
 
 ```powershell
 pnpm prisma db pull
@@ -92,13 +98,13 @@ pnpm prisma db pull
 
 Schema Prisma dihasilkan dari introspeksi database legacy. Jangan edit `prisma/schema.prisma` sembarangan tanpa koordinasi.
 
-8. Generate Prisma Client.
+9. Generate Prisma Client.
 
 ```powershell
 pnpm prisma generate
 ```
 
-9. Jalankan development server.
+10. Jalankan development server.
 
 ```powershell
 pnpm dev

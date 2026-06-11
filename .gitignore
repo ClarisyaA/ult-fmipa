@@ -45,3 +45,7 @@ next-env.d.ts
 database/*.sql
 database/*.zip
 database/*.dump
+
+uploads/
+public/uploads/
+storage/uploads/
