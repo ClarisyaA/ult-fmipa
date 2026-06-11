@@ -119,20 +119,93 @@ Adminer dapat digunakan untuk inspeksi database lokal:
 
 Jika Prisma Studio mengalami metadata error karena struktur database legacy, Prisma Studio boleh dilewati. Gunakan Adminer untuk inspeksi tabel dan data.
 
-## PAUS OAuth Preparation
+## PAUS OAuth
 
-Autentikasi production nantinya disiapkan menggunakan PAUS OAuth Unpad. Untuk saat ini, login lokal masih menggunakan NextAuth Credentials Provider khusus development untuk role `admin`, `staff`, dan `student`.
+Autentikasi production disiapkan menggunakan PAUS OAuth Unpad. Untuk saat ini, login lokal tetap menggunakan NextAuth Credentials Provider khusus development untuk role `admin`, `staff`, dan `student`.
 
-PAUS OAuth belum aktif secara default di development. Provider PAUS hanya boleh diaktifkan setelah kredensial resmi dan format profile dari Unpad tersedia, termasuk mapping `name`, `email`, `npm` atau identifier mahasiswa, dan role jika disediakan.
+PAUS OAuth belum aktif secara default di development. Provider PAUS hanya aktif jika `PAUS_CLIENT_ID` dan `PAUS_CLIENT_SECRET` tersedia. Jangan hardcode client ID atau client secret di source code.
 
-Placeholder konfigurasi PAUS tersedia di `.env.example`:
+Implementasi NextAuth memakai callback provider `paus`, sehingga redirect URI berbeda dari aplikasi PHP legacy. Jika client PAUS lama hanya terdaftar untuk redirect URI PHP, login NextAuth dapat gagal dengan `invalid_client`. Minta Unpad mendaftarkan callback URL NextAuth berikut sebelum production login diaktifkan.
+
+Environment yang disiapkan di `.env.example`:
 
 - `PAUS_CLIENT_ID`
 - `PAUS_CLIENT_SECRET`
-- `PAUS_ISSUER`
 - `PAUS_AUTHORIZATION_URL`
 - `PAUS_TOKEN_URL`
 - `PAUS_USERINFO_URL`
+- `PAUS_SIGN_OUT_URL`
+
+Callback URL lokal:
+
+```text
+http://localhost:3000/api/auth/callback/paus
+```
+
+Callback URL production harus didaftarkan dan dikonfirmasi dengan Unpad, misalnya:
+
+```text
+https://<domain-production>/api/auth/callback/paus
+```
+
+Mapping profile PAUS sementara disiapkan untuk membaca `nama`, `npm`, `nip`, dan `paus_id` dari atribut PAUS legacy. Jika `npm` tersedia, user diperlakukan sebagai mahasiswa. Jika `nip` tersedia tanpa `npm`, user diperlakukan sebagai staff.
+
+Token exchange mengikuti flow legacy PAUS: POST `application/x-www-form-urlencoded` ke token URL dengan `client_id`, `client_secret`, `grant_type=authorization_code`, `redirect_uri`, dan `code`. User info dibaca dari `PAUS_USERINFO_URL?access_token=...`.
+
+## PAUS OAuth Modes
+
+`PAUS_MODE` mendukung dua mode pengujian:
+
+- `modern`: login PAUS langsung melalui NextAuth provider `paus`.
+- `legacy`: user diarahkan ke flow login/callback PHP lama, lalu PHP redirect kembali ke aplikasi Next.js dengan signed bridge token.
+
+Mode modern membutuhkan callback URI baru yang terdaftar di PAUS:
+
+```text
+http://localhost:3000/api/auth/callback/paus
+```
+
+Untuk production, callback URI harus dikonfirmasi dengan Unpad:
+
+```text
+https://<production-domain>/api/auth/callback/paus
+```
+
+Mode legacy bridge bersifat sementara untuk development/testing. Callback PHP lama harus menyelesaikan OAuth PAUS seperti biasa, mengambil profile PAUS, membuat token HMAC SHA-256 singkat, lalu redirect ke:
+
+```text
+http://localhost:3000/auth/paus-bridge?token=<signed-token>
+```
+
+`PAUS_BRIDGE_SECRET` harus sama di PHP bridge dan Next.js. Jangan commit secret asli.
+
+Contoh konsep PHP bridge:
+
+```php
+<?php
+// Setelah callback PHP lama sukses:
+// 1. Tukar authorization code ke access token.
+// 2. Ambil profile dari https://paus.unpad.ac.id/api/?access_token=...
+// 3. Bentuk payload singkat.
+$payload = [
+  'name' => $profile['attributes']['nama']['attribute_value'] ?? null,
+  'npm' => $profile['attributes']['npm']['attribute_value'] ?? null,
+  'nip' => $profile['attributes']['nip']['attribute_value'] ?? null,
+  'pausId' => $profile['attributes']['paus_id']['attribute_value'] ?? null,
+  'email' => $profile['email'] ?? null,
+  'iat' => time(),
+  'exp' => time() + 120,
+];
+
+$payloadJson = json_encode($payload);
+$payloadPart = rtrim(strtr(base64_encode($payloadJson), '+/', '-_'), '=');
+$signature = hash_hmac('sha256', $payloadPart, getenv('PAUS_BRIDGE_SECRET'), true);
+$signaturePart = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+$token = $payloadPart . '.' . $signaturePart;
+
+header('Location: http://localhost:3000/auth/paus-bridge?token=' . urlencode($token));
+exit;
+```
 
 ## Perintah Berguna
 

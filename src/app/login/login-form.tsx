@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getSession, signIn } from "next-auth/react";
+import { getProviders, getSession, signIn } from "next-auth/react";
+import type { ClientSafeProvider } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,15 +17,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSafeRedirectUrl } from "@/lib/auth-redirect";
 
-export function LoginForm() {
+type LoginFormProps = {
+  pausMode: "modern" | "legacy";
+  pausLegacyLoginUrl?: string;
+};
+
+export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [providers, setProviders] = useState<Record<
+    string,
+    ClientSafeProvider
+  > | null>(null);
 
   useEffect(() => {
+    getProviders().then(setProviders);
+
     getSession().then((session) => {
       if (session?.user.role) {
         router.replace(
@@ -37,6 +49,22 @@ export function LoginForm() {
       }
     });
   }, [router, searchParams]);
+
+  function getPostPausLoginCallback() {
+    const callbackUrl = searchParams.get("callbackUrl");
+
+    if (!callbackUrl) {
+      return "/login";
+    }
+
+    return `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  }
+
+  function handleLegacyPausLogin() {
+    if (pausLegacyLoginUrl) {
+      window.location.href = pausLegacyLoginUrl;
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,6 +109,40 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {pausMode === "modern" && providers?.paus ? (
+          <div className="mb-4">
+            <Button
+              type="button"
+              className="w-full"
+              variant="outline"
+              onClick={() =>
+                signIn("paus", {
+                  callbackUrl: getPostPausLoginCallback(),
+                })
+              }
+            >
+              Masuk dengan PAUS Unpad
+            </Button>
+          </div>
+        ) : null}
+
+        {pausMode === "legacy" && pausLegacyLoginUrl ? (
+          <div className="mb-4 grid gap-2">
+            <Button
+              type="button"
+              className="w-full"
+              variant="outline"
+              onClick={handleLegacyPausLogin}
+            >
+              Masuk dengan PAUS Unpad
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Mode legacy bridge menggunakan callback PAUS lama untuk
+              pengujian.
+            </p>
+          </div>
+        ) : null}
+
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>

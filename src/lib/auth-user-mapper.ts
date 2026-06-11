@@ -3,20 +3,12 @@ export type AppRole = "admin" | "staff" | "student";
 export type AppSessionUser = {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   role: AppRole;
   npm?: string;
+  nip?: string;
+  pausId?: string;
   phone?: string;
-};
-
-type PausProfile = {
-  sub?: string;
-  id?: string;
-  name?: string;
-  email?: string;
-  npm?: string;
-  phone?: string;
-  role?: AppRole;
 };
 
 export function mapDevUserToSessionUser(
@@ -48,20 +40,5 @@ export function mapDevUserToSessionUser(
     role,
     npm: process.env.DEV_STUDENT_NPM,
     phone: process.env.DEV_STUDENT_PHONE,
-  };
-}
-
-export function mapPausProfileToSessionUser(
-  profile: PausProfile
-): AppSessionUser {
-  // TODO(PAUS): Confirm exact profile fields with Unpad.
-  // Expected data: name, email, NPM or stable identifier, and role if available.
-  return {
-    id: profile.sub ?? profile.id ?? profile.email ?? "paus-user",
-    name: profile.name ?? "Pengguna PAUS",
-    email: profile.email ?? "",
-    role: profile.role ?? "student",
-    npm: profile.npm,
-    phone: profile.phone,
   };
 }
