@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getSafeRedirectUrl } from "@/lib/auth-redirect";
 
 export function LoginForm() {
   const router = useRouter();
@@ -25,15 +26,17 @@ export function LoginForm() {
 
   useEffect(() => {
     getSession().then((session) => {
-      if (session?.user.role === "admin") {
-        router.replace("/admin/dashboard");
-      }
-
-      if (session?.user.role === "staff") {
-        router.replace("/staff/dashboard");
+      if (session?.user.role) {
+        router.replace(
+          getSafeRedirectUrl(
+            searchParams.get("callbackUrl"),
+            session.user.role,
+            window.location.origin
+          )
+        );
       }
     });
-  }, [router]);
+  }, [router, searchParams]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,19 +56,19 @@ export function LoginForm() {
     }
 
     const session = await getSession();
-    const callbackUrl = searchParams.get("callbackUrl");
 
-    if (callbackUrl?.startsWith(window.location.origin)) {
-      router.replace(callbackUrl);
+    if (session?.user.role) {
+      router.replace(
+        getSafeRedirectUrl(
+          searchParams.get("callbackUrl"),
+          session.user.role,
+          window.location.origin
+        )
+      );
       return;
     }
 
-    if (session?.user.role === "admin") {
-      router.replace("/admin/dashboard");
-      return;
-    }
-
-    router.replace("/staff/dashboard");
+    router.replace("/layanan");
   }
 
   return (
@@ -73,7 +76,8 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle>Login ULT FMIPA</CardTitle>
         <CardDescription>
-          Gunakan kredensial development sementara untuk admin atau staff.
+          Gunakan kredensial development sementara untuk admin, staff, atau
+          mahasiswa.
         </CardDescription>
       </CardHeader>
       <CardContent>

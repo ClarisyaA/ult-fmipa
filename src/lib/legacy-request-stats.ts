@@ -219,11 +219,17 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     }
   );
 
-  const serviceSummaries = await Promise.all(
-    services.map((service) =>
-      getServiceSummary(service.title, service.slug, service.sourceTable)
-    )
-  );
+  const serviceSummaries: ServiceRequestSummary[] = [];
+
+  for (const service of services) {
+    const serviceSummary = await getServiceSummary(
+      service.title,
+      service.slug,
+      service.sourceTable
+    );
+
+    serviceSummaries.push(serviceSummary);
+  }
 
   return serviceSummaries.reduce<DashboardSummary>(
     (summary, service) => ({

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 
 import { publicNavItems } from "@/constants/navigation";
+import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -33,10 +34,11 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <Button asChild>
             <Link href="/layanan">Ajukan Layanan</Link>
           </Button>
+          <UserMenu />
         </div>
 
         <Sheet>
@@ -68,6 +70,9 @@ export function Navbar() {
               <Button asChild className="mt-3">
                 <Link href="/layanan">Ajukan Layanan</Link>
               </Button>
+              <div className="mt-3 px-3">
+                <UserMenu />
+              </div>
             </nav>
           </SheetContent>
         </Sheet>

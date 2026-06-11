@@ -15,6 +15,7 @@ import {
   getCanonicalServiceSlug,
   getPublicServiceBySlug,
 } from "@/lib/legacy-services";
+import { getCurrentUser } from "@/lib/auth";
 import { isSubmissionSupported } from "@/lib/legacy-request-submit";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +34,22 @@ export default async function SubmitServiceRequestPage({
   }
 
   const service = getPublicServiceBySlug(slug);
+  const user = await getCurrentUser();
 
   if (!service) {
     notFound();
+  }
+
+  if (!user) {
+    redirect(`/login?callbackUrl=/layanan/${service.slug}/ajukan`);
+  }
+
+  if (user.role === "admin") {
+    redirect("/admin/dashboard");
+  }
+
+  if (user.role === "staff") {
+    redirect("/staff/dashboard");
   }
 
   const supported = isSubmissionSupported(service.slug);
@@ -61,6 +75,11 @@ export default async function SubmitServiceRequestPage({
             <ServiceRequestForm
               serviceSlug={service.slug}
               isScholarshipService={service.slug === "rekomendasi-beasiswa"}
+              defaultValues={{
+                npm: user.npm,
+                email: user.email,
+                phone: user.phone,
+              }}
             />
           ) : (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">

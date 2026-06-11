@@ -5,7 +5,9 @@ import {
   createServiceRequest,
   ServiceRequestSubmitError,
 } from "@/lib/legacy-request-submit";
+import { authOptions } from "@/lib/auth";
 import { createServiceRequestSchema } from "@/lib/service-request-validation";
+import { getServerSession } from "next-auth";
 
 export async function POST(
   request: Request,
@@ -13,8 +15,33 @@ export async function POST(
 ) {
   try {
     const { slug } = await params;
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error: "Anda harus login sebagai mahasiswa untuk mengajukan layanan.",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.role !== "student") {
+      return NextResponse.json(
+        {
+          error: "Hanya mahasiswa yang dapat mengajukan layanan.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
-    const input = createServiceRequestSchema.parse(body);
+    const input = createServiceRequestSchema.parse({
+      ...body,
+      npm: session.user.npm || body?.npm,
+      email: session.user.email || body?.email,
+      phone: body?.phone || session.user.phone,
+    });
     const result = await createServiceRequest(slug, input);
 
     return NextResponse.json({

@@ -1,7 +1,7 @@
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export type AppRole = "admin" | "staff";
+export type AppRole = "admin" | "staff" | "student";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -49,6 +49,22 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
+        if (
+          email &&
+          password &&
+          email === process.env.DEV_STUDENT_EMAIL &&
+          password === process.env.DEV_STUDENT_PASSWORD
+        ) {
+          return {
+            id: "dev-student",
+            name: process.env.DEV_STUDENT_NAME || "Mahasiswa ULT",
+            email,
+            role: "student",
+            npm: process.env.DEV_STUDENT_NPM,
+            phone: process.env.DEV_STUDENT_PHONE,
+          };
+        }
+
         return null;
       },
     }),
@@ -57,6 +73,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.npm = user.npm;
+        token.phone = user.phone;
       }
 
       return token;
@@ -64,6 +82,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role;
+        session.user.npm = token.npm;
+        session.user.phone = token.phone;
       }
 
       return session;

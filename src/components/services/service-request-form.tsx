@@ -12,6 +12,11 @@ import type { CreateServiceRequestResult } from "@/types/submission";
 type ServiceRequestFormProps = {
   serviceSlug: string;
   isScholarshipService: boolean;
+  defaultValues?: {
+    npm?: string;
+    email?: string | null;
+    phone?: string;
+  };
 };
 
 type ApiIssue = {
@@ -28,6 +33,7 @@ function getFormString(formData: FormData, key: string) {
 export function ServiceRequestForm({
   serviceSlug,
   isScholarshipService,
+  defaultValues,
 }: ServiceRequestFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -96,9 +102,16 @@ export function ServiceRequestForm({
             Nomor pengajuan: {result.id}. Status awal: Menunggu Proses.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/layanan/${serviceSlug}`}>Kembali ke Detail Layanan</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/mahasiswa/riwayat">Lihat Riwayat Pengajuan</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/layanan/${serviceSlug}`}>
+              Kembali ke Detail Layanan
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -107,7 +120,14 @@ export function ServiceRequestForm({
     <form className="grid gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-2">
         <Label htmlFor="npm">NPM</Label>
-        <Input id="npm" name="npm" minLength={8} maxLength={15} required />
+        <Input
+          id="npm"
+          name="npm"
+          minLength={8}
+          maxLength={15}
+          defaultValue={defaultValues?.npm ?? ""}
+          required
+        />
         {fieldErrors.npm ? (
           <p className="text-sm text-destructive">{fieldErrors.npm}</p>
         ) : null}
@@ -116,14 +136,24 @@ export function ServiceRequestForm({
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            defaultValue={defaultValues?.email ?? ""}
+          />
           {fieldErrors.email ? (
             <p className="text-sm text-destructive">{fieldErrors.email}</p>
           ) : null}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="phone">No HP/WhatsApp</Label>
-          <Input id="phone" name="phone" maxLength={30} />
+          <Input
+            id="phone"
+            name="phone"
+            maxLength={30}
+            defaultValue={defaultValues?.phone ?? ""}
+          />
           {fieldErrors.phone ? (
             <p className="text-sm text-destructive">{fieldErrors.phone}</p>
           ) : null}
@@ -155,6 +185,11 @@ export function ServiceRequestForm({
           {error}
         </p>
       ) : null}
+
+      <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        Anda sedang mengajukan layanan sebagai mahasiswa development. Pada tahap
+        berikutnya, data akan diambil dari PAUS OAuth.
+      </p>
 
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Mengirim..." : "Kirim Pengajuan"}
