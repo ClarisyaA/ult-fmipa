@@ -1,6 +1,8 @@
-import { CalendarDays, Megaphone, Newspaper } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
 
-import { SectionHeading } from "@/components/sections/section-heading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,29 +10,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getPublishedInformationPosts } from "@/lib/information-posts";
 
-const infoItems = [
-  {
-    title: "Pengumuman layanan",
-    description:
-      "Ruang untuk informasi jam layanan, perubahan jadwal, dan pemberitahuan penting.",
-    icon: Megaphone,
-  },
-  {
-    title: "Agenda akademik",
-    description:
-      "Placeholder untuk jadwal kegiatan akademik dan administrasi yang relevan.",
-    icon: CalendarDays,
-  },
-  {
-    title: "Berita layanan",
-    description:
-      "Area ringkas untuk pembaruan proses, panduan, atau artikel layanan ULT.",
-    icon: Newspaper,
-  },
-];
+function formatDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
 
-export default function InformasiPage() {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+export default async function InformasiPage() {
+  const posts = await getPublishedInformationPosts();
+
   return (
     <>
       <section className="border-b bg-muted/30">
@@ -42,46 +38,46 @@ export default function InformasiPage() {
             Pusat informasi layanan FMIPA
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Halaman ini menyiapkan struktur untuk pengumuman, agenda, dan
-            artikel layanan tanpa mengambil data dari sistem legacy.
+            Pengumuman dan informasi resmi terkait layanan ULT FMIPA Unpad.
           </p>
         </div>
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="Jenis informasi"
-          description="Konten masih statis agar tim FE bisa melanjutkan layout, empty state, dan pola card."
-        />
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {infoItems.map((item) => (
-            <Card key={item.title}>
-              <CardHeader>
-                <item.icon className="size-6 text-primary" />
-                <CardTitle className="text-lg">{item.title}</CardTitle>
-                <CardDescription>{item.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-t">
-        <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+        {posts.length === 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle>Placeholder daftar informasi</CardTitle>
-              <CardDescription>
-                Area ini dapat dikembangkan menjadi daftar artikel atau
-                pengumuman dari CMS/API internal.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 text-sm text-muted-foreground">
-              <p>Belum ada data dinamis yang ditampilkan pada tahap skeleton.</p>
-              <p>Tambahkan integrasi setelah struktur konten dan akses disepakati.</p>
+            <CardContent className="py-6 text-sm text-muted-foreground">
+              Belum ada informasi yang dipublikasikan.
             </CardContent>
           </Card>
-        </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {posts.map((post) => (
+              <Card key={post.id}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {post.category ? (
+                      <Badge variant="secondary">{post.category}</Badge>
+                    ) : null}
+                    <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                      <CalendarDays className="size-4" />
+                      {formatDate(post.publishedAt)}
+                    </span>
+                  </div>
+                  <CardTitle>{post.title}</CardTitle>
+                  {post.summary ? (
+                    <CardDescription>{post.summary}</CardDescription>
+                  ) : null}
+                </CardHeader>
+                <CardContent>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/informasi/${post.slug}`}>Baca Informasi</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
