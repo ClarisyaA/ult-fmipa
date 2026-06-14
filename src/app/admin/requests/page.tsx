@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
+import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,8 +40,8 @@ type RequestsPageProps = {
 };
 
 const statusOptions: { value: RequestStatus; label: string }[] = [
-  { value: "pending", label: "Menunggu Proses" },
-  { value: "inProgress", label: "Sedang Diproses" },
+  { value: "pending", label: "Menunggu" },
+  { value: "inProgress", label: "Diproses" },
   { value: "completed", label: "Selesai" },
   { value: "delivered", label: "Diambil/Dikirim" },
 ];
@@ -228,12 +229,16 @@ export default async function AdminRequestsPage({
                           }
                         />
                         <Button asChild variant="outline" size="sm">
-                        <Link
-                          href={`/admin/requests/${request.serviceSlug}/${request.id}`}
-                        >
-                          Detail
-                        </Link>
+                          <Link
+                            href={`/admin/requests/${request.serviceSlug}/${request.id}`}
+                          >
+                            Detail
+                          </Link>
                         </Button>
+                        <RequestDeleteButton
+                          serviceSlug={request.serviceSlug}
+                          id={request.id}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

@@ -22,3 +22,10 @@ export async function GET(
     data: requestDetail,
   });
 }
+
+export async function DELETE() {
+  return NextResponse.json(
+    { error: "Staff tidak memiliki akses untuk menghapus pengajuan." },
+    { status: 403 }
+  );
+}

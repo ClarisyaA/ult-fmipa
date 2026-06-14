@@ -65,8 +65,8 @@ type RequestRow = {
 };
 
 const requestStatusLabels = {
-  pending: "Menunggu Proses",
-  inProgress: "Sedang Diproses",
+  pending: "Menunggu",
+  inProgress: "Diproses",
   completed: "Selesai",
   delivered: "Diambil/Dikirim",
 } satisfies Record<RequestStatus, string>;

@@ -1,4 +1,5 @@
 import { getPublicServiceBySlug } from "@/lib/legacy-services";
+import { deleteUploadedFile } from "@/lib/file-upload";
 import { prisma } from "@/lib/prisma";
 import { getStudentRequestDetail } from "@/lib/student-request-history";
 import type { RequestAttachment, SavedUploadMetadata } from "@/types/attachment";
@@ -134,4 +135,36 @@ export async function getAttachmentRecordById(id: string) {
       ID: BigInt(id),
     },
   });
+}
+
+export async function deleteRequestAttachmentsForRequest(
+  serviceSlug: string,
+  sourceTable: string,
+  requestId: string
+) {
+  if (!ensureWhitelistedService(serviceSlug, sourceTable)) {
+    throw new Error("Layanan lampiran tidak valid.");
+  }
+
+  const records = await prisma.ult_request_attachments.findMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+    },
+  });
+
+  for (const record of records) {
+    await deleteUploadedFile(record.STORAGE_PATH);
+  }
+
+  await prisma.ult_request_attachments.deleteMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+    },
+  });
+
+  return records.length;
 }

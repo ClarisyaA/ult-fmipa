@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { InformationDeleteButton } from "@/components/information/information-delete-button";
+import { InformationStatusAction } from "@/components/information/information-status-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAdminInformationPosts } from "@/lib/information-posts";
+import type { InformationPost, InformationPostStatus } from "@/lib/information-posts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +35,34 @@ function formatDate(value: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+const statusLabels: Record<InformationPostStatus, string> = {
+  draft: "Draft",
+  published: "Dipublikasikan",
+  archived: "Diarsipkan",
+};
+
+function getDisplayStatus(post: InformationPost) {
+  if (post.status === "archived") {
+    return "Diarsipkan";
+  }
+
+  if (post.status !== "published" || !post.isActive) {
+    return post.isActive ? "Belum Publik" : "Non-aktif";
+  }
+
+  const now = Date.now();
+
+  if (post.displayStartAt && new Date(post.displayStartAt).getTime() > now) {
+    return "Belum Tayang";
+  }
+
+  if (post.displayEndAt && new Date(post.displayEndAt).getTime() < now) {
+    return "Masa Tayang Selesai";
+  }
+
+  return "Sedang Tayang";
 }
 
 export default async function AdminInformasiPage() {
@@ -67,13 +97,14 @@ export default async function AdminInformasiPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Kategori</TableHead>
                 <TableHead>Publikasi</TableHead>
+                <TableHead>Jadwal</TableHead>
                 <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {posts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground">
                     Belum ada informasi yang dibuat.
                   </TableCell>
                 </TableRow>
@@ -82,10 +113,29 @@ export default async function AdminInformasiPage() {
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{post.status}</Badge>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary">{statusLabels[post.status]}</Badge>
+                        {post.featured ? (
+                          <Badge variant="outline">Unggulan</Badge>
+                        ) : null}
+                        {!post.isActive ? (
+                          <Badge variant="outline">Non-aktif</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>{post.category ?? "-"}</TableCell>
                     <TableCell>{formatDate(post.publishedAt)}</TableCell>
+                    <TableCell>
+                      <div className="grid gap-1 text-sm">
+                        <Badge variant="outline">{getDisplayStatus(post)}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Mulai: {formatDate(post.displayStartAt)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Selesai: {formatDate(post.displayEndAt)}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
                         <Button asChild variant="outline" size="sm">
@@ -100,6 +150,25 @@ export default async function AdminInformasiPage() {
                             </Link>
                           </Button>
                         ) : null}
+                        {post.status === "archived" ? (
+                          <InformationStatusAction
+                            id={post.id}
+                            rolePrefix="admin"
+                            post={post}
+                            targetStatus="draft"
+                            label="Restore"
+                            confirmMessage="Kembalikan informasi ini ke draft?"
+                          />
+                        ) : (
+                          <InformationStatusAction
+                            id={post.id}
+                            rolePrefix="admin"
+                            post={post}
+                            targetStatus="archived"
+                            label="Arsipkan"
+                            confirmMessage="Arsipkan informasi ini?"
+                          />
+                        )}
                         <InformationDeleteButton id={post.id} />
                       </div>
                     </TableCell>

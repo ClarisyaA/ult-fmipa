@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
 import {
+  getInformationApiErrorStatus,
+  parseInformationPostRequest,
+  saveInformationImagesForPost,
+} from "@/lib/information-api";
+import {
   deleteInformationPost,
   getInformationPostById,
-  InformationPostValidationError,
-  InformationTableUnavailableError,
   updateInformationPost,
-  type InformationPostInput,
 } from "@/lib/information-posts";
+import { deleteInformationPostImagesForPost } from "@/lib/information-post-images";
 
 type InformationRouteProps = {
   params: Promise<{ id: string }>;
@@ -38,13 +41,12 @@ export async function GET(_request: Request, { params }: InformationRouteProps) 
 
     return NextResponse.json({ data: post });
   } catch (error) {
-    if (
-      error instanceof InformationPostValidationError ||
-      error instanceof InformationTableUnavailableError
-    ) {
+    const apiError = getInformationApiErrorStatus(error);
+
+    if (apiError) {
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: apiError.message },
+        { status: apiError.statusCode }
       );
     }
 
@@ -64,11 +66,11 @@ export async function PATCH(request: Request, { params }: InformationRouteProps)
 
   try {
     const { id } = await params;
-    const body = (await request.json()) as InformationPostInput;
-    const post = await updateInformationPost(id, {
-      ...body,
-      actor: getActorName(user),
-    });
+    const { input, files } = await parseInformationPostRequest(
+      request,
+      getActorName(user)
+    );
+    const post = await updateInformationPost(id, input);
 
     if (!post) {
       return NextResponse.json(
@@ -77,18 +79,19 @@ export async function PATCH(request: Request, { params }: InformationRouteProps)
       );
     }
 
+    await saveInformationImagesForPost(post.id, files);
+
     return NextResponse.json({
       data: post,
       message: "Informasi berhasil diperbarui.",
     });
   } catch (error) {
-    if (
-      error instanceof InformationPostValidationError ||
-      error instanceof InformationTableUnavailableError
-    ) {
+    const apiError = getInformationApiErrorStatus(error);
+
+    if (apiError) {
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: apiError.message },
+        { status: apiError.statusCode }
       );
     }
 
@@ -111,19 +114,19 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    await deleteInformationPostImagesForPost(id);
     await deleteInformationPost(id);
 
     return NextResponse.json({
       message: "Informasi berhasil dihapus.",
     });
   } catch (error) {
-    if (
-      error instanceof InformationPostValidationError ||
-      error instanceof InformationTableUnavailableError
-    ) {
+    const apiError = getInformationApiErrorStatus(error);
+
+    if (apiError) {
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: apiError.message },
+        { status: apiError.statusCode }
       );
     }
 

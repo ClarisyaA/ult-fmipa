@@ -39,8 +39,8 @@ type RequestsPageProps = {
 };
 
 const statusOptions: { value: RequestStatus; label: string }[] = [
-  { value: "pending", label: "Menunggu Proses" },
-  { value: "inProgress", label: "Sedang Diproses" },
+  { value: "pending", label: "Menunggu" },
+  { value: "inProgress", label: "Diproses" },
   { value: "completed", label: "Selesai" },
   { value: "delivered", label: "Diambil/Dikirim" },
 ];

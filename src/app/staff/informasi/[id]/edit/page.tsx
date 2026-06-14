@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { InformationPostForm } from "@/components/information/information-post-form";
@@ -11,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireRole } from "@/lib/auth";
+import { getInformationPostImages } from "@/lib/information-post-images";
 import { getInformationPostById } from "@/lib/information-posts";
 
 type EditInformationPageProps = {
@@ -20,12 +22,20 @@ type EditInformationPageProps = {
 export default async function StaffEditInformasiPage({
   params,
 }: EditInformationPageProps) {
+  const user = await requireRole(["staff"]);
+
+  if (!user) {
+    redirect("/login?callbackUrl=/staff/informasi");
+  }
+
   const { id } = await params;
   const post = await getInformationPostById(id);
 
   if (!post) {
     notFound();
   }
+
+  const images = await getInformationPostImages(post.id);
 
   return (
     <div className="grid gap-6">
@@ -47,6 +57,7 @@ export default async function StaffEditInformasiPage({
             rolePrefix="staff"
             mode="edit"
             initialPost={post}
+            initialImages={images}
           />
         </CardContent>
       </Card>

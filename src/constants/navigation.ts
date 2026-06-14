@@ -16,6 +16,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Pengajuan", href: "/admin/requests" },
   { label: "Informasi", href: "/admin/informasi" },
   { label: "Survei", href: "/admin/surveys" },
+  { label: "Website Publik", href: "/" },
 ];
 
 export const staffNavItems: NavItem[] = [
@@ -23,4 +24,5 @@ export const staffNavItems: NavItem[] = [
   { label: "Pengajuan", href: "/staff/requests" },
   { label: "Informasi", href: "/staff/informasi" },
   { label: "Survei", href: "/staff/surveys" },
+  { label: "Website Publik", href: "/" },
 ];

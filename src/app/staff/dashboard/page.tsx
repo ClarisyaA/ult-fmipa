@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -54,14 +57,19 @@ export default async function StaffDashboardPage() {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Dashboard Staff
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ringkasan agregat read-only untuk monitoring layanan. Belum ada auth
-          atau role filtering.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">
+            Dashboard Staff
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ringkasan agregat read-only untuk monitoring layanan. Belum ada auth
+            atau role filtering.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/">Lihat Website Publik</Link>
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">

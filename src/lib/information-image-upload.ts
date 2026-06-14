@@ -1,0 +1,97 @@
+import { randomUUID } from "crypto";
+import { mkdir, rm, writeFile } from "fs/promises";
+import path from "path";
+
+export type SavedInformationImageMetadata = {
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  sizeBytes: number;
+  storagePath: string;
+};
+
+const informationImageDir = path.join(process.cwd(), "storage", "information");
+const maxImageSizeBytes = 2 * 1024 * 1024;
+const allowedMimeTypes = new Set(["image/webp", "image/png", "image/jpeg"]);
+const allowedExtensions = new Set([".webp", ".png", ".jpg", ".jpeg"]);
+const extensionByMimeType: Record<string, string> = {
+  "image/webp": ".webp",
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+};
+
+export class InformationImageUploadError extends Error {
+  statusCode = 400;
+}
+
+function sanitizeFilename(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+}
+
+function getExtension(filename: string) {
+  return path.extname(filename).toLowerCase();
+}
+
+export function validateInformationImage(file: File) {
+  if (!file || file.size === 0) {
+    throw new InformationImageUploadError("Gambar informasi tidak ditemukan.");
+  }
+
+  if (file.size > maxImageSizeBytes) {
+    throw new InformationImageUploadError(
+      `Gambar ${file.name} melebihi 2 MB.`
+    );
+  }
+
+  if (
+    !allowedMimeTypes.has(file.type) ||
+    !allowedExtensions.has(getExtension(file.name))
+  ) {
+    throw new InformationImageUploadError(
+      `Format gambar ${file.name} tidak didukung.`
+    );
+  }
+}
+
+export async function saveInformationImage(
+  file: File
+): Promise<SavedInformationImageMetadata> {
+  validateInformationImage(file);
+  await mkdir(informationImageDir, { recursive: true });
+
+  const originalName = sanitizeFilename(file.name || "gambar-informasi");
+  const extension = extensionByMimeType[file.type] ?? getExtension(originalName);
+  const storedName = `${randomUUID()}${extension}`;
+  const absolutePath = path.join(informationImageDir, storedName);
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  await writeFile(absolutePath, buffer);
+
+  return {
+    originalName,
+    storedName,
+    mimeType: file.type,
+    sizeBytes: file.size,
+    storagePath: path.join("storage", "information", storedName),
+  };
+}
+
+export async function deleteInformationImageFile(storagePath: string) {
+  const storageRoot = path.resolve(process.cwd(), "storage", "information");
+  const storedName = path.basename(storagePath);
+
+  if (!storedName) {
+    return;
+  }
+
+  const absolutePath = path.join(storageRoot, storedName);
+
+  if (
+    absolutePath === storageRoot ||
+    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
+  ) {
+    return;
+  }
+
+  await rm(absolutePath, { force: true });
+}

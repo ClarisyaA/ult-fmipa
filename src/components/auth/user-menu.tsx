@@ -22,10 +22,20 @@ export function UserMenu() {
   }, []);
 
   if (!session?.user) {
-    return null;
+    return (
+      <Button asChild variant="outline" size="sm">
+        <Link href="/login">Masuk</Link>
+      </Button>
+    );
   }
 
   const roleLabel = roleLabels[session.user.role];
+  const shortcut =
+    session.user.role === "admin"
+      ? { label: "Dashboard Admin", href: "/admin/dashboard" }
+      : session.user.role === "staff"
+        ? { label: "Dashboard Staff", href: "/staff/dashboard" }
+        : { label: "Riwayat Saya", href: "/mahasiswa/riwayat" };
 
   return (
     <div className="flex items-center gap-3">
@@ -33,11 +43,9 @@ export function UserMenu() {
         <p className="font-medium">{session.user.name ?? session.user.email}</p>
         <p className="text-muted-foreground">Aktif sebagai {roleLabel}</p>
       </div>
-      {session.user.role === "student" ? (
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/mahasiswa/riwayat">Riwayat Pengajuan</Link>
-        </Button>
-      ) : null}
+      <Button asChild variant="ghost" size="sm">
+        <Link href={shortcut.href}>{shortcut.label}</Link>
+      </Button>
       <Button
         type="button"
         variant="outline"

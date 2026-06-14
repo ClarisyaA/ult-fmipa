@@ -1,272 +1,755 @@
 # ULT FMIPA Unpad
 
-Website ULT FMIPA Unpad adalah aplikasi layanan berbasis Next.js App Router untuk kebutuhan halaman publik, survei, serta dashboard admin dan staff.
+Website ULT SBAK/FMIPA Unpad adalah revitalisasi aplikasi layanan ULT berbasis
+Next.js App Router. Aplikasi ini memakai database legacy MariaDB `fmipa_sbpk`
+untuk data layanan lama, lalu menambahkan tabel support non-legacy untuk
+lampiran, survei kepuasan, dan informasi/pengumuman.
 
-## Stack
+README ini ditulis sebagai handout praktis untuk frontend developer dan anggota
+tim yang perlu menjalankan, memahami route, dan memakai API aplikasi.
 
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- shadcn/ui
-- Prisma 7
-- MariaDB
-- Docker Compose
-- Adminer
+## Tech Stack
 
-Package manager yang digunakan: `pnpm`.
+| Area | Teknologi |
+| --- | --- |
+| Framework | Next.js 16 App Router |
+| UI | React 19, TypeScript, Tailwind CSS 4, shadcn/ui, lucide-react |
+| Auth | NextAuth Credentials Provider untuk development, PAUS OAuth disiapkan |
+| Database | MariaDB/MySQL legacy `fmipa_sbpk` |
+| ORM/DB Client | Prisma 7 dengan raw SQL untuk beberapa tabel support |
+| Local infra | Docker Compose, Adminer |
+| Testing/checks | `pnpm typecheck`, `pnpm lint`, `pnpm build`; Playwright dapat ditambahkan untuk E2E |
 
-## Requirements
+Package manager: `pnpm`.
 
-Pastikan tools berikut sudah terpasang:
+## Core Features
+
+- Katalog layanan publik ULT FMIPA.
+- Pengajuan layanan oleh mahasiswa.
+- Upload lampiran layanan: maksimal 3 file, PDF/JPG/PNG, 5 MB per file.
+- Riwayat pengajuan mahasiswa.
+- Dashboard admin/staff.
+- List, detail, update status, dan delete pengajuan untuk admin.
+- List, detail, dan update status pengajuan untuk staff.
+- Survei kepuasan layanan untuk request yang selesai/diambil/dikirim.
+- Ringkasan survei admin/staff.
+- CRUD informasi/pengumuman untuk admin dan staff.
+- Galeri gambar informasi: maksimal 5 gambar, WebP/PNG/JPG/JPEG, 2 MB per gambar.
+- Status informasi: draft, published, archived, aktif/non-aktif, unggulan, dan jadwal tayang.
+
+## User Roles
+
+| Role | Akses utama |
+| --- | --- |
+| Guest | Halaman publik, katalog layanan, informasi, login |
+| Student/Mahasiswa | Ajukan layanan, riwayat sendiri, lampiran sendiri, survei untuk request sendiri |
+| Staff | Dashboard staff, request list/detail, update status request, CRUD informasi, summary survei |
+| Admin | Semua akses staff plus delete pengajuan layanan dan dashboard admin |
+
+Mahasiswa tidak boleh mengirim NPM manual untuk riwayat/survei. NPM selalu
+dibaca dari session. Admin/staff tidak boleh melihat data master mahasiswa/alumni
+mentah di UI.
+
+## Local Development Setup
+
+Requirements:
 
 - Node.js 22 LTS
 - pnpm
 - Docker Desktop
 - Git
 
-## Setup Lokal Windows / PowerShell
-
-1. Clone repository.
-
 ```powershell
 git clone <repo-url>
 cd ult-fmipa
-```
-
-2. Checkout branch `dev`.
-
-```powershell
 git checkout dev
-```
-
-3. Install dependency.
-
-```powershell
 pnpm install
-```
-
-4. Buat file environment lokal dari contoh yang sudah tersedia.
-
-```powershell
 Copy-Item .env.example .env
+docker compose up -d
+pnpm prisma generate
+pnpm dev
 ```
 
-Isi atau sesuaikan nilai di `.env` jika diperlukan. File `.env` bersifat lokal dan tidak boleh di-commit.
+Aplikasi: <http://localhost:3000>
 
-5. Jalankan database lokal dan Adminer.
+Useful checks:
 
 ```powershell
-docker compose up -d
+pnpm typecheck
+pnpm lint
+pnpm build
 ```
 
-Service database lokal:
+## Environment Variables
 
-- Container MariaDB: `ult-fmipa-db`
-- Database legacy: `fmipa_sbpk`
-- Host port: `13306`
-- Container port: `3306`
-- Adminer: <http://localhost:8081>
+Gunakan `.env.example` sebagai template. Jangan commit `.env` atau secret asli.
 
-6. Import SQL legacy hanya jika developer memiliki file `fmipa_sbpk.sql` secara lokal.
+| Variable | Keterangan |
+| --- | --- |
+| `DATABASE_URL` | URL koneksi Prisma ke MariaDB lokal |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Konfigurasi database lokal |
+| `NEXTAUTH_URL` | URL aplikasi, lokal biasanya `http://localhost:3000` |
+| `NEXTAUTH_SECRET` | Secret NextAuth lokal, isi dengan nilai development |
+| `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` | Credential admin development |
+| `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` | Credential staff development |
+| `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD` | Credential mahasiswa development |
+| `DEV_STUDENT_NAME`, `DEV_STUDENT_NPM`, `DEV_STUDENT_PHONE` | Profil mahasiswa development |
+| `PAUS_MODE` | `modern` atau `legacy`; saat ini PAUS belum diaktifkan untuk production |
+| `PAUS_CLIENT_ID`, `PAUS_CLIENT_SECRET` | Placeholder OAuth PAUS, jangan hardcode |
+| `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Endpoint PAUS |
+| `PAUS_LEGACY_LOGIN_URL`, `PAUS_BRIDGE_SECRET`, `PAUS_BRIDGE_TOKEN_TTL_SECONDS` | Bridge PAUS legacy untuk testing |
 
-Letakkan file dump di:
+## Database Setup
+
+Docker Compose menyediakan MariaDB dan Adminer.
+
+| Item | Nilai |
+| --- | --- |
+| MariaDB container | `ult-fmipa-db` |
+| Database | `fmipa_sbpk` |
+| Local DB port | `13306` |
+| Container DB port | `3306` |
+| User | `ult_user` |
+| Password | `ult_password` |
+| Adminer | <http://localhost:8081> |
+
+Adminer login:
 
 ```text
-database\fmipa_sbpk.sql
+System: MySQL / MariaDB
+Server: db
+Username: ult_user
+Password: ult_password
+Database: fmipa_sbpk
 ```
 
-Lalu jalankan:
+Jika memiliki dump legacy lokal, letakkan di `database\fmipa_sbpk.sql`, lalu:
 
 ```powershell
 cmd /c "docker exec -i ult-fmipa-db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
 ```
 
-Jika tidak memiliki dump SQL, lewati langkah import dan minta file database melalui kanal internal tim. File dump bersifat sensitif dan tidak boleh masuk repository.
+File dump bersifat sensitif dan tidak boleh masuk repository.
 
-7. Buat tabel support aplikasi non-legacy untuk survei layanan.
+## Support Table Migrations
 
-```powershell
-docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database/migrations/002_create_ult_service_surveys.sql
-```
+Jangan ubah SQL dump legacy. Tabel support aplikasi dibuat terpisah.
 
-8. Buat tabel support aplikasi non-legacy untuk informasi/pengumuman.
+Attachment table `ult_request_attachments` berada di Prisma migration:
 
 ```powershell
-docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database/migrations/003_create_ult_information_posts.sql
+pnpm prisma migrate deploy
 ```
 
-9. Tarik schema Prisma dari database legacy.
+Custom support tables di `database/migrations` dijalankan dengan command
+PowerShell-safe berikut:
 
 ```powershell
-pnpm prisma db pull
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\002_create_ult_service_surveys.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\005_create_ult_information_post_images.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
 ```
 
-Schema Prisma dihasilkan dari introspeksi database legacy. Jangan edit `prisma/schema.prisma` sembarangan tanpa koordinasi.
-
-10. Generate Prisma Client.
+Setelah database siap:
 
 ```powershell
 pnpm prisma generate
 ```
 
-11. Jalankan development server.
+## Running the Project
 
 ```powershell
+docker compose up -d
 pnpm dev
 ```
 
-Aplikasi dapat dibuka di <http://localhost:3000>.
+Quality checks:
 
-## Adminer
+```powershell
+pnpm typecheck
+pnpm lint
+pnpm build
+```
 
-Adminer dapat digunakan untuk inspeksi database lokal:
+## Development Auth Accounts
 
-- URL: <http://localhost:8081>
-- System: `MySQL / MariaDB`
-- Server: `db`
-- Username: `ult_user`
-- Password: `ult_password`
-- Database: `fmipa_sbpk`
+Credential development dibaca dari `.env`.
 
-Jika Prisma Studio mengalami metadata error karena struktur database legacy, Prisma Studio boleh dilewati. Gunakan Adminer untuk inspeksi tabel dan data.
+| Role | Variable |
+| --- | --- |
+| Admin | `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` |
+| Staff | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` |
+| Student | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`, `DEV_STUDENT_NPM` |
 
-## PAUS OAuth
+## Folder Structure
 
-Autentikasi production disiapkan menggunakan PAUS OAuth Unpad. Untuk saat ini, login lokal tetap menggunakan NextAuth Credentials Provider khusus development untuk role `admin`, `staff`, dan `student`.
+| Path | Keterangan |
+| --- | --- |
+| `src/app/(public)` | Halaman publik: beranda, layanan, informasi, survei |
+| `src/app/admin` | Dashboard, request, informasi, survei admin |
+| `src/app/staff` | Dashboard, request, informasi, survei staff |
+| `src/app/mahasiswa` | Riwayat pengajuan mahasiswa |
+| `src/app/api` | Route handlers API App Router |
+| `src/components` | Komponen UI, layout, request, service, informasi, survey |
+| `src/lib` | Helper auth, legacy request, upload, survey, informasi, Prisma |
+| `src/types` | TypeScript types shared |
+| `src/constants` | Navigasi dan konstanta UI |
+| `prisma` | Prisma schema/config dan migration attachment |
+| `database/migrations` | SQL support table non-legacy |
+| `storage/uploads` | File lampiran layanan lokal, ignored by git |
+| `storage/information` | File gambar informasi lokal, ignored by git |
 
-PAUS OAuth belum aktif secara default di development. Provider PAUS hanya aktif jika `PAUS_CLIENT_ID` dan `PAUS_CLIENT_SECRET` tersedia. Jangan hardcode client ID atau client secret di source code.
+## Frontend Route Map
 
-Implementasi NextAuth memakai callback provider `paus`, sehingga redirect URI berbeda dari aplikasi PHP legacy. Jika client PAUS lama hanya terdaftar untuk redirect URI PHP, login NextAuth dapat gagal dengan `invalid_client`. Minta Unpad mendaftarkan callback URL NextAuth berikut sebelum production login diaktifkan.
+### Public
 
-Environment yang disiapkan di `.env.example`:
+| Route | Keterangan |
+| --- | --- |
+| `/` | Beranda |
+| `/profil` | Profil |
+| `/layanan` | Katalog layanan |
+| `/layanan/[slug]` | Detail layanan |
+| `/layanan/[slug]/ajukan` | Form pengajuan layanan, student-only |
+| `/informasi` | Daftar informasi published, aktif, dan dalam jadwal tayang |
+| `/informasi/[slug]` | Detail informasi publik |
+| `/survei` | Entry page survei |
+| `/login` | Login development credentials dan PAUS placeholder |
 
-- `PAUS_CLIENT_ID`
-- `PAUS_CLIENT_SECRET`
-- `PAUS_AUTHORIZATION_URL`
-- `PAUS_TOKEN_URL`
-- `PAUS_USERINFO_URL`
-- `PAUS_SIGN_OUT_URL`
+### Student
 
-Callback URL lokal:
+| Route | Keterangan |
+| --- | --- |
+| `/mahasiswa/riwayat` | Riwayat pengajuan milik session mahasiswa |
+| `/mahasiswa/riwayat/[serviceSlug]/[id]` | Detail pengajuan milik mahasiswa |
+| `/survei` | Arahan survei; survei juga tersedia dari request selesai |
+
+### Staff
+
+| Route | Keterangan |
+| --- | --- |
+| `/staff/dashboard` | Dashboard agregat staff |
+| `/staff/requests` | List pengajuan dan aksi status |
+| `/staff/requests/[serviceSlug]/[id]` | Detail pengajuan |
+| `/staff/informasi` | Kelola informasi |
+| `/staff/informasi/tambah` | Tambah informasi |
+| `/staff/informasi/[id]/edit` | Edit informasi |
+| `/staff/surveys` | Summary survei |
+
+### Admin
+
+| Route | Keterangan |
+| --- | --- |
+| `/admin/dashboard` | Dashboard agregat admin |
+| `/admin/requests` | List pengajuan, aksi status, dan hapus request |
+| `/admin/requests/[serviceSlug]/[id]` | Detail pengajuan dan hapus request |
+| `/admin/informasi` | Kelola informasi |
+| `/admin/informasi/tambah` | Tambah informasi |
+| `/admin/informasi/[id]/edit` | Edit informasi |
+| `/admin/surveys` | Summary survei |
+
+## API Documentation
+
+Semua API berada di `src/app/api`. Response error umum:
+
+```json
+{ "error": "Pesan error" }
+```
+
+### Auth
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET/POST` | `/api/auth/[...nextauth]` | Public | NextAuth credentials dan PAUS provider |
+| `GET` | `/api/health` | Public | Health check |
+
+### Services
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/services` | Public | Daftar layanan publik |
+| `GET` | `/api/services/[slug]` | Public | Detail layanan |
+| `POST` | `/api/services/[slug]/requests` | Student | Buat pengajuan layanan |
+
+`POST /api/services/[slug]/requests` memakai `multipart/form-data`.
+NPM dan identitas student diambil dari session.
+
+FormData penting:
+
+```text
+attachments: File[]  // optional, append dengan key sama
+```
+
+Rules lampiran:
+
+- key FormData: `attachments`
+- maksimal 3 file
+- maksimal 5 MB per file
+- format: PDF, JPG/JPEG, PNG
+
+Contoh FE:
+
+```ts
+const formData = new FormData();
+formData.append("description", "Keperluan administrasi");
+files.forEach((file) => formData.append("attachments", file));
+
+await fetch("/api/services/kartu-prestasi-akademik/requests", {
+  method: "POST",
+  body: formData,
+});
+```
+
+Contoh response sukses:
+
+```json
+{
+  "data": {
+    "requestId": "123",
+    "attachmentCount": 2
+  },
+  "message": "Pengajuan layanan berhasil dikirim."
+}
+```
+
+Field FormData yang dibaca API pengajuan layanan:
+
+```text
+description
+email
+phone
+scholarshipName
+semester
+tahunAkademik
+namaOrangTua
+nipNrp
+pangkatGolongan
+instansi
+pengantar
+ditujukan
+dasarSuratNo
+dasarSuratPerihal
+dasarSuratTgl
+tempatLahir
+tanggalLahir
+tanggalLulus
+tglLulus
+ipk
+yudisium
+jumlahTranskrip
+jumlahIjazah
+jumlahTranslet
+```
+
+Kirim hanya field yang relevan untuk layanan yang dipilih.
+
+### Student Requests
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/student/requests` | Student | List request milik session mahasiswa |
+| `GET` | `/api/student/requests/[serviceSlug]/[id]` | Student | Detail request milik session mahasiswa |
+| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Survey untuk request tertentu |
+| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Upsert survey dari detail request |
+| `GET` | `/api/student/surveys/pending` | Student | Request selesai terbaru yang belum disurvei |
+| `GET` | `/api/student/surveys/requests` | Student | Daftar request yang eligible/tersurvei |
+| `POST` | `/api/student/surveys` | Student | Submit/update survey |
+
+Catatan FE:
+
+- Jangan kirim NPM dari client.
+- Student tidak dapat membuka request NPM lain.
+- Gunakan empty state saat list kosong.
+- `GET /api/student/requests` mengembalikan `{ data, pagination }`.
+
+### Admin Requests
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/summary` | Admin | Summary dashboard |
+| `GET` | `/api/admin/requests` | Admin | List request dengan filter query |
+| `GET` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Detail request |
+| `PATCH` | `/api/admin/requests/[serviceSlug]/[id]/status` | Admin | Update status request |
+| `DELETE` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Hapus request permanen |
+
+Payload status:
+
+```json
+{
+  "action": "process",
+  "staffName": "Admin ULT"
+}
+```
+
+Supported `action`:
+
+- `process` -> Proses
+- `complete` -> Selesai
+- `deliver` -> Diambil/Dikirim
+
+Delete request admin membersihkan metadata lampiran, file lokal lampiran,
+survey terkait jika ada, lalu row request legacy dari tabel whitelisted.
+
+Query params list admin:
+
+```text
+service=<serviceSlug>
+status=pending | inProgress | completed | delivered
+page=1
+limit=10
+```
+
+Response list admin/staff berbentuk:
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+```
+
+### Staff Requests
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/staff/summary` | Staff | Summary dashboard |
+| `GET` | `/api/staff/requests` | Staff | List request dengan filter query |
+| `GET` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Detail request |
+| `PATCH` | `/api/staff/requests/[serviceSlug]/[id]/status` | Staff | Update status request |
+| `DELETE` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Selalu 403; jangan dipakai FE |
+
+Staff dapat memproses, menyelesaikan, dan menandai diambil/dikirim untuk
+workflow yang didukung. Staff tidak dapat menghapus service request. Jika
+endpoint delete staff dipanggil, response adalah 403.
+
+Query params list staff sama seperti admin:
+
+```text
+service=<serviceSlug>
+status=pending | inProgress | completed | delivered
+page=1
+limit=10
+```
+
+### Attachments
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/attachments/[id]` | Admin/Staff/owning Student | Download/view lampiran |
+
+Catatan:
+
+- Path lokal tidak pernah diekspos ke client.
+- Admin/staff dapat membuka lampiran operasional.
+- Student hanya dapat membuka lampiran request miliknya sendiri.
+
+### Surveys
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/surveys/summary` | Admin | Summary survei |
+| `GET` | `/api/staff/surveys/summary` | Staff | Summary survei |
+| `GET` | `/api/student/surveys/pending` | Student | Pending survey modal |
+| `GET` | `/api/student/surveys/requests` | Student | Request eligible/submitted |
+| `POST` | `/api/student/surveys` | Student | Submit/update survey |
+| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Survey per request |
+| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Submit/update survey per request |
+
+Payload survey:
+
+```json
+{
+  "serviceSlug": "kartu-prestasi-akademik",
+  "requestId": "123",
+  "overallRating": 5,
+  "ratingTangibility": 5,
+  "ratingReliability": 5,
+  "ratingResponsiveness": 4,
+  "ratingAssurance": 5,
+  "ratingEmpathy": 5,
+  "comment": "Pelayanan cepat."
+}
+```
+
+Rules:
+
+- Rating integer 1 sampai 5.
+- `overallRating` wajib.
+- `comment` optional maksimal 500 karakter.
+- Survey hanya untuk request milik student dan status selesai/diambil/dikirim.
+
+### Information Posts
+
+Admin:
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/information` | Admin | List semua informasi |
+| `POST` | `/api/admin/information` | Admin | Buat informasi |
+| `GET` | `/api/admin/information/[id]` | Admin | Detail informasi |
+| `PATCH` | `/api/admin/information/[id]` | Admin | Update informasi |
+| `DELETE` | `/api/admin/information/[id]` | Admin | Hapus informasi |
+
+Staff:
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/staff/information` | Staff | List semua informasi |
+| `POST` | `/api/staff/information` | Staff | Buat informasi |
+| `GET` | `/api/staff/information/[id]` | Staff | Detail informasi |
+| `PATCH` | `/api/staff/information/[id]` | Staff | Update informasi |
+| `DELETE` | `/api/staff/information/[id]` | Staff | Hapus informasi |
+
+Information create/update mendukung JSON dan `multipart/form-data`. Gunakan
+FormData jika ada gambar.
+
+FormData fields:
+
+```text
+title
+category
+summary
+content
+status          // draft | published | archived
+featured        // true | false
+isActive        // true | false
+displayStartAt  // optional datetime-local
+displayEndAt    // optional datetime-local
+images          // File[], optional
+```
+
+Rules:
+
+- Slug dibuat otomatis dari `title`.
+- `title` wajib dan unik setelah normalisasi.
+- `content` wajib.
+- `archived`, non-active, dan scheduled-hidden tidak muncul di publik.
+- `displayEndAt` harus setelah `displayStartAt`.
+- gambar maksimal 5 per informasi.
+- gambar maksimal 2 MB per file.
+- format gambar: WebP, PNG, JPG/JPEG.
+- SVG tidak diizinkan.
+
+### Information Images
+
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/information/images/[imageId]` | Public if post visible, admin/staff for draft | Serve image aman |
+| `POST` | `/api/admin/information/[id]/images` | Admin | Tambah gambar |
+| `PATCH` | `/api/admin/information/[id]/images/[imageId]` | Admin | Update alt text |
+| `DELETE` | `/api/admin/information/[id]/images/[imageId]` | Admin | Hapus gambar |
+| `POST` | `/api/admin/information/[id]/images/[imageId]/cover` | Admin | Set cover |
+| `POST` | `/api/staff/information/[id]/images` | Staff | Tambah gambar |
+| `PATCH` | `/api/staff/information/[id]/images/[imageId]` | Staff | Update alt text |
+| `DELETE` | `/api/staff/information/[id]/images/[imageId]` | Staff | Hapus gambar |
+| `POST` | `/api/staff/information/[id]/images/[imageId]/cover` | Staff | Set cover |
+
+Public pages `/informasi` dan `/informasi/[slug]` memakai server helper dan
+route image aman. Storage path tidak diekspos.
+
+## Service Request Flow
+
+1. Student login.
+2. Student membuka `/layanan`.
+3. Student memilih layanan dan membuka `/layanan/[slug]`.
+4. Student membuka `/layanan/[slug]/ajukan`.
+5. Student submit form dan optional lampiran.
+6. Success diarahkan ke `/mahasiswa/riwayat`.
+7. Admin/staff memproses request dari dashboard request.
+8. Jika request selesai/diambil/dikirim, student dapat mengisi survei.
+
+## Attachment Upload Flow
+
+- FE wajib memakai `FormData`.
+- Append setiap file dengan key yang sama: `attachments`.
+- Jangan membaca hanya `files[0]`.
+- Tampilkan daftar file terpilih, ukuran, dan count.
+- Backend tetap memvalidasi jumlah, tipe, dan ukuran file.
+
+## Survey Flow
+
+- Survey hanya untuk request milik student.
+- Survey muncul untuk status selesai/diambil/dikirim.
+- Student dapat submit dan update survey.
+- Admin/staff melihat summary, rata-rata dimensi, komentar terbaru, dan breakdown layanan.
+
+## Information/Pengumuman Flow
+
+- Admin/staff membuat informasi dari `/admin/informasi/tambah` atau `/staff/informasi/tambah`.
+- Slug otomatis dari judul.
+- Editor dapat memilih draft/published/archived, aktif/non-aktif, unggulan, dan jadwal tayang.
+- Gambar dapat ditambah, dihapus, diberi alt text, dan dipilih sebagai cover.
+- Public hanya melihat informasi `published`, aktif, tidak archived, dan berada dalam jadwal tayang.
+
+## Admin/Staff Workflow
+
+Request table menampilkan tombol:
+
+```text
+Proses | Selesai | Diambil/Dikirim | Detail
+```
+
+Admin request table menambahkan:
+
+```text
+Hapus
+```
+
+Rules status:
+
+| Status saat ini | Aksi aktif |
+| --- | --- |
+| Menunggu | Proses |
+| Diproses | Selesai |
+| Selesai | Diambil/Dikirim |
+| Diambil/Dikirim | Tidak ada aksi status aktif |
+
+Untuk layanan yang workflow statusnya belum didukung, tombol status tetap
+terlihat tetapi disabled. Detail tetap aktif.
+
+## PAUS OAuth Status
+
+PAUS OAuth foundation sudah ada tetapi belum diaktifkan untuk production karena
+callback URI dan credential harus dikonfirmasi Unpad.
+
+Development saat ini memakai NextAuth Credentials Provider.
+
+Callback lokal yang harus didaftarkan untuk mode modern:
 
 ```text
 http://localhost:3000/api/auth/callback/paus
 ```
 
-Callback URL production harus didaftarkan dan dikonfirmasi dengan Unpad, misalnya:
-
-```text
-https://<domain-production>/api/auth/callback/paus
-```
-
-Mapping profile PAUS sementara disiapkan untuk membaca `nama`, `npm`, `nip`, dan `paus_id` dari atribut PAUS legacy. Jika `npm` tersedia, user diperlakukan sebagai mahasiswa. Jika `nip` tersedia tanpa `npm`, user diperlakukan sebagai staff.
-
-Token exchange mengikuti flow legacy PAUS: POST `application/x-www-form-urlencoded` ke token URL dengan `client_id`, `client_secret`, `grant_type=authorization_code`, `redirect_uri`, dan `code`. User info dibaca dari `PAUS_USERINFO_URL?access_token=...`.
-
-## PAUS OAuth Modes
-
-`PAUS_MODE` mendukung dua mode pengujian:
-
-- `modern`: login PAUS langsung melalui NextAuth provider `paus`.
-- `legacy`: user diarahkan ke flow login/callback PHP lama, lalu PHP redirect kembali ke aplikasi Next.js dengan signed bridge token.
-
-Mode modern membutuhkan callback URI baru yang terdaftar di PAUS:
-
-```text
-http://localhost:3000/api/auth/callback/paus
-```
-
-Untuk production, callback URI harus dikonfirmasi dengan Unpad:
+Callback production harus dikonfirmasi oleh Unpad:
 
 ```text
 https://<production-domain>/api/auth/callback/paus
 ```
 
-Mode legacy bridge bersifat sementara untuk development/testing. Callback PHP lama harus menyelesaikan OAuth PAUS seperti biasa, mengambil profile PAUS, membuat token HMAC SHA-256 singkat, lalu redirect ke:
+Jika PAUS lama hanya mengenali callback PHP legacy, login NextAuth dapat gagal
+dengan `invalid_client`. Jangan implementasikan PAUS lebih lanjut tanpa data
+client ID, secret, dan callback URI resmi.
 
-```text
-http://localhost:3000/auth/paus-bridge?token=<signed-token>
-```
+## Testing Checklist
 
-`PAUS_BRIDGE_SECRET` harus sama di PHP bridge dan Next.js. Jangan commit secret asli.
-
-Contoh konsep PHP bridge:
-
-```php
-<?php
-// Setelah callback PHP lama sukses:
-// 1. Tukar authorization code ke access token.
-// 2. Ambil profile dari https://paus.unpad.ac.id/api/?access_token=...
-// 3. Bentuk payload singkat.
-$payload = [
-  'name' => $profile['attributes']['nama']['attribute_value'] ?? null,
-  'npm' => $profile['attributes']['npm']['attribute_value'] ?? null,
-  'nip' => $profile['attributes']['nip']['attribute_value'] ?? null,
-  'pausId' => $profile['attributes']['paus_id']['attribute_value'] ?? null,
-  'email' => $profile['email'] ?? null,
-  'iat' => time(),
-  'exp' => time() + 120,
-];
-
-$payloadJson = json_encode($payload);
-$payloadPart = rtrim(strtr(base64_encode($payloadJson), '+/', '-_'), '=');
-$signature = hash_hmac('sha256', $payloadPart, getenv('PAUS_BRIDGE_SECRET'), true);
-$signaturePart = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
-$token = $payloadPart . '.' . $signaturePart;
-
-header('Location: http://localhost:3000/auth/paus-bridge?token=' . urlencode($token));
-exit;
-```
-
-## Perintah Berguna
+Minimal sebelum push:
 
 ```powershell
-pnpm dev
 pnpm typecheck
 pnpm lint
 pnpm build
-pnpm prisma generate
-pnpm prisma db pull
-docker compose up -d
-docker compose down
 ```
 
-## Workflow Git
+Manual smoke test:
 
-- `main` = branch stable
-- `dev` = branch integration
-- `feature/*` = branch untuk pengembangan fitur
+- Guest membuka `/`, `/layanan`, `/informasi`, `/survei`.
+- Student submit request tanpa lampiran.
+- Student submit request dengan 1-3 lampiran.
+- Student melihat `/mahasiswa/riwayat`.
+- Admin/staff membuka request list dan detail.
+- Admin/staff menjalankan Proses, Selesai, Diambil/Dikirim.
+- Admin menghapus request test.
+- Student mengisi survei untuk request selesai.
+- Admin/staff melihat survey summary.
+- Admin/staff membuat, edit, archive, restore, delete informasi.
+- Public hanya melihat informasi yang visible.
 
-Developer FE sebaiknya selalu membuat branch dari `dev`.
+## Git Workflow
 
-Contoh:
+- `main`: branch stable.
+- `dev`: branch integration.
+- `feature/*`: branch fitur.
+
+Alur umum:
 
 ```powershell
 git checkout dev
 git pull origin dev
 git checkout -b feature/nama-fitur
+pnpm typecheck
+pnpm lint
+pnpm build
 ```
 
-GitHub Actions CI sudah menjalankan `typecheck`, `lint`, dan `build`. Husky pre-push juga menjalankan pengecekan lokal sebelum push.
-
-## Overview Route
-
-- `/`
-- `/profil`
-- `/layanan`
-- `/informasi`
-- `/survei`
-- `/admin/dashboard`
-- `/staff/dashboard`
-- `/api/health`
-
-## Keamanan File Lokal
-
-Jangan commit file berikut:
+Jangan commit:
 
 - `.env`
 - `database/*.sql`
 - `database/*.zip`
+- `storage/uploads`
+- `storage/information`
 
-File `.env.example` sudah tersedia sebagai referensi konfigurasi environment yang aman untuk dibagikan.
+## Notes for FE Developers
+
+- Jangan panggil API admin/staff dari UI student.
+- Jangan kirim NPM manual untuk riwayat/survei student.
+- Gunakan `FormData` untuk upload file.
+- Gunakan JSON untuk update status dan submit survey.
+- Selalu handle empty state.
+- Selalu tampilkan konfirmasi sebelum aksi destructive.
+- Jangan tampilkan field teknis seperti `sourceTable` kepada user.
+- `serviceSlug` boleh dipakai internal route/link, tetapi label UI harus memakai nama layanan.
+- Jangan expose local storage path ke UI.
+- Jangan render raw HTML dari informasi.
+
+## Troubleshooting
+
+### Docker daemon tidak berjalan
+
+Jalankan Docker Desktop, lalu:
+
+```powershell
+docker compose up -d
+```
+
+### PowerShell error saat memakai `<` redirection
+
+Gunakan `cmd /c`:
+
+```powershell
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
+```
+
+### Prisma client model support table undefined
+
+Beberapa support table sengaja diakses dengan raw SQL karena database legacy
+diintrospeksi. Jalankan migration support table, lalu:
+
+```powershell
+pnpm prisma generate
+```
+
+### Missing custom support table migration
+
+Gejala umum: halaman survei/informasi kosong atau warning table belum tersedia.
+Jalankan SQL di `database/migrations` sesuai bagian Support Table Migrations.
+
+### PAUS `invalid_client`
+
+Callback URI atau credential PAUS belum cocok dengan NextAuth callback:
+
+```text
+http://localhost:3000/api/auth/callback/paus
+```
+
+Minta Unpad mengonfirmasi client ID, client secret, dan callback URI.
+
+### Port `13306` conflict
+
+Ubah mapping port di `docker-compose.yml` atau hentikan service lokal lain yang
+memakai port tersebut.
+
+### Build gagal karena halaman membaca database
+
+Pastikan container database hidup dan migration support table sudah dijalankan.
+Beberapa halaman memakai data DB saat build. Jalankan:
+
+```powershell
+docker compose up -d
+pnpm build
+```

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CalendarDays } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getInformationPostCoverImage } from "@/lib/information-post-images";
 import { getPublishedInformationPosts } from "@/lib/information-posts";
 
 function formatDate(value: string | null) {
@@ -26,6 +28,12 @@ function formatDate(value: string | null) {
 
 export default async function InformasiPage() {
   const posts = await getPublishedInformationPosts();
+  const postsWithCoverImages = await Promise.all(
+    posts.map(async (post) => ({
+      post,
+      coverImage: await getInformationPostCoverImage(post.id),
+    }))
+  );
 
   return (
     <>
@@ -52,8 +60,17 @@ export default async function InformasiPage() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {posts.map((post) => (
+            {postsWithCoverImages.map(({ post, coverImage }) => (
               <Card key={post.id}>
+                {coverImage ? (
+                  <Image
+                    src={`/api/information/images/${coverImage.id}`}
+                    alt={coverImage.altText ?? coverImage.originalName}
+                    width={640}
+                    height={360}
+                    className="aspect-video w-full object-cover"
+                  />
+                ) : null}
                 <CardHeader>
                   <div className="flex flex-wrap items-center gap-2">
                     {post.category ? (

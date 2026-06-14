@@ -1,10 +1,12 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import {
   normalizeInformationTitle,
   slugifyInformationTitle,
 } from "@/lib/slug";
 
-export type InformationPostStatus = "draft" | "published";
+export type InformationPostStatus = "draft" | "published" | "archived";
 
 export type InformationPost = {
   id: string;
@@ -14,6 +16,10 @@ export type InformationPost = {
   summary: string | null;
   content: string;
   status: InformationPostStatus;
+  featured: boolean;
+  isActive: boolean;
+  displayStartAt: string | null;
+  displayEndAt: string | null;
   publishedAt: string | null;
   createdBy: string | null;
   updatedBy: string | null;
@@ -28,6 +34,10 @@ export type InformationPostInput = {
   summary?: string | null;
   content: string;
   status: InformationPostStatus;
+  featured?: boolean | string | null;
+  isActive?: boolean | string | null;
+  displayStartAt?: string | null;
+  displayEndAt?: string | null;
   actor?: string | null;
 };
 
@@ -39,11 +49,22 @@ type InformationPostRecord = {
   SUMMARY: string | null;
   CONTENT: string;
   STATUS: InformationPostStatus;
+  IS_FEATURED: boolean | number;
+  IS_ACTIVE: boolean | number;
+  DISPLAY_START_AT: Date | string | null;
+  DISPLAY_END_AT: Date | string | null;
   PUBLISHED_AT: Date | string | null;
   CREATED_BY: string | null;
   UPDATED_BY: string | null;
   CREATED_AT: Date | string;
   UPDATED_AT: Date | string | null;
+};
+
+type InformationTableCapabilities = {
+  hasFeatured: boolean;
+  hasIsActive: boolean;
+  hasDisplayStartAt: boolean;
+  hasDisplayEndAt: boolean;
 };
 
 export class InformationPostValidationError extends Error {
@@ -78,6 +99,10 @@ function toPost(record: InformationPostRecord): InformationPost {
     summary: record.SUMMARY,
     content: record.CONTENT,
     status: record.STATUS,
+    featured: Boolean(record.IS_FEATURED),
+    isActive: Boolean(record.IS_ACTIVE),
+    displayStartAt: toIso(record.DISPLAY_START_AT),
+    displayEndAt: toIso(record.DISPLAY_END_AT),
     publishedAt: toIso(record.PUBLISHED_AT),
     createdBy: record.CREATED_BY,
     updatedBy: record.UPDATED_BY,
@@ -130,6 +155,50 @@ async function hasInformationTable() {
   return false;
 }
 
+async function getInformationTableCapabilities(): Promise<InformationTableCapabilities> {
+  const rows = await prisma.$queryRaw<Array<{ COLUMN_NAME: string }>>`
+    SELECT COLUMN_NAME
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'ult_information_posts'
+      AND COLUMN_NAME IN (
+        'IS_FEATURED',
+        'IS_ACTIVE',
+        'DISPLAY_START_AT',
+        'DISPLAY_END_AT'
+      )
+  `;
+  const columns = new Set(rows.map((row) => row.COLUMN_NAME));
+
+  return {
+    hasFeatured: columns.has("IS_FEATURED"),
+    hasIsActive: columns.has("IS_ACTIVE"),
+    hasDisplayStartAt: columns.has("DISPLAY_START_AT"),
+    hasDisplayEndAt: columns.has("DISPLAY_END_AT"),
+  };
+}
+
+function informationPostSelect(caps: InformationTableCapabilities) {
+  return Prisma.sql`
+    ID,
+    TITLE,
+    SLUG,
+    CATEGORY,
+    SUMMARY,
+    CONTENT,
+    STATUS,
+    ${caps.hasFeatured ? Prisma.sql`IS_FEATURED` : Prisma.sql`0`} AS IS_FEATURED,
+    ${caps.hasIsActive ? Prisma.sql`IS_ACTIVE` : Prisma.sql`1`} AS IS_ACTIVE,
+    ${caps.hasDisplayStartAt ? Prisma.sql`DISPLAY_START_AT` : Prisma.sql`NULL`} AS DISPLAY_START_AT,
+    ${caps.hasDisplayEndAt ? Prisma.sql`DISPLAY_END_AT` : Prisma.sql`NULL`} AS DISPLAY_END_AT,
+    PUBLISHED_AT,
+    CREATED_BY,
+    UPDATED_BY,
+    CREATED_AT,
+    UPDATED_AT
+  `;
+}
+
 function normalizeOptionalText(value: string | null | undefined, max: number) {
   const trimmed = value?.trim() ?? "";
 
@@ -147,11 +216,39 @@ function assertValidId(id: string) {
 }
 
 function assertValidStatus(status: string): asserts status is InformationPostStatus {
-  if (status !== "draft" && status !== "published") {
+  if (status !== "draft" && status !== "published" && status !== "archived") {
     throw new InformationPostValidationError(
-      "Status informasi harus draft atau published."
+      "Status informasi harus draft, published, atau archived."
     );
   }
+}
+
+function normalizeBoolean(value: boolean | string | null | undefined, fallback: boolean) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value === "true" || value === "1" || value === "on";
+  }
+
+  return fallback;
+}
+
+function normalizeOptionalDate(value: string | null | undefined, label: string) {
+  const trimmed = value?.trim() ?? "";
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const date = new Date(trimmed);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new InformationPostValidationError(`${label} tidak valid.`);
+  }
+
+  return date;
 }
 
 async function slugExists(slug: string, exceptId?: string) {
@@ -175,7 +272,9 @@ async function assertUniqueSlug(slug: string, exceptId?: string) {
 }
 
 async function assertUniqueTitle(normalizedTitle: string, exceptId?: string) {
-  const rows = await prisma.$queryRaw<Array<{ ID: bigint | number | string; TITLE: string }>>`
+  const rows = await prisma.$queryRaw<
+    Array<{ ID: bigint | number | string; TITLE: string }>
+  >`
     SELECT ID, TITLE
     FROM ult_information_posts
   `;
@@ -218,6 +317,15 @@ async function normalizeInput(
 
   assertValidStatus(input.status);
 
+  const displayStartAt = normalizeOptionalDate(input.displayStartAt, "Mulai tampil");
+  const displayEndAt = normalizeOptionalDate(input.displayEndAt, "Selesai tampil");
+
+  if (displayStartAt && displayEndAt && displayEndAt <= displayStartAt) {
+    throw new InformationPostValidationError(
+      "Selesai tampil harus setelah mulai tampil."
+    );
+  }
+
   const normalizedTitle = normalizeInformationTitle(title);
   await assertUniqueTitle(normalizedTitle, options?.id);
 
@@ -243,8 +351,30 @@ async function normalizeInput(
     summary: normalizeOptionalText(input.summary, 300),
     content,
     status: input.status,
+    featured: normalizeBoolean(input.featured, existing?.featured ?? false),
+    isActive: normalizeBoolean(input.isActive, existing?.isActive ?? true),
+    displayStartAt,
+    displayEndAt,
     actor: input.actor?.trim() || null,
   };
+}
+
+export function isInformationPostCurrentlyVisible(post: InformationPost) {
+  const now = Date.now();
+
+  if (post.status !== "published" || !post.isActive) {
+    return false;
+  }
+
+  if (post.displayStartAt && new Date(post.displayStartAt).getTime() > now) {
+    return false;
+  }
+
+  if (post.displayEndAt && new Date(post.displayEndAt).getTime() < now) {
+    return false;
+  }
+
+  return true;
 }
 
 export async function getPublishedInformationPosts() {
@@ -253,11 +383,19 @@ export async function getPublishedInformationPosts() {
   }
 
   try {
+    const caps = await getInformationTableCapabilities();
     const rows = await prisma.$queryRaw<InformationPostRecord[]>`
-      SELECT *
+      SELECT ${informationPostSelect(caps)}
       FROM ult_information_posts
       WHERE STATUS = 'published'
-      ORDER BY PUBLISHED_AT DESC, CREATED_AT DESC, ID DESC
+        ${caps.hasIsActive ? Prisma.sql`AND IS_ACTIVE = 1` : Prisma.empty}
+        ${caps.hasDisplayStartAt ? Prisma.sql`AND (DISPLAY_START_AT IS NULL OR DISPLAY_START_AT <= NOW(3))` : Prisma.empty}
+        ${caps.hasDisplayEndAt ? Prisma.sql`AND (DISPLAY_END_AT IS NULL OR DISPLAY_END_AT >= NOW(3))` : Prisma.empty}
+      ORDER BY
+        ${caps.hasFeatured ? Prisma.sql`IS_FEATURED DESC,` : Prisma.empty}
+        PUBLISHED_AT DESC,
+        CREATED_AT DESC,
+        ID DESC
     `;
 
     return rows.map(toPost);
@@ -273,11 +411,15 @@ export async function getPublishedInformationPostBySlug(slug: string) {
   }
 
   try {
+    const caps = await getInformationTableCapabilities();
     const rows = await prisma.$queryRaw<InformationPostRecord[]>`
-      SELECT *
+      SELECT ${informationPostSelect(caps)}
       FROM ult_information_posts
       WHERE SLUG = ${slug}
         AND STATUS = 'published'
+        ${caps.hasIsActive ? Prisma.sql`AND IS_ACTIVE = 1` : Prisma.empty}
+        ${caps.hasDisplayStartAt ? Prisma.sql`AND (DISPLAY_START_AT IS NULL OR DISPLAY_START_AT <= NOW(3))` : Prisma.empty}
+        ${caps.hasDisplayEndAt ? Prisma.sql`AND (DISPLAY_END_AT IS NULL OR DISPLAY_END_AT >= NOW(3))` : Prisma.empty}
       LIMIT 1
     `;
 
@@ -294,8 +436,9 @@ export async function getAdminInformationPosts() {
   }
 
   try {
+    const caps = await getInformationTableCapabilities();
     const rows = await prisma.$queryRaw<InformationPostRecord[]>`
-      SELECT *
+      SELECT ${informationPostSelect(caps)}
       FROM ult_information_posts
       ORDER BY CREATED_AT DESC, ID DESC
     `;
@@ -315,8 +458,9 @@ export async function getInformationPostById(id: string) {
   }
 
   try {
+    const caps = await getInformationTableCapabilities();
     const rows = await prisma.$queryRaw<InformationPostRecord[]>`
-      SELECT *
+      SELECT ${informationPostSelect(caps)}
       FROM ult_information_posts
       WHERE ID = ${BigInt(id)}
       LIMIT 1
@@ -335,29 +479,67 @@ export async function createInformationPost(input: InformationPostInput) {
   }
 
   const data = await normalizeInput(input);
+  const caps = await getInformationTableCapabilities();
 
   try {
-    await prisma.$executeRaw`
-      INSERT INTO ult_information_posts (
-        TITLE,
-        SLUG,
-        CATEGORY,
-        SUMMARY,
-        CONTENT,
-        STATUS,
-        PUBLISHED_AT,
-        CREATED_BY
-      ) VALUES (
-        ${data.title},
-        ${data.slug},
-        ${data.category},
-        ${data.summary},
-        ${data.content},
-        ${data.status},
-        ${data.status === "published" ? new Date() : null},
-        ${data.actor}
-      )
-    `;
+    if (
+      caps.hasFeatured &&
+      caps.hasIsActive &&
+      caps.hasDisplayStartAt &&
+      caps.hasDisplayEndAt
+    ) {
+      await prisma.$executeRaw`
+        INSERT INTO ult_information_posts (
+          TITLE,
+          SLUG,
+          CATEGORY,
+          SUMMARY,
+          CONTENT,
+          STATUS,
+          IS_FEATURED,
+          IS_ACTIVE,
+          DISPLAY_START_AT,
+          DISPLAY_END_AT,
+          PUBLISHED_AT,
+          CREATED_BY
+        ) VALUES (
+          ${data.title},
+          ${data.slug},
+          ${data.category},
+          ${data.summary},
+          ${data.content},
+          ${data.status},
+          ${data.featured ? 1 : 0},
+          ${data.isActive ? 1 : 0},
+          ${data.displayStartAt},
+          ${data.displayEndAt},
+          ${data.status === "published" ? new Date() : null},
+          ${data.actor}
+        )
+      `;
+    } else {
+      await prisma.$executeRaw`
+        INSERT INTO ult_information_posts (
+          TITLE,
+          SLUG,
+          CATEGORY,
+          SUMMARY,
+          CONTENT,
+          STATUS,
+          PUBLISHED_AT,
+          CREATED_BY
+        ) VALUES (
+          ${data.title},
+          ${data.slug},
+          ${data.category},
+          ${data.summary},
+          ${data.content},
+          ${data.status},
+          ${data.status === "published" ? new Date() : null},
+          ${data.actor}
+        )
+      `;
+    }
 
     const rows = await prisma.$queryRaw<Array<{ ID: bigint | number | string }>>`
       SELECT ID
@@ -397,6 +579,7 @@ export async function updateInformationPost(
     id,
     existing,
   });
+  const caps = await getInformationTableCapabilities();
   const publishedAt =
     data.status === "published"
       ? existing.publishedAt
@@ -405,21 +588,48 @@ export async function updateInformationPost(
       : null;
 
   try {
-    await prisma.$executeRaw`
-      UPDATE ult_information_posts
-      SET
-        TITLE = ${data.title},
-        SLUG = ${data.slug},
-        CATEGORY = ${data.category},
-        SUMMARY = ${data.summary},
-        CONTENT = ${data.content},
-        STATUS = ${data.status},
-        PUBLISHED_AT = ${publishedAt},
-        UPDATED_BY = ${data.actor},
-        UPDATED_AT = CURRENT_TIMESTAMP(3)
-      WHERE ID = ${BigInt(id)}
-      LIMIT 1
-    `;
+    if (
+      caps.hasFeatured &&
+      caps.hasIsActive &&
+      caps.hasDisplayStartAt &&
+      caps.hasDisplayEndAt
+    ) {
+      await prisma.$executeRaw`
+        UPDATE ult_information_posts
+        SET
+          TITLE = ${data.title},
+          SLUG = ${data.slug},
+          CATEGORY = ${data.category},
+          SUMMARY = ${data.summary},
+          CONTENT = ${data.content},
+          STATUS = ${data.status},
+          IS_FEATURED = ${data.featured ? 1 : 0},
+          IS_ACTIVE = ${data.isActive ? 1 : 0},
+          DISPLAY_START_AT = ${data.displayStartAt},
+          DISPLAY_END_AT = ${data.displayEndAt},
+          PUBLISHED_AT = ${publishedAt},
+          UPDATED_BY = ${data.actor},
+          UPDATED_AT = CURRENT_TIMESTAMP(3)
+        WHERE ID = ${BigInt(id)}
+        LIMIT 1
+      `;
+    } else {
+      await prisma.$executeRaw`
+        UPDATE ult_information_posts
+        SET
+          TITLE = ${data.title},
+          SLUG = ${data.slug},
+          CATEGORY = ${data.category},
+          SUMMARY = ${data.summary},
+          CONTENT = ${data.content},
+          STATUS = ${data.status},
+          PUBLISHED_AT = ${publishedAt},
+          UPDATED_BY = ${data.actor},
+          UPDATED_AT = CURRENT_TIMESTAMP(3)
+        WHERE ID = ${BigInt(id)}
+        LIMIT 1
+      `;
+    }
 
     return getInformationPostById(id);
   } catch (error) {

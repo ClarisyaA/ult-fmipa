@@ -49,3 +49,4 @@ database/*.dump
 uploads/
 public/uploads/
 storage/uploads/
+storage/information/

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
+import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,11 +111,19 @@ export default async function AdminRequestDetailPage({
             Kembali ke Pengajuan
           </Link>
         </Button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {detail.serviceTitle}
-          </h1>
-          <Badge variant="secondary">{detail.statusLabel}</Badge>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {detail.serviceTitle}
+            </h1>
+            <Badge variant="secondary">{detail.statusLabel}</Badge>
+          </div>
+          <RequestDeleteButton
+            serviceSlug={detail.serviceSlug}
+            id={detail.id}
+            label="Hapus Pengajuan"
+            redirectTo="/admin/requests"
+          />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           Mode terbatas. Hanya update status workflow yang diaktifkan.

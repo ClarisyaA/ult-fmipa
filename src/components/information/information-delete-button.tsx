@@ -7,27 +7,38 @@ import { Button } from "@/components/ui/button";
 
 type InformationDeleteButtonProps = {
   id: string;
+  rolePrefix?: "admin" | "staff";
 };
 
-export function InformationDeleteButton({ id }: InformationDeleteButtonProps) {
+export function InformationDeleteButton({
+  id,
+  rolePrefix = "admin",
+}: InformationDeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function handleDelete() {
-    if (!window.confirm("Hapus informasi ini?")) {
+    if (
+      !window.confirm(
+        "Hapus informasi ini secara permanen? Tindakan ini tidak dapat dibatalkan."
+      )
+    ) {
       return;
     }
 
     setIsDeleting(true);
     setError("");
+    setSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/information/${id}`, {
+      const response = await fetch(`/api/${rolePrefix}/information/${id}`, {
         method: "DELETE",
       });
       const body = (await response.json().catch(() => null)) as {
         error?: string;
+        message?: string;
       } | null;
 
       if (!response.ok) {
@@ -35,6 +46,7 @@ export function InformationDeleteButton({ id }: InformationDeleteButtonProps) {
         return;
       }
 
+      setSuccess(body?.message ?? "Informasi berhasil dihapus.");
       router.refresh();
     } finally {
       setIsDeleting(false);
@@ -53,6 +65,9 @@ export function InformationDeleteButton({ id }: InformationDeleteButtonProps) {
         {isDeleting ? "Menghapus..." : "Hapus"}
       </Button>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {success ? (
+        <p className="text-xs text-muted-foreground">{success}</p>
+      ) : null}
     </div>
   );
 }

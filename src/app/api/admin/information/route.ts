@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
 import {
+  getInformationApiErrorStatus,
+  parseInformationPostRequest,
+  saveInformationImagesForPost,
+} from "@/lib/information-api";
+import {
   createInformationPost,
   getAdminInformationPosts,
-  InformationPostValidationError,
-  InformationTableUnavailableError,
-  type InformationPostInput,
 } from "@/lib/information-posts";
 
 function getActorName(user: { name?: string | null; email?: string | null }) {
@@ -33,24 +35,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as InformationPostInput;
-    const post = await createInformationPost({
-      ...body,
-      actor: getActorName(user),
-    });
+    const { input, files } = await parseInformationPostRequest(
+      request,
+      getActorName(user)
+    );
+    const post = await createInformationPost(input);
+
+    if (post) {
+      await saveInformationImagesForPost(post.id, files);
+    }
 
     return NextResponse.json({
       data: post,
       message: "Informasi berhasil dibuat.",
     });
   } catch (error) {
-    if (
-      error instanceof InformationPostValidationError ||
-      error instanceof InformationTableUnavailableError
-    ) {
+    const apiError = getInformationApiErrorStatus(error);
+
+    if (apiError) {
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: apiError.message },
+        { status: apiError.statusCode }
       );
     }
 

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
 import type { SavedUploadMetadata } from "@/types/attachment";
@@ -59,4 +59,24 @@ export async function saveUploadedFile(file: File): Promise<SavedUploadMetadata>
     sizeBytes: file.size,
     storagePath: path.join("storage", "uploads", storedName),
   };
+}
+
+export async function deleteUploadedFile(storagePath: string) {
+  const storageRoot = path.resolve(process.cwd(), "storage", "uploads");
+  const storedName = path.basename(storagePath);
+
+  if (!storedName) {
+    return;
+  }
+
+  const absolutePath = path.join(storageRoot, storedName);
+
+  if (
+    absolutePath === storageRoot ||
+    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
+  ) {
+    return;
+  }
+
+  await rm(absolutePath, { force: true });
 }
