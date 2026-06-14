@@ -14,6 +14,9 @@ import {
 import { getInformationPostCoverImage } from "@/lib/information-post-images";
 import { getPublishedInformationPosts } from "@/lib/information-posts";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function formatDate(value: string | null) {
   if (!value) {
     return "-";

@@ -6,7 +6,7 @@ const adapter = new PrismaMariaDb({
   port: Number(process.env.DB_PORT ?? 13306),
   user: process.env.DB_USER ?? "ult_user",
   password: process.env.DB_PASSWORD ?? "ult_password",
-  database: process.env.DB_NAME ?? "ult_fmipa",
+  database: process.env.DB_NAME ?? "fmipa_sbpk",
   connectionLimit: 5,
 });
 

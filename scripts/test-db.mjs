@@ -3,20 +3,21 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 const adapter = new PrismaMariaDb({
-  host: "localhost",
-  port: 13306,
-  user: "ult_user",
-  password: "ult_password",
-  database: "ult_fmipa",
+  host: process.env.DB_HOST ?? "localhost",
+  port: Number(process.env.DB_PORT ?? 13306),
+  user: process.env.DB_USER ?? "ult_user",
+  password: process.env.DB_PASSWORD ?? "ult_password",
+  database: process.env.DB_NAME ?? "fmipa_sbpk",
   connectionLimit: 5,
 });
 
 const prisma = new PrismaClient({ adapter });
 
 try {
-  const users = await prisma.user.findMany();
+  const mahasiswaCount = await prisma.mahasiswa.count();
+
   console.log("Koneksi Prisma berhasil.");
-  console.log(users);
+  console.log("Jumlah data mahasiswa:", mahasiswaCount);
 } catch (error) {
   console.error("Koneksi Prisma gagal.");
   console.error(error);

@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function SurveiPage() {
   const session = await getServerSession(authOptions);
   const role = session?.user.role;

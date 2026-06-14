@@ -15,6 +15,9 @@ import { requireRole } from "@/lib/auth";
 import { getInformationPostImages } from "@/lib/information-post-images";
 import { getInformationPostById } from "@/lib/information-posts";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type EditInformationPageProps = {
   params: Promise<{ id: string }>;
 };

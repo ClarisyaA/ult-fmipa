@@ -11,6 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function StaffTambahInformasiPage() {
   return (
     <div className="grid gap-6">

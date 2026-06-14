@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { getInformationPostImages } from "@/lib/information-post-images";
 import { getPublishedInformationPostBySlug } from "@/lib/information-posts";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type InformationDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
