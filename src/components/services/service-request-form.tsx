@@ -238,7 +238,7 @@ export function ServiceRequestForm({
 
   if (result) {
     return (
-      <div className="grid gap-4 rounded-lg border bg-muted/30 p-4">
+      <div data-testid="request-success" className="grid gap-4 rounded-lg border bg-muted/30 p-4">
         <div>
           <p className="font-medium">Pengajuan layanan berhasil dikirim.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -280,7 +280,7 @@ export function ServiceRequestForm({
     !isSuratPengantar && !isKeteranganLulus && !isIjazah && !isTranskrip;
 
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit}>
+    <form className="grid gap-4" onSubmit={handleSubmit} data-testid="service-request-form">
       <div className="grid gap-2">
         <Label htmlFor="npm">NPM</Label>
         <Input
@@ -339,7 +339,7 @@ export function ServiceRequestForm({
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor="semester">Semester</Label>
-            <Input id="semester" name="semester" maxLength={25} />
+            <Input id="semester" name="semester" maxLength={25} data-testid="request-semester" />
             {fieldErrors.semester ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.semester}
@@ -348,7 +348,7 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="tahunAkademik">Tahun Akademik</Label>
-            <Input id="tahunAkademik" name="tahunAkademik" maxLength={10} />
+            <Input id="tahunAkademik" name="tahunAkademik" maxLength={10} data-testid="request-tahun-akademik" />
             {fieldErrors.tahunAkademik ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.tahunAkademik}
@@ -588,7 +588,7 @@ export function ServiceRequestForm({
       {showDescription ? (
         <div className="grid gap-2">
           <Label htmlFor="description">Keterangan/Keperluan</Label>
-          <Textarea id="description" name="description" maxLength={100} />
+          <Textarea id="description" name="description" maxLength={100} data-testid="request-description" />
           {fieldErrors.description ? (
             <p className="text-sm text-destructive">
               {fieldErrors.description}
@@ -656,7 +656,7 @@ export function ServiceRequestForm({
         berikutnya, data akan diambil dari PAUS OAuth.
       </p>
 
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting} data-testid="service-request-submit">
         {isSubmitting ? "Mengirim..." : "Kirim Pengajuan"}
       </Button>
     </form>

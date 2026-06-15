@@ -290,6 +290,7 @@ export function InformationPostForm({
           value={title}
           onChange={(event) => setTitle(event.currentTarget.value)}
           required
+          data-testid="information-title"
         />
       </div>
 
@@ -393,6 +394,7 @@ export function InformationPostForm({
           value={content}
           onChange={(event) => setContent(event.currentTarget.value)}
           required
+          data-testid="information-content"
         />
       </div>
 

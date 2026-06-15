@@ -172,6 +172,57 @@ pnpm lint
 pnpm build
 ```
 
+## E2E Testing
+
+Playwright E2E saat ini tersedia untuk manual smoke testing, tetapi sengaja
+tidak dijalankan otomatis di GitHub Actions, Husky pre-push, `build`, `lint`,
+atau `typecheck`. FE masih dalam tahap polishing sehingga selector, route, dan
+alur form dapat berubah cepat. E2E dapat diaktifkan kembali di CI setelah UI
+routes, forms, dan buttons stabil.
+
+1. **Default E2E (Smoke + Read-Only Matrix)**:
+   Menjalankan test ringan yang memverifikasi halaman utama, login, riwayat, visual dashboard admin/staff, survey page, serta memverifikasi 15 service slug API dan route tanpa submit form data.
+   Jalankan dengan:
+   ```powershell
+   pnpm test:e2e
+   ```
+
+2. **Full Service Submission E2E (Optional)**:
+   Menjalankan pengujian POST submission data secara end-to-end untuk seluruh 15 service slug yang didukung. Test ini otomatis menghapus data pengajuan yang baru dibuat via admin API setelah assertion selesai.
+   > [!WARNING]
+   > Jangan jalankan full-service submission tests terhadap database production karena test ini menulis records pengajuan meskipun langsung dihapus kembali.
+   Jalankan dengan:
+   ```powershell
+   pnpm test:e2e:full-services
+   ```
+
+3. **Playwright UI Mode**:
+   Membuka visual runner UI Playwright untuk debugging dan inspection secara visual.
+   Jalankan dengan:
+   ```powershell
+   pnpm test:e2e:ui
+   ```
+
+Perintah manual lain:
+
+```powershell
+pnpm test:e2e:headed
+pnpm test:e2e:debug
+pnpm test:e2e:trace
+pnpm test:e2e:report
+```
+
+Sebelum menjalankan E2E, pastikan Docker DB aktif dan support migrations sudah diterapkan:
+
+```powershell
+docker compose up -d
+pnpm prisma migrate deploy
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\002_create_ult_service_surveys.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\005_create_ult_information_post_images.sql"
+cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
+```
+
 ## Development Auth Accounts
 
 Credential development dibaca dari `.env`.

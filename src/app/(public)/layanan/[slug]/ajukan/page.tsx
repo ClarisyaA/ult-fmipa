@@ -55,38 +55,40 @@ export default async function SubmitServiceRequestPage({
   const supported = isSubmissionSupported(service.slug);
 
   return (
-    <section className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <Button asChild variant="ghost" className="-ml-2 mb-6">
-        <Link href={`/layanan/${service.slug}`}>
-          <ArrowLeft className="size-4" />
-          Kembali ke Detail Layanan
-        </Link>
-      </Button>
+    <main data-testid="service-submit-page">
+      <section className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <Button asChild variant="ghost" className="-ml-2 mb-6">
+          <Link href={`/layanan/${service.slug}`}>
+            <ArrowLeft className="size-4" />
+            Kembali ke Detail Layanan
+          </Link>
+        </Button>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ajukan {service.title}</CardTitle>
-          <CardDescription>
-            Versi awal. Autentikasi PAUS akan diaktifkan pada tahap berikutnya.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {supported ? (
-            <ServiceRequestForm
-              serviceSlug={service.slug}
-              defaultValues={{
-                npm: user.npm,
-                email: user.email,
-                phone: user.phone,
-              }}
-            />
-          ) : (
-            <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-              Pengajuan online untuk layanan ini belum tersedia.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Ajukan {service.title}</CardTitle>
+            <CardDescription>
+              Versi awal. Autentikasi PAUS akan diaktifkan pada tahap berikutnya.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {supported ? (
+              <ServiceRequestForm
+                serviceSlug={service.slug}
+                defaultValues={{
+                  npm: user.npm,
+                  email: user.email,
+                  phone: user.phone,
+                }}
+              />
+            ) : (
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                Pengajuan online untuk layanan ini belum tersedia.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+    </main>
   );
 }

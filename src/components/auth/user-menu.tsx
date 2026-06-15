@@ -24,7 +24,7 @@ export function UserMenu() {
   if (!session?.user) {
     return (
       <Button asChild variant="outline" size="sm">
-        <Link href="/login">Masuk</Link>
+        <Link href="/login" data-testid="navbar-login">Masuk</Link>
       </Button>
     );
   }

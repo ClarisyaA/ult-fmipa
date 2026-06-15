@@ -24,7 +24,7 @@ export default function LayananPage() {
   }));
 
   return (
-    <>
+    <main data-testid="services-page">
       <section className="border-b bg-muted/30">
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-normal text-primary">
@@ -103,6 +103,6 @@ export default function LayananPage() {
           ))}
         </div>
       </section>
-    </>
+    </main>
   );
 }

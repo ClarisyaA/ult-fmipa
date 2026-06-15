@@ -55,3 +55,5 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # E2E temporarily disabled during FE polishing. Run manually when UI flow is stable.

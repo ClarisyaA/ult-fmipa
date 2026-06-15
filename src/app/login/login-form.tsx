@@ -153,6 +153,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
+              data-testid="login-email"
             />
           </div>
           <div className="grid gap-2">
@@ -164,6 +165,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
+              data-testid="login-password"
             />
           </div>
 
@@ -173,7 +175,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
             </p>
           ) : null}
 
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} data-testid="login-submit">
             {isSubmitting ? "Memproses..." : "Masuk"}
           </Button>
         </form>

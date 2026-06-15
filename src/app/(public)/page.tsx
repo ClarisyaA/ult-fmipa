@@ -34,7 +34,7 @@ export default function HomePage() {
   const featuredServices = getPublicServices().slice(0, 3);
 
   return (
-    <>
+    <main data-testid="home-page">
       <section className="border-b bg-muted/30">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-20">
           <div className="flex flex-col justify-center">
@@ -65,7 +65,7 @@ export default function HomePage() {
             {highlights.map((item) => (
               <Card key={item.title}>
                 <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="rounded-lg border bg-background p-2">
+                   <div className="rounded-lg border bg-background p-2">
                     <item.icon className="size-5 text-primary" />
                   </div>
                   <div>
@@ -106,6 +106,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-    </>
+    </main>
   );
 }

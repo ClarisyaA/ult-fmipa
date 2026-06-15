@@ -35,7 +35,7 @@ export default async function ServiceDetailPage({
   }
 
   return (
-    <>
+    <main data-testid="service-detail-page">
       <section className="border-b bg-muted/30">
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
           <Button asChild variant="ghost" className="-ml-2 mb-6">
@@ -121,6 +121,6 @@ export default async function ServiceDetailPage({
           </Button>
         </aside>
       </section>
-    </>
+    </main>
   );
 }

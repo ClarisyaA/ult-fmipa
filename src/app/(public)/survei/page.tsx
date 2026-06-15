@@ -21,7 +21,7 @@ export default async function SurveiPage() {
   const role = session?.user.role;
 
   return (
-    <>
+    <main data-testid="survey-page">
       <section className="border-b bg-muted/30">
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-normal text-primary">
@@ -95,6 +95,6 @@ export default async function SurveiPage() {
           </Card>
         ) : null}
       </section>
-    </>
+    </main>
   );
 }
