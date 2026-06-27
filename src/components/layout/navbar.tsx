@@ -16,7 +16,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import Image from "next/image";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -31,13 +30,9 @@ export function Navbar() {
         <div className="absolute bottom-0 right-1/4 h-px w-1/3 bg-gradient-to-r from-transparent via-[#ff2d28]/10 to-transparent" />
         
         <Link href="/" className="flex items-center gap-2 relative z-10">
-          <Image
-            src="/logo.png"
-            alt="Logo ULT FMIPA"
-            width={30}
-            height={30}
-            className="rounded-full h-7 w-7 object-cover"
-          />
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+            ULT
+          </span>
           <span className="text-sm font-bold text-red-600 tracking-tight">
             ULT SBAK FMIPA UNPAD
           </span>
@@ -96,13 +91,9 @@ export function Navbar() {
           >
             <SheetHeader className="p-5 border-b border-neutral-100 flex-row items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
-                <Image
-                  src="/logo.png"
-                  alt="Logo ULT FMIPA"
-                  width={28}
-                  height={28}
-                  className="rounded-full h-7 w-7 object-cover"
-                />
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                  ULT
+                </span>
                 <SheetTitle className="text-sm font-bold text-red-600 tracking-tight text-left">
                   ULT FMIPA
                 </SheetTitle>

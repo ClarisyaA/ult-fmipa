@@ -14,11 +14,16 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+const prismaLogLevels: Array<"query" | "error" | "warn"> =
+  process.env.PRISMA_QUERY_LOG === "true"
+    ? ["query", "error", "warn"]
+    : ["error", "warn"];
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
-    log: ["query", "error", "warn"],
+    log: prismaLogLevels,
   });
 
 if (process.env.NODE_ENV !== "production") {
