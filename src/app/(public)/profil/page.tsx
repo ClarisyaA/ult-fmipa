@@ -196,7 +196,7 @@ export default function ProfilPage() {
         `}
       </style>
 
-      <section className="relative flex min-h-[calc(100vh-64px)] items-center overflow-hidden bg-neutral-950">
+      <section className="relative flex min-h-[calc(100vh+20px)] items-center overflow-hidden bg-neutral-950">
         <div className="absolute inset-0">
           <img
             src="/gedung-fmipa.svg"
@@ -252,34 +252,33 @@ export default function ProfilPage() {
 
       <section
         id="tentang"
-        className="relative z-10 overflow-hidden bg-[linear-gradient(135deg,#fff8f7_0%,#fff_42%,#f8fbfa_100%)] px-4 py-14 sm:px-6 sm:py-20 lg:px-8"
+        className="relative z-10 flex min-h-[calc(100vh-64px)] items-center overflow-hidden bg-[linear-gradient(135deg,#fff8f7_0%,#fff_42%,#f8fbfa_100%)] px-4 py-24 sm:px-6 sm:py-32 lg:px-8"
       >
         <div className="pointer-events-none absolute -left-24 top-20 size-72 rounded-full bg-red-100/45 blur-3xl" />
         <div className="pointer-events-none absolute right-8 top-14 hidden h-px w-48 bg-gradient-to-r from-transparent via-red-200 to-transparent lg:block" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-[0.68fr_1.32fr] lg:gap-18">
-          <Reveal className="relative mx-auto w-full max-w-[430px] lg:max-w-[445px]" direction="left">
+        <div className="relative mx-auto mt-8 grid w-full max-w-7xl items-center gap-6 lg:mt-12 lg:grid-cols-[1fr_1fr] lg:gap-4">
+          <Reveal className="relative w-full max-w-[520px] justify-self-start lg:-ml-10 lg:max-w-[580px]" direction="left">
             <div className="absolute -left-4 -top-4 hidden h-24 w-24 rounded-2xl border border-red-200/70 sm:block" />
 
             <div className="group relative overflow-hidden rounded-[1.5rem] bg-white p-2 shadow-2xl shadow-black/10 transition duration-500 hover:-translate-y-1 hover:shadow-black/15">
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu-e3rL1jqO9Z0q7-kkEY5IbiOl9Vc1rceFZ3KJQ2ziUIXWEfklOiD5WrcNHCEPLhB52EoUzhuGM2PVlNiM_q2kvAXHuglxa-qa1bHI3btwNng_52bO3wotAHjotQrHnRKgLsRD0i3yCDIYCw_vHSotvxdFaxwABL2rRSroZ7-88rU6jfRmcQ1a1ABrpT019joLY75KdUv8-Lx9SpOy_590PQSCpaJjR7B2g5LjcQo-T8yUpA5K8b6ydstNuEH5rlHgZgSLrbMywtH"
+                src="/sbak.svg"
                 alt="Ruang layanan administrasi"
-                className="aspect-[4/5] w-full rounded-[1rem] object-cover transition duration-700 group-hover:scale-105"
+                className="aspect-[16/10] w-full rounded-[1rem] object-cover transition duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-2 rounded-[1rem] bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-
             </div>
 
           </Reveal>
 
           <Reveal className="relative" direction="right" delay={120}>
-            <div className="max-w-xl lg:translate-x-6">
-              <div className="-mt-4 mb-10 flex items-center gap-4 sm:-mt-6 sm:mb-12">
-                <p className="text-sm font-black uppercase tracking-[0.12em] sm:text-4xl">
+            <div className="max-w-2xl">
+              <div className="mb-8 flex flex-nowrap items-center gap-x-4 sm:mb-9">
+                <p className="shrink-0 whitespace-nowrap text-3xl font-black uppercase tracking-[0.08em] text-neutral-950 sm:text-4xl lg:text-5xl">
                   Tentang{" "}
                 </p>
-                <span className="text-sm font-black uppercase tracking-[0.12em] text-red-600 sm:text-4xl">
+                <span className="shrink-0 whitespace-nowrap text-3xl font-black uppercase tracking-[0.08em] text-red-600 sm:text-4xl lg:text-5xl">
                   ULT FMIPA
                 </span>
               </div>
@@ -297,7 +296,7 @@ export default function ProfilPage() {
                 serta masyarakat.
               </p>
 
-              <div className="mt-12 grid gap-4 sm:grid-cols-2">
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-neutral-200 bg-white/75 p-5 shadow-lg shadow-black/5">
                   <p className="text-sm font-black text-neutral-950">
                     Praktis
@@ -308,10 +307,11 @@ export default function ProfilPage() {
                 </div>
                 <div className="rounded-2xl border border-neutral-200 bg-white/75 p-5 shadow-lg shadow-black/5">
                   <p className="text-sm font-black text-neutral-950">
-                    Transparan
+                    Akuntabel
                   </p>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    Pengajuan dan status layanan dapat dipantau lebih jelas.
+                    Proses layanan dibuat terukur dengan alur dan kepastian
+                    waktu yang jelas.
                   </p>
                 </div>
               </div>
@@ -353,9 +353,8 @@ export default function ProfilPage() {
                   <span className="rounded-full bg-red-500 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white">
                     Visi Kami
                   </span>
-                  <span className="text-4xl font-black text-white/5">01</span>
                 </div>
-                <p className="text-lg font-semibold leading-snug text-white sm:text-xl lg:leading-[1.2]">
+                <p className="flex flex-1 items-center text-xl font-semibold leading-tight text-white sm:text-xl lg:text-[1.85rem] lg:leading-[1.16]">
                   Menjadi Unit Layanan Terpadu yang unggul dalam menyediakan
                   pelayanan publik yang profesional, transparan, dan akuntabel
                   di tingkat nasional pada tahun 2026.
@@ -377,7 +376,6 @@ export default function ProfilPage() {
                   <span className="rounded-full bg-red-500 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white">
                     Misi Kami
                   </span>
-                  <span className="text-4xl font-black text-white/5">02</span>
                 </div>
 
                 <div className="space-y-2">
@@ -431,7 +429,7 @@ export default function ProfilPage() {
         <div className="pointer-events-none absolute left-0 top-0 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-300/40" />
         <div className="pointer-events-none absolute bottom-0 right-0 size-80 translate-x-1/3 translate-y-1/3 rounded-full border border-amber-300/40" />
         <div className="pointer-events-none absolute left-8 top-24 size-8 rounded-full bg-amber-200/60" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-[#f3f6f5]" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-neutral-50" />
         <div className="pointer-events-none absolute right-10 top-20 grid grid-cols-5 gap-1 opacity-30">
           {Array.from({ length: 25 }).map((_, index) => (
             <span key={index} className="size-1 rounded-full bg-amber-400" />
@@ -561,9 +559,7 @@ export default function ProfilPage() {
         </div>
       </section>
 
-      <section className="relative z-40 overflow-hidden bg-[#f3f6f5] px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
-        <div className="pointer-events-none absolute -right-24 top-10 size-72 rounded-full bg-red-100/45 blur-3xl" />
-        <div className="pointer-events-none absolute left-10 top-12 hidden h-px w-52 bg-gradient-to-r from-transparent via-red-200 to-transparent lg:block" />
+      <section className="relative z-40 overflow-hidden bg-neutral-50 px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
         <div className="relative mx-auto min-h-[560px] max-w-7xl">
           <Reveal className="absolute inset-y-8 right-0 hidden w-[68%] overflow-hidden rounded-[2rem] border-4 border-white bg-neutral-200 shadow-2xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:shadow-black/25 lg:block">
             <img
