@@ -128,3 +128,50 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  @keyframes login-media-in {
+    from {
+      opacity: 0;
+      transform: scale(1.035);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes login-panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes login-content-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-login-media-in {
+    animation: login-media-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-login-panel-in {
+    animation: login-panel-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-login-content-in {
+    animation: login-content-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
