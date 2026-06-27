@@ -401,7 +401,7 @@ export default function ProfilPage() {
 
       <section
         ref={organizationRef}
-        className="relative z-30 overflow-hidden bg-[radial-gradient(circle_at_10%_12%,rgba(251,191,36,0.18),transparent_14rem),radial-gradient(circle_at_92%_24%,rgba(0,0,0,0.06),transparent_16rem),radial-gradient(circle_at_88%_92%,rgba(251,191,36,0.16),transparent_18rem),linear-gradient(135deg,#fffaf1_0%,#fff7ea_45%,#f8efe3_100%)] px-4 pb-24 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8"
+        className="relative z-30 overflow-hidden bg-[radial-gradient(circle_at_10%_12%,rgba(251,191,36,0.09),transparent_14rem),radial-gradient(circle_at_92%_24%,rgba(0,0,0,0.035),transparent_16rem),radial-gradient(circle_at_88%_92%,rgba(251,191,36,0.08),transparent_18rem),linear-gradient(135deg,#fffdf7_0%,#fffaf1_48%,#f8f6ee_100%)] px-4 pb-24 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8"
       >
         <style>
           {`
@@ -426,13 +426,13 @@ export default function ProfilPage() {
             }
           `}
         </style>
-        <div className="pointer-events-none absolute left-0 top-0 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-300/40" />
-        <div className="pointer-events-none absolute bottom-0 right-0 size-80 translate-x-1/3 translate-y-1/3 rounded-full border border-amber-300/40" />
-        <div className="pointer-events-none absolute left-8 top-24 size-8 rounded-full bg-amber-200/60" />
+        <div className="pointer-events-none absolute left-0 top-0 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-200/45" />
+        <div className="pointer-events-none absolute bottom-0 right-0 size-80 translate-x-1/3 translate-y-1/3 rounded-full border border-amber-200/45" />
+        <div className="pointer-events-none absolute left-8 top-24 size-8 rounded-full bg-amber-100/70" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-neutral-50" />
-        <div className="pointer-events-none absolute right-10 top-20 grid grid-cols-5 gap-1 opacity-30">
+        <div className="pointer-events-none absolute right-10 top-20 grid grid-cols-5 gap-1 opacity-20">
           {Array.from({ length: 25 }).map((_, index) => (
-            <span key={index} className="size-1 rounded-full bg-amber-400" />
+            <span key={index} className="size-1 rounded-full bg-amber-300" />
           ))}
         </div>
 
