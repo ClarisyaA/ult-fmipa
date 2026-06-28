@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Mail, MapPin, Globe } from "lucide-react";
 import { publicNavItems } from "@/constants/navigation";
 
@@ -32,13 +31,9 @@ export function Footer() {
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-8 md:grid-cols-[1.5fr_0.8fr_1fr] lg:px-8 lg:py-10">
         <div className="flex flex-col gap-3">
           <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Logo ULT FMIPA"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-full object-cover shadow-sm"
-            />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-black text-white shadow-sm">
+              ULT
+            </span>
             <span className="text-xl font-black tracking-tight text-neutral-900 md:text-2xl">
               ULT SBAK <span className="text-red-600">FMIPA</span> Unpad
             </span>
