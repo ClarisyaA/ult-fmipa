@@ -39,7 +39,10 @@ const pausSignOutUrl =
   process.env.PAUS_SIGN_OUT_URL || "https://paus.unpad.ac.id/oauth/sign-out";
 
 function logPausProviderStatus() {
-  if (process.env.NODE_ENV === "production") {
+  if (
+    process.env.NODE_ENV !== "development" ||
+    process.env.AUTH_DEBUG !== "true"
+  ) {
     return;
   }
 
