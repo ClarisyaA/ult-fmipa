@@ -61,7 +61,7 @@ export function UserMenu() {
         variant="outline"
         size="sm"
         className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all duration-200 text-xs h-8 px-3"
-        onClick={() => signOut({ callbackUrl: "/login" })}
+        onClick={() => signOut({ callbackUrl: "/" })}
       >
         <LogOut className="size-3.5" />
         Keluar
