@@ -322,11 +322,92 @@ export function HomeLandingSections() {
   const [previousIdx, setPreviousIdx] = useState<number | null>(null);
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [typingProgress, setTypingProgress] = useState(0);
+  const [startTyping, setStartTyping] = useState(false);
   const [services, setServices] = useState<HomeService[]>(fallbackServices);
   const [information, setInformation] = useState<HomeInformation[]>(fallbackInformation);
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const heroCardRef = useTilt(6);
   const infoFeaturedRef = useTilt(4);
+
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion) {
+      const timer = setTimeout(() => {
+        setTypingProgress(50);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    if (!startTyping) return;
+    const totalChars = 50;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 1;
+      setTypingProgress(current);
+      if (current >= totalChars) {
+        clearInterval(interval);
+      }
+    }, 15);
+    return () => clearInterval(interval);
+  }, [startTyping, reducedMotion]);
+
+  const renderTypedTitle = () => {
+    const part1 = "Satu portal untuk seluruh ";
+    const part2 = "kebutuhan akademik";
+    const part3 = " Anda.";
+
+    if (reducedMotion) {
+      return (
+        <>
+          {part1}
+          <span className="relative inline-block">
+            {part2}
+            <span
+              aria-hidden="true"
+              className="absolute bottom-1 left-0 -z-10 h-3 w-full rounded-sm opacity-20"
+              style={{ background: "#EE1C25" }}
+            />
+          </span>
+          {part3}
+        </>
+      );
+    }
+
+    let p1 = "";
+    let p2 = "";
+    let p3 = "";
+
+    if (typingProgress <= part1.length) {
+      p1 = part1.slice(0, typingProgress);
+    } else if (typingProgress <= part1.length + part2.length) {
+      p1 = part1;
+      p2 = part2.slice(0, typingProgress - part1.length);
+    } else {
+      p1 = part1;
+      p2 = part2;
+      p3 = part3.slice(0, typingProgress - part1.length - part2.length);
+    }
+
+    return (
+      <>
+        {p1}
+        {p2 && (
+          <span className="relative inline-block">
+            {p2}
+            {typingProgress >= part1.length + part2.length && (
+              <span
+                aria-hidden="true"
+                className="absolute bottom-1 left-0 -z-10 h-3 w-full rounded-sm opacity-20"
+                style={{ background: "#EE1C25" }}
+              />
+            )}
+          </span>
+        )}
+        {p3}
+      </>
+    );
+  };
 
   const filteredServices = useMemo(
     () =>
@@ -433,7 +514,7 @@ export function HomeLandingSections() {
     return () => clearInterval(t);
   }, []);
 
-  const reducedMotion = useReducedMotion();
+  // (reducedMotion logic moved up)
 
   useEffect(() => {
     if (reducedMotion) return;
@@ -498,30 +579,33 @@ export function HomeLandingSections() {
       // Hero section
       const heroTl = gsap.timeline({ scrollTrigger: { trigger: ".dekanat-sec", start: "top 90%", toggleActions: "play none none none" } });
       heroTl
-        .fromTo(".hero-eyebrow", { y: -20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" })
-        .fromTo(".hero-title", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power4.out" }, "-=0.3")
-        .fromTo(".hero-desc", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.6")
-        .fromTo(".hero-cta", { y: 20, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.1, duration: 0.5, ease: "power3.out" }, "-=0.5")
-        .fromTo(".dekanat-card", { scale: 0.92, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 1.1, ease: "power4.out" }, "-=0.9");
+        .fromTo(".hero-eyebrow", { y: -18, opacity: 0, filter: "blur(6px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" })
+        .call(() => {
+          setStartTyping(true);
+        })
+        .fromTo(".hero-title", { y: 15 }, { y: 0, duration: 0.5, ease: "power3.out" }, "-=0.25")
+        .fromTo(".hero-desc", { y: 22, opacity: 0, filter: "blur(7px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.85, ease: "power3.out" }, "-=0.6")
+        .fromTo(".hero-cta", { y: 18, opacity: 0, filter: "blur(4px)" }, { y: 0, opacity: 1, filter: "blur(0px)", stagger: 0.1, duration: 0.55, ease: "power3.out" }, "-=0.45")
+        .fromTo(".dekanat-card", { scale: 0.94, opacity: 0, y: 26, filter: "blur(8px)" }, { scale: 1, opacity: 1, y: 0, filter: "blur(0px)", duration: 1.1, ease: "power4.out" }, "-=0.85");
 
       // Kegiatan section
       gsap.timeline({ scrollTrigger: { trigger: ".kegiatan-sec", start: "top 85%", toggleActions: "play none none none" } })
-        .fromTo(".kegiatan-header", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-        .fromTo(".kegiatan-container", { scale: 0.97, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: "power3.out" }, "-=0.4");
+        .fromTo(".kegiatan-header", { y: 28, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" })
+        .fromTo(".kegiatan-container", { scale: 0.98, opacity: 0, filter: "blur(6px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out" }, "-=0.4");
 
       // Layanan section
       gsap.timeline({ scrollTrigger: { trigger: ".layanan-sec", start: "top 85%", toggleActions: "play none none none" } })
-        .fromTo(".layanan-header", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-        .fromTo(".layanan-search", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, "-=0.6")
-        .fromTo(".layanan-all-button", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, "-=0.2")
-        .fromTo(".layanan-cta-banner", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, ease: "power3.out" }, "-=0.2");
+        .fromTo(".layanan-header", { y: 28, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" })
+        .fromTo(".layanan-search", { y: 24, opacity: 0, filter: "blur(6px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power3.out" }, "-=0.55")
+        .fromTo(".layanan-all-button", { y: 18, opacity: 0, filter: "blur(4px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, "-=0.2")
+        .fromTo(".layanan-cta-banner", { y: 24, opacity: 0, filter: "blur(6px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.75, ease: "power3.out" }, "-=0.2");
 
       // Info section
       gsap.timeline({ scrollTrigger: { trigger: ".info-sec", start: "top 85%", toggleActions: "play none none none" } })
-        .fromTo(".info-header", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-        .fromTo(".info-search", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, "-=0.6")
-        .fromTo(".info-featured", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, "-=0.5")
-        .fromTo(".info-strip", { x: 30, opacity: 0 }, { x: 0, opacity: 1, stagger: 0.08, duration: 0.7, ease: "power3.out" }, "-=0.7");
+        .fromTo(".info-header", { y: 28, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" })
+        .fromTo(".info-search", { y: 24, opacity: 0, filter: "blur(6px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power3.out" }, "-=0.55")
+        .fromTo(".info-featured", { y: 34, opacity: 0, filter: "blur(7px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out" }, "-=0.5")
+        .fromTo(".info-strip", { x: 24, opacity: 0, filter: "blur(5px)" }, { x: 0, opacity: 1, filter: "blur(0px)", stagger: 0.08, duration: 0.7, ease: "power3.out" }, "-=0.7");
 
     }, sectionRef);
 
@@ -584,6 +668,19 @@ export function HomeLandingSections() {
           50% { transform: translateY(-10px); }
         }
 
+        @keyframes ult-image-reveal {
+          from {
+            opacity: 0.78;
+            transform: scale(1.045);
+            filter: blur(8px) saturate(0.92);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0) saturate(1);
+          }
+        }
+
         .marquee-track {
           animation: ult-marquee 34s linear infinite;
         }
@@ -596,10 +693,15 @@ export function HomeLandingSections() {
           animation: ult-float-soft 5.5s ease-in-out infinite;
         }
 
+        .dekanat-hero-image {
+          animation: ult-image-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .marquee-track,
           .activity-progress-fill,
-          .service-staff-float {
+          .service-staff-float,
+          .dekanat-hero-image {
             animation: none;
           }
         }
@@ -633,17 +735,19 @@ export function HomeLandingSections() {
             </div> */}
 
             {/* Headline */}
-            <h2 className="hero-title mt-7 text-[2.6rem] font-black leading-[1.1] tracking-tight text-[#18130E] sm:text-[3.6rem] lg:text-[4rem]">
-              Satu portal untuk seluruh{" "}
-              <span className="relative inline-block">
-                kebutuhan akademik
-                <span
-                  aria-hidden="true"
-                  className="absolute bottom-1 left-0 -z-10 h-3 w-full rounded-sm opacity-20"
-                  style={{ background: "#EE1C25" }}
-                />
-              </span>{" "}
-              Anda.
+            <h2 className="hero-title mt-7 text-[2.6rem] font-black leading-[1.1] tracking-tight text-[#18130E] sm:text-[3.6rem] lg:text-[4rem] relative">
+              {/* Invisible layout placeholder to prevent layout shifts */}
+              <span className="invisible select-none" aria-hidden="true">
+                Satu portal untuk seluruh{" "}
+                <span className="relative inline-block">
+                  kebutuhan akademik
+                </span>{" "}
+                Anda.
+              </span>
+              {/* Absolute overlay rendering typewriter text */}
+              <span className="absolute inset-0 select-text">
+                {renderTypedTitle()}
+              </span>
             </h2>
             <SectionUnderline />
 
@@ -691,7 +795,7 @@ export function HomeLandingSections() {
                   fill
                   priority
                   sizes="(max-width: 1024px) 90vw, 40vw"
-                  className="object-cover transition-transform duration-700 hover:scale-105"
+                  className="dekanat-hero-image object-cover transition-transform duration-700 hover:scale-105"
                 />
                 {/* Glassmorphism overlay badge */}
                 <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl border border-white/30 bg-white/70 px-4 py-2.5 shadow-lg backdrop-blur-md">

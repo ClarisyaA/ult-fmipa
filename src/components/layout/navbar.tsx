@@ -87,6 +87,8 @@ export function Navbar() {
           </SheetTrigger>
           <SheetContent 
             side="right" 
+            aria-describedby={undefined}
+            showCloseButton={false}
             className="w-full sm:w-80 p-0 border-l border-neutral-200 bg-background/95 backdrop-blur-md"
           >
             <SheetHeader className="p-5 border-b border-neutral-100 flex-row items-center justify-between">
