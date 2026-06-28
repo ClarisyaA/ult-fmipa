@@ -9,6 +9,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { PublicService } from "@/types/service";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -62,15 +63,6 @@ const studentActivities = [
   },
 ];
 
-const serviceCards = [
-  "Layanan Akademik",
-  "Layanan Keuangan",
-  "Layanan Fasilitas",
-  "Layanan Surat Keterangan",
-  "Layanan Kemahasiswaan",
-  "Layanan Alumni",
-];
-
 const marqueeItems = [
   "AKADEMIK",
   "KEMAHASISWAAN",
@@ -80,85 +72,169 @@ const marqueeItems = [
   "ULT FMIPA UNPAD",
 ];
 
-const serviceDetails: Record<
-  string,
-  { desc: string }
-> = {
-  "Layanan Akademik": {
-    desc: "Pengajuan surat akademik, legalisir, surat aktif kuliah, dan transkrip nilai resmi.",
-  },
-  "Layanan Keuangan": {
-    desc: "Informasi penangguhan UKT, cicilan pembayaran kuliah, dan beasiswa internal.",
-  },
-  "Layanan Fasilitas": {
-    desc: "Peminjaman laboratorium sains, gedung pertemuan, ruang kelas, dan perlengkapan.",
-  },
-  "Layanan Surat Keterangan": {
-    desc: "Surat rekomendasi dosen, beasiswa, kelakuan baik, hingga surat bebas pustaka.",
-  },
-  "Layanan Kemahasiswaan": {
-    desc: "Rekomendasi kegiatan kemahasiswaan, perizinan ormawa, dan pengajuan dana bantuan.",
-  },
-  "Layanan Alumni": {
-    desc: "Pengesahan ijazah alumni, pengisian kuisioner tracer study, dan legalisasi berkas.",
-  },
+type HomeService = Pick<PublicService, "title" | "slug" | "category" | "description">;
+
+type HomeInformation = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string | null;
+  summary: string | null;
+  publishedAt: string | null;
+  image: string;
+  imageAlt: string;
 };
 
-const informationCards = [
-  "Pendaftaran",
-  "Akademik",
-  "Kemahasiswaan",
-  "Alumni",
-  "Sarana Prasarana",
-  "Beasiswa dan Magang",
+type InformationApiItem = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string | null;
+  summary: string | null;
+  publishedAt: string | null;
+  coverImage: {
+    id: string;
+    altText: string | null;
+    originalName: string;
+  } | null;
+};
+
+const fallbackServices: HomeService[] = [
+  {
+    title: "Layanan Akademik",
+    slug: "kartu-prestasi-akademik",
+    category: "Layanan Mahasiswa",
+    description: "Pengajuan surat akademik, legalisir, surat aktif kuliah, dan transkrip nilai resmi.",
+  },
+  {
+    title: "Layanan Keuangan",
+    slug: "rekomendasi-beasiswa",
+    category: "Layanan Mahasiswa",
+    description: "Informasi penangguhan UKT, cicilan pembayaran kuliah, dan beasiswa internal.",
+  },
+  {
+    title: "Layanan Fasilitas",
+    slug: "surat-pengantar",
+    category: "Layanan Mahasiswa",
+    description: "Peminjaman laboratorium sains, gedung pertemuan, ruang kelas, dan perlengkapan.",
+  },
+  {
+    title: "Layanan Surat Keterangan",
+    slug: "keterangan-masih-kuliah",
+    category: "Layanan Mahasiswa",
+    description: "Surat rekomendasi dosen, beasiswa, kelakuan baik, hingga surat bebas pustaka.",
+  },
+  {
+    title: "Layanan Kemahasiswaan",
+    slug: "keterangan-kelakuan-baik",
+    category: "Layanan Mahasiswa",
+    description: "Rekomendasi kegiatan kemahasiswaan, perizinan ormawa, dan pengajuan dana bantuan.",
+  },
+  {
+    title: "Layanan Alumni",
+    slug: "legalisir-ijazah-transkrip",
+    category: "Layanan Alumni",
+    description: "Pengesahan ijazah alumni, pengisian kuisioner tracer study, dan legalisasi berkas.",
+  },
 ];
 
-const informationDetails: Record<
-  string,
-  { date: string; category: string; desc: string; image: string }
-> = {
-  Pendaftaran: {
-    date: "28 Jun 2026",
+const fallbackInformation: HomeInformation[] = [
+  {
+    id: "pendaftaran",
+    title: "Pendaftaran",
+    slug: "",
     category: "Pendaftaran",
-    desc: "Informasi alur pendaftaran mahasiswa baru jalur mandiri (SMUP) & pascasarjana FMIPA Unpad.",
+    summary: "Informasi alur pendaftaran mahasiswa baru jalur mandiri (SMUP) & pascasarjana FMIPA Unpad.",
+    publishedAt: "2026-06-28T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-  Akademik: {
-    date: "27 Jun 2026",
+  {
+    id: "akademik",
+    title: "Akademik",
+    slug: "",
     category: "Akademik",
-    desc: "Pengumuman kalender akademik semester ganjil dan masa pengisian KRS mahasiswa.",
+    summary: "Pengumuman kalender akademik semester ganjil dan masa pengisian KRS mahasiswa.",
+    publishedAt: "2026-06-27T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-  Kemahasiswaan: {
-    date: "25 Jun 2026",
+  {
+    id: "kemahasiswaan",
+    title: "Kemahasiswaan",
+    slug: "",
     category: "Kemahasiswaan",
-    desc: "Panduan pengajuan Program Kreativitas Mahasiswa (PKM) dan proposal pendanaan kegiatan.",
+    summary: "Panduan pengajuan Program Kreativitas Mahasiswa (PKM) dan proposal pendanaan kegiatan.",
+    publishedAt: "2026-06-25T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-  Alumni: {
-    date: "24 Jun 2026",
+  {
+    id: "alumni",
+    title: "Alumni",
+    slug: "",
     category: "Alumni",
-    desc: "Sosialisasi Tracer Study FMIPA Unpad 2026 untuk peningkatan standar kualitas mutu.",
+    summary: "Sosialisasi Tracer Study FMIPA Unpad 2026 untuk peningkatan standar kualitas mutu.",
+    publishedAt: "2026-06-24T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-  "Sarana Prasarana": {
-    date: "22 Jun 2026",
+  {
+    id: "sarana-prasarana",
+    title: "Sarana Prasarana",
+    slug: "",
     category: "Fasilitas",
-    desc: "Peningkatan fasilitas smart-classroom dan pembukaan ruang belajar bersama (co-working space).",
+    summary: "Peningkatan fasilitas smart-classroom dan pembukaan ruang belajar bersama (co-working space).",
+    publishedAt: "2026-06-22T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-  "Beasiswa dan Magang": {
-    date: "20 Jun 2026",
+  {
+    id: "beasiswa-dan-magang",
+    title: "Beasiswa dan Magang",
+    slug: "",
     category: "Beasiswa",
-    desc: "Pendaftaran beasiswa industri dan lowongan magang bersertifikat MBKM dengan mitra.",
+    summary: "Pendaftaran beasiswa industri dan lowongan magang bersertifikat MBKM dengan mitra.",
+    publishedAt: "2026-06-20T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
+    imageAlt: "Gedung FMIPA Unpad",
   },
-};
+];
 
-function filterItems(items: string[], query: string) {
+function filterByQuery<T>(items: T[], query: string, getText: (item: T) => string) {
   const q = query.trim().toLowerCase();
   if (!q) return items;
-  return items.filter((item) => item.toLowerCase().includes(q));
+  return items.filter((item) => getText(item).toLowerCase().includes(q));
+}
+
+function serviceHref(service: HomeService) {
+  return service.slug ? `/layanan/${service.slug}` : "/layanan";
+}
+
+function informationHref(info: HomeInformation) {
+  return info.slug ? `/informasi/${info.slug}` : "/informasi";
+}
+
+function formatInfoDate(value: string | null) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function toHomeInformation(item: InformationApiItem): HomeInformation {
+  return {
+    id: item.id,
+    title: item.title,
+    slug: item.slug,
+    category: item.category,
+    summary: item.summary,
+    publishedAt: item.publishedAt,
+    image: item.coverImage ? `/api/information/images/${item.coverImage.id}` : "/gedung-fmipa.svg",
+    imageAlt: item.coverImage?.altText ?? item.coverImage?.originalName ?? item.title,
+  };
 }
 
 // ─── Tilt Card Hook ──────────────────────────────────────────────────────────
@@ -246,12 +322,92 @@ export function HomeLandingSections() {
   const [previousIdx, setPreviousIdx] = useState<number | null>(null);
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [services, setServices] = useState<HomeService[]>(fallbackServices);
+  const [information, setInformation] = useState<HomeInformation[]>(fallbackInformation);
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const heroCardRef = useTilt(6);
   const infoFeaturedRef = useTilt(4);
 
-  const filteredServices = useMemo(() => filterItems(serviceCards, serviceQuery), [serviceQuery]);
-  const filteredInformation = useMemo(() => filterItems(informationCards, informationQuery), [informationQuery]);
+  const filteredServices = useMemo(
+    () =>
+      filterByQuery(
+        services,
+        serviceQuery,
+        (service) => `${service.title} ${service.category} ${service.description}`
+      ),
+    [serviceQuery, services]
+  );
+  const filteredInformation = useMemo(
+    () =>
+      filterByQuery(
+        information,
+        informationQuery,
+        (info) => `${info.title} ${info.category ?? ""} ${info.summary ?? ""}`
+      ),
+    [information, informationQuery]
+  );
+  const displayedServices = serviceQuery.trim()
+    ? filteredServices
+    : filteredServices.slice(0, 6);
+  const displayedServiceKey = displayedServices.map((service) => service.slug).join("|");
+  const featuredInformation = filteredInformation[0] ?? information[0];
+  const sideInformation = featuredInformation
+    ? filteredInformation.filter((info) => info.id !== featuredInformation.id).slice(0, 5)
+    : [];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadServices() {
+      try {
+        const response = await fetch("/api/services", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { data?: PublicService[] };
+        const nextServices =
+          payload.data?.map(({ title, slug, category, description }) => ({
+            title,
+            slug,
+            category,
+            description,
+          })) ?? [];
+
+        if (!cancelled && nextServices.length > 0) {
+          setServices(nextServices);
+        }
+      } catch {
+        // Keep fallback data when the API is unavailable during local development.
+      }
+    }
+
+    loadServices();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInformation() {
+      try {
+        const response = await fetch("/api/information", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { data?: InformationApiItem[] };
+        const nextInformation = payload.data?.map(toHomeInformation) ?? [];
+
+        if (!cancelled && nextInformation.length > 0) {
+          setInformation(nextInformation);
+        }
+      } catch {
+        // Keep fallback data when the API is unavailable during local development.
+      }
+    }
+
+    loadInformation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const goToActivity = useCallback(
     (nextIdx: number, direction: 1 | -1) => {
@@ -357,10 +513,8 @@ export function HomeLandingSections() {
       gsap.timeline({ scrollTrigger: { trigger: ".layanan-sec", start: "top 85%", toggleActions: "play none none none" } })
         .fromTo(".layanan-header", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
         .fromTo(".layanan-search", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, "-=0.6")
-        .fromTo(".layanan-featured", { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.5")
-        .fromTo(".layanan-accent-line", { scaleY: 0 }, { scaleY: 1, stagger: 0.08, duration: 0.7, ease: "power3.out" }, "-=0.35")
-        .fromTo(".layanan-card", { y: 40, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, stagger: 0.07, duration: 0.7, ease: "back.out(1.2)" }, "-=0.5")
-        .fromTo(".layanan-cta-banner", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.3");
+        .fromTo(".layanan-all-button", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, "-=0.2")
+        .fromTo(".layanan-cta-banner", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, ease: "power3.out" }, "-=0.2");
 
       // Info section
       gsap.timeline({ scrollTrigger: { trigger: ".info-sec", start: "top 85%", toggleActions: "play none none none" } })
@@ -374,6 +528,43 @@ export function HomeLandingSections() {
     const t = setTimeout(() => ScrollTrigger.refresh(), 300);
     return () => { ctx.revert(); clearTimeout(t); };
   }, [reducedMotion]);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const cards = gsap.utils.toArray<HTMLElement>(".layanan-card");
+      if (cards.length === 0) return;
+
+      if (reducedMotion) {
+        gsap.set(cards, { clearProps: "transform,opacity" });
+        return;
+      }
+
+      gsap.fromTo(
+        cards,
+        { y: 32, opacity: 0, scale: 0.96 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          stagger: 0.08,
+          duration: 0.65,
+          ease: "power3.out",
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: ".layanan-sec",
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }, sectionRef);
+
+    const t = setTimeout(() => ScrollTrigger.refresh(), 80);
+    return () => {
+      ctx.revert();
+      clearTimeout(t);
+    };
+  }, [displayedServiceKey, reducedMotion]);
 
   return (
     <div ref={sectionRef} className="overflow-hidden">
@@ -411,10 +602,6 @@ export function HomeLandingSections() {
           .service-staff-float {
             animation: none;
           }
-
-          .layanan-accent-line {
-            transform: scaleY(1) !important;
-          }
         }
       `}</style>
 
@@ -434,7 +621,7 @@ export function HomeLandingSections() {
 
           {/* ── Text Column ── */}
           <div>
-            {/* Eyebrow */}
+            {/* Eyebrow
             <div className="hero-eyebrow flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EE1C25]/20 bg-[#EE1C25]/6 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#EE1C25]">
                 <span className="size-1.5 rounded-full bg-[#EE1C25] animate-pulse" />
@@ -443,7 +630,7 @@ export function HomeLandingSections() {
               <span className="text-[11px] font-semibold uppercase tracking-widest text-[#6B5E52]">
                 Dekanat FMIPA
               </span>
-            </div>
+            </div> */}
 
             {/* Headline */}
             <h2 className="hero-title mt-7 text-[2.6rem] font-black leading-[1.1] tracking-tight text-[#18130E] sm:text-[3.6rem] lg:text-[4rem]">
@@ -526,13 +713,27 @@ export function HomeLandingSections() {
             </div>
 
             {/* Floating globe badge */}
-            <div className="floating-globe dekanat-parallax-fast absolute -left-7 -top-7 hidden size-[68px] rounded-2xl border border-[#E8DECE] bg-white p-3 shadow-xl transition-transform duration-300 hover:rotate-6 sm:block">
-              <Image src="/globe.svg" alt="" width={44} height={44} className="size-full" aria-hidden="true" />
-            </div>
+           <div className="floating-globe dekanat-parallax-fast absolute -left-8 -top-8 hidden overflow-hidden rounded-2xl border border-[#E8DECE] bg-white p-2 shadow-xl transition-transform duration-300 hover:rotate-6 sm:block">
+            <Image
+              src="/beranda/Logo.svg"
+              alt=""
+              width={130}
+              height={130}
+              className="h-auto w-[100px] scale-110 object-contain"
+              aria-hidden="true"
+            />
+          </div>
 
             {/* Floating map badge */}
-            <div className="floating-map dekanat-parallax-fast absolute -bottom-7 -right-7 hidden aspect-square w-28 rounded-3xl border border-[#E8DECE] bg-white p-3.5 shadow-xl transition-transform duration-300 hover:-rotate-3 sm:block">
-              <Image src="/denah-unpad.svg" alt="" width={84} height={84} className="size-full object-contain" aria-hidden="true" />
+            <div className="floating-map dekanat-parallax-fast absolute -bottom-7 -right-7 hidden aspect-square w-28 overflow-hidden rounded-3xl border border-[#E8DECE] bg-white shadow-xl transition-transform duration-300 hover:-rotate-3 sm:block">
+              <Image
+                src="/beranda/background.svg"
+                alt=""
+                fill
+                sizes="100px"
+                className="object-cover"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </div>
@@ -560,10 +761,10 @@ export function HomeLandingSections() {
           {/* Header */}
           <div className="kegiatan-header flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#03B36B]/20 bg-[#03B36B]/8 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#03B36B]">
+              {/* <span className="inline-flex items-center gap-1.5 rounded-full border border-[#03B36B]/20 bg-[#03B36B]/8 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#03B36B]">
                 <span className="size-1.5 rounded-full bg-[#03B36B]" />
                 Aktivitas Sivitas
-              </span>
+              </span> */}
               <h2 className="mt-4 text-[2.2rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[3rem]">
                 Kegiatan Mahasiswa
               </h2>
@@ -725,10 +926,10 @@ export function HomeLandingSections() {
           {/* Header */}
           <div className="layanan-header flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EE1C25]/20 bg-[#EE1C25]/6 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#EE1C25]">
+              {/* <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EE1C25]/20 bg-[#EE1C25]/6 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#EE1C25]">
                 <span className="size-1.5 rounded-full bg-[#EE1C25]" />
                 Katalog ULT
-              </span>
+              </span> */}
               <h2 className="mt-4 text-[2.2rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[3rem]">
                 Layanan Kami
               </h2>
@@ -756,57 +957,19 @@ export function HomeLandingSections() {
             />
           </div>
 
-          <Link
-            href="/layanan"
-            className="layanan-featured group relative mt-10 grid overflow-hidden rounded-[2rem] border border-[#E8DECE] bg-white p-7 shadow-sm transition-all duration-300 hover:border-[#EE1C25]/25 hover:shadow-xl md:grid-cols-[1fr_220px] md:items-center"
-          >
-            <span className="layanan-accent-line absolute bottom-0 left-0 top-0 w-[3px] origin-top scale-y-0 bg-[#EE1C25]" />
-            <div className="relative z-10">
-              <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#6B5E52]">
-                Sorotan layanan
-              </span>
-              <h3 className="mt-3 text-2xl font-black tracking-tight text-[#18130E]">
-                Layanan Akademik
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#7A6A5C]">
-                Jalur cepat untuk pengajuan surat aktif, legalisir, transkrip, dan kebutuhan administrasi akademik yang paling sering digunakan mahasiswa.
-              </p>
-              <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[#EE1C25]">
-                Mulai pengajuan
-                <span className="relative inline-flex items-center">
-                  <ArrowRight className="size-3.5" />
-                  <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[#EE1C25] transition-transform duration-300 group-hover:scale-x-100" />
-                </span>
-              </span>
-            </div>
-            <div className="pointer-events-none relative mt-8 hidden h-44 md:mt-0 md:block">
-              <Image
-                src="/beranda/staff1.svg"
-                alt=""
-                fill
-                sizes="220px"
-                className="service-staff-float object-contain object-bottom"
-                aria-hidden="true"
-              />
-            </div>
-          </Link>
-
           {/* Cards grid */}
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredServices.map((service) => {
-              const d = serviceDetails[service];
-              if (!d) return null;
+            {displayedServices.map((service) => {
               return (
                 <Link
-                  key={service}
-                  href="/layanan"
+                  key={service.slug}
+                  href={serviceHref(service)}
                   className="layanan-card group relative flex flex-col overflow-hidden rounded-[1.8rem] border border-[#E8DECE] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#18130E]/20 hover:shadow-xl"
                 >
-                  <span className="layanan-accent-line absolute bottom-0 left-0 top-0 w-[3px] origin-top scale-y-0 bg-[#EE1C25]" />
                   <h3 className="relative text-[1.05rem] font-black leading-snug text-[#18130E] transition-colors duration-200 group-hover:text-[#EE1C25]">
-                    {service}
+                    {service.title}
                   </h3>
-                  <p className="relative mt-2 flex-1 text-sm leading-relaxed text-[#7A6A5C]">{d.desc}</p>
+                  <p className="relative mt-2 flex-1 text-sm leading-relaxed text-[#7A6A5C]">{service.description}</p>
 
                   <div className="relative mt-5 flex w-max items-center gap-1 text-xs font-bold text-[#EE1C25] transition-all duration-200 group-hover:translate-x-0.5">
                     Ajukan Sekarang <ArrowRight className="size-3.5" />
@@ -817,11 +980,24 @@ export function HomeLandingSections() {
             })}
 
             {/* Empty state */}
-            {filteredServices.length === 0 && (
+            {displayedServices.length === 0 && (
               <p className="col-span-full py-8 text-center text-sm text-[#A0917F]">
                 Tidak ada layanan yang cocok dengan pencarian Anda.
               </p>
             )}
+          </div>
+
+          <div className="layanan-all-button mt-9 flex justify-center">
+            <Button
+              asChild
+              variant="outline"
+              className="group rounded-2xl border-[#D9D0BC] bg-white px-6 font-semibold text-[#18130E] shadow-sm transition-all duration-200 hover:border-[#18130E] hover:bg-[#18130E] hover:text-white hover:scale-[1.02]"
+            >
+              <Link href="/layanan" className="flex items-center gap-2">
+                Lihat Semua Layanan
+                <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </Link>
+            </Button>
           </div>
 
           {/* Suggestion banner */}
@@ -864,10 +1040,10 @@ export function HomeLandingSections() {
           {/* Header */}
           <div className="info-header flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FCB71B]/30 bg-[#FCB71B]/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#7A5C00]">
+              {/* <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FCB71B]/30 bg-[#FCB71B]/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#7A5C00]">
                 <span className="size-1.5 rounded-full bg-[#FCB71B]" />
                 Kabar Layanan
-              </span>
+              </span> */}
               <h2 className="mt-4 text-[2.2rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[3rem]">
                 Informasi Terkini
               </h2>
@@ -907,8 +1083,8 @@ export function HomeLandingSections() {
             >
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] bg-[#F0EAD8]">
                 <Image
-                  src="/gedung-fmipa.svg"
-                  alt="Informasi Layanan"
+                  src={featuredInformation?.image ?? "/gedung-fmipa.svg"}
+                  alt={featuredInformation?.imageAlt ?? "Informasi Layanan"}
                   fill
                   sizes="(max-width: 1024px) 90vw, 50vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -923,41 +1099,45 @@ export function HomeLandingSections() {
               </div>
 
               <div className="mt-6 flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B5E52]">Terbaru</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B5E52]">
+                  {featuredInformation?.category ?? "Terbaru"}
+                </span>
                 <span className="flex items-center gap-1 text-[11px] font-medium text-[#8A7A6E]">
-                  <Calendar className="size-3 text-[#EE1C25]" /> 28 Juni 2026
+                  <Calendar className="size-3 text-[#EE1C25]" /> {formatInfoDate(featuredInformation?.publishedAt ?? null)}
                 </span>
               </div>
 
               <h3 className="mt-4 text-[1.5rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[1.75rem] transition-colors duration-200 group-hover:text-[#EE1C25]">
-                Pusat Layanan Informasi Terpadu & Beasiswa MBKM
+                {featuredInformation?.title ?? "Pusat Layanan Informasi Terpadu"}
               </h3>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-[#7A6A5C]">
-                Temukan informasi penting mengenai pendaftaran program magang bersertifikat, beasiswa internal & eksternal, jadwal registrasi akademik, serta tata tertib perkuliahan FMIPA Unpad.
+                {featuredInformation?.summary ??
+                  "Temukan informasi penting mengenai layanan ULT FMIPA Unpad."}
               </p>
 
-              <div className="relative mt-6 flex w-max items-center gap-1.5 text-xs font-bold text-[#EE1C25] transition-all duration-200 group-hover:translate-x-0.5">
+              <Link
+                href={featuredInformation ? informationHref(featuredInformation) : "/informasi"}
+                className="relative mt-6 flex w-max items-center gap-1.5 text-xs font-bold text-[#EE1C25] transition-all duration-200 group-hover:translate-x-0.5"
+              >
                 Baca Selengkapnya <ArrowRight className="size-3.5" />
                 <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[#EE1C25] transition-transform duration-300 group-hover:scale-x-100" />
-              </div>
+              </Link>
             </div>
 
             {/* Editorial strips */}
             <div className="flex flex-col gap-3.5">
-              {filteredInformation.map((info) => {
-                const d = informationDetails[info];
-                if (!d) return null;
+              {sideInformation.map((info) => {
                 return (
                   <Link
-                    key={info}
-                    href="/informasi"
+                    key={info.id}
+                    href={informationHref(info)}
                     className="info-strip group grid grid-cols-[76px_1fr] gap-4 overflow-hidden rounded-[1.6rem] border border-[#DDD5C3] bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-transparent"
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-square w-full overflow-hidden rounded-[1.1rem] bg-[#F0EAD8]">
                       <Image
-                        src={d.image}
-                        alt=""
+                        src={info.image}
+                        alt={info.imageAlt}
                         fill
                         sizes="76px"
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -971,14 +1151,16 @@ export function HomeLandingSections() {
                           <span
                             className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-[#6B5E52]"
                           >
-                            {d.category}
+                            {info.category ?? "Informasi"}
                           </span>
-                          <span className="shrink-0 text-[10px] font-medium text-[#8A7A6E]">{d.date}</span>
+                          <span className="shrink-0 text-[10px] font-medium text-[#8A7A6E]">{formatInfoDate(info.publishedAt)}</span>
                         </div>
                         <h4 className="mt-1.5 text-sm font-black leading-snug text-[#18130E] transition-colors duration-200 group-hover:text-[#EE1C25]">
-                          {info}
+                          {info.title}
                         </h4>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8A7A6E]">{d.desc}</p>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8A7A6E]">
+                          {info.summary ?? "Baca informasi lengkap ULT FMIPA Unpad."}
+                        </p>
                       </div>
                     </div>
                   </Link>
