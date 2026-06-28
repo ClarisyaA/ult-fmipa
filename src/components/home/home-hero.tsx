@@ -135,7 +135,10 @@ function getDesktopSceneSize() {
 }
 
 function useDesktopSceneSize() {
-  const [sceneSize, setSceneSize] = useState(getDesktopSceneSize);
+  const [sceneSize, setSceneSize] = useState({
+    width: BASE_SCENE_WIDTH,
+    height: BASE_SCENE_HEIGHT,
+  });
 
   useEffect(() => {
     const update = () => setSceneSize(getDesktopSceneSize());
@@ -152,10 +155,7 @@ function useDesktopSceneSize() {
 }
 
 function useIsDesktopViewport() {
-  const [isDesktop, setIsDesktop] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.innerWidth >= DESKTOP_BREAKPOINT;
-  });
+  const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
     const update = () => setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT);
@@ -225,37 +225,33 @@ function DeskSprite({
 }) {
   return (
     <div className="relative h-full w-full">
-      <Image
-        src={image}
-        alt=""
-        fill
-        sizes={`${Math.round(sceneWidth * 0.41)}px`}
-        className="object-contain drop-shadow-2xl"
-        style={{
-          opacity: active ? 0 : 1,
-          transition: "opacity 140ms linear",
-        }}
-        priority
-        aria-hidden="true"
-      />
-      <Image
-        src={hoverImage}
-        alt=""
-        fill
-        sizes={`${Math.round(sceneWidth * 0.41)}px`}
-        className="object-contain drop-shadow-2xl"
-        style={{
-          opacity: active ? 1 : 0,
-          transition: "opacity 140ms linear",
-        }}
-        priority
-        aria-hidden="true"
-      />
+      <div style={{ display: active ? "none" : "block" }} className="absolute inset-0">
+        <Image
+          src={image}
+          alt=""
+          fill
+          sizes={`${Math.round(sceneWidth * 0.41)}px`}
+          className="object-contain drop-shadow-2xl"
+          priority
+          aria-hidden="true"
+        />
+      </div>
+      <div style={{ display: active ? "block" : "none" }} className="absolute inset-0">
+        <Image
+          src={hoverImage}
+          alt=""
+          fill
+          sizes={`${Math.round(sceneWidth * 0.41)}px`}
+          className="object-contain drop-shadow-2xl"
+          priority
+          aria-hidden="true"
+        />
+      </div>
     </div>
   );
 }
 
-export function HomeHero() {
+export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   const [hoveredDesk, setHoveredDesk] = useState<string | null>(null);
   const [activeStaff, setActiveStaff] = useState<ActiveStaff>("staff1");
   const [mouseDirection, setMouseDir] = useState<StaffDirection>("idle");
@@ -279,6 +275,43 @@ export function HomeHero() {
   useEffect(() => { activeRef.current = activeStaff; }, [activeStaff]);
   useEffect(() => { dirRef.current = mouseDirection; }, [mouseDirection]);
 
+  // ── Preload background and staff SVGs on mount before completing load ──
+  useEffect(() => {
+    let active = true;
+    const imagesToPreload = ["/beranda/Background.svg", ...preloadImages];
+    let loadedCount = 0;
+    const totalCount = imagesToPreload.length;
+
+    if (totalCount === 0) {
+      onLoadComplete?.();
+      return;
+    }
+
+    const checkLoad = () => {
+      loadedCount++;
+      if (loadedCount >= totalCount) {
+        if (active) {
+          onLoadComplete?.();
+        }
+      }
+    };
+
+    imagesToPreload.forEach((src) => {
+      const img = new window.Image();
+      img.src = src;
+      if (img.complete) {
+        checkLoad();
+      } else {
+        img.addEventListener("load", checkLoad, { once: true });
+        img.addEventListener("error", checkLoad, { once: true });
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [onLoadComplete]);
+
   // ── Show/hide scroll hint based on viewport width ──
   useEffect(() => {
     const check = () => setShowScrollHint(window.innerWidth < sceneSize.width);
@@ -287,14 +320,12 @@ export function HomeHero() {
     return () => window.removeEventListener("resize", check);
   }, [sceneSize.width]);
 
-  // ── Optional: center scroll on mount for narrow viewports ──
+  // ── Optional: set scroll to the far left on mount for narrow viewports ──
   useEffect(() => {
     const scroller = scrollRef.current;
     if (!scroller) return;
     if (window.innerWidth < sceneSize.width) {
-      // Start centered so user sees the middle of the scene
-      const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-      scroller.scrollLeft = maxScroll / 2;
+      scroller.scrollLeft = 0;
     }
   }, [sceneSize.width]);
 
@@ -515,9 +546,9 @@ export function HomeHero() {
               translate: "var(--tx, 0px) var(--ty, 0px)",
               transformOrigin: "bottom center",
               willChange: "translate",
-              opacity: isS1Active ? 1 : 0.92,
+              opacity: 1,
               filter: isS1Active ? "brightness(1.04)" : "brightness(1)",
-              transition: "opacity 0.2s ease-out, filter 0.2s ease-out",
+              transition: "filter 0.2s ease-out",
             }}
           >
             <StaffSprite staff="staff1" pose={pose1} />
@@ -535,9 +566,9 @@ export function HomeHero() {
               translate: "var(--tx, 0px) var(--ty, 0px)",
               transformOrigin: "bottom center",
               willChange: "translate",
-              opacity: isS2Active ? 1 : 0.92,
+              opacity: 1,
               filter: isS2Active ? "brightness(1.04)" : "brightness(1)",
-              transition: "opacity 0.2s ease-out, filter 0.2s ease-out",
+              transition: "filter 0.2s ease-out",
             }}
           >
             <StaffSprite staff="staff2" pose={pose2} />
@@ -605,10 +636,10 @@ export function HomeHero() {
           className="pointer-events-none absolute inset-x-0 bottom-4 z-50 flex flex-col items-center gap-1 animate-pulse"
           aria-hidden="true"
         >
-          <span className="text-[11px] font-medium text-[#8b7355]/70 tracking-wide">
+          <span className="text-[11px] font-bold text-[#5c3a21] tracking-wide">
             Geser untuk melihat area layanan
           </span>
-          <div className="h-1 w-10 rounded-full bg-[#8b7355]/30" />
+          <div className="h-1 w-10 rounded-full bg-[#5c3a21]/40" />
         </div>
       )}
     </section>
