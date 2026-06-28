@@ -11,7 +11,7 @@ export function LogoutButton() {
       type="button"
       variant="outline"
       size="sm"
-      onClick={() => signOut({ callbackUrl: "/login" })}
+      onClick={() => signOut({ callbackUrl: "/" })}
     >
       <LogOut className="size-4" />
       Keluar
