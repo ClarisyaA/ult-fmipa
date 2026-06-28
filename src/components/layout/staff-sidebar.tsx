@@ -59,9 +59,9 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
       <Image
         src="/rektorat.svg"
         alt=""
-        width={300}
-        height={260}
-        className="pointer-events-none absolute bottom-0 left-0 w-full opacity-16 mix-blend-screen"
+        width={760}
+        height={660}
+        className="pointer-events-none absolute -bottom-14 -left-44 w-[280%] opacity-28 mix-blend-screen"
       />
       <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#003827] via-[#003827]/82 to-transparent" />
       <div className="relative z-10 flex h-full min-h-0 flex-col px-5 py-5">

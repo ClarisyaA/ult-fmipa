@@ -77,8 +77,6 @@ const serviceGroups = [
   },
 ];
 
-const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
-
 const statusStyles = {
   pending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
   inProgress: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
@@ -180,13 +178,14 @@ function RequestPreview({
   detail,
   staffName,
   closeHref,
+  fixedHeight = false,
 }: {
   request: ServiceRequestListItem;
   detail: ServiceRequestDetail;
   staffName: string;
   closeHref: string;
+  fixedHeight?: boolean;
 }) {
-  const isSupported = !unsupportedInlineStatusTables.has(request.sourceTable);
   const displayNpm = detail.npm ?? "-";
   const profileRows = [
     { label: "Nama", value: detail.requesterName },
@@ -207,8 +206,12 @@ function RequestPreview({
   ].filter((item) => item.value !== null && item.value !== undefined && item.value !== "");
 
   return (
-    <aside className="h-fit rounded-lg border border-[#d8d4e4] bg-[#fbfaff] p-4 shadow-sm transition-all duration-300 ease-out animate-in fade-in slide-in-from-right-4 lg:sticky lg:top-6">
-      <div className="mb-4 flex items-center justify-between">
+    <aside
+      className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#d8d4e4] bg-[#fbfaff] shadow-sm transition-all duration-300 ease-out animate-in fade-in slide-in-from-right-4 ${
+        fixedHeight ? "h-[min(680px,calc(100dvh-7rem))]" : "h-full"
+      }`}
+    >
+      <div className="flex items-center justify-between border-b border-[#e4dfec] px-4 py-3">
         <h2 className="text-sm font-semibold text-[#213027]">Detail Preview</h2>
         <div className="flex items-center gap-2">
           <Info className="size-4 text-[#7d8290]" />
@@ -226,115 +229,119 @@ function RequestPreview({
         </div>
       </div>
 
-      <div className="rounded-md border border-[#ded8eb] bg-white px-4 py-5 text-center">
-        <div className="mx-auto grid size-16 place-items-center rounded-full border-4 border-[#d7eadc] bg-[#2d6a4f] text-lg font-semibold text-white">
-          {displayNpm.slice(-2)}
-        </div>
-        <p className="mt-3 text-sm font-semibold text-[#18221b]">
-          {detail.requesterName ?? `Pemohon ${displayNpm}`}
-        </p>
-        {detail.requesterProgram ? (
-          <p className="mt-1 text-xs font-medium text-[#4f5a52]">
-            {detail.requesterProgram}
-          </p>
-        ) : null}
-        <p className="text-xs text-[#6f746f]">{formatDate(request.requestDate)}</p>
-      </div>
-
-      <div className="mt-4 grid gap-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
-            Status Pemohon
-          </p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="size-2 rounded-full bg-[#8a2345]" />
-            <p className="text-sm font-medium text-[#222721]">
-              {request.statusLabel}
-            </p>
+      <div className="min-h-0 overflow-y-auto px-4 py-4">
+        <div className="rounded-md border border-[#ded8eb] bg-white px-4 py-5 text-center">
+          <div className="mx-auto grid size-16 place-items-center rounded-full border-4 border-[#d7eadc] bg-[#2d6a4f] text-lg font-semibold text-white">
+            {displayNpm.slice(-2)}
           </div>
+          <p className="mt-3 text-sm font-semibold text-[#18221b]">
+            {detail.requesterName ?? `Pemohon ${displayNpm}`}
+          </p>
+          {detail.requesterProgram ? (
+            <p className="mt-1 text-xs font-medium text-[#4f5a52]">
+              {detail.requesterProgram}
+            </p>
+          ) : null}
+          <p className="text-xs text-[#6f746f]">
+            {formatDate(request.requestDate)}
+          </p>
         </div>
 
-        {profileRows.length > 0 ? (
+        <div className="mt-4 grid gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
-              Data Pemohon
+              Status Pemohon
             </p>
-            <div className="mt-2 grid gap-2 rounded-md border border-[#d8d4e4] bg-white p-3">
-              {profileRows.map((item) => (
-                <div
-                  key={item.label}
-                  className="grid grid-cols-[92px_minmax(0,1fr)] gap-2 text-xs"
-                >
-                  <span className="text-[#7a7885]">{item.label}</span>
-                  <span className="min-w-0 break-words font-semibold text-[#222721]">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-1 flex items-center gap-2">
+              <span className="size-2 rounded-full bg-[#8a2345]" />
+              <p className="text-sm font-medium text-[#222721]">
+                {request.statusLabel}
+              </p>
             </div>
           </div>
-        ) : null}
 
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
-            Jenis Permohonan
-          </p>
-          <p className="mt-1 text-sm font-medium leading-snug text-[#222721]">
-            {request.serviceTitle}
-          </p>
-        </div>
+          {profileRows.length > 0 ? (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
+                Data Pemohon
+              </p>
+              <div className="mt-2 grid gap-2 rounded-md border border-[#d8d4e4] bg-white p-3">
+                {profileRows.map((item) => (
+                  <div
+                    key={item.label}
+                    className="grid grid-cols-[92px_minmax(0,1fr)] gap-2 text-xs"
+                  >
+                    <span className="text-[#7a7885]">{item.label}</span>
+                    <span className="min-w-0 break-words font-semibold text-[#222721]">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
-        {requestRows.length > 0 ? (
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
-              Detail Layanan
+              Jenis Permohonan
             </p>
-            <div className="mt-2 grid gap-2 rounded-md border border-[#d8d4e4] bg-white p-3">
-              {requestRows.map((item) => (
-                <div key={item.label} className="grid gap-1 text-xs">
-                  <span className="text-[#7a7885]">{item.label}</span>
-                  <span className="break-words font-semibold text-[#222721]">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
+            <p className="mt-1 text-sm font-medium leading-snug text-[#222721]">
+              {request.serviceTitle}
+            </p>
+          </div>
+
+          {requestRows.length > 0 ? (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
+                Detail Layanan
+              </p>
+              <div className="mt-2 grid gap-2 rounded-md border border-[#d8d4e4] bg-white p-3">
+                {requestRows.map((item) => (
+                  <div key={item.label} className="grid gap-1 text-xs">
+                    <span className="text-[#7a7885]">{item.label}</span>
+                    <span className="break-words font-semibold text-[#222721]">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
+              Dokumen Dilampirkan
+            </p>
+            <div className="mt-2 grid gap-2">
+              <div className="flex items-center justify-between rounded-md border border-[#d8d4e4] bg-white px-3 py-2 text-xs text-[#4c554f]">
+                <span className="flex min-w-0 items-center gap-2">
+                  <FileText className="size-4 text-[#2d6a4f]" />
+                  Metadata lampiran tersedia di detail
+                </span>
+                <ExternalLink className="size-3 shrink-0" />
+              </div>
             </div>
           </div>
-        ) : null}
 
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
-            Dokumen Dilampirkan
-          </p>
-          <div className="mt-2 grid gap-2">
-            <div className="flex items-center justify-between rounded-md border border-[#d8d4e4] bg-white px-3 py-2 text-xs text-[#4c554f]">
-              <span className="flex min-w-0 items-center gap-2">
-                <FileText className="size-4 text-[#2d6a4f]" />
-                Metadata lampiran tersedia di detail
-              </span>
-              <ExternalLink className="size-3 shrink-0" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-2">
-          <Button
-            asChild
-            className="h-10 bg-[#0f3d2e] text-white hover:bg-[#164b39]"
-          >
-            <Link href={`/staff/requests/${request.serviceSlug}/${request.id}`}>
-              Buka Ruang Proses
-            </Link>
-          </Button>
-          <div className="rounded-md border border-[#d8d4e4] bg-white p-2">
-            <InlineStatusAction
-              rolePrefix="staff"
-              serviceSlug={request.serviceSlug}
-              id={request.id}
+          <div className="grid gap-2">
+            <Button
+              asChild
+              className="h-10 bg-[#0f3d2e] text-white hover:bg-[#164b39]"
+            >
+              <Link href={`/staff/requests/${request.serviceSlug}/${request.id}`}>
+                Buka Ruang Proses
+              </Link>
+            </Button>
+            <div className="rounded-md border border-[#d8d4e4] bg-white p-2">
+              <InlineStatusAction
+                rolePrefix="staff"
+                serviceSlug={request.serviceSlug}
+                id={request.id}
               status={request.status}
               staffName={staffName}
-              supported={isSupported}
+              supported
             />
+            </div>
           </div>
         </div>
       </div>
@@ -377,12 +384,20 @@ export default async function StaffRequestsPage({
   const selectedDetail = selectedRequest
     ? await getRequestDetail(selectedRequest.serviceSlug, selectedRequest.id)
     : null;
+  const hasPreview = Boolean(selectedRequest && selectedDetail);
+  const shouldLockPreviewLayout = hasPreview && rows.length < limit;
+  const shouldMatchPreviewHeight = hasPreview && rows.length >= limit;
+  const shouldConstrainTable = shouldLockPreviewLayout || shouldMatchPreviewHeight;
   const totalPages = Math.max(result.pagination.totalPages, 1);
   const pageItems = getPageItems(result.pagination.page, totalPages);
 
   return (
     <div
-      className="-m-4 min-h-full bg-[#f8f2ea] text-[#1f2922] sm:-m-5 lg:-m-6"
+      className={`-m-4 bg-[#f8f2ea] text-[#1f2922] sm:-m-5 lg:-m-6 ${
+        shouldLockPreviewLayout
+          ? "flex h-[calc(100%+2rem)] flex-col overflow-hidden sm:h-[calc(100%+2.5rem)] lg:h-[calc(100%+3rem)]"
+          : "min-h-[calc(100%+2rem)] sm:min-h-[calc(100%+2.5rem)] lg:min-h-[calc(100%+3rem)]"
+      }`}
       style={{
         backgroundImage: [
           "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
@@ -412,23 +427,27 @@ export default async function StaffRequestsPage({
               Kelola, verifikasi, dan tindak lanjuti seluruh pengajuan layanan ULT.
             </p>
           </div>
-          <Button
-            type="button"
-            className="h-8 rounded-md border border-[#f0c46f] bg-[#b47b2b] px-4 text-[10px] font-semibold text-white shadow-sm hover:bg-[#a46f25]"
-          >
-            Tambah Pengajuan
-          </Button>
         </div>
       </div>
 
       <div
         className={`relative z-10 mx-auto -mt-6 grid gap-3 px-4 pb-6 transition-[grid-template-columns] duration-300 ease-out sm:px-6 lg:px-7 ${
-          selectedRequest
-            ? "max-w-[1660px] xl:[grid-template-columns:minmax(0,1fr)_360px]"
-            : "max-w-[1320px] xl:[grid-template-columns:minmax(0,1fr)_0px]"
+          shouldLockPreviewLayout ? "min-h-0 flex-1" : ""
+        } ${
+          hasPreview
+            ? "items-stretch max-w-[1660px] xl:[grid-template-columns:minmax(0,1fr)_360px]"
+            : "items-start max-w-[1320px] xl:[grid-template-columns:minmax(0,1fr)_0px]"
         }`}
       >
-        <div className="grid min-w-0 gap-3">
+        <div
+          className={`grid min-w-0 gap-3 ${
+            shouldLockPreviewLayout
+              ? "h-full grid-rows-[auto_minmax(0,1fr)]"
+              : shouldMatchPreviewHeight
+              ? "h-[min(680px,calc(100dvh-7rem))] grid-rows-[auto_minmax(0,1fr)]"
+              : "content-start"
+          }`}
+        >
           <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.09)]">
             <div className="flex h-[56px] items-end gap-3 border-b border-[#e8dfd0] bg-white px-3 pt-2">
               {visibleGroups.map((group) => {
@@ -455,7 +474,7 @@ export default async function StaffRequestsPage({
               })}
             </div>
 
-            <div className="grid gap-4 bg-[#fffdf9] px-4 py-3.5 lg:grid-cols-[minmax(340px,1fr)_minmax(340px,1fr)_auto] lg:items-end xl:px-5">
+            <div className="grid gap-3 bg-[#fffdf9] px-4 py-3 lg:grid-cols-[minmax(320px,0.85fr)_minmax(360px,1.15fr)_auto] lg:items-end xl:px-5">
               <div
                 className={
                   selectedRequest
@@ -466,7 +485,7 @@ export default async function StaffRequestsPage({
                 <p className="mb-1.5 text-[10px] font-semibold text-[#7a7166]">
                   Filter Status
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   <Button
                     asChild
                     size="sm"
@@ -555,7 +574,11 @@ export default async function StaffRequestsPage({
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+          <section
+            className={`overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${
+              shouldConstrainTable ? "flex min-h-0 flex-col" : ""
+            }`}
+          >
             <div className="flex gap-6 overflow-x-auto border-b border-[#eee6d9] px-5">
               <Link
                 className={`h-9 rounded-none border-b-2 px-0 text-[10px] font-semibold ${
@@ -597,7 +620,13 @@ export default async function StaffRequestsPage({
               ))}
             </div>
 
-            <div className="overflow-x-auto p-3.5 xl:p-4">
+            <div
+              className={`px-4 py-3 ${
+                shouldConstrainTable
+                  ? "min-h-[220px] flex-1 overflow-auto"
+                  : "overflow-x-auto"
+              }`}
+            >
               <Table className="min-w-[980px] table-fixed overflow-hidden rounded-md border border-[#edf0e9]">
                 <colgroup>
                   <col className="w-[17%]" />
@@ -630,7 +659,7 @@ export default async function StaffRequestsPage({
                     <TableRow>
                       <TableCell
                         colSpan={5}
-                        className="h-32 text-center text-sm text-[#6f746f]"
+                        className="h-24 text-center text-sm text-[#6f746f]"
                       >
                         Tidak ada pengajuan yang sesuai filter.
                       </TableCell>
@@ -786,8 +815,8 @@ export default async function StaffRequestsPage({
 
         <div
           className={`min-w-0 transition-all duration-300 ease-out ${
-            selectedRequest && selectedDetail
-              ? "translate-x-0 opacity-100"
+            hasPreview
+              ? "min-h-0 translate-x-0 opacity-100"
               : "pointer-events-none hidden translate-x-4 opacity-0 xl:block xl:overflow-hidden"
           }`}
         >
@@ -804,6 +833,7 @@ export default async function StaffRequestsPage({
                 limit,
                 q: params.q,
               })}
+              fixedHeight={shouldMatchPreviewHeight}
             />
           ) : null}
         </div>
