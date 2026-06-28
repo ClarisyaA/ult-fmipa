@@ -11,10 +11,12 @@ export async function GET(request: Request) {
     const page = Number(searchParams.get("page") ?? 1);
     const limit = Number(searchParams.get("limit") ?? 10);
     const service = searchParams.get("service") ?? undefined;
+    const q = searchParams.get("q") ?? undefined;
     const status = parseRequestStatus(searchParams.get("status"));
     const result = await getServiceRequestList({
       service,
       status,
+      q,
       page,
       limit,
     });

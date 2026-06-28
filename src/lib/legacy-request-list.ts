@@ -10,7 +10,9 @@ import type {
 
 type RequestListOptions = {
   service?: string;
+  serviceSlugs?: string[];
   status?: RequestStatus;
+  q?: string;
   page?: number;
   limit?: number;
 };
@@ -122,9 +124,19 @@ function normalizeLimit(value?: number) {
   return Math.min(Math.floor(value), 50);
 }
 
-function getRequestServices(serviceSlug?: string): RequestService[] {
+function getRequestServices(
+  serviceSlug?: string,
+  serviceSlugs?: string[]
+): RequestService[] {
+  const allowedServiceSlugs =
+    serviceSlugs && serviceSlugs.length > 0 ? new Set(serviceSlugs) : null;
+
   return getPublicServices().flatMap((service) => {
     if (serviceSlug && service.slug !== serviceSlug) {
+      return [];
+    }
+
+    if (!serviceSlug && allowedServiceSlugs && !allowedServiceSlugs.has(service.slug)) {
       return [];
     }
 
@@ -190,6 +202,45 @@ function buildUnionSql(services: RequestService[]) {
   );
 }
 
+function buildWhereSql(options: RequestListOptions) {
+  const conditions: Prisma.Sql[] = [];
+  const normalizedQuery = options.q?.trim();
+
+  if (options.status) {
+    conditions.push(Prisma.sql`status = ${options.status}`);
+  }
+
+  if (normalizedQuery) {
+    const query = `%${normalizedQuery}%`;
+    const normalizedQuerySql = Prisma.sql`CONVERT(${query} USING utf8mb3) COLLATE utf8mb3_unicode_ci`;
+
+    conditions.push(
+      Prisma.sql`(
+        requests.\`npm\` COLLATE utf8mb3_unicode_ci LIKE ${normalizedQuerySql}
+        OR requests.\`npm\` COLLATE utf8mb3_unicode_ci IN (
+          SELECT active_student.\`NPM\` COLLATE utf8mb3_unicode_ci
+          FROM \`mahasiswa\` active_student
+          WHERE active_student.\`NAMA\` COLLATE utf8mb3_unicode_ci LIKE ${normalizedQuerySql}
+          UNION
+          SELECT archived_student.\`NPM\` COLLATE utf8mb3_unicode_ci
+          FROM \`mahasiswa_sd_2015\` archived_student
+          WHERE archived_student.\`NAMA\` COLLATE utf8mb3_unicode_ci LIKE ${normalizedQuerySql}
+          UNION
+          SELECT alumni_profile.\`npm\` COLLATE utf8mb3_unicode_ci
+          FROM \`alumni\` alumni_profile
+          WHERE alumni_profile.\`nama\` COLLATE utf8mb3_unicode_ci LIKE ${normalizedQuerySql}
+        )
+      )`
+    );
+  }
+
+  if (conditions.length === 0) {
+    return Prisma.empty;
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`;
+}
+
 function serializeRequestDate(value: Date | string | null) {
   if (!value) {
     return null;
@@ -217,7 +268,7 @@ export async function getServiceRequestList(
   const page = normalizePage(options.page);
   const limit = normalizeLimit(options.limit);
   const offset = (page - 1) * limit;
-  const services = getRequestServices(options.service);
+  const services = getRequestServices(options.service, options.serviceSlugs);
 
   if (services.length === 0) {
     return {
@@ -232,33 +283,32 @@ export async function getServiceRequestList(
   }
 
   const unionSql = buildUnionSql(services);
-  const statusFilter = options.status
-    ? Prisma.sql`WHERE status = ${options.status}`
-    : Prisma.empty;
+  const whereSql = buildWhereSql(options);
 
-  const countRows = await prisma.$queryRaw<{ total: bigint | number }[]>`
-    SELECT COUNT(*) AS total
-    FROM (${unionSql}) AS requests
-    ${statusFilter}
-  `;
+  const [countRows, rows] = await Promise.all([
+    prisma.$queryRaw<{ total: bigint | number }[]>`
+      SELECT COUNT(*) AS total
+      FROM (${unionSql}) AS requests
+      ${whereSql}
+    `,
+    prisma.$queryRaw<RequestRow[]>`
+      SELECT
+        id,
+        serviceTitle,
+        serviceSlug,
+        sourceTable,
+        npm,
+        requestDate,
+        status
+      FROM (${unionSql}) AS requests
+      ${whereSql}
+      ORDER BY requestDate DESC, id DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `,
+  ]);
 
   const total = Number(countRows[0]?.total ?? 0);
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
-
-  const rows = await prisma.$queryRaw<RequestRow[]>`
-    SELECT
-      id,
-      serviceTitle,
-      serviceSlug,
-      sourceTable,
-      npm,
-      requestDate,
-      status
-    FROM (${unionSql}) AS requests
-    ${statusFilter}
-    ORDER BY requestDate DESC, id DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
 
   return {
     data: rows.map(toListItem),
