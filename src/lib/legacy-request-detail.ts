@@ -145,6 +145,13 @@ type DetailRow = {
   ditujukan: string | null;
 };
 
+type RequesterProfile = {
+  name: string | null;
+  program: string | null;
+  level: string | null;
+  classYear: number | null;
+};
+
 const statusLabels = {
   pending: "Menunggu Proses",
   inProgress: "Sedang Diproses",
@@ -190,6 +197,73 @@ function getVerificationStatus(row: DetailRow): RequestStatus {
   if (row.universityDate) return "completed";
   if (row.verificationDate) return "inProgress";
   return "pending";
+}
+
+async function getRequesterProfile(
+  npm: string | null
+): Promise<RequesterProfile | null> {
+  if (!npm) {
+    return null;
+  }
+
+  const activeStudent = await prisma.mahasiswa.findUnique({
+    where: { NPM: npm },
+    select: {
+      NAMA: true,
+      PROGRAM_STUDI: true,
+      JENJANG: true,
+      ANGKATAN: true,
+    },
+  });
+
+  if (activeStudent) {
+    return {
+      name: activeStudent.NAMA,
+      program: activeStudent.PROGRAM_STUDI,
+      level: activeStudent.JENJANG,
+      classYear: activeStudent.ANGKATAN,
+    };
+  }
+
+  const archivedStudent = await prisma.mahasiswa_sd_2015.findUnique({
+    where: { NPM: npm },
+    select: {
+      NAMA: true,
+      PROGRAM_STUDI: true,
+      JENJANG: true,
+      ANGKATAN: true,
+    },
+  });
+
+  if (archivedStudent) {
+    return {
+      name: archivedStudent.NAMA,
+      program: archivedStudent.PROGRAM_STUDI,
+      level: archivedStudent.JENJANG,
+      classYear: archivedStudent.ANGKATAN,
+    };
+  }
+
+  const alumni = await prisma.alumni.findFirst({
+    where: { npm },
+    select: {
+      nama: true,
+      program: true,
+      prodi: true,
+      tahun_masuk: true,
+    },
+  });
+
+  if (alumni) {
+    return {
+      name: alumni.nama,
+      program: [alumni.program, alumni.prodi].filter(Boolean).join(" "),
+      level: alumni.program,
+      classYear: alumni.tahun_masuk,
+    };
+  }
+
+  return null;
 }
 
 function buildNormalWorkflow(row: DetailRow) {
@@ -360,6 +434,7 @@ export async function getRequestDetail(
     metadata.workflow === "normal"
       ? getNormalStatus(row)
       : getVerificationStatus(row);
+  const requesterProfile = await getRequesterProfile(row.npm);
 
   return {
     id: String(row.id),
@@ -367,6 +442,10 @@ export async function getRequestDetail(
     serviceSlug: service.slug,
     sourceTable: service.sourceTable,
     npm: row.npm,
+    requesterName: requesterProfile?.name,
+    requesterProgram: requesterProfile?.program,
+    requesterLevel: requesterProfile?.level,
+    requesterClassYear: requesterProfile?.classYear,
     requestDate: toIso(row.requestDate),
     status,
     statusLabel: statusLabels[status],

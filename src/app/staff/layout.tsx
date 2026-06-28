@@ -1,7 +1,7 @@
-import Link from "next/link";
+import Image from "next/image";
 
 import { LogoutButton } from "@/components/layout/logout-button";
-import { Badge } from "@/components/ui/badge";
+import { StaffSidebar } from "@/components/layout/staff-sidebar";
 import { staffNavItems } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -14,50 +14,42 @@ export default async function StaffLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
+  const userName = user?.name ?? "Staff ULT";
+  const userRole = user?.role ?? "staff";
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl">
-        <aside className="hidden w-64 border-r bg-background px-5 py-6 md:block">
-          <p className="text-lg font-semibold">Staff ULT</p>
-          <Badge variant="secondary" className="mt-3">
-            Mode pengembangan
-          </Badge>
-          <div className="mt-5 rounded-lg border bg-muted/30 p-3">
-            <p className="text-sm font-medium">{user?.name ?? "Staff"}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Role: {user?.role ?? "staff"}
-            </p>
-            <div className="mt-3">
-              <LogoutButton />
-            </div>
-          </div>
-          <nav className="mt-8 grid gap-2">
-            {staffNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
+    <div className="h-dvh overflow-hidden bg-[#f4f2fb]">
+      <div className="flex h-full w-full">
+        <StaffSidebar
+          items={staffNavItems}
+          userName={userName}
+          userRole={userRole}
+        />
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="border-b bg-background px-4 py-4 sm:px-6 md:hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className="border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
             <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-semibold">Staff ULT</p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.name ?? "Staff"} · {user?.role ?? "staff"}
-                </p>
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logo-unpad.svg"
+                  alt="Logo Unpad"
+                  width={36}
+                  height={36}
+                  className="size-9"
+                />
+                <div>
+                  <p className="font-semibold">ULT FMIPA UNPAD</p>
+                  <p className="text-xs text-white/70">
+                    {userName} - {userRole}
+                  </p>
+                </div>
               </div>
               <LogoutButton />
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+            {children}
+          </main>
         </div>
       </div>
     </div>

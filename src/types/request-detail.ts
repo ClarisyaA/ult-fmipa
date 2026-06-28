@@ -6,6 +6,10 @@ export type ServiceRequestDetail = {
   serviceSlug: string;
   sourceTable: string;
   npm: string | null;
+  requesterName?: string | null;
+  requesterProgram?: string | null;
+  requesterLevel?: string | null;
+  requesterClassYear?: number | null;
   requestDate: string | null;
   status: RequestStatus;
   statusLabel: string;
