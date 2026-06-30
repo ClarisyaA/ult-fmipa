@@ -8,7 +8,6 @@ import { publicNavItems } from "@/constants/navigation";
 export function Footer() {
   return (
     <footer className="relative z-50 mt-auto overflow-hidden border-t border-neutral-200/60 bg-[linear-gradient(135deg,#ffebe9_0%,#fdfdfd_42%,#f5f7f6_100%)] text-neutral-600">
-      {/* Decorative assets */}
       <div className="pointer-events-none absolute -left-16 top-20 h-64 w-64 rounded-full bg-red-100/30 blur-3xl" />
       <div className="pointer-events-none absolute -right-16 bottom-20 h-64 w-64 rounded-full bg-amber-100/25 blur-3xl" />
       <div className="pointer-events-none absolute left-1/4 top-0 h-px w-1/2 bg-gradient-to-r from-transparent via-red-200/50 to-transparent" />
@@ -32,15 +31,8 @@ export function Footer() {
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-8 md:grid-cols-[1.5fr_0.8fr_1fr] lg:px-8 lg:py-10">
         <div className="flex flex-col gap-3">
           <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Logo ULT FMIPA"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-full object-cover shadow-sm"
-            />
             <span className="text-xl font-black tracking-tight text-neutral-900 md:text-2xl">
-              ULT SBAK <span className="text-red-600">FMIPA</span> Unpad
+              <span className="text-red-600">Unit Layanan Terpadu</span> FMIPA Unpad
             </span>
           </Link>
           <p className="max-w-sm text-sm leading-6 text-neutral-500">
@@ -152,7 +144,7 @@ export function Footer() {
 
       <div className="border-t border-neutral-200/40 bg-white/40 py-3.5 text-center text-xs font-medium text-neutral-400">
         <div className="mx-auto max-w-6xl px-4">
-          © {new Date().getFullYear()} ULT SBAK FMIPA Unpad. Semua hak dilindungi.
+          © {new Date().getFullYear()} Unit Layanan Terpadu FMIPA Unpad
         </div>
       </div>
     </footer>
