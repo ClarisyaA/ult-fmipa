@@ -28,13 +28,10 @@ export function Navbar() {
         <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-gradient-to-l from-[#ff2d28]/5 to-transparent blur-2xl" />
         <div className="absolute top-0 left-1/4 h-px w-1/3 bg-gradient-to-r from-transparent via-[#ff2d28]/10 to-transparent" />
         <div className="absolute bottom-0 right-1/4 h-px w-1/3 bg-gradient-to-r from-transparent via-[#ff2d28]/10 to-transparent" />
-        
-        <Link href="/" className="flex items-center gap-2 relative z-10">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-            ULT
-          </span>
-          <span className="text-sm font-bold text-red-600 tracking-tight">
-            ULT SBAK FMIPA UNPAD
+
+        <Link href="/" className="relative z-10">
+          <span className="bg-gradient-to-r from-[#ff2d28] via-[#e01f1a] to-[#c71410] bg-clip-text text-sm font-bold tracking-tight text-transparent">
+            UNIT LAYANAN TERPADU FMIPA UNPAD
           </span>
         </Link>
 
