@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { RequestStatusAction } from "@/types/request-action";
@@ -90,6 +91,37 @@ export function InlineStatusAction({
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  if (status === "delivered") {
+    return (
+      <div className="rounded-md border border-[#cddfd4] bg-[#f1faf4] px-3 py-2">
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[#2d6a4f]" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[#173d2d]">
+              Pengajuan selesai
+            </p>
+            <p className="mt-0.5 text-[11px] leading-snug text-[#5d6f62]">
+              Dokumen sudah diambil atau dikirim. Tidak ada aksi lanjutan.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!supported) {
+    return (
+      <div className="rounded-md border border-[#ded8eb] bg-[#fbfaff] px-3 py-2">
+        <p className="text-xs font-semibold text-[#4f4a5f]">
+          Workflow belum tersedia
+        </p>
+        <p className="mt-0.5 text-[11px] leading-snug text-[#7a7485]">
+          Aksi status untuk layanan ini belum diaktifkan.
+        </p>
+      </div>
+    );
+  }
+
   async function handleClick(config: ActionConfig) {
     if (!window.confirm(config.confirmation)) {
       return;
@@ -131,10 +163,10 @@ export function InlineStatusAction({
   }
 
   return (
-    <div className="grid gap-1">
-      <div className="flex flex-wrap gap-2">
+    <div className="grid gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {actions.map((config) => {
-          const enabled = supported && status === config.activeStatus;
+          const enabled = status === config.activeStatus;
           const title = enabled
             ? config.confirmation
             : getDisabledTitle(config.action, status, supported);
@@ -145,6 +177,11 @@ export function InlineStatusAction({
               type="button"
               variant={enabled ? "default" : "outline"}
               size="sm"
+              className={
+                enabled
+                  ? "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
+                  : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
+              }
               onClick={() => handleClick(config)}
               disabled={!enabled || submittingAction !== null}
               title={title}
@@ -154,9 +191,6 @@ export function InlineStatusAction({
           );
         })}
       </div>
-      {status === "delivered" ? (
-        <p className="text-xs text-muted-foreground">Sudah selesai</p>
-      ) : null}
       {message ? (
         <p
           className={`max-w-72 text-xs ${

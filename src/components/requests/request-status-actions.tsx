@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { RequestStatusAction } from "@/types/request-action";
@@ -51,6 +52,21 @@ export function RequestStatusActions({
     null
   );
   const [error, setError] = useState("");
+
+  if (currentStatus === "delivered") {
+    return (
+      <div className="rounded-lg border border-[#cddfd4] bg-[#f1faf4] p-4">
+        <div className="flex gap-3">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#2d6a4f]" />
+          <div>
+            <p className="text-sm font-semibold text-[#173d2d]">
+              Pengajuan sudah diambil/dikirim
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function updateStatus(action: RequestStatusAction) {
     setError("");

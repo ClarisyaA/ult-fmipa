@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Mail, MapPin, Globe } from "lucide-react";
 import { publicNavItems } from "@/constants/navigation";
 
