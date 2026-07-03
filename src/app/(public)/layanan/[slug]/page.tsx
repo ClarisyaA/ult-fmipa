@@ -73,10 +73,10 @@ function getServiceTheme(slug: string) {
 
 interface HeroDecorationProps {
   slug: string;
+  Icon: LucideIcon;
 }
 
-function HeroDecoration({ slug }: HeroDecorationProps) {
-  const Icon = getServiceIcon(slug);
+function HeroDecoration({ slug, Icon }: HeroDecorationProps) {
   const theme = getServiceTheme(slug);
 
   return (
@@ -248,7 +248,7 @@ export default async function ServiceDetailPage({
             
             <div className="px-8 py-6 sm:px-10 sm:py-7 lg:px-14 lg:py-8">
               <div className="grid items-center gap-6 lg:grid-cols-[1fr_200px]">
-                {/* KOLOM KIRI — Teks */}
+                {/* KOLOM KIRI */}
                 <div className="detail-fade-up relative z-10">
                   {/* Title */}
                   <h1 className="text-[2rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[2.5rem] lg:text-[2.8rem]">
@@ -262,8 +262,8 @@ export default async function ServiceDetailPage({
                   </p>
                 </div>
 
-                {/* KOLOM KANAN — Dekorasi */}
-                <HeroDecoration slug={slug} />
+                {/* KOLOM KANAN */}
+                <HeroDecoration slug={slug} Icon={Icon} />
               </div>
             </div>
           </div>
