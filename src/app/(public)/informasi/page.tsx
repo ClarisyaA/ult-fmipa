@@ -237,11 +237,28 @@ function HeroDecoration() {
   );
 }
 
+// Interface yang aman untuk menghindari error ESLint @typescript-eslint/no-explicit-any
+interface InformationPost {
+  id: string;
+  slug: string;
+  title: string;
+  category: string | null;
+  summary: string | null;
+  content: string;
+  publishedAt: string | null;
+}
+
+interface InformationImage {
+  id: string;
+  altText: string | null;
+  originalName: string;
+}
+
 interface PostProps {
-  posts: any[];
+  posts: InformationPost[];
   postsWithCoverImages: Array<{
-    post: any;
-    coverImage: any;
+    post: InformationPost;
+    coverImage: InformationImage | null;
   }>;
 }
 
@@ -253,7 +270,7 @@ export default function InformasiPage({ posts = [], postsWithCoverImages = [] }:
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const categories = useMemo(() => {
-    const allCategories = posts.map((p) => p.category).filter(Boolean);
+    const allCategories = posts.map((p) => p.category).filter(Boolean) as string[];
     return Array.from(new Set(allCategories));
   }, [posts]);
 
@@ -306,7 +323,7 @@ export default function InformasiPage({ posts = [], postsWithCoverImages = [] }:
         .fromTo(
           ".hero-desc",
           { y: 22, opacity: 0, filter: "blur(7px)" },
-          { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out", delay: -0.3 },
+          { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" },
           "-=0.3"
         );
 
