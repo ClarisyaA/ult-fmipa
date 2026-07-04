@@ -118,6 +118,9 @@ type ServiceWithRequestTable = {
 };
 
 type CountRow = {
+  title: string;
+  slug: string;
+  sourceTable: RequestTableName;
   total: bigint | number | null;
   pending: bigint | number | null;
   inProgress: bigint | number | null;
@@ -141,7 +144,49 @@ function isRequestTable(sourceTable: string): sourceTable is RequestTableName {
   return sourceTable in requestTableMetadata;
 }
 
-async function getNormalWorkflowSummary(
+function isPoolTimeoutError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  return (
+    error.code === "45028" &&
+    typeof error.message === "string" &&
+    error.message.includes("pool timeout")
+  );
+}
+
+function getEmptyServiceSummary(
+  service: ServiceWithRequestTable
+): ServiceRequestSummary {
+  return {
+    title: service.title,
+    slug: service.slug,
+    sourceTable: service.sourceTable,
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    delivered: 0,
+  };
+}
+
+function getEmptyDashboardSummary(
+  services: ServiceWithRequestTable[]
+): DashboardSummary {
+  return {
+    totalServices: services.length,
+    totalRequests: 0,
+    totalPending: 0,
+    totalInProgress: 0,
+    totalCompleted: 0,
+    totalDelivered: 0,
+    services: services.map(getEmptyServiceSummary),
+  };
+}
+
+function getNormalWorkflowSummaryQuery(
+  service: ServiceWithRequestTable,
   sourceTable: RequestTableName,
   metadata: NormalWorkflowMetadata
 ) {
@@ -150,8 +195,11 @@ async function getNormalWorkflowSummary(
   const completeColumn = Prisma.raw(quoteIdentifier(metadata.completeColumn));
   const deliveryColumn = Prisma.raw(quoteIdentifier(metadata.deliveryColumn));
 
-  const rows = await prisma.$queryRaw<CountRow[]>`
+  return Prisma.sql`
     SELECT
+      ${service.title} AS title,
+      ${service.slug} AS slug,
+      ${sourceTable} AS sourceTable,
       COUNT(*) AS total,
       SUM(CASE WHEN ${processColumn} IS NULL THEN 1 ELSE 0 END) AS pending,
       SUM(CASE WHEN ${processColumn} IS NOT NULL AND ${completeColumn} IS NULL THEN 1 ELSE 0 END) AS inProgress,
@@ -159,15 +207,19 @@ async function getNormalWorkflowSummary(
       SUM(CASE WHEN ${deliveryColumn} IS NOT NULL THEN 1 ELSE 0 END) AS delivered
     FROM ${table}
   `;
-
-  return rows[0];
 }
 
-async function getVerificationWorkflowSummary(sourceTable: RequestTableName) {
+function getVerificationWorkflowSummaryQuery(
+  service: ServiceWithRequestTable,
+  sourceTable: RequestTableName
+) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
 
-  const rows = await prisma.$queryRaw<CountRow[]>`
+  return Prisma.sql`
     SELECT
+      ${service.title} AS title,
+      ${service.slug} AS slug,
+      ${sourceTable} AS sourceTable,
       COUNT(*) AS total,
       SUM(CASE WHEN \`VERIFIKASI_TGL\` IS NULL THEN 1 ELSE 0 END) AS pending,
       SUM(CASE WHEN \`VERIFIKASI_TGL\` IS NOT NULL AND \`DIAMBIL_TGL\` IS NULL THEN 1 ELSE 0 END) AS inProgress,
@@ -175,25 +227,22 @@ async function getVerificationWorkflowSummary(sourceTable: RequestTableName) {
       SUM(CASE WHEN \`DIAMBIL_TGL\` IS NOT NULL THEN 1 ELSE 0 END) AS delivered
     FROM ${table}
   `;
-
-  return rows[0];
 }
 
-async function getServiceSummary(
-  title: string,
-  slug: string,
-  sourceTable: RequestTableName
-): Promise<ServiceRequestSummary> {
+function getServiceSummaryQuery(service: ServiceWithRequestTable) {
+  const sourceTable = service.sourceTable;
   const metadata = requestTableMetadata[sourceTable];
-  const row =
-    metadata.workflow === "normal"
-      ? await getNormalWorkflowSummary(sourceTable, metadata)
-      : await getVerificationWorkflowSummary(sourceTable);
 
+  return metadata.workflow === "normal"
+    ? getNormalWorkflowSummaryQuery(service, sourceTable, metadata)
+    : getVerificationWorkflowSummaryQuery(service, sourceTable);
+}
+
+function mapServiceSummary(row: CountRow): ServiceRequestSummary {
   return {
-    title,
-    slug,
-    sourceTable,
+    title: row.title,
+    slug: row.slug,
+    sourceTable: row.sourceTable,
     total: toNumber(row?.total),
     pending: toNumber(row?.pending),
     inProgress: toNumber(row?.inProgress),
@@ -219,16 +268,23 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     }
   );
 
-  const serviceSummaries: ServiceRequestSummary[] = [];
+  let serviceSummaries: ServiceRequestSummary[];
 
-  for (const service of services) {
-    const serviceSummary = await getServiceSummary(
-      service.title,
-      service.slug,
-      service.sourceTable
+  try {
+    const query = Prisma.join(
+      services.map((service) => getServiceSummaryQuery(service)),
+      " UNION ALL "
     );
 
-    serviceSummaries.push(serviceSummary);
+    const rows = await prisma.$queryRaw<CountRow[]>(query);
+    serviceSummaries = rows.map(mapServiceSummary);
+  } catch (error) {
+    if (!isPoolTimeoutError(error)) {
+      throw error;
+    }
+
+    console.error("[dashboard-summary] database pool timeout", error);
+    serviceSummaries = getEmptyDashboardSummary(services).services;
   }
 
   return serviceSummaries.reduce<DashboardSummary>(

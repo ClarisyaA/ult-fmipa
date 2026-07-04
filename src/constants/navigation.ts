@@ -3,6 +3,11 @@ export type NavItem = {
   href: string;
 };
 
+export type NavGroup = {
+  group: string;
+  items: NavItem[];
+};
+
 export const publicNavItems: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Profil", href: "/profil" },
@@ -11,13 +16,47 @@ export const publicNavItems: NavItem[] = [
   { label: "Survei", href: "/survei" },
 ];
 
-export const adminNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin/dashboard" },
-  { label: "Pengajuan", href: "/admin/requests" },
-  { label: "Informasi", href: "/admin/informasi" },
-  { label: "Survei", href: "/admin/surveys" },
-  { label: "Website Publik", href: "/" },
+export const adminNavGroups: NavGroup[] = [
+  {
+    group: "Overview",
+    items: [{ label: "Dashboard", href: "/admin/dashboard" }],
+  },
+  {
+    group: "Operasional",
+    items: [
+      { label: "Pengajuan Layanan", href: "/admin/requests" },
+      { label: "Informasi", href: "/admin/informasi" },
+      { label: "Survei", href: "/admin/surveys" },
+    ],
+  },
+  {
+    group: "Reporting",
+    items: [
+      { label: "Report Layanan", href: "/admin/reports?tab=layanan" },
+      { label: "Kinerja Staf", href: "/admin/reports?tab=staf" },
+      { label: "Kinerja Unit", href: "/admin/reports?tab=unit" },
+    ],
+  },
+  {
+    group: "Data",
+    items: [
+      { label: "Data Mahasiswa", href: "/admin/master/mahasiswa" },
+      { label: "Tracer Study", href: "/admin/alumni/tracer-study" },
+    ],
+  },
+  {
+    group: "System",
+    items: [
+      { label: "Data Level", href: "/admin/system/levels" },
+      { label: "Unit List", href: "/admin/system/units" },
+      { label: "User List", href: "/admin/system/users" },
+      { label: "User Log", href: "/admin/system/user-log" },
+    ],
+  },
 ];
+
+/** Flat list for backward compat — used by admin layout */
+export const adminNavItems: NavItem[] = adminNavGroups.flatMap((g) => g.items);
 
 export const staffNavItems: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard" },

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { Badge } from "@/components/ui/badge";
@@ -98,14 +99,11 @@ export default async function AdminRequestsPage({
 
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Daftar Pengajuan Layanan
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tampilan read-only dengan NPM dimasking dan tanpa data pribadi mentah.
-        </p>
-      </div>
+      <AdminPageHeader
+        section="Operasional"
+        title="Daftar Pengajuan Layanan"
+        description="Kelola pengajuan layanan dengan filter status dan jenis layanan."
+      />
 
       <Card>
         <CardHeader>

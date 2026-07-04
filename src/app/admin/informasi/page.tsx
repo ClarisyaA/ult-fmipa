@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InformationDeleteButton } from "@/components/information/information-delete-button";
 import { InformationStatusAction } from "@/components/information/information-status-action";
 import { Badge } from "@/components/ui/badge";
@@ -70,19 +71,12 @@ export default async function AdminInformasiPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Kelola Informasi
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Buat dan kelola pengumuman tanpa mengubah tabel layanan legacy.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/informasi/tambah">Tambah Informasi</Link>
-        </Button>
-      </div>
+      <AdminPageHeader
+        section="Operasional"
+        title="Kelola Informasi"
+        description="Buat dan kelola pengumuman tanpa mengubah tabel layanan legacy."
+        action={{ label: "Tambah Informasi", href: "/admin/informasi/tambah" }}
+      />
 
       <Card>
         <CardHeader>
