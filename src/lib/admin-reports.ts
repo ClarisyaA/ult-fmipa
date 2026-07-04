@@ -303,24 +303,32 @@ export async function getStaffPerformance(options?: {
   const queries = normalTables.map(([tblName, meta]) => {
     const tbl = Prisma.raw(q(tblName));
     const procStaff = Prisma.raw(q(meta.processStaffColumn));
-    const compStaff = Prisma.raw(q(meta.completeStaffColumn));
     const dateCol = Prisma.raw(q(meta.requestDateColumn));
 
-    let dateFilter = Prisma.sql``;
+    const whereParts: Prisma.Sql[] = [
+      Prisma.sql`${procStaff} IS NOT NULL`,
+      Prisma.sql`${procStaff} != ''`,
+    ];
+
     if (options?.dateFrom && options?.dateTo) {
-      dateFilter = Prisma.sql` WHERE ${dateCol} >= ${options.dateFrom} AND ${dateCol} <= ${options.dateTo}`;
+      whereParts.push(
+        Prisma.sql`${dateCol} >= ${options.dateFrom}`,
+        Prisma.sql`${dateCol} <= ${options.dateTo}`
+      );
     } else if (options?.dateFrom) {
-      dateFilter = Prisma.sql` WHERE ${dateCol} >= ${options.dateFrom}`;
+      whereParts.push(Prisma.sql`${dateCol} >= ${options.dateFrom}`);
     } else if (options?.dateTo) {
-      dateFilter = Prisma.sql` WHERE ${dateCol} <= ${options.dateTo}`;
+      whereParts.push(Prisma.sql`${dateCol} <= ${options.dateTo}`);
     }
+
+    const whereClause = Prisma.sql`WHERE ${Prisma.join(whereParts, " AND ")}`;
 
     return Prisma.sql`
       SELECT ${procStaff} AS staff,
         COUNT(*) AS processed,
         SUM(CASE WHEN ${Prisma.raw(q(meta.completeColumn))} IS NOT NULL THEN 1 ELSE 0 END) AS completed
-      FROM ${tbl}${dateFilter}
-      WHERE ${procStaff} IS NOT NULL AND ${procStaff} != ''
+      FROM ${tbl}
+      ${whereClause}
       GROUP BY ${procStaff}`;
   });
 

@@ -69,6 +69,20 @@ type StaffPerformanceRow = {
   completed: number;
 };
 
+const reportTabs = ["layanan", "staf", "unit"] as const;
+type ReportTab = (typeof reportTabs)[number];
+
+function getInitialTab(): ReportTab {
+  if (typeof window === "undefined") return "layanan";
+
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (reportTabs.includes(tab as ReportTab)) {
+    return tab as ReportTab;
+  }
+
+  return "layanan";
+}
+
 // ---------------------------------------------------------------------------
 // CSV download helper
 // ---------------------------------------------------------------------------
@@ -139,7 +153,7 @@ function BarChartSimple({
 // ---------------------------------------------------------------------------
 
 export default function AdminReportsPage() {
-  const [activeTab, setActiveTab] = useState("layanan");
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
@@ -155,15 +169,6 @@ export default function AdminReportsPage() {
     null
   );
   const [staffLoading, setStaffLoading] = useState(false);
-
-  // Read tab from URL on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab && ["layanan", "staf", "unit"].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, []);
 
   // Fetch service report
   const fetchServiceReport = useCallback(async () => {
@@ -203,13 +208,23 @@ export default function AdminReportsPage() {
 
   // Auto-fetch on mount
   useEffect(() => {
-    fetchServiceReport();
-    fetchStaffPerf();
+    const timer = window.setTimeout(() => {
+      fetchServiceReport();
+      fetchStaffPerf();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleApply = () => {
     if (activeTab === "layanan") fetchServiceReport();
     else if (activeTab === "staf") fetchStaffPerf();
+  };
+
+  const handleTabChange = (value: string) => {
+    if (reportTabs.includes(value as ReportTab)) {
+      setActiveTab(value as ReportTab);
+    }
   };
 
   // Filtered rows
@@ -271,7 +286,7 @@ export default function AdminReportsPage() {
         description="Lihat rekapitulasi layanan, kinerja staf, dan kinerja unit ULT/SBAK FMIPA Unpad."
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="w-full justify-start">
           <TabsTrigger value="layanan" className="gap-1.5">
             <ClipboardList className="size-3.5" />

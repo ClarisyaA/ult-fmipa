@@ -41,28 +41,6 @@ function buildHref(params: { page?: number; limit?: number; search?: string }) {
   return q ? `/admin/master/mahasiswa?${q}` : "/admin/master/mahasiswa";
 }
 
-function downloadCsv(
-  rows: { npm: string; nama: string | null; programStudi: string | null; jenjang: string | null; angkatan: number | null }[]
-) {
-  const headers = ["NPM", "Nama", "Program Studi", "Jenjang", "Angkatan"];
-  const csvContent = [
-    headers.join(","),
-    ...rows.map((r) =>
-      [r.npm, r.nama ?? "", r.programStudi ?? "", r.jenjang ?? "", r.angkatan ?? ""]
-        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
-        .join(",")
-    ),
-  ].join("\n");
-
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "data-mahasiswa.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Number(params.page ?? 1);
