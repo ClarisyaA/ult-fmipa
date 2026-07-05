@@ -176,9 +176,12 @@ export function StudentSurveyPage() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="py-6 text-sm text-muted-foreground">
-          Memuat daftar survei...
+      <Card className="border-[#EAE2D4] shadow-sm">
+        <CardContent className="py-8 text-sm text-[#7A6A5C]">
+          <div className="flex items-center justify-center gap-2">
+            <div className="size-4 animate-spin rounded-full border-2 border-[#EE1C25]/20 border-t-[#EE1C25]" />
+            Memuat daftar survei...
+          </div>
         </CardContent>
       </Card>
     );
@@ -186,13 +189,18 @@ export function StudentSurveyPage() {
 
   if (!data) {
     return (
-      <Card>
-        <CardContent className="grid gap-3 py-6">
-          <p className="text-sm text-muted-foreground">
+      <Card className="border-[#EAE2D4] shadow-sm">
+        <CardContent className="grid gap-4 py-8">
+          <p className="text-sm text-[#7A6A5C]">
             Daftar survei belum dapat dimuat.
           </p>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button type="button" variant="outline" onClick={loadSurveyRequests}>
+          {error ? <p className="text-sm text-[#EE1C25]">{error}</p> : null}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={loadSurveyRequests}
+            className="border-[#DDD5C3] text-[#6B5E52] hover:border-[#EE1C25] hover:text-[#EE1C25] hover:bg-[#EE1C25]/5"
+          >
             Coba Lagi
           </Button>
         </CardContent>
@@ -203,150 +211,201 @@ export function StudentSurveyPage() {
   const totalCompletedRequests = data.pending.length + data.submitted.length;
 
   return (
-    <div className="grid gap-6">
+    <div className="space-y-6">
+      {/* Alert / Error / Success Messages */}
+      {message ? (
+        <div className="rounded-xl border border-[#EE1C25]/20 bg-[#EE1C25]/5 px-4 py-3 text-sm text-[#18130E]">
+          <span className="font-medium">✓</span> {message}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="rounded-xl border border-[#EE1C25]/30 bg-[#EE1C25]/10 px-4 py-3 text-sm text-[#EE1C25]">
+          <span className="font-medium">✗</span> {error}
+        </div>
+      ) : null}
+
+      {/* Table not available warning */}
       {!data.tableAvailable ? (
-        <Card>
-          <CardContent className="py-6 text-sm text-muted-foreground">
+        <Card className="border-[#EAE2D4] shadow-sm">
+          <CardContent className="py-6 text-sm text-[#7A6A5C]">
             Table survei belum tersedia. Jalankan migration
             002_create_ult_service_surveys.sql.
           </CardContent>
         </Card>
       ) : null}
 
-      {message ? (
-        <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Menunggu Survei</CardTitle>
-          <CardDescription>
+      {/* PENDING SURVEYS */}
+      <Card className="border-[#EAE2D4] shadow-sm overflow-hidden">
+        <CardHeader className="px-6 pt-6 pb-2 sm:px-8">
+          <CardTitle className="text-xl font-black tracking-tight text-[#18130E] sm:text-2xl">
+            Menunggu Survei
+          </CardTitle>
+          <CardDescription className="text-[#7A6A5C]">
             Pengajuan selesai yang belum diberi survei.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="px-6 pb-6 sm:px-8">
           {data.pending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <div className="rounded-xl border border-[#F5F0E8] bg-[#F7F3EA]/30 px-4 py-6 text-center text-sm text-[#7A6A5C]">
               {totalCompletedRequests === 0
                 ? "Belum ada layanan selesai yang dapat disurvei."
                 : "Semua layanan selesai sudah diberi survei. Terima kasih atas masukannya."}
-            </p>
+            </div>
           ) : (
-            data.pending.map((request) => (
-              <div key={`${request.serviceSlug}-${request.id}`} className="rounded-md border p-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">{request.serviceTitle}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatDate(request.requestDate)}
-                    </p>
-                    <Badge variant="secondary" className="mt-2">
-                      {request.statusLabel}
-                    </Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant={expandedId === request.id ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => toggleForm(request.id)}
-                  >
-                    Isi Survei
-                  </Button>
-                </div>
-
-                {expandedId === request.id ? (
-                  <form
-                    className="mt-4 grid gap-4 border-t pt-4"
-                    onSubmit={(event) => handleSubmit(event, request)}
-                  >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {ratingFields.map((field) => (
-                        <div key={field.key} className="grid gap-2">
-                          <Label htmlFor={`${request.id}-${field.key}`}>
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </Label>
-                          <select
-                            id={`${request.id}-${field.key}`}
-                            className="h-8 rounded-md border bg-background px-2 text-sm"
-                            value={formState[field.key]}
-                            onChange={(event) =>
-                              updateField(field.key, event.currentTarget.value)
-                            }
-                            required={field.required}
-                          >
-                            <option value="">Pilih</option>
-                            {ratingOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor={`${request.id}-comment`}>Komentar</Label>
-                      <Textarea
-                        id={`${request.id}-comment`}
-                        maxLength={500}
-                        value={formState.comment}
-                        onChange={(event) =>
-                          updateField("comment", event.currentTarget.value)
-                        }
-                        placeholder="Tulis masukan tambahan"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        {formState.comment.length}/500 karakter
+            <div className="space-y-4">
+              {data.pending.map((request) => (
+                <div
+                  key={`${request.serviceSlug}-${request.id}`}
+                  className="rounded-xl border border-[#EAE2D4] bg-white p-4 transition-all hover:border-[#EE1C25]/30 hover:shadow-md"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#18130E]">
+                        {request.serviceTitle}
                       </p>
+                      <p className="mt-1 text-sm text-[#7A6A5C]">
+                        {formatDate(request.requestDate)}
+                      </p>
+                      <Badge
+                        variant="secondary"
+                        className="mt-2 bg-[#F7F3EA] text-[#6B5E52] hover:bg-[#F7F3EA]"
+                      >
+                        {request.statusLabel}
+                      </Badge>
                     </div>
-
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Mengirim..." : "Kirim Survei"}
+                    <Button
+                      type="button"
+                      variant={expandedId === request.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleForm(request.id)}
+                      className={
+                        expandedId === request.id
+                          ? "bg-[#EE1C25] hover:bg-[#C41720] text-white"
+                          : "border-[#DDD5C3] text-[#6B5E52] hover:border-[#EE1C25] hover:text-[#EE1C25] hover:bg-[#EE1C25]/5"
+                      }
+                    >
+                      {expandedId === request.id ? "Tutup Form" : "Isi Survei"}
                     </Button>
-                  </form>
-                ) : null}
-              </div>
-            ))
+                  </div>
+
+                  {expandedId === request.id ? (
+                    <form
+                      className="mt-4 space-y-4 border-t border-[#EAE2D4] pt-4"
+                      onSubmit={(event) => handleSubmit(event, request)}
+                    >
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {ratingFields.map((field) => (
+                          <div key={field.key} className="space-y-1.5">
+                            <Label
+                              htmlFor={`${request.id}-${field.key}`}
+                              className="text-sm font-medium text-[#18130E]"
+                            >
+                              {field.label}
+                              {field.required ? (
+                                <span className="text-[#EE1C25]"> *</span>
+                              ) : null}
+                            </Label>
+                            <select
+                              id={`${request.id}-${field.key}`}
+                              className="h-9 w-full rounded-lg border border-[#DDD5C3] bg-white px-3 text-sm text-[#18130E] transition-colors focus:border-[#EE1C25]/50 focus:ring-1 focus:ring-[#EE1C25]/30 focus:outline-none"
+                              value={formState[field.key]}
+                              onChange={(event) =>
+                                updateField(field.key, event.currentTarget.value)
+                              }
+                              required={field.required}
+                            >
+                              <option value="">Pilih</option>
+                              {ratingOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor={`${request.id}-comment`}
+                          className="text-sm font-medium text-[#18130E]"
+                        >
+                          Komentar
+                        </Label>
+                        <Textarea
+                          id={`${request.id}-comment`}
+                          maxLength={500}
+                          value={formState.comment}
+                          onChange={(event) =>
+                            updateField("comment", event.currentTarget.value)
+                          }
+                          placeholder="Tulis masukan tambahan"
+                          className="min-h-[100px] rounded-xl border-[#DDD5C3] bg-white text-[#18130E] placeholder:text-[#A0917F] focus-visible:border-[#EE1C25]/50 focus-visible:ring-1 focus-visible:ring-[#EE1C25]/30"
+                        />
+                        <p className="text-sm text-[#7A6A5C]">
+                          {formState.comment.length}/500 karakter
+                        </p>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full bg-[#EE1C25] hover:bg-[#C41720] text-white font-semibold shadow-sm transition-all hover:shadow-md"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                            Mengirim...
+                          </>
+                        ) : (
+                          "Kirim Survei"
+                        )}
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Survei Sudah Diisi</CardTitle>
-          <CardDescription>
+      {/* SUBMITTED SURVEYS */}
+      <Card className="border-[#EAE2D4] shadow-sm overflow-hidden">
+        <CardHeader className="px-6 pt-6 pb-2 sm:px-8">
+          <CardTitle className="text-xl font-black tracking-tight text-[#18130E] sm:text-2xl">
+            Survei Sudah Diisi
+          </CardTitle>
+          <CardDescription className="text-[#7A6A5C]">
             Pengajuan selesai yang sudah memiliki respons survei.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="px-6 pb-6 sm:px-8">
           {data.submitted.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <div className="rounded-xl border border-[#F5F0E8] bg-[#F7F3EA]/30 px-4 py-6 text-center text-sm text-[#7A6A5C]">
               Belum ada survei yang sudah diisi.
-            </p>
+            </div>
           ) : (
-            data.submitted.map((request) => (
-              <div
-                key={`${request.serviceSlug}-${request.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">{request.serviceTitle}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatDate(request.requestDate)}
-                  </p>
+            <div className="space-y-3">
+              {data.submitted.map((request) => (
+                <div
+                  key={`${request.serviceSlug}-${request.id}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#EAE2D4] bg-white p-4 transition-all hover:border-[#EE1C25]/30 hover:shadow-md"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#18130E]">
+                      {request.serviceTitle}
+                    </p>
+                    <p className="mt-1 text-sm text-[#7A6A5C]">
+                      {formatDate(request.requestDate)}
+                    </p>
+                  </div>
+                  <Badge className="bg-[#EE1C25]/10 text-[#EE1C25] hover:bg-[#EE1C25]/15 border-0">
+                    ✓ Sudah Diisi
+                  </Badge>
                 </div>
-                <Badge variant="secondary">Sudah Diisi</Badge>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
