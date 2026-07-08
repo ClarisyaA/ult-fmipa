@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 
-import { requireRole } from "@/lib/auth";
-import { getSurveySummary } from "@/lib/service-surveys";
+import { getStaffSurveySummaryApiData } from "@/lib/staff-api-data";
 
 export async function GET() {
-  const user = await requireRole(["staff"]);
+  const result = await getStaffSurveySummaryApiData();
 
-  if (!user) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.error) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status }
+    );
   }
 
-  const summary = await getSurveySummary("staff");
-
   return NextResponse.json({
-    data: summary,
+    data: result.data,
   });
 }

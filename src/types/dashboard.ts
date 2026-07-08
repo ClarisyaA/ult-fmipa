@@ -18,3 +18,13 @@ export type DashboardSummary = {
   totalDelivered: number;
   services: ServiceRequestSummary[];
 };
+
+export type PendingDashboardRequestRow = {
+  id: string;
+  serviceTitle: string;
+  serviceSlug: string;
+  serviceCategory: string;
+  requesterName: string;
+  programStudy: string;
+  requestDate: string | null;
+};

@@ -19,8 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAdminInformationPosts } from "@/lib/information-posts";
 import type { InformationPost, InformationPostStatus } from "@/lib/information-posts";
+import { getStaffInformationApiData } from "@/lib/staff-api-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -66,7 +66,8 @@ function getDisplayStatus(post: InformationPost) {
 }
 
 export default async function StaffInformasiPage() {
-  const posts = await getAdminInformationPosts();
+  const { data, error } = await getStaffInformationApiData();
+  const posts = data ?? [];
 
   return (
     <div className="grid gap-6">
@@ -105,7 +106,7 @@ export default async function StaffInformasiPage() {
               {posts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-muted-foreground">
-                    Belum ada informasi yang dibuat.
+                    {error ?? "Belum ada informasi yang dibuat."}
                   </TableCell>
                 </TableRow>
               ) : (

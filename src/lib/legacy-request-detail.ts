@@ -9,6 +9,8 @@ type NormalWorkflowMetadata = {
   workflow: "normal";
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
   deliveryByColumn: "DIAMBIL_OLEH" | "DIKIRIM_OLEH";
+  emailColumn?: "EMAIL";
+  phoneColumn?: "NO_HP" | "HP_WA";
   keperluanColumn?: "KEPERLUAN";
   keteranganColumn?: "KETERANGAN";
   beasiswaColumn?: "BEASISWA";
@@ -32,12 +34,16 @@ const requestTableMetadata = {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
   masih_kuliah: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "NO_HP",
   },
   keterangan_lulus: {
     workflow: "normal",
@@ -48,6 +54,8 @@ const requestTableMetadata = {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
   legalisir: {
@@ -66,24 +74,32 @@ const requestTableMetadata = {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
   plagiarisme: {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
   referensi: {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
   unggah_karya_ilmiah: {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
   surat_pengantar: {
@@ -112,6 +128,8 @@ const requestTableMetadata = {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
+    emailColumn: "EMAIL",
+    phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
 } satisfies Record<string, RequestTableMetadata>;
@@ -121,6 +139,8 @@ type RequestTableName = keyof typeof requestTableMetadata;
 type DetailRow = {
   id: string | bigint | number;
   npm: string | null;
+  email: string | null;
+  phone: string | null;
   requestDate: Date | string | null;
   requestEntry: string | null;
   processDate: Date | string | null;
@@ -182,7 +202,9 @@ function toIso(value: Date | string | null | undefined) {
     return null;
   }
 
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function getNormalStatus(row: DetailRow): RequestStatus {
@@ -200,7 +222,7 @@ function getVerificationStatus(row: DetailRow): RequestStatus {
 }
 
 async function getRequesterProfile(
-  npm: string | null
+  npm: string | null,
 ): Promise<RequesterProfile | null> {
   if (!npm) {
     return null;
@@ -333,16 +355,22 @@ function buildVerificationWorkflow(row: DetailRow) {
 async function getNormalDetail(
   sourceTable: RequestTableName,
   metadata: NormalWorkflowMetadata,
-  id: string
+  id: string,
 ) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
   const deliveryColumn = Prisma.raw(quoteIdentifier(metadata.deliveryColumn));
-  const deliveryByColumn = Prisma.raw(quoteIdentifier(metadata.deliveryByColumn));
+  const deliveryByColumn = Prisma.raw(
+    quoteIdentifier(metadata.deliveryByColumn),
+  );
+  const emailColumn = columnOrNull(metadata.emailColumn);
+  const phoneColumn = columnOrNull(metadata.phoneColumn);
 
   const rows = await prisma.$queryRaw<DetailRow[]>`
     SELECT
       CAST(\`ID\` AS CHAR) AS id,
       \`NPM\` AS npm,
+      ${emailColumn} AS email,
+      ${phoneColumn} AS phone,
       \`PERMINTAAN_TGL\` AS requestDate,
       \`PERMINTAAN_ENTRY\` AS requestEntry,
       \`PROSES_TGL\` AS processDate,
@@ -373,13 +401,18 @@ async function getNormalDetail(
   return rows[0] ?? null;
 }
 
-async function getVerificationDetail(sourceTable: RequestTableName, id: string) {
+async function getVerificationDetail(
+  sourceTable: RequestTableName,
+  id: string,
+) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
 
   const rows = await prisma.$queryRaw<DetailRow[]>`
     SELECT
       CAST(\`ID\` AS CHAR) AS id,
       \`NPM\` AS npm,
+      NULL AS email,
+      NULL AS phone,
       \`PERMINTAAN_TGL\` AS requestDate,
       \`PERMINTAAN_ENTRY\` AS requestEntry,
       NULL AS processDate,
@@ -412,7 +445,7 @@ async function getVerificationDetail(sourceTable: RequestTableName, id: string) 
 
 export async function getRequestDetail(
   serviceSlug: string,
-  id: string
+  id: string,
 ): Promise<ServiceRequestDetail | null> {
   const service = getPublicServiceBySlug(serviceSlug);
 
@@ -443,6 +476,8 @@ export async function getRequestDetail(
     sourceTable: service.sourceTable,
     npm: row.npm,
     requesterName: requesterProfile?.name,
+    requesterEmail: row.email,
+    requesterPhone: row.phone,
     requesterProgram: requesterProfile?.program,
     requesterLevel: requesterProfile?.level,
     requesterClassYear: requesterProfile?.classYear,

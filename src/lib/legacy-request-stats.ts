@@ -4,6 +4,7 @@ import { getPublicServices } from "@/lib/legacy-services";
 import { prisma } from "@/lib/prisma";
 import type {
   DashboardSummary,
+  PendingDashboardRequestRow,
   ServiceRequestSummary,
 } from "@/types/dashboard";
 
@@ -114,6 +115,7 @@ type RequestTableName = keyof typeof requestTableMetadata;
 type ServiceWithRequestTable = {
   title: string;
   slug: string;
+  category: string;
   sourceTable: RequestTableName;
 };
 
@@ -123,6 +125,16 @@ type CountRow = {
   inProgress: bigint | number | null;
   completed: bigint | number | null;
   delivered: bigint | number | null;
+};
+
+type PendingRequestRow = {
+  id: string | bigint | number;
+  serviceTitle: string;
+  serviceSlug: string;
+  serviceCategory: string;
+  requesterName: string | null;
+  programStudy: string | null;
+  requestDate: Date | string | null;
 };
 
 function quoteIdentifier(identifier: string) {
@@ -137,13 +149,23 @@ function toNumber(value: bigint | number | null | undefined) {
   return Number(value);
 }
 
+function serializeRequestDate(value: Date | string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
+}
+
 function isRequestTable(sourceTable: string): sourceTable is RequestTableName {
   return sourceTable in requestTableMetadata;
 }
 
 async function getNormalWorkflowSummary(
   sourceTable: RequestTableName,
-  metadata: NormalWorkflowMetadata
+  metadata: NormalWorkflowMetadata,
 ) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
   const processColumn = Prisma.raw(quoteIdentifier(metadata.processColumn));
@@ -179,10 +201,76 @@ async function getVerificationWorkflowSummary(sourceTable: RequestTableName) {
   return rows[0];
 }
 
+function buildProgramStudySql() {
+  return Prisma.sql`COALESCE(
+    NULLIF(CONVERT(active_student.\`PROGRAM_STUDI\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    NULLIF(CONVERT(archived_student.\`PROGRAM_STUDI\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    NULLIF(CONVERT(CONCAT_WS(' ', alumni_profile.\`program\`, alumni_profile.\`prodi\`) USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    CONVERT('Tidak diketahui' USING utf8mb3) COLLATE utf8mb3_unicode_ci
+  )`;
+}
+
+function buildRequesterNameSql() {
+  return Prisma.sql`COALESCE(
+    NULLIF(CONVERT(active_student.\`NAMA\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    NULLIF(CONVERT(archived_student.\`NAMA\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    NULLIF(CONVERT(alumni_profile.\`nama\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+    CONVERT('Tidak diketahui' USING utf8mb3) COLLATE utf8mb3_unicode_ci
+  )`;
+}
+
+function buildPendingCondition(metadata: RequestTableMetadata) {
+  if (metadata.workflow === "normal") {
+    const processColumn = Prisma.raw(quoteIdentifier(metadata.processColumn));
+
+    return Prisma.sql`${processColumn} IS NULL`;
+  }
+
+  return Prisma.sql`\`VERIFIKASI_TGL\` IS NULL`;
+}
+
+function buildPendingRequestSelect(service: ServiceWithRequestTable) {
+  const metadata = requestTableMetadata[service.sourceTable];
+  const table = Prisma.raw(quoteIdentifier(service.sourceTable));
+  const requesterNameSql = buildRequesterNameSql();
+  const programStudySql = buildProgramStudySql();
+  const pendingCondition = buildPendingCondition(metadata);
+
+  return Prisma.sql`
+    SELECT
+      CAST(requests.\`ID\` AS CHAR CHARACTER SET utf8mb3) COLLATE utf8mb3_unicode_ci AS id,
+      CONVERT(${service.title} USING utf8mb3) COLLATE utf8mb3_unicode_ci AS serviceTitle,
+      CONVERT(${service.slug} USING utf8mb3) COLLATE utf8mb3_unicode_ci AS serviceSlug,
+      CONVERT(${service.category} USING utf8mb3) COLLATE utf8mb3_unicode_ci AS serviceCategory,
+      ${requesterNameSql} AS requesterName,
+      ${programStudySql} AS programStudy,
+      requests.\`PERMINTAAN_TGL\` AS requestDate
+    FROM ${table} requests
+    LEFT JOIN \`mahasiswa\` active_student
+      ON active_student.\`NPM\` COLLATE utf8mb3_unicode_ci =
+        requests.\`NPM\` COLLATE utf8mb3_unicode_ci
+    LEFT JOIN \`mahasiswa_sd_2015\` archived_student
+      ON archived_student.\`NPM\` COLLATE utf8mb3_unicode_ci =
+        requests.\`NPM\` COLLATE utf8mb3_unicode_ci
+    LEFT JOIN (
+      SELECT
+        \`npm\`,
+        MAX(\`nama\`) AS \`nama\`,
+        MAX(\`program\`) AS \`program\`,
+        MAX(\`prodi\`) AS \`prodi\`
+      FROM \`alumni\`
+      GROUP BY \`npm\`
+    ) alumni_profile
+      ON alumni_profile.\`npm\` COLLATE utf8mb3_unicode_ci =
+        requests.\`NPM\` COLLATE utf8mb3_unicode_ci
+    WHERE ${pendingCondition}
+  `;
+}
+
 async function getServiceSummary(
   title: string,
   slug: string,
-  sourceTable: RequestTableName
+  sourceTable: RequestTableName,
 ): Promise<ServiceRequestSummary> {
   const metadata = requestTableMetadata[sourceTable];
   const row =
@@ -213,10 +301,11 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
         {
           title: service.title,
           slug: service.slug,
+          category: service.category,
           sourceTable: service.sourceTable,
         },
       ];
-    }
+    },
   );
 
   const serviceSummaries: ServiceRequestSummary[] = [];
@@ -225,7 +314,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     const serviceSummary = await getServiceSummary(
       service.title,
       service.slug,
-      service.sourceTable
+      service.sourceTable,
     );
 
     serviceSummaries.push(serviceSummary);
@@ -249,6 +338,60 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       totalCompleted: 0,
       totalDelivered: 0,
       services: serviceSummaries,
-    }
+    },
   );
+}
+
+export async function getLatestPendingDashboardRequests(): Promise<
+  PendingDashboardRequestRow[]
+> {
+  const services: ServiceWithRequestTable[] = getPublicServices().flatMap(
+    (service) => {
+      if (!isRequestTable(service.sourceTable)) {
+        return [];
+      }
+
+      return [
+        {
+          title: service.title,
+          slug: service.slug,
+          category: service.category,
+          sourceTable: service.sourceTable,
+        },
+      ];
+    },
+  );
+
+  if (services.length === 0) {
+    return [];
+  }
+
+  const unionSql = Prisma.join(
+    services.map((service) => buildPendingRequestSelect(service)),
+    " UNION ALL ",
+  );
+
+  const rows = await prisma.$queryRaw<PendingRequestRow[]>`
+    SELECT
+      id,
+      serviceTitle,
+      serviceSlug,
+      serviceCategory,
+      requesterName,
+      programStudy,
+      requestDate
+    FROM (${unionSql}) AS requests
+    ORDER BY requestDate DESC, id DESC
+    LIMIT 10
+  `;
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    serviceTitle: row.serviceTitle,
+    serviceSlug: row.serviceSlug,
+    serviceCategory: row.serviceCategory,
+    requesterName: row.requesterName || "Tidak diketahui",
+    programStudy: row.programStudy || "Tidak diketahui",
+    requestDate: serializeRequestDate(row.requestDate),
+  }));
 }

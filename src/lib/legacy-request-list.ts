@@ -20,6 +20,7 @@ type RequestListOptions = {
 type NormalWorkflowMetadata = {
   workflow: "normal";
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
+  purposeColumns?: string[];
 };
 
 type VerificationWorkflowMetadata = {
@@ -31,21 +32,65 @@ type RequestTableMetadata =
   | VerificationWorkflowMetadata;
 
 const requestTableMetadata = {
-  masih_kuliah_aktif: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
+  masih_kuliah_aktif: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["KEPERLUAN"],
+  },
   masih_kuliah: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
   keterangan_lulus: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
-  kpa: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
-  legalisir: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
+  kpa: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["KEPERLUAN"],
+  },
+  legalisir: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["KEPERLUAN"],
+  },
   transkrip: { workflow: "verification" },
-  bebas_pinjaman: { workflow: "normal", deliveryColumn: "DIKIRIM_TGL" },
-  plagiarisme: { workflow: "normal", deliveryColumn: "DIKIRIM_TGL" },
-  referensi: { workflow: "normal", deliveryColumn: "DIKIRIM_TGL" },
-  unggah_karya_ilmiah: { workflow: "normal", deliveryColumn: "DIKIRIM_TGL" },
-  surat_pengantar: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
-  beasiswa: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
-  kelakuan_baik: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
+  bebas_pinjaman: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    purposeColumns: ["KETERANGAN"],
+  },
+  plagiarisme: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    purposeColumns: ["KETERANGAN"],
+  },
+  referensi: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    purposeColumns: ["KETERANGAN"],
+  },
+  unggah_karya_ilmiah: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    purposeColumns: ["KETERANGAN"],
+  },
+  surat_pengantar: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["PENGANTAR", "DITUJUKAN"],
+  },
+  beasiswa: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["BEASISWA"],
+  },
+  kelakuan_baik: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["KEPERLUAN"],
+  },
   ijazah: { workflow: "verification" },
-  kks: { workflow: "normal", deliveryColumn: "DIAMBIL_TGL" },
+  kks: {
+    workflow: "normal",
+    deliveryColumn: "DIAMBIL_TGL",
+    purposeColumns: ["KEPERLUAN"],
+  },
 } satisfies Record<string, RequestTableMetadata>;
 
 type RequestTableName = keyof typeof requestTableMetadata;
@@ -62,6 +107,7 @@ type RequestRow = {
   serviceSlug: string;
   sourceTable: string;
   npm: string | null;
+  purpose: string | null;
   requestDate: Date | string | null;
   status: RequestStatus;
 };
@@ -126,7 +172,7 @@ function normalizeLimit(value?: number) {
 
 function getRequestServices(
   serviceSlug?: string,
-  serviceSlugs?: string[]
+  serviceSlugs?: string[],
 ): RequestService[] {
   const allowedServiceSlugs =
     serviceSlugs && serviceSlugs.length > 0 ? new Set(serviceSlugs) : null;
@@ -136,7 +182,11 @@ function getRequestServices(
       return [];
     }
 
-    if (!serviceSlug && allowedServiceSlugs && !allowedServiceSlugs.has(service.slug)) {
+    if (
+      !serviceSlug &&
+      allowedServiceSlugs &&
+      !allowedServiceSlugs.has(service.slug)
+    ) {
       return [];
     }
 
@@ -174,6 +224,20 @@ function buildVerificationStatusSql() {
   END`;
 }
 
+function buildPurposeSql(metadata: RequestTableMetadata) {
+  if (metadata.workflow !== "normal" || !metadata.purposeColumns?.length) {
+    return Prisma.sql`CONVERT(NULL USING utf8mb3) COLLATE utf8mb3_unicode_ci`;
+  }
+
+  const columns = metadata.purposeColumns.map((column) => {
+    const identifier = Prisma.raw(quoteIdentifier(column));
+
+    return Prisma.sql`NULLIF(CONVERT(${identifier} USING utf8mb3) COLLATE utf8mb3_unicode_ci, '')`;
+  });
+
+  return Prisma.sql`COALESCE(${Prisma.join(columns, ", ")})`;
+}
+
 function buildServiceSelect(service: RequestService) {
   const metadata = requestTableMetadata[service.sourceTable];
   const table = Prisma.raw(quoteIdentifier(service.sourceTable));
@@ -181,6 +245,7 @@ function buildServiceSelect(service: RequestService) {
     metadata.workflow === "normal"
       ? buildNormalStatusSql(metadata.deliveryColumn)
       : buildVerificationStatusSql();
+  const purposeSql = buildPurposeSql(metadata);
 
   return Prisma.sql`
     SELECT
@@ -189,6 +254,7 @@ function buildServiceSelect(service: RequestService) {
       ${service.slug} AS serviceSlug,
       ${service.sourceTable} AS sourceTable,
       \`NPM\` AS npm,
+      ${purposeSql} AS purpose,
       \`PERMINTAAN_TGL\` AS requestDate,
       ${statusSql} AS status
     FROM ${table}
@@ -198,7 +264,7 @@ function buildServiceSelect(service: RequestService) {
 function buildUnionSql(services: RequestService[]) {
   return Prisma.join(
     services.map((service) => buildServiceSelect(service)),
-    " UNION ALL "
+    " UNION ALL ",
   );
 }
 
@@ -230,7 +296,7 @@ function buildWhereSql(options: RequestListOptions) {
           FROM \`alumni\` alumni_profile
           WHERE alumni_profile.\`nama\` COLLATE utf8mb3_unicode_ci LIKE ${normalizedQuerySql}
         )
-      )`
+      )`,
     );
   }
 
@@ -246,7 +312,9 @@ function serializeRequestDate(value: Date | string | null) {
     return null;
   }
 
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function toListItem(row: RequestRow): ServiceRequestListItem {
@@ -256,6 +324,7 @@ function toListItem(row: RequestRow): ServiceRequestListItem {
     serviceSlug: row.serviceSlug,
     sourceTable: row.sourceTable,
     maskedNpm: maskNpm(row.npm),
+    purpose: row.purpose,
     requestDate: serializeRequestDate(row.requestDate),
     status: row.status,
     statusLabel: requestStatusLabels[row.status],
@@ -263,7 +332,7 @@ function toListItem(row: RequestRow): ServiceRequestListItem {
 }
 
 export async function getServiceRequestList(
-  options: RequestListOptions = {}
+  options: RequestListOptions = {},
 ): Promise<PaginatedServiceRequests> {
   const page = normalizePage(options.page);
   const limit = normalizeLimit(options.limit);
@@ -298,6 +367,7 @@ export async function getServiceRequestList(
         serviceSlug,
         sourceTable,
         npm,
+        purpose,
         requestDate,
         status
       FROM (${unionSql}) AS requests
