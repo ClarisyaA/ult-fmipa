@@ -8,23 +8,24 @@ import {
 } from "@/lib/information-api";
 import {
   createInformationPost,
-  getAdminInformationPosts,
 } from "@/lib/information-posts";
+import { getStaffInformationApiData } from "@/lib/staff-api-data";
 
 function getActorName(user: { name?: string | null; email?: string | null }) {
   return user.name ?? user.email ?? "Staff ULT";
 }
 
 export async function GET() {
-  const user = await requireRole(["staff"]);
+  const result = await getStaffInformationApiData();
 
-  if (!user) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.error) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status }
+    );
   }
 
-  const posts = await getAdminInformationPosts();
-
-  return NextResponse.json({ data: posts });
+  return NextResponse.json({ data: result.data });
 }
 
 export async function POST(request: Request) {

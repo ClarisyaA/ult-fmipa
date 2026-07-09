@@ -1,13 +1,7 @@
 import Link from "next/link";
+import { ArrowRight, ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,122 +10,232 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDashboardSummary } from "@/lib/legacy-request-stats";
+import { getLatestPendingDashboardRequests } from "@/lib/legacy-request-stats";
+import type { PendingDashboardRequestRow } from "@/types/dashboard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("id-ID").format(value);
+function getCategoryParam(category: string) {
+  if (category === "Layanan Mahasiswa") return "mahasiswa";
+  if (category === "Layanan Alumni") return "alumni";
+  if (category === "Layanan Perpustakaan") return "perpustakaan";
+
+  return undefined;
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function buildRequestPreviewHref(row: PendingDashboardRequestRow) {
+  const params = new URLSearchParams({
+    service: row.serviceSlug,
+    previewService: row.serviceSlug,
+    previewId: row.id,
+  });
+  const category = getCategoryParam(row.serviceCategory);
+
+  if (category) {
+    params.set("category", category);
+  }
+
+  return `/staff/requests?${params.toString()}`;
 }
 
 export default async function StaffDashboardPage() {
-  const summary = await getDashboardSummary();
-  const metrics = [
-    {
-      label: "Total Pengajuan",
-      value: summary.totalRequests,
-      description: `${summary.totalServices} layanan aktif dihitung`,
-    },
-    {
-      label: "Menunggu Proses",
-      value: summary.totalPending,
-      description: "Belum masuk tahap proses",
-    },
-    {
-      label: "Sedang Diproses",
-      value: summary.totalInProgress,
-      description: "Sudah diproses, belum selesai",
-    },
-    {
-      label: "Selesai",
-      value: summary.totalCompleted,
-      description: "Sudah memiliki tanggal selesai",
-    },
-    {
-      label: "Diambil/Dikirim",
-      value: summary.totalDelivered,
-      description: "Sudah diterima atau dikirim",
-    },
-  ];
+  let rows: PendingDashboardRequestRow[] = [];
+  let dashboardError: string | null = null;
+
+  try {
+    rows = await getLatestPendingDashboardRequests();
+  } catch (error) {
+    dashboardError =
+      "Data dashboard belum bisa dimuat. Coba muat ulang halaman.";
+    console.error("Failed to load staff dashboard pending requests", error);
+  }
 
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Dashboard Staff
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ringkasan agregat read-only untuk monitoring layanan. Belum ada auth
-            atau role filtering.
-          </p>
+    <div
+      className="-m-4 min-h-[calc(100%+2rem)] bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
+      style={{
+        backgroundImage: [
+          "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
+          "radial-gradient(ellipse 62% 28% at 75% 6%, transparent 63%, rgba(205,192,170,0.18) 63.15%, transparent 63.45%)",
+          "radial-gradient(ellipse 48% 22% at 92% 18%, transparent 60%, rgba(201,187,164,0.20) 60.15%, transparent 60.45%)",
+          "radial-gradient(circle at 74% 12%, rgba(247,238,224,0.92), transparent 34%)",
+          "radial-gradient(circle at 100% 0%, rgba(243,230,211,0.48), transparent 30%)",
+          "linear-gradient(180deg, #fbf8f2 0%, #f8f2ea 38%, #f5ecdf 100%)",
+        ].join(", "),
+        backgroundAttachment: "fixed",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+      }}
+    >
+      <div className="relative z-0 overflow-hidden bg-transparent px-5 pb-10 pt-5 text-[#173d2d] sm:px-7 lg:px-8">
+        <div className="mx-auto flex max-w-[1320px] flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+              Dashboard
+            </h1>
+            <p className="mt-1 text-xs text-[#566258]">
+              Pantau pengajuan terbaru yang belum masuk tahap proses.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 text-xs font-semibold text-[#173d2d] shadow-sm">
+            <ListChecks className="size-4 text-[#0f5b45]" />
+            {dashboardError ? "Perlu dimuat ulang" : "Top 10 baru masuk"}
+          </div>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/">Lihat Website Publik</Link>
-        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {metrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardHeader>
-              <CardDescription>{metric.label}</CardDescription>
-              <CardTitle className="text-3xl">
-                {formatNumber(metric.value)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {metric.description}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <div className="relative z-10 mx-auto -mt-6 grid max-w-[1320px] gap-3 px-4 pb-6 sm:px-6 lg:px-7">
+        <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+            <div>
+              <h2 className="text-sm font-semibold text-[#173d2d]">
+                Layanan Baru Yang Belum Diproses
+              </h2>
+              <p className="mt-1 text-[11px] text-[#7a7166]">
+                Diurutkan dari tanggal pengajuan terbaru.
+              </p>
+            </div>
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ringkasan per layanan</CardTitle>
-          <CardDescription>
-            Hanya menampilkan angka agregat, tanpa data mahasiswa atau alumni.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Layanan</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Menunggu</TableHead>
-                <TableHead className="text-right">Diproses</TableHead>
-                <TableHead className="text-right">Selesai</TableHead>
-                <TableHead className="text-right">Diambil/Dikirim</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {summary.services.map((service) => (
-                <TableRow key={service.slug}>
-                  <TableCell className="font-medium">{service.title}</TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.total)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.pending)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.inProgress)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.completed)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.delivered)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          {dashboardError ? (
+            <div className="px-4 py-3">
+              <div className="rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-6 text-center text-sm text-[#8a3d23]">
+                {dashboardError}
+              </div>
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="px-4 py-3">
+              <div className="rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-8 text-center text-sm text-[#6f746f]">
+                Tidak ada pengajuan baru yang belum diproses.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-2 px-4 py-3 md:hidden">
+                {rows.map((row) => (
+                  <div
+                    key={`${row.serviceSlug}-${row.id}`}
+                    className="rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.06)]"
+                  >
+                    <div className="grid gap-2">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase text-[#7a7166]">
+                          Layanan
+                        </p>
+                        <p className="mt-1 text-xs font-semibold leading-snug text-[#202923]">
+                          {row.serviceTitle}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-2 text-xs">
+                        <span className="text-[#7a7166]">Nama</span>
+                        <span className="min-w-0 break-words font-semibold text-[#303b34]">
+                          {row.requesterName}
+                        </span>
+                        <span className="text-[#7a7166]">Prodi</span>
+                        <span className="min-w-0 break-words text-[#303b34]">
+                          {row.programStudy}
+                        </span>
+                        <span className="text-[#7a7166]">Tanggal</span>
+                        <span className="min-w-0 break-words text-[#303b34]">
+                          {formatDate(row.requestDate)}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="mt-3 h-9 w-full rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                    >
+                      <Link href={buildRequestPreviewHref(row)}>
+                        Proses
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden overflow-x-auto px-4 py-3 md:block">
+                <Table className="min-w-[920px] table-fixed overflow-hidden rounded-md border border-[#edf0e9]">
+                  <colgroup>
+                    <col className="w-[28%]" />
+                    <col className="w-[22%]" />
+                    <col className="w-[25%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[10%]" />
+                  </colgroup>
+                  <TableHeader className="bg-[#eef3ec]">
+                    <TableRow className="border-[#dfe6dd] hover:bg-[#eef3ec]">
+                      <TableHead className="h-8 px-4 text-left text-[10px] font-bold text-[#244934]">
+                        Layanan
+                      </TableHead>
+                      <TableHead className="h-8 px-4 text-left text-[10px] font-bold text-[#244934]">
+                        Nama
+                      </TableHead>
+                      <TableHead className="h-8 px-4 text-left text-[10px] font-bold text-[#244934]">
+                        Program Studi
+                      </TableHead>
+                      <TableHead className="h-8 px-4 text-left text-[10px] font-bold text-[#244934]">
+                        Tanggal Pengajuan
+                      </TableHead>
+                      <TableHead className="h-8 px-4 text-center text-[10px] font-bold text-[#244934]">
+                        Aksi
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow
+                        key={`${row.serviceSlug}-${row.id}`}
+                        className="border-b border-[#ece7dc] bg-white transition-colors hover:bg-[#f8faf6]"
+                      >
+                        <TableCell className="px-4 py-3 text-[11px] font-semibold text-[#202923]">
+                          {row.serviceTitle}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-[11px] font-semibold text-[#303b34]">
+                          {row.requesterName}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
+                          {row.programStudy}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
+                          {formatDate(row.requestDate)}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center">
+                          <Button
+                            asChild
+                            size="sm"
+                            className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                          >
+                            <Link href={buildRequestPreviewHref(row)}>
+                              Proses
+                              <ArrowRight className="size-3.5" />
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

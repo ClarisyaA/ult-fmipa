@@ -1,7 +1,9 @@
 import Image from "next/image";
 
-import { LogoutButton } from "@/components/layout/logout-button";
-import { StaffSidebar } from "@/components/layout/staff-sidebar";
+import {
+  StaffMobileMenu,
+  StaffSidebar,
+} from "@/components/layout/staff-sidebar";
 import { staffNavItems } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -44,7 +46,11 @@ export default async function StaffLayout({
                   </p>
                 </div>
               </div>
-              <LogoutButton />
+              <StaffMobileMenu
+                items={staffNavItems}
+                userName={userName}
+                userRole={userRole}
+              />
             </div>
           </header>
           <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">

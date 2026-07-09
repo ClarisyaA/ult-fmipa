@@ -10,6 +10,7 @@ export type ServiceRequestListItem = {
   serviceSlug: string;
   sourceTable: string;
   maskedNpm: string;
+  purpose: string | null;
   requestDate: string | null;
   status: RequestStatus;
   statusLabel: string;

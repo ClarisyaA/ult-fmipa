@@ -49,10 +49,16 @@ const actions: ActionConfig[] = [
   },
 ];
 
+const nextStatusByAction = {
+  process: "inProgress",
+  complete: "completed",
+  deliver: "delivered",
+} satisfies Record<RequestStatusAction, RequestStatus>;
+
 function getDisabledTitle(
   action: RequestStatusAction,
   status: RequestStatus,
-  supported: boolean
+  supported: boolean,
 ) {
   if (!supported) {
     return "Aksi status belum tersedia untuk layanan ini.";
@@ -86,12 +92,15 @@ export function InlineStatusAction({
   supported,
 }: InlineStatusActionProps) {
   const router = useRouter();
+  const [optimisticStatus, setOptimisticStatus] =
+    useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
     useState<RequestStatusAction | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const currentStatus = optimisticStatus ?? status;
 
-  if (status === "delivered") {
+  if (currentStatus === "delivered") {
     return (
       <div className="rounded-md border border-[#cddfd4] bg-[#f1faf4] px-3 py-2">
         <div className="flex items-start gap-2">
@@ -143,7 +152,7 @@ export function InlineStatusAction({
             action: config.action,
             staffName,
           }),
-        }
+        },
       );
       const body = (await response.json().catch(() => null)) as {
         error?: string;
@@ -156,6 +165,7 @@ export function InlineStatusAction({
       }
 
       setMessage(config.successMessage);
+      setOptimisticStatus(nextStatusByAction[config.action]);
       router.refresh();
     } finally {
       setSubmittingAction(null);
@@ -166,10 +176,10 @@ export function InlineStatusAction({
     <div className="grid gap-2">
       <div className="grid grid-cols-3 gap-2">
         {actions.map((config) => {
-          const enabled = status === config.activeStatus;
+          const enabled = currentStatus === config.activeStatus;
           const title = enabled
             ? config.confirmation
-            : getDisabledTitle(config.action, status, supported);
+            : getDisabledTitle(config.action, currentStatus, supported);
 
           return (
             <Button
@@ -186,7 +196,9 @@ export function InlineStatusAction({
               disabled={!enabled || submittingAction !== null}
               title={title}
             >
-              {submittingAction === config.action ? "Menyimpan..." : config.label}
+              {submittingAction === config.action
+                ? "Menyimpan..."
+                : config.label}
             </Button>
           );
         })}
