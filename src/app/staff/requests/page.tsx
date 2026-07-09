@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
+import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -200,12 +201,14 @@ function RequestPreview({
   staffName,
   closeHref,
   fixedHeight = false,
+  variant = "side",
 }: {
   request: ServiceRequestListItem;
   detail: ServiceRequestDetail;
   staffName: string;
   closeHref: string;
   fixedHeight?: boolean;
+  variant?: "side" | "sheet";
 }) {
   const displayNpm = detail.npm ?? "-";
   const profileRows = [
@@ -236,8 +239,14 @@ function RequestPreview({
 
   return (
     <aside
-      className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#d8d4e4] bg-[#fbfaff] shadow-sm transition-all duration-300 ease-out animate-in fade-in slide-in-from-right-4 ${
-        fixedHeight ? "h-[min(680px,calc(100dvh-7rem))]" : "h-full"
+      className={`flex min-h-0 flex-col overflow-hidden border border-[#d8d4e4] bg-[#fbfaff] shadow-sm transition-all duration-300 ease-out animate-in fade-in ${
+        variant === "sheet"
+          ? "h-[85dvh] rounded-t-xl slide-in-from-bottom-5"
+          : `rounded-lg slide-in-from-right-4 ${
+              fixedHeight
+                ? "max-h-[min(640px,calc(100dvh-9rem))] xl:h-[min(680px,calc(100dvh-7rem))] xl:max-h-none"
+                : "h-full"
+            }`
       }`}
     >
       <div className="flex items-center justify-between border-b border-[#e4dfec] px-4 py-3">
@@ -278,7 +287,7 @@ function RequestPreview({
                 {profileRows.map((item) => (
                   <div
                     key={item.label}
-                    className="grid grid-cols-[92px_minmax(0,1fr)] gap-2 text-xs"
+                    className="grid gap-1 text-xs sm:grid-cols-[92px_minmax(0,1fr)] sm:gap-2"
                   >
                     <span className="text-[#7a7885]">{item.label}</span>
                     <span className="min-w-0 break-words font-semibold text-[#222721]">
@@ -350,6 +359,70 @@ function RequestPreview({
   );
 }
 
+function RequestCard({
+  request,
+  isSelected,
+  detailHref,
+}: {
+  request: ServiceRequestListItem;
+  isSelected: boolean;
+  detailHref: string;
+}) {
+  const time = formatTime(request.requestDate);
+
+  return (
+    <article
+      className={`rounded-md border bg-white p-3 shadow-[0_1px_5px_rgba(47,38,20,0.06)] transition-colors ${
+        isSelected
+          ? "border-[#bd8730] bg-[#f8fbf5]"
+          : "border-[#e3d9ca] hover:bg-[#fdfbf7]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold text-[#7a7166]">
+            {request.maskedNpm}
+          </p>
+          <h3 className="mt-1 text-sm font-semibold leading-snug text-[#202923]">
+            {request.serviceTitle}
+          </h3>
+        </div>
+        <Badge
+          variant="outline"
+          className={`shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-semibold ${statusStyles[request.status]}`}
+        >
+          {request.statusLabel}
+        </Badge>
+      </div>
+
+      <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-[#303b34]">
+        {request.purpose ?? "-"}
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#eee6d9] pt-3">
+        <div className="text-[11px] text-[#606860]">
+          <p className="font-semibold text-[#303b34]">
+            {formatDate(request.requestDate)}
+          </p>
+          {time ? <p className="mt-0.5">{time} WIB</p> : null}
+        </div>
+        <Link
+          scroll={false}
+          className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
+            isSelected
+              ? "border-[#0b3f30] bg-[#0b3f30] text-white"
+              : "border-[#d8e2d7] bg-[#f8faf6] text-[#0f5b45]"
+          }`}
+          href={detailHref}
+        >
+          <Eye className="size-3.5" />
+          Lihat detail
+        </Link>
+      </div>
+    </article>
+  );
+}
+
 export default async function StaffRequestsPage({
   searchParams,
 }: RequestsPageProps) {
@@ -413,7 +486,7 @@ export default async function StaffRequestsPage({
     <div
       className={`-m-4 bg-[#f8f2ea] text-[#1f2922] sm:-m-5 lg:-m-6 ${
         shouldLockPreviewLayout
-          ? "flex h-[calc(100%+2rem)] flex-col overflow-hidden sm:h-[calc(100%+2.5rem)] lg:h-[calc(100%+3rem)]"
+          ? "min-h-[calc(100%+2rem)] sm:min-h-[calc(100%+2.5rem)] lg:min-h-[calc(100%+3rem)] xl:flex xl:h-[calc(100%+3rem)] xl:min-h-0 xl:flex-col xl:overflow-hidden"
           : "min-h-[calc(100%+2rem)] sm:min-h-[calc(100%+2.5rem)] lg:min-h-[calc(100%+3rem)]"
       }`}
       style={{
@@ -433,7 +506,7 @@ export default async function StaffRequestsPage({
         backgroundSize: "cover",
       }}
     >
-      <div className="relative z-0 overflow-hidden bg-transparent px-5 pb-10 pt-5 text-[#173d2d] sm:px-7 lg:px-8">
+      <div className="relative z-0 overflow-hidden bg-transparent px-4 pb-9 pt-5 text-[#173d2d] sm:px-7 sm:pb-10 lg:px-8">
         <div
           className={`relative mx-auto flex flex-wrap items-start justify-between gap-4 ${
             hasPreview ? "max-w-[1660px]" : "max-w-[1320px]"
@@ -453,7 +526,7 @@ export default async function StaffRequestsPage({
 
       <div
         className={`relative z-10 mx-auto -mt-6 grid gap-3 px-4 pb-6 transition-[grid-template-columns] duration-300 ease-out sm:px-6 lg:px-7 ${
-          shouldLockPreviewLayout ? "min-h-0 flex-1" : ""
+          shouldLockPreviewLayout ? "xl:min-h-0 xl:flex-1" : ""
         } ${
           hasPreview
             ? "items-stretch max-w-[1660px] xl:[grid-template-columns:minmax(0,1fr)_360px]"
@@ -461,23 +534,23 @@ export default async function StaffRequestsPage({
         }`}
       >
         <div
-          className={`grid min-w-0 gap-3 ${
+          className={`grid min-w-0 content-start gap-3 ${
             shouldLockPreviewLayout
-              ? "h-full grid-rows-[auto_minmax(0,1fr)]"
+              ? "xl:h-full xl:grid-rows-[auto_minmax(0,1fr)]"
               : shouldMatchPreviewHeight
-                ? "h-[min(680px,calc(100dvh-7rem))] grid-rows-[auto_minmax(0,1fr)]"
-                : "content-start"
+                ? "xl:h-[min(680px,calc(100dvh-7rem))] xl:grid-rows-[auto_minmax(0,1fr)]"
+                : ""
           }`}
         >
           <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.09)]">
-            <div className="flex h-[56px] items-end gap-3 border-b border-[#e8dfd0] bg-white px-3 pt-2">
+            <div className="flex h-[56px] items-end gap-2 overflow-x-auto border-b border-[#e8dfd0] bg-white px-2 pt-2 sm:gap-3 sm:px-3">
               {visibleGroups.map((group) => {
                 const isActive = activeCategory === group.value;
 
                 return (
                   <Link
                     key={group.value}
-                    className={`flex h-[44px] min-w-[168px] items-center justify-center border-b-2 px-5 text-[11px] font-semibold transition-colors ${
+                    className={`flex h-[44px] min-w-max shrink-0 items-center justify-center border-b-2 px-4 text-[11px] font-semibold transition-colors sm:min-w-[168px] sm:px-5 ${
                       isActive
                         ? "rounded-t-lg border-[#c79743] bg-[#0f3d2e] text-white shadow-[0_1px_2px_rgba(15,61,46,0.18)] hover:bg-[#0f3d2e] hover:text-white"
                         : "border-transparent bg-transparent text-[#536058] hover:text-[#0f3d2e]"
@@ -494,8 +567,15 @@ export default async function StaffRequestsPage({
               })}
             </div>
 
-            <div className="bg-[#fffdf9] px-4 py-3 xl:px-5">
-              <div className="flex flex-wrap gap-1.5">
+            <div className="bg-[#fffdf9] px-3 py-3 sm:px-4 xl:px-5">
+              <div className="md:hidden">
+                <ServiceFilterSelect
+                  services={visibleServices}
+                  currentService={params.service}
+                />
+              </div>
+
+              <div className="hidden flex-wrap gap-1.5 md:flex">
                 <Button
                   asChild
                   size="sm"
@@ -546,14 +626,14 @@ export default async function StaffRequestsPage({
 
           <section
             className={`overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${
-              shouldConstrainTable ? "flex min-h-0 flex-col" : ""
+              shouldConstrainTable ? "xl:flex xl:min-h-0 xl:flex-col" : ""
             }`}
           >
-            <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-3">
+            <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">
               <p className="mb-2 text-[12px] font-semibold text-[#7a7166]">
                 Filter Status
               </p>
-              <div className="flex gap-5 overflow-x-auto">
+              <div className="flex gap-5 overflow-x-auto pb-0.5">
                 <Link
                   className={`h-8 shrink-0 border-b-2 px-0 text-[12px] font-semibold ${
                     !status
@@ -594,13 +674,45 @@ export default async function StaffRequestsPage({
             </div>
 
             <div
-              className={`px-4 py-3 ${
+              className={`px-3 py-3 sm:px-4 ${
                 shouldConstrainTable
-                  ? "min-h-[220px] flex-1 overflow-auto"
-                  : "overflow-x-auto"
+                  ? "xl:min-h-[220px] xl:flex-1 xl:overflow-auto"
+                  : ""
               }`}
             >
-              <Table className="min-w-[1100px] table-fixed overflow-hidden rounded-md border border-[#edf0e9]">
+              <div className="grid gap-2 md:hidden">
+                {rows.length === 0 ? (
+                  <div className="grid min-h-[140px] place-items-center rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-8 text-center text-sm text-[#6f746f]">
+                    Tidak ada pengajuan yang sesuai filter.
+                  </div>
+                ) : (
+                  rows.map((request) => {
+                    const isSelected =
+                      previewRequest?.serviceSlug === request.serviceSlug &&
+                      previewRequest.id === request.id;
+
+                    return (
+                      <RequestCard
+                        key={`${request.sourceTable}-${request.id}`}
+                        request={request}
+                        isSelected={isSelected}
+                        detailHref={buildHref({
+                          category: activeCategory,
+                          service: params.service,
+                          status,
+                          page: result.pagination.page,
+                          limit,
+                          previewService: request.serviceSlug,
+                          previewId: request.id,
+                        })}
+                      />
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="hidden md:block">
+                <Table className="min-w-[900px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] xl:min-w-[1100px]">
                 <colgroup>
                   <col className="w-[13%]" />
                   <col className="w-[23%]" />
@@ -711,10 +823,11 @@ export default async function StaffRequestsPage({
                     })
                   )}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#eee6d9] bg-[#fffdf9] px-5 py-3">
+            <div className="flex flex-col items-stretch gap-3 border-t border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
               <p className="text-[11px] text-[#7a7166]">
                 Menampilkan {rows.length} dari {result.pagination.total} data
               </p>
@@ -798,7 +911,7 @@ export default async function StaffRequestsPage({
         <div
           className={`min-w-0 transition-all duration-300 ease-out ${
             hasPreview
-              ? "min-h-0 translate-x-0 opacity-100"
+              ? "hidden min-h-0 translate-x-0 opacity-100 xl:block"
               : "pointer-events-none hidden translate-x-4 opacity-0 xl:block xl:overflow-hidden"
           }`}
         >
@@ -819,6 +932,38 @@ export default async function StaffRequestsPage({
           ) : null}
         </div>
       </div>
+
+      {previewRequest && selectedDetail ? (
+        <div className="fixed inset-0 z-50 xl:hidden">
+          <Link
+            href={buildHref({
+              category: activeCategory,
+              service: params.service,
+              status,
+              page: result.pagination.page,
+              limit,
+            })}
+            scroll={false}
+            aria-label="Tutup detail"
+            className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
+          />
+          <div className="absolute inset-x-0 bottom-0 px-2 sm:px-4">
+            <RequestPreview
+              request={previewRequest}
+              detail={selectedDetail}
+              staffName={staffName}
+              closeHref={buildHref({
+                category: activeCategory,
+                service: params.service,
+                status,
+                page: result.pagination.page,
+                limit,
+              })}
+              variant="sheet"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
