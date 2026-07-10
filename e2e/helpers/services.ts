@@ -55,10 +55,6 @@ export async function fillCommonFields(page: Page, npm = "140810210001", email =
 }
 
 export async function fillServiceForm(page: Page, slug: ServiceSlug, marker: string) {
-  if (slug === "permohonan-magang-kerja-praktek-ta") {
-    await page.getByTestId("magang-ready-button").click();
-  }
-
   // Common fields first
   await fillCommonFields(page);
 
@@ -88,7 +84,7 @@ export async function fillServiceForm(page: Page, slug: ServiceSlug, marker: str
   }
 
   if (slug === "permohonan-magang-kerja-praktek-ta") {
-    await page.locator("#jenisPermohonan").selectOption("Magang Kerja");
+    await page.locator("#jenisPermohonan").selectOption("Magang");
     await page.locator("#kontakPerson").fill("Kontak E2E");
     await page.locator("#tempatPelaksanaan").fill("Instansi E2E");
     await page.locator("#tujuanSurat").fill("Pimpinan Instansi E2E");

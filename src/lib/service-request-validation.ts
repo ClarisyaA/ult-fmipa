@@ -31,9 +31,9 @@ const optionalPositiveInteger = z.preprocess(
 );
 
 const magangJenisPermohonan = [
-  "Magang Kerja",
-  "Kerja Praktek Industri",
-  "Magang Tugas Akhir",
+  "Magang",
+  "Kerja Praktek",
+  "Tugas Akhir (TA)",
 ] as const;
 
 const requiredMagangFields = [

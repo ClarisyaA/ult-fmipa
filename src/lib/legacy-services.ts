@@ -76,7 +76,7 @@ export const publicServices = [
     slug: "permohonan-magang-kerja-praktek-ta",
     category: "Layanan Mahasiswa",
     description:
-      "Pengajuan surat resmi fakultas untuk kebutuhan Magang Kerja, Kerja Praktek Industri, atau Magang Tugas Akhir.",
+      "Pengajuan surat resmi fakultas untuk kebutuhan Magang, Kerja Praktek, atau Tugas Akhir (TA).",
     requirements: [
       "Data diri mahasiswa",
       "Detail instansi/tempat pelaksanaan",

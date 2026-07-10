@@ -25,9 +25,9 @@ type ApiIssue = {
 };
 
 const magangJenisPermohonan = [
-  "Magang Kerja",
-  "Kerja Praktek Industri",
-  "Magang Tugas Akhir",
+  "Magang",
+  "Kerja Praktek",
+  "Tugas Akhir (TA)",
 ];
 
 function getFormString(formData: FormData, key: string) {
@@ -72,7 +72,6 @@ export function ServiceRequestForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CreateServiceRequestResult | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [magangReady, setMagangReady] = useState(false);
   const uploadRule = getServiceUploadRule(serviceSlug);
   const acceptAttribute = [
     ...uploadRule.allowedExtensions,
@@ -340,40 +339,23 @@ export function ServiceRequestForm({
             </div>
           </div>
           <div className="flex gap-3 border-t border-[#EFE7DB] pt-4">
-            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#D8D1C5] bg-white text-sm font-semibold text-[#6B5E52]">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#EE1C25]/25 bg-[#FFF3F3] text-sm font-semibold text-[#EE1C25]">
               2
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[#18130E]">
-                Isi Form Pengajuan Magang/KP/TA
+                Isi Form Permohonan Magang/Kerja Praktek/Tugas Akhir
               </p>
               <p className="mt-1 text-sm text-[#6B5E52]">
-                Setelah surat dari prodi siap, lengkapi data instansi, periode
-                pelaksanaan, dan unggah dokumen PDF.
+                Setelah surat dari prodi tersedia, lengkapi form di bawah ini.
+                Data pengajuan akan tersimpan langsung ke database layanan
+                Magang/Kerja Praktek/Tugas Akhir.
               </p>
-              {!magangReady ? (
-                <Button
-                  type="button"
-                  className="mt-3 bg-[#EE1C25] hover:bg-[#EE1C25]/90"
-                  data-testid="magang-ready-button"
-                  onClick={() => {
-                    setMagangReady(true);
-                    window.requestAnimationFrame(() => {
-                      document
-                        .getElementById("magang-form-fields")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    });
-                  }}
-                >
-                  Saya sudah menyiapkan surat dari prodi
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>
       ) : null}
 
-      {isMagang && !magangReady ? null : (
       <div id={isMagang ? "magang-form-fields" : undefined} className="grid gap-4">
       <div className="grid gap-2">
         <Label htmlFor="npm" className="text-[#18130E] font-medium">NPM</Label>
@@ -915,7 +897,6 @@ export function ServiceRequestForm({
         <Link href={`/layanan/${serviceSlug}`}>Kembali</Link>
       </Button>
       </div>
-      )}
     </form>
   );
 }
