@@ -476,7 +476,12 @@ export default async function StaffRequestsPage({
           serviceTitle: selectedDetail.serviceTitle,
           serviceSlug: selectedDetail.serviceSlug,
           sourceTable: selectedDetail.sourceTable,
+          npm: selectedDetail.npm,
           maskedNpm: maskNpm(selectedDetail.npm),
+          requesterName: selectedDetail.requesterName ?? null,
+          requesterProgram: selectedDetail.requesterProgram ?? null,
+          requesterEmail: selectedDetail.requesterEmail ?? null,
+          requesterPhone: selectedDetail.requesterPhone ?? null,
           purpose:
             selectedDetail.keperluan ??
             selectedDetail.keterangan ??
@@ -485,6 +490,20 @@ export default async function StaffRequestsPage({
             selectedDetail.jenisPermohonan ??
             null,
           requestDate: selectedDetail.requestDate,
+          processDate: selectedDetail.processDate ?? null,
+          completedDate: selectedDetail.completedDate ?? null,
+          deliveredDate: selectedDetail.deliveredDate ?? null,
+          mainField: null,
+          jenisPermohonan: selectedDetail.jenisPermohonan ?? null,
+          tempatPelaksanaan: selectedDetail.tempatPelaksanaan ?? null,
+          tujuanSurat: selectedDetail.tujuanSurat ?? null,
+          tanggalMulai: selectedDetail.tanggalMulai ?? null,
+          tanggalSelesai: selectedDetail.tanggalSelesai ?? null,
+          namaHimpunan: selectedDetail.namaHimpunan ?? null,
+          namaKegiatan: selectedDetail.namaKegiatan ?? null,
+          tanggalKegiatan: selectedDetail.tanggalKegiatan ?? null,
+          approvalStatus: selectedDetail.approvalStatus ?? null,
+          finalSubmittedDate: selectedDetail.finalSubmittedDate ?? null,
           status: selectedDetail.status,
           statusLabel: selectedDetail.statusLabel,
         }

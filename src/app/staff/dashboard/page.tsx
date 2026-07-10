@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, ListChecks } from "lucide-react";
 
+import { RequestPriorityTable } from "@/components/requests/request-priority-table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -10,11 +12,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getLatestPendingDashboardRequests } from "@/lib/legacy-request-stats";
-import type { PendingDashboardRequestRow } from "@/types/dashboard";
+import {
+  getLatestPendingDashboardRequestsByDate,
+  getPriorityDashboardRequests,
+} from "@/lib/legacy-request-stats";
+import type {
+  PendingDashboardRequestRow,
+  PriorityDashboardRequestRow,
+} from "@/types/dashboard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+type StaffDashboardPageProps = {
+  searchParams: Promise<{
+    dateFrom?: string;
+    dateTo?: string;
+  }>;
+};
 
 function getCategoryParam(category: string) {
   if (category === "Layanan Mahasiswa") return "mahasiswa";
@@ -51,12 +66,26 @@ function buildRequestPreviewHref(row: PendingDashboardRequestRow) {
   return `/staff/requests?${params.toString()}`;
 }
 
-export default async function StaffDashboardPage() {
+export default async function StaffDashboardPage({
+  searchParams,
+}: StaffDashboardPageProps) {
+  const params = await searchParams;
   let rows: PendingDashboardRequestRow[] = [];
+  let priorityRows: PriorityDashboardRequestRow[] = [];
   let dashboardError: string | null = null;
+  const isPriorityFilterActive = Boolean(params.dateFrom || params.dateTo);
 
   try {
-    rows = await getLatestPendingDashboardRequests();
+    [rows, priorityRows] = await Promise.all([
+      getLatestPendingDashboardRequestsByDate({
+        dateFrom: params.dateFrom,
+        dateTo: params.dateTo,
+      }),
+      getPriorityDashboardRequests(12, {
+        dateFrom: params.dateFrom,
+        dateTo: params.dateTo,
+      }),
+    ]);
   } catch (error) {
     dashboardError =
       "Data dashboard belum bisa dimuat. Coba muat ulang halaman.";
@@ -100,13 +129,102 @@ export default async function StaffDashboardPage() {
 
       <div className="relative z-10 mx-auto -mt-6 grid max-w-[1320px] gap-3 px-4 pb-6 sm:px-6 lg:px-7">
         <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+            <h2 className="text-sm font-semibold text-[#173d2d]">
+              Filter Prioritas
+            </h2>
+            <p className="mt-1 text-[11px] text-[#7a7166]">
+              Batasi antrean prioritas berdasarkan tanggal pengajuan supaya
+              request lama yang sudah tidak relevan bisa disisihkan.
+            </p>
+          </div>
+          <form className="flex flex-wrap items-end gap-3 p-4" method="get">
+            <div className="grid gap-1.5">
+              <label
+                htmlFor="staff-priority-date-from"
+                className="text-[11px] font-semibold text-[#5d665f]"
+              >
+                Dari tanggal
+              </label>
+              <Input
+                id="staff-priority-date-from"
+                name="dateFrom"
+                type="date"
+                defaultValue={params.dateFrom}
+                className="h-9 w-[180px] rounded-md border-[#ddd4c6] bg-white"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label
+                htmlFor="staff-priority-date-to"
+                className="text-[11px] font-semibold text-[#5d665f]"
+              >
+                Sampai tanggal
+              </label>
+              <Input
+                id="staff-priority-date-to"
+                name="dateTo"
+                type="date"
+                defaultValue={params.dateTo}
+                className="h-9 w-[180px] rounded-md border-[#ddd4c6] bg-white"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="submit"
+                size="sm"
+                className="h-9 rounded-md bg-[#0f3d2e] px-4 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+              >
+                Terapkan Filter
+              </Button>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-md border-[#ddd4c6] bg-white px-4 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+              >
+                <Link href="/staff/dashboard">Reset</Link>
+              </Button>
+            </div>
+            <div className="ml-auto rounded-md border border-[#dce6da] bg-[#f8fbf6] px-3 py-2 text-xs font-semibold text-[#173d2d] shadow-sm">
+              {isPriorityFilterActive ? "Filter tanggal aktif" : "Semua tanggal"}
+            </div>
+          </form>
+        </section>
+
+        <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+            <h2 className="text-sm font-semibold text-[#173d2d]">
+              Prioritas Tindak Lanjut
+            </h2>
+            <p className="mt-1 text-[11px] text-[#7a7166]">
+              {isPriorityFilterActive
+                ? "Daftar prioritas sudah mengikuti rentang tanggal pengajuan yang dipilih."
+                : "Fokuskan proses ke pengajuan pending yang paling lama menunggu."}
+            </p>
+          </div>
+          <div className="p-4">
+            {dashboardError ? (
+              <div className="rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-6 text-center text-sm text-[#8a3d23]">
+                {dashboardError}
+              </div>
+            ) : (
+              <RequestPriorityTable rows={priorityRows} role="staff" />
+            )}
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
             <div>
               <h2 className="text-sm font-semibold text-[#173d2d]">
                 Layanan Baru Yang Belum Diproses
               </h2>
               <p className="mt-1 text-[11px] text-[#7a7166]">
-                Diurutkan dari tanggal pengajuan terbaru.
+                {isPriorityFilterActive
+                  ? "Daftar pengajuan baru mengikuti rentang tanggal filter yang sama."
+                  : "Diurutkan dari tanggal pengajuan terbaru."}
               </p>
             </div>
           </div>

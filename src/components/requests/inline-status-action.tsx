@@ -15,6 +15,12 @@ type InlineStatusActionProps = {
   status: RequestStatus;
   staffName: string;
   supported: boolean;
+  compact?: boolean;
+};
+
+type RequestStatusActionButtonProps = InlineStatusActionProps & {
+  action: RequestStatusAction;
+  label?: string;
 };
 
 type ActionConfig = {
@@ -55,6 +61,10 @@ const nextStatusByAction = {
   deliver: "delivered",
 } satisfies Record<RequestStatusAction, RequestStatus>;
 
+function getActionConfig(action: RequestStatusAction) {
+  return actions.find((config) => config.action === action);
+}
+
 function getDisabledTitle(
   action: RequestStatusAction,
   status: RequestStatus,
@@ -92,6 +102,7 @@ export function InlineStatusAction({
   status,
   staffName,
   supported,
+  compact = false,
 }: InlineStatusActionProps) {
   const router = useRouter();
   const [optimisticStatus, setOptimisticStatus] =
@@ -103,6 +114,15 @@ export function InlineStatusAction({
   const currentStatus = optimisticStatus ?? status;
 
   if (currentStatus === "delivered") {
+    if (compact) {
+      return (
+        <div className="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-[#cddfd4] bg-[#f1faf4] px-2 text-[10px] font-semibold text-[#173d2d]">
+          <CheckCircle2 className="size-3.5 shrink-0 text-[#2d6a4f]" />
+          Selesai
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-md border border-[#cddfd4] bg-[#f1faf4] px-3 py-2">
         <div className="flex items-start gap-2">
@@ -121,6 +141,14 @@ export function InlineStatusAction({
   }
 
   if (!supported) {
+    if (compact) {
+      return (
+        <div className="rounded-md border border-[#ded8eb] bg-[#fbfaff] px-2 py-1 text-[10px] font-semibold text-[#4f4a5f]">
+          Workflow belum tersedia
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-md border border-[#ded8eb] bg-[#fbfaff] px-3 py-2">
         <p className="text-xs font-semibold text-[#4f4a5f]">
@@ -176,7 +204,7 @@ export function InlineStatusAction({
 
   return (
     <div className="grid gap-2">
-      <div className="grid grid-cols-3 gap-2">
+      <div className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}>
         {actions.map((config) => {
           const enabled = config.activeStatuses.includes(currentStatus);
           const title = enabled
@@ -191,16 +219,24 @@ export function InlineStatusAction({
               size="sm"
               className={
                 enabled
-                  ? "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
-                  : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
+                  ? compact
+                    ? "h-7 rounded-md bg-[#111111] px-2 text-[10px] text-white hover:bg-[#252525]"
+                    : "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
+                  : compact
+                    ? "h-7 rounded-md border-[#e2dee8] bg-white px-2 text-[10px] text-[#9b98a3]"
+                    : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
               }
               onClick={() => handleClick(config)}
               disabled={!enabled || submittingAction !== null}
               title={title}
             >
               {submittingAction === config.action
-                ? "Menyimpan..."
-                : config.label}
+                ? compact
+                  ? "..."
+                  : "Menyimpan..."
+                : compact && config.action === "deliver"
+                  ? "Kirim"
+                  : config.label}
             </Button>
           );
         })}
@@ -215,5 +251,94 @@ export function InlineStatusAction({
         </p>
       ) : null}
     </div>
+  );
+}
+
+export function RequestStatusActionButton({
+  rolePrefix,
+  serviceSlug,
+  id,
+  status,
+  staffName,
+  supported,
+  compact = false,
+  action,
+  label,
+}: RequestStatusActionButtonProps) {
+  const router = useRouter();
+  const [optimisticStatus, setOptimisticStatus] =
+    useState<RequestStatus | null>(null);
+  const [submittingAction, setSubmittingAction] =
+    useState<RequestStatusAction | null>(null);
+  const currentStatus = optimisticStatus ?? status;
+  const config = getActionConfig(action);
+
+  if (!config) {
+    return null;
+  }
+
+  const enabled = supported && config.activeStatuses.includes(currentStatus);
+  const title = enabled
+    ? config.confirmation
+    : getDisabledTitle(config.action, currentStatus, supported);
+
+  async function handleClick() {
+    if (!config || !window.confirm(config.confirmation)) {
+      return;
+    }
+
+    setSubmittingAction(config.action);
+
+    try {
+      const response = await fetch(
+        `/api/${rolePrefix}/requests/${serviceSlug}/${id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: config.action,
+            staffName,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        window.alert("Status pengajuan gagal diperbarui.");
+        return;
+      }
+
+      setOptimisticStatus(nextStatusByAction[config.action]);
+      router.refresh();
+    } finally {
+      setSubmittingAction(null);
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      variant={enabled ? "default" : "outline"}
+      size="sm"
+      className={
+        enabled
+          ? compact
+            ? "h-7 rounded-md bg-[#111111] px-2.5 text-[11px] text-white hover:bg-[#252525]"
+            : "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
+          : compact
+            ? "h-7 rounded-md border-[#e2dee8] bg-white px-2.5 text-[11px] text-[#b7b2bd]"
+            : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
+      }
+      onClick={handleClick}
+      disabled={!enabled || submittingAction !== null}
+      title={title}
+    >
+      {submittingAction === config.action
+        ? compact
+          ? "..."
+          : "Menyimpan..."
+        : label ?? config.label}
+    </Button>
   );
 }

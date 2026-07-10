@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 
+import {
+  AdminPageShell,
+  AdminStatusBadge,
+} from "@/components/admin/admin-ui";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -259,9 +262,13 @@ export default async function AdminRequestDetailPage({
   );
 
   return (
-    <div className="grid gap-6">
+    <AdminPageShell>
       <div>
-        <Button asChild variant="ghost" className="-ml-2 mb-4">
+        <Button
+          asChild
+          variant="ghost"
+          className="-ml-2 mb-4 text-[#6B5E52] hover:bg-transparent hover:text-[#0f5b45]"
+        >
           <Link href="/admin/requests">
             <ArrowLeft className="size-4" />
             Kembali ke Pengajuan
@@ -272,7 +279,7 @@ export default async function AdminRequestDetailPage({
             <h1 className="text-2xl font-semibold tracking-normal">
               {detail.serviceTitle}
             </h1>
-            <Badge variant="secondary">{detail.statusLabel}</Badge>
+            <AdminStatusBadge>{detail.statusLabel}</AdminStatusBadge>
           </div>
           <RequestDeleteButton
             serviceSlug={detail.serviceSlug}
@@ -281,7 +288,7 @@ export default async function AdminRequestDetailPage({
             redirectTo="/admin/requests"
           />
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-[#566258]">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
       </div>
@@ -305,7 +312,7 @@ export default async function AdminRequestDetailPage({
           staffName={user?.name ?? "Admin ULT"}
         />
       ) : (
-        <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-[#e3d9ca] bg-[#fffdf9] p-4 text-sm text-[#6f746f]">
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
@@ -342,6 +349,6 @@ export default async function AdminRequestDetailPage({
           ))}
         </CardContent>
       </Card>
-    </div>
+    </AdminPageShell>
   );
 }
