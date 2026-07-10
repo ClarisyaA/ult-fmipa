@@ -288,11 +288,23 @@ function buildServiceSelect(service: RequestService) {
         : buildSikStatusSql();
   const purposeSql =
     metadata.workflow === "sik"
-      ? Prisma.sql`COALESCE(
+      ? Prisma.sql`CONCAT_WS(
+          ' | ',
           NULLIF(CONVERT(\`NAMA_KEGIATAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
           NULLIF(CONVERT(\`NAMA_HIMPUNAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
-          NULLIF(CONVERT(\`APPROVAL_STATUS\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, '')
+          NULLIF(CONCAT('Verifikasi: ', CONVERT(\`APPROVAL_STATUS\` USING utf8mb3) COLLATE utf8mb3_unicode_ci), 'Verifikasi: ')
         )`
+      : service.sourceTable === "permohonan_magang"
+        ? Prisma.sql`CONCAT_WS(
+            ' | ',
+            NULLIF(CONVERT(\`JENIS_PERMOHONAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONVERT(\`TEMPAT_PELAKSANAAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONCAT(
+              DATE_FORMAT(\`TANGGAL_MULAI\`, '%d/%m/%Y'),
+              ' - ',
+              DATE_FORMAT(\`TANGGAL_SELESAI\`, '%d/%m/%Y')
+            ), ' - ')
+          )`
       : buildPurposeSql(metadata);
   const requestDateSql =
     metadata.workflow === "sik"

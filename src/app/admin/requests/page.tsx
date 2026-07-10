@@ -46,6 +46,16 @@ const statusOptions: { value: RequestStatus; label: string }[] = [
   { value: "delivered", label: "Diambil/Dikirim" },
 ];
 const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
+const statusStyles = {
+  pending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  inProgress: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+  completed: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  delivered: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  sikApprovalPending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  sikApprovalRejected: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+  sikApprovalVerified: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  sikFinalSubmitted: "border-[#d8d4e4] bg-[#fbfaff] text-[#4f4a5f]",
+} satisfies Record<RequestStatus, string>;
 
 function supportsInlineStatus(request: {
   sourceTable: string;
@@ -208,6 +218,7 @@ export default async function AdminRequestsPage({
               <TableRow>
                 <TableHead>Layanan</TableHead>
                 <TableHead>NPM</TableHead>
+                <TableHead>Ringkasan</TableHead>
                 <TableHead>Tanggal Pengajuan</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Aksi</TableHead>
@@ -216,7 +227,7 @@ export default async function AdminRequestsPage({
             <TableBody>
               {result.data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground">
                     Tidak ada pengajuan yang sesuai filter.
                   </TableCell>
                 </TableRow>
@@ -227,9 +238,17 @@ export default async function AdminRequestsPage({
                       {request.serviceTitle}
                     </TableCell>
                     <TableCell>{request.maskedNpm}</TableCell>
+                    <TableCell className="max-w-[260px] text-sm text-muted-foreground">
+                      {request.purpose ?? "-"}
+                    </TableCell>
                     <TableCell>{formatDate(request.requestDate)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{request.statusLabel}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={`rounded-sm ${statusStyles[request.status]}`}
+                      >
+                        {request.statusLabel}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">

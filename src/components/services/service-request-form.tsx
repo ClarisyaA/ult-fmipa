@@ -72,6 +72,7 @@ export function ServiceRequestForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CreateServiceRequestResult | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [magangReady, setMagangReady] = useState(false);
   const uploadRule = getServiceUploadRule(serviceSlug);
   const acceptAttribute = [
     ...uploadRule.allowedExtensions,
@@ -312,6 +313,68 @@ export function ServiceRequestForm({
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit} data-testid="service-request-form" id="service-request-form">
+      {isMagang ? (
+        <div className="grid gap-4 rounded-lg border border-[#E7DED0] bg-[#FFFDF9] p-4">
+          <div className="flex gap-3">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#EE1C25]/25 bg-[#FFF3F3] text-sm font-semibold text-[#EE1C25]">
+              1
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#18130E]">
+                Siapkan Surat Permohonan dari Program Studi
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-[#6B5E52]">
+                Sebelum mengisi formulir ini, mahasiswa perlu mengajukan atau
+                menyiapkan surat permohonan dari program studi masing-masing
+                terlebih dahulu. Surat tersebut akan diunggah pada tahap
+                pengajuan layanan.
+              </p>
+              <ul className="mt-3 grid gap-1.5 text-sm text-[#6B5E52]">
+                <li>Surat berasal dari program studi.</li>
+                <li>File yang diunggah harus PDF.</li>
+                <li>Maksimal 5 file, masing-masing 10 MB.</li>
+                <li>
+                  Pastikan data instansi dan periode pelaksanaan sudah benar.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex gap-3 border-t border-[#EFE7DB] pt-4">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#D8D1C5] bg-white text-sm font-semibold text-[#6B5E52]">
+              2
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#18130E]">
+                Isi Form Pengajuan Magang/KP/TA
+              </p>
+              <p className="mt-1 text-sm text-[#6B5E52]">
+                Setelah surat dari prodi siap, lengkapi data instansi, periode
+                pelaksanaan, dan unggah dokumen PDF.
+              </p>
+              {!magangReady ? (
+                <Button
+                  type="button"
+                  className="mt-3 bg-[#EE1C25] hover:bg-[#EE1C25]/90"
+                  data-testid="magang-ready-button"
+                  onClick={() => {
+                    setMagangReady(true);
+                    window.requestAnimationFrame(() => {
+                      document
+                        .getElementById("magang-form-fields")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                  }}
+                >
+                  Saya sudah menyiapkan surat dari prodi
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isMagang && !magangReady ? null : (
+      <div id={isMagang ? "magang-form-fields" : undefined} className="grid gap-4">
       <div className="grid gap-2">
         <Label htmlFor="npm" className="text-[#18130E] font-medium">NPM</Label>
         <Input
@@ -851,6 +914,8 @@ export function ServiceRequestForm({
       >
         <Link href={`/layanan/${serviceSlug}`}>Kembali</Link>
       </Button>
+      </div>
+      )}
     </form>
   );
 }

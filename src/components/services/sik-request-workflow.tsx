@@ -67,6 +67,110 @@ function StatusCard({
   );
 }
 
+const sikSteps = [
+  "Audiensi & ACC Offline",
+  "Upload Bukti ACC",
+  "Verifikasi Admin/Staff",
+  "Form Final SIK",
+  "Surat Diproses & Dikirim",
+];
+
+function getActiveStep(latestRequest?: StudentRequestDetail | null) {
+  if (!latestRequest) return 2;
+  if (latestRequest.status === "sikApprovalPending") return 3;
+  if (latestRequest.status === "sikApprovalRejected") return 2;
+  if (latestRequest.status === "sikApprovalVerified") return 4;
+  return 5;
+}
+
+function getStateCopy(latestRequest?: StudentRequestDetail | null) {
+  if (!latestRequest) {
+    return {
+      title: "Mulai dari ACC offline",
+      description:
+        "Lakukan audiensi dan minta ACC dari Manajer Akademik dan Kemahasiswaan bersama koordinator, lalu unggah bukti ACC pada halaman ini.",
+    };
+  }
+
+  if (latestRequest.status === "sikApprovalPending") {
+    return {
+      title: "Bukti ACC sedang diverifikasi",
+      description:
+        "Tim ULT FMIPA akan memeriksa bukti ACC yang Anda unggah. Form final SIK akan terbuka setelah bukti disetujui.",
+    };
+  }
+
+  if (latestRequest.status === "sikApprovalRejected") {
+    return {
+      title: "Bukti ACC perlu diperbaiki",
+      description:
+        "Tinjau alasan penolakan dari admin/staff, lalu unggah kembali bukti ACC yang sesuai.",
+    };
+  }
+
+  if (latestRequest.status === "sikApprovalVerified") {
+    return {
+      title: "Bukti ACC disetujui",
+      description:
+        "Silakan lengkapi form final SIK agar permohonan dapat diproses oleh SBAK/ULT FMIPA.",
+    };
+  }
+
+  if (latestRequest.status === "delivered") {
+    return {
+      title: "Surat izin telah dikirim",
+      description:
+        "Surat izin kegiatan telah selesai diproses dan dikirim sesuai email yang dicantumkan.",
+    };
+  }
+
+  return {
+    title: "Form final SIK sudah dikirim",
+    description:
+      "Permohonan Anda sudah masuk ke tahap pemrosesan. Pantau status secara berkala melalui riwayat pengajuan.",
+  };
+}
+
+function SikStepper({ activeStep }: { activeStep: number }) {
+  return (
+    <div className="grid gap-2 rounded-lg border border-[#E7DED0] bg-[#FFFDF9] p-4">
+      {sikSteps.map((step, index) => {
+        const stepNumber = index + 1;
+        const isActive = stepNumber === activeStep;
+        const isDone = stepNumber < activeStep;
+
+        return (
+          <div
+            key={step}
+            className={`flex items-center gap-3 rounded-md px-2 py-2 ${
+              isActive ? "bg-[#FFF3F3]" : ""
+            }`}
+          >
+            <div
+              className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
+                isActive
+                  ? "border-[#EE1C25] bg-white text-[#EE1C25]"
+                  : isDone
+                    ? "border-[#CFE0D4] bg-[#F1FAF4] text-[#2F6B44]"
+                    : "border-[#D8D1C5] bg-white text-[#6B5E52]"
+              }`}
+            >
+              {stepNumber}
+            </div>
+            <p
+              className={`text-sm ${
+                isActive ? "font-semibold text-[#18130E]" : "text-[#6B5E52]"
+              }`}
+            >
+              {step}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FilePicker({
   uploadRule,
   selectedFiles,
@@ -175,6 +279,8 @@ export function SikRequestWorkflow({
     latestRequest?.status === "sikApprovalVerified" &&
     !latestRequest.finalSubmittedDate;
   const isFinalSubmitted = Boolean(latestRequest?.finalSubmittedDate);
+  const activeStep = getActiveStep(latestRequest);
+  const stateCopy = getStateCopy(latestRequest);
 
   function setAttachmentError(key: string, message: string) {
     setFieldErrors((current) => ({
@@ -287,22 +393,15 @@ export function SikRequestWorkflow({
 
   return (
     <div className="grid gap-5">
-      <div className="grid gap-2 rounded-lg border border-[#EE1C25]/30 p-4">
-        <p className="text-sm font-semibold text-[#18130E]">
-          Alur Pengajuan SIK
-        </p>
-        <ol className="grid gap-2 text-sm text-[#6B5E52]">
-          <li>1. Instruksi: lakukan permohonan ACC offline bersama koordinator.</li>
-          <li>2. Upload Bukti ACC Manajer Akademik dan Kemahasiswaan.</li>
-          <li>3. Tunggu verifikasi admin/staff.</li>
-          <li>4. Isi Form Final setelah bukti disetujui.</li>
-          <li>5. Pantau proses surat sampai dikirim.</li>
-        </ol>
-      </div>
+      <SikStepper activeStep={activeStep} />
 
-      {latestRequest ? (
-        <StatusCard title="Status Pengajuan SIK">
-          <p>{latestRequest.statusLabel}</p>
+      <StatusCard title={stateCopy.title}>
+        <p>{stateCopy.description}</p>
+        {latestRequest ? (
+          <div className="mt-2">
+            <p className="font-medium text-[#18130E]">
+              Status saat ini: {latestRequest.statusLabel}
+            </p>
           {latestRequest.approvalRejectReason ? (
             <p className="mt-2 text-destructive">
               Alasan penolakan: {latestRequest.approvalRejectReason}
@@ -313,14 +412,15 @@ export function SikRequestWorkflow({
               Form final sudah dikirim. Pantau proses dari halaman riwayat.
             </p>
           ) : null}
-        </StatusCard>
-      ) : null}
+          </div>
+        ) : null}
+      </StatusCard>
 
       {canUploadProof ? (
         <form className="grid gap-4" onSubmit={submitProof}>
           <div className="grid gap-2">
             <Label className="text-[#18130E] font-medium">
-              Upload Bukti ACC
+              {isRejected ? "Upload Ulang Bukti ACC" : "Upload Bukti ACC"}
             </Label>
             <FilePicker
               uploadRule={proofUploadRule}
@@ -338,7 +438,11 @@ export function SikRequestWorkflow({
             data-testid="sik-proof-submit"
             className="w-full bg-[#EE1C25] hover:bg-[#EE1C25]/90"
           >
-            {isSubmitting ? "Mengirim..." : "Kirim Bukti ACC"}
+            {isSubmitting
+              ? "Mengirim..."
+              : isRejected
+                ? "Upload Ulang Bukti ACC"
+                : "Upload Bukti ACC"}
           </Button>
         </form>
       ) : null}

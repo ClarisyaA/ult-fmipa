@@ -45,10 +45,10 @@ function formatAttachmentType(value?: string | null) {
   }
 
   if (value === "final_spik_document") {
-    return "SPIK Final";
+    return "Dokumen Final SPIK";
   }
 
-  return null;
+  return "Lampiran";
 }
 
 export function RequestAttachmentsList({

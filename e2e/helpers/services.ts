@@ -55,6 +55,10 @@ export async function fillCommonFields(page: Page, npm = "140810210001", email =
 }
 
 export async function fillServiceForm(page: Page, slug: ServiceSlug, marker: string) {
+  if (slug === "permohonan-magang-kerja-praktek-ta") {
+    await page.getByTestId("magang-ready-button").click();
+  }
+
   // Common fields first
   await fillCommonFields(page);
 
