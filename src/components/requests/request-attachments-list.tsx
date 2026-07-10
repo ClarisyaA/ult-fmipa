@@ -35,6 +35,14 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function formatAttachmentType(value?: string | null) {
+  if (value === "program_study_request_letter") {
+    return "Surat Permohonan dari Program Studi";
+  }
+
+  return null;
+}
+
 export function RequestAttachmentsList({
   attachments,
 }: RequestAttachmentsListProps) {
@@ -51,30 +59,39 @@ export function RequestAttachmentsList({
           <p className="text-sm text-muted-foreground">Belum ada lampiran.</p>
         ) : (
           <div className="grid gap-3">
-            {attachments.map((attachment) => (
-              <div
-                key={attachment.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">
-                    {attachment.originalName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {attachment.mimeType} - {formatFileSize(attachment.sizeBytes)}
-                    {" - "}
-                    {formatDate(attachment.uploadedAt)}
-                  </p>
-                </div>
-                <Link
-                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                  href={`/api/attachments/${attachment.id}`}
-                  target="_blank"
+            {attachments.map((attachment) => {
+              const attachmentType = formatAttachmentType(attachment.attachmentType);
+
+              return (
+                <div
+                  key={attachment.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
                 >
-                  Buka
-                </Link>
-              </div>
-            ))}
+                  <div>
+                    <p className="text-sm font-medium">
+                      {attachment.originalName}
+                    </p>
+                    {attachmentType ? (
+                      <p className="text-sm text-muted-foreground">
+                        {attachmentType}
+                      </p>
+                    ) : null}
+                    <p className="text-sm text-muted-foreground">
+                      {attachment.mimeType} - {formatFileSize(attachment.sizeBytes)}
+                      {" - "}
+                      {formatDate(attachment.uploadedAt)}
+                    </p>
+                  </div>
+                  <Link
+                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    href={`/api/attachments/${attachment.id}`}
+                    target="_blank"
+                  >
+                    Buka
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

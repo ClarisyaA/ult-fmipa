@@ -89,19 +89,6 @@ const statusStyles = {
   delivered: "border-[#d7d9e5] bg-[#f4f5fa] text-[#4e5566]",
 } satisfies Record<RequestStatus, string>;
 
-const placeholderServiceFilters: ServiceFilterOption[] = [
-  {
-    title: "Permohonan Magang",
-    slug: "permohonan-magang",
-    category: "Layanan Mahasiswa",
-  },
-  {
-    title: "Surat Izin Kegiatan (SIK)",
-    slug: "surat-izin-kegiatan-sik",
-    category: "Layanan Mahasiswa",
-  },
-];
-
 function formatDate(value: string | null) {
   if (!value) {
     return "-";
@@ -166,10 +153,7 @@ function buildHref(params: {
 }
 
 function getCategoryServices(category?: string) {
-  const services: ServiceFilterOption[] = [
-    ...getPublicServices(),
-    ...placeholderServiceFilters,
-  ];
+  const services: ServiceFilterOption[] = getPublicServices();
   const selectedGroup = serviceGroups.find((group) => group.value === category);
 
   if (!selectedGroup) {
@@ -229,6 +213,22 @@ function RequestPreview({
     { label: "Beasiswa", value: detail.beasiswa },
     { label: "Pengantar", value: detail.pengantar },
     { label: "Ditujukan", value: detail.ditujukan },
+    { label: "Jenis Permohonan", value: detail.jenisPermohonan },
+    { label: "Kontak Person", value: detail.kontakPerson },
+    { label: "Tempat Pelaksanaan", value: detail.tempatPelaksanaan },
+    { label: "Tujuan Surat", value: detail.tujuanSurat },
+    { label: "Alamat Surat", value: detail.alamatSurat },
+    { label: "Kecamatan dan Kabupaten", value: detail.kecamatanKabupaten },
+    { label: "Kota / Kabupaten", value: detail.kotaKabupaten },
+    { label: "Provinsi", value: detail.provinsi },
+    {
+      label: "Tanggal Mulai",
+      value: detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null,
+    },
+    {
+      label: "Tanggal Selesai",
+      value: detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null,
+    },
     { label: "Jumlah Ijazah", value: detail.jumlahIjazah },
     { label: "Jumlah Transkrip", value: detail.jumlahTranskrip },
     { label: "Jumlah Terjemahan", value: detail.jumlahTranslate },
@@ -468,6 +468,7 @@ export default async function StaffRequestsPage({
             selectedDetail.keterangan ??
             selectedDetail.beasiswa ??
             selectedDetail.pengantar ??
+            selectedDetail.jenisPermohonan ??
             null,
           requestDate: selectedDetail.requestDate,
           status: selectedDetail.status,

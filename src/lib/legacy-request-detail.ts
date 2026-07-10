@@ -16,6 +16,16 @@ type NormalWorkflowMetadata = {
   beasiswaColumn?: "BEASISWA";
   pengantarColumn?: "PENGANTAR";
   ditujukanColumn?: "DITUJUKAN";
+  jenisPermohonanColumn?: "JENIS_PERMOHONAN";
+  kontakPersonColumn?: "KONTAK_PERSON";
+  tempatPelaksanaanColumn?: "TEMPAT_PELAKSANAAN";
+  tujuanSuratColumn?: "TUJUAN_SURAT";
+  alamatSuratColumn?: "ALAMAT_SURAT";
+  kecamatanKabupatenColumn?: "KECAMATAN_KABUPATEN";
+  kotaKabupatenColumn?: "KOTA_KABUPATEN";
+  provinsiColumn?: "PROVINSI";
+  tanggalMulaiColumn?: "TANGGAL_MULAI";
+  tanggalSelesaiColumn?: "TANGGAL_SELESAI";
   jumlahIjazahColumn?: "JUMLAH_IJAZAH";
   jumlahTranskripColumn?: "JUMLAH_TRANSKRIP";
   jumlahTranslateColumn?: "JUMLAH_TRANSLET";
@@ -109,6 +119,21 @@ const requestTableMetadata = {
     pengantarColumn: "PENGANTAR",
     ditujukanColumn: "DITUJUKAN",
   },
+  permohonan_magang: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    deliveryByColumn: "DIKIRIM_OLEH",
+    jenisPermohonanColumn: "JENIS_PERMOHONAN",
+    kontakPersonColumn: "KONTAK_PERSON",
+    tempatPelaksanaanColumn: "TEMPAT_PELAKSANAAN",
+    tujuanSuratColumn: "TUJUAN_SURAT",
+    alamatSuratColumn: "ALAMAT_SURAT",
+    kecamatanKabupatenColumn: "KECAMATAN_KABUPATEN",
+    kotaKabupatenColumn: "KOTA_KABUPATEN",
+    provinsiColumn: "PROVINSI",
+    tanggalMulaiColumn: "TANGGAL_MULAI",
+    tanggalSelesaiColumn: "TANGGAL_SELESAI",
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
@@ -163,6 +188,16 @@ type DetailRow = {
   beasiswa: string | null;
   pengantar: string | null;
   ditujukan: string | null;
+  jenisPermohonan: string | null;
+  kontakPerson: string | null;
+  tempatPelaksanaan: string | null;
+  tujuanSurat: string | null;
+  alamatSurat: string | null;
+  kecamatanKabupaten: string | null;
+  kotaKabupaten: string | null;
+  provinsi: string | null;
+  tanggalMulai: Date | string | null;
+  tanggalSelesai: Date | string | null;
 };
 
 type RequesterProfile = {
@@ -392,7 +427,17 @@ async function getNormalDetail(
       ${numberColumnOrNull(metadata.jumlahTranslateColumn)} AS jumlahTranslate,
       ${columnOrNull(metadata.beasiswaColumn)} AS beasiswa,
       ${columnOrNull(metadata.pengantarColumn)} AS pengantar,
-      ${columnOrNull(metadata.ditujukanColumn)} AS ditujukan
+      ${columnOrNull(metadata.ditujukanColumn)} AS ditujukan,
+      ${columnOrNull(metadata.jenisPermohonanColumn)} AS jenisPermohonan,
+      ${columnOrNull(metadata.kontakPersonColumn)} AS kontakPerson,
+      ${columnOrNull(metadata.tempatPelaksanaanColumn)} AS tempatPelaksanaan,
+      ${columnOrNull(metadata.tujuanSuratColumn)} AS tujuanSurat,
+      ${columnOrNull(metadata.alamatSuratColumn)} AS alamatSurat,
+      ${columnOrNull(metadata.kecamatanKabupatenColumn)} AS kecamatanKabupaten,
+      ${columnOrNull(metadata.kotaKabupatenColumn)} AS kotaKabupaten,
+      ${columnOrNull(metadata.provinsiColumn)} AS provinsi,
+      ${columnOrNull(metadata.tanggalMulaiColumn)} AS tanggalMulai,
+      ${columnOrNull(metadata.tanggalSelesaiColumn)} AS tanggalSelesai
     FROM ${table}
     WHERE \`ID\` = ${id}
     LIMIT 1
@@ -434,7 +479,17 @@ async function getVerificationDetail(
       NULL AS jumlahTranslate,
       NULL AS beasiswa,
       NULL AS pengantar,
-      NULL AS ditujukan
+      NULL AS ditujukan,
+      NULL AS jenisPermohonan,
+      NULL AS kontakPerson,
+      NULL AS tempatPelaksanaan,
+      NULL AS tujuanSurat,
+      NULL AS alamatSurat,
+      NULL AS kecamatanKabupaten,
+      NULL AS kotaKabupaten,
+      NULL AS provinsi,
+      NULL AS tanggalMulai,
+      NULL AS tanggalSelesai
     FROM ${table}
     WHERE \`ID\` = ${id}
     LIMIT 1
@@ -503,5 +558,15 @@ export async function getRequestDetail(
     beasiswa: row.beasiswa,
     pengantar: row.pengantar,
     ditujukan: row.ditujukan,
+    jenisPermohonan: row.jenisPermohonan,
+    kontakPerson: row.kontakPerson,
+    tempatPelaksanaan: row.tempatPelaksanaan,
+    tujuanSurat: row.tujuanSurat,
+    alamatSurat: row.alamatSurat,
+    kecamatanKabupaten: row.kecamatanKabupaten,
+    kotaKabupaten: row.kotaKabupaten,
+    provinsi: row.provinsi,
+    tanggalMulai: toIso(row.tanggalMulai),
+    tanggalSelesai: toIso(row.tanggalSelesai),
   };
 }

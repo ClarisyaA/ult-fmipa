@@ -36,4 +36,14 @@ export type ServiceRequestDetail = {
   beasiswa?: string | null;
   pengantar?: string | null;
   ditujukan?: string | null;
+  jenisPermohonan?: string | null;
+  kontakPerson?: string | null;
+  tempatPelaksanaan?: string | null;
+  tujuanSurat?: string | null;
+  alamatSurat?: string | null;
+  kecamatanKabupaten?: string | null;
+  kotaKabupaten?: string | null;
+  provinsi?: string | null;
+  tanggalMulai?: string | null;
+  tanggalSelesai?: string | null;
 };

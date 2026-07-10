@@ -77,6 +77,22 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
         <DetailField label="Beasiswa" value={detail.beasiswa} />
         <DetailField label="Pengantar" value={detail.pengantar} />
         <DetailField label="Ditujukan" value={detail.ditujukan} />
+        <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
+        <DetailField label="Kontak Person" value={detail.kontakPerson} />
+        <DetailField label="Tempat Pelaksanaan" value={detail.tempatPelaksanaan} />
+        <DetailField label="Tujuan Surat" value={detail.tujuanSurat} />
+        <DetailField label="Alamat Surat" value={detail.alamatSurat} />
+        <DetailField label="Kecamatan dan Kabupaten" value={detail.kecamatanKabupaten} />
+        <DetailField label="Kota / Kabupaten" value={detail.kotaKabupaten} />
+        <DetailField label="Provinsi" value={detail.provinsi} />
+        <DetailField
+          label="Tanggal Mulai"
+          value={detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null}
+        />
+        <DetailField
+          label="Tanggal Selesai"
+          value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
+        />
         <DetailField label="Jumlah Ijazah" value={detail.jumlahIjazah} />
         <DetailField label="Jumlah Transkrip" value={detail.jumlahTranskrip} />
         <DetailField label="Jumlah Translate" value={detail.jumlahTranslate} />

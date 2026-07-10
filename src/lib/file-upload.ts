@@ -2,15 +2,10 @@ import { randomUUID } from "crypto";
 import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { defaultUploadRule, getServiceUploadRule } from "@/lib/service-upload-config";
 import type { SavedUploadMetadata } from "@/types/attachment";
 
 const uploadDir = path.join(process.cwd(), "storage", "uploads");
-const allowedMimeTypes = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-]);
-const maxFileSizeBytes = 5 * 1024 * 1024;
 
 const extensionByMimeType: Record<string, string> = {
   "application/pdf": ".pdf",
@@ -26,22 +21,39 @@ function sanitizeFilename(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
 }
 
-export function validateUploadedFile(file: File) {
+export function validateUploadedFile(file: File, serviceSlug?: string) {
+  const uploadRule =
+    typeof serviceSlug === "string"
+      ? getServiceUploadRule(serviceSlug)
+      : defaultUploadRule;
+
   if (!file || file.size === 0) {
     throw new FileUploadError("File lampiran tidak ditemukan.");
   }
 
-  if (!allowedMimeTypes.has(file.type)) {
-    throw new FileUploadError("Format lampiran harus PDF, JPG, atau PNG.");
+  if (!uploadRule.allowedMimeTypes.includes(file.type)) {
+    throw new FileUploadError(
+      uploadRule.allowedMimeTypes.length === 1 &&
+        uploadRule.allowedMimeTypes[0] === "application/pdf"
+        ? "Format lampiran harus PDF."
+        : "Format lampiran harus PDF, JPG, atau PNG."
+    );
   }
 
-  if (file.size > maxFileSizeBytes) {
-    throw new FileUploadError("Ukuran lampiran maksimal 5 MB.");
+  if (file.size > uploadRule.maxFileSizeBytes) {
+    throw new FileUploadError(
+      `Ukuran lampiran maksimal ${Math.floor(
+        uploadRule.maxFileSizeBytes / (1024 * 1024)
+      )} MB.`
+    );
   }
 }
 
-export async function saveUploadedFile(file: File): Promise<SavedUploadMetadata> {
-  validateUploadedFile(file);
+export async function saveUploadedFile(
+  file: File,
+  serviceSlug?: string
+): Promise<SavedUploadMetadata> {
+  validateUploadedFile(file, serviceSlug);
   await mkdir(uploadDir, { recursive: true });
 
   const originalName = sanitizeFilename(file.name || "lampiran");

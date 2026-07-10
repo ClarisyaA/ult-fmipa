@@ -75,6 +75,17 @@ const requestTableMetadata = {
     deliveryColumn: "DIAMBIL_TGL",
     purposeColumns: ["PENGANTAR", "DITUJUKAN"],
   },
+  permohonan_magang: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    purposeColumns: [
+      "JENIS_PERMOHONAN",
+      "TEMPAT_PELAKSANAAN",
+      "TUJUAN_SURAT",
+      "TANGGAL_MULAI",
+      "TANGGAL_SELESAI",
+    ],
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",

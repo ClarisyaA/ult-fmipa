@@ -20,7 +20,12 @@ type NormalWorkflowMetadata = {
   workflow: "normal";
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
   deliveryByColumn: "DIAMBIL_OLEH" | "DIKIRIM_OLEH";
-  descriptionColumn?: "KETERANGAN" | "KEPERLUAN" | "BEASISWA" | "PENGANTAR";
+  descriptionColumn?:
+    | "KETERANGAN"
+    | "KEPERLUAN"
+    | "BEASISWA"
+    | "PENGANTAR"
+    | "JENIS_PERMOHONAN";
 };
 
 type VerificationWorkflowMetadata = {
@@ -43,6 +48,7 @@ type RequestTableName =
   | "referensi"
   | "unggah_karya_ilmiah"
   | "surat_pengantar"
+  | "permohonan_magang"
   | "beasiswa"
   | "kelakuan_baik"
   | "ijazah"
@@ -109,6 +115,12 @@ const requestTableMetadata: Record<RequestTableName, RequestTableMetadata> = {
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     descriptionColumn: "PENGANTAR",
+  },
+  permohonan_magang: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    deliveryByColumn: "DIKIRIM_OLEH",
+    descriptionColumn: "JENIS_PERMOHONAN",
   },
   beasiswa: {
     workflow: "normal",

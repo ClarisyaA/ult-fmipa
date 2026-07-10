@@ -7,6 +7,7 @@ export type RequestAttachment = {
   storedName: string;
   mimeType: string;
   sizeBytes: number;
+  attachmentType?: string | null;
   uploadedBy: string | null;
   uploadedAt: string;
 };

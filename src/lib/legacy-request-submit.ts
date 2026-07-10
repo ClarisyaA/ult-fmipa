@@ -17,6 +17,7 @@ type SupportedSubmissionTable =
   | "masih_kuliah"
   | "masih_kuliah_aktif"
   | "plagiarisme"
+  | "permohonan_magang"
   | "referensi"
   | "surat_pengantar"
   | "transkrip"
@@ -34,6 +35,7 @@ const supportedSubmissionTables = {
   masih_kuliah: "masih_kuliah",
   masih_kuliah_aktif: "masih_kuliah_aktif",
   plagiarisme: "plagiarisme",
+  permohonan_magang: "permohonan_magang",
   referensi: "referensi",
   surat_pengantar: "surat_pengantar",
   transkrip: "transkrip",
@@ -56,6 +58,7 @@ const supportedSubmissionSlugs = new Set([
   "legalisir-ijazah-transkrip",
   "penerbitan-transkrip",
   "unggah-karya-ilmiah",
+  "permohonan-magang-kerja-praktek-ta",
 ]);
 
 export class ServiceRequestSubmitError extends Error {
@@ -321,6 +324,29 @@ async function insertLegalisir(input: CreateServiceRequestInput) {
   return String(created.ID);
 }
 
+async function insertPermohonanMagang(input: CreateServiceRequestInput) {
+  const created = await prisma.permohonan_magang.create({
+    data: {
+      NPM: input.npm,
+      JENIS_PERMOHONAN: normalizeOptional(input.jenisPermohonan),
+      KONTAK_PERSON: normalizeOptional(input.kontakPerson),
+      TEMPAT_PELAKSANAAN: normalizeOptional(input.tempatPelaksanaan),
+      TUJUAN_SURAT: normalizeOptional(input.tujuanSurat),
+      ALAMAT_SURAT: normalizeOptional(input.alamatSurat),
+      KECAMATAN_KABUPATEN: normalizeOptional(input.kecamatanKabupaten),
+      KOTA_KABUPATEN: normalizeOptional(input.kotaKabupaten),
+      PROVINSI: normalizeOptional(input.provinsi),
+      TANGGAL_MULAI: normalizeDate(input.tanggalMulai),
+      TANGGAL_SELESAI: normalizeDate(input.tanggalSelesai),
+      PERMINTAAN_TGL: new Date(),
+      PERMINTAAN_ENTRY: "Website ULT",
+      PERMINTAAN_IP: null,
+    },
+  });
+
+  return String(created.ID);
+}
+
 export async function createServiceRequest(
   serviceSlug: string,
   input: CreateServiceRequestInput
@@ -377,6 +403,9 @@ export async function createServiceRequest(
       break;
     case "legalisir":
       id = await insertLegalisir(input);
+      break;
+    case "permohonan_magang":
+      id = await insertPermohonanMagang(input);
       break;
     default:
       throw new ServiceRequestSubmitError(

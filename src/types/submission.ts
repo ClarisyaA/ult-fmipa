@@ -24,6 +24,17 @@ export type CreateServiceRequestInput = {
   jumlahTranskrip?: number;
   jumlahIjazah?: number;
   jumlahTranslet?: number;
+  jenisPermohonan?: string;
+  kontakPerson?: string;
+  tempatPelaksanaan?: string;
+  tujuanSurat?: string;
+  alamatSurat?: string;
+  kecamatanKabupaten?: string;
+  kotaKabupaten?: string;
+  provinsi?: string;
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+  serviceSlug?: string;
 };
 
 export type CreateServiceRequestResult = {

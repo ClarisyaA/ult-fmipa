@@ -8,6 +8,8 @@ export const serviceSlugs = [
   "keterangan-masih-kuliah",
   "keterangan-kelakuan-baik",
   "surat-pengantar",
+  "permohonan-magang-kerja-praktek-ta",
+  "surat-izin-kegiatan",
   "keterangan-lulus",
   "penerbitan-transkrip",
   "penerbitan-ijazah",
@@ -28,6 +30,9 @@ export const serviceTitles: Record<ServiceSlug, string> = {
   "keterangan-masih-kuliah": "Keterangan Masih Kuliah",
   "keterangan-kelakuan-baik": "Keterangan Kelakuan Baik",
   "surat-pengantar": "Surat Pengantar",
+  "permohonan-magang-kerja-praktek-ta":
+    "Permohonan Magang / Kerja Praktek / Tugas Akhir",
+  "surat-izin-kegiatan": "Surat Izin Kegiatan",
   "keterangan-lulus": "Keterangan Lulus",
   "penerbitan-transkrip": "Penerbitan Transkrip",
   "penerbitan-ijazah": "Penerbitan Ijazah",
@@ -78,6 +83,24 @@ export async function fillServiceForm(page: Page, slug: ServiceSlug, marker: str
     await page.locator("#dasarSuratTgl").fill("2026-06-15");
   }
 
+  if (slug === "permohonan-magang-kerja-praktek-ta") {
+    await page.locator("#jenisPermohonan").selectOption("Magang Kerja");
+    await page.locator("#kontakPerson").fill("Kontak E2E");
+    await page.locator("#tempatPelaksanaan").fill("Instansi E2E");
+    await page.locator("#tujuanSurat").fill("Pimpinan Instansi E2E");
+    await page.locator("#alamatSurat").fill("Jl. Pengujian No. 1");
+    await page.locator("#kecamatanKabupaten").fill("Jatinangor, Sumedang");
+    await page.locator("#kotaKabupaten").fill("Sumedang");
+    await page.locator("#provinsi").fill("Jawa Barat");
+    await page.locator("#tanggalMulai").fill("2026-07-01");
+    await page.locator("#tanggalSelesai").fill("2026-08-01");
+    await page.locator("#attachments").setInputFiles({
+      name: "surat-permohonan-prodi.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n% E2E test PDF\n"),
+    });
+  }
+
   if (slug === "keterangan-lulus") {
     await page.locator("#tempatLahir").fill("Bandung");
     await page.locator("#tanggalLahir").fill("2004-01-01");
@@ -97,7 +120,13 @@ export async function fillServiceForm(page: Page, slug: ServiceSlug, marker: str
   }
 
   // Textarea description is present for all except surat-pengantar, keterangan-lulus, ijazah, transkrip
-  const hasDescription = !["surat-pengantar", "keterangan-lulus", "penerbitan-ijazah", "penerbitan-transkrip"].includes(slug);
+  const hasDescription = ![
+    "surat-pengantar",
+    "keterangan-lulus",
+    "penerbitan-ijazah",
+    "penerbitan-transkrip",
+    "permohonan-magang-kerja-praktek-ta",
+  ].includes(slug);
   if (hasDescription) {
     await page.getByTestId("request-description").fill(marker);
   }
