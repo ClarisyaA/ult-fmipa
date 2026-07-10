@@ -35,9 +35,14 @@ type VerificationWorkflowMetadata = {
   workflow: "verification";
 };
 
+type SikWorkflowMetadata = {
+  workflow: "sik";
+};
+
 type RequestTableMetadata =
   | NormalWorkflowMetadata
-  | VerificationWorkflowMetadata;
+  | VerificationWorkflowMetadata
+  | SikWorkflowMetadata;
 
 const requestTableMetadata = {
   masih_kuliah_aktif: {
@@ -134,6 +139,9 @@ const requestTableMetadata = {
     tanggalMulaiColumn: "TANGGAL_MULAI",
     tanggalSelesaiColumn: "TANGGAL_SELESAI",
   },
+  surat_izin_kegiatan: {
+    workflow: "sik",
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
@@ -198,6 +206,16 @@ type DetailRow = {
   provinsi: string | null;
   tanggalMulai: Date | string | null;
   tanggalSelesai: Date | string | null;
+  approvalStatus: string | null;
+  approvalVerificationDate: Date | string | null;
+  approvalVerificationStaff: string | null;
+  approvalRejectReason: string | null;
+  finalSubmittedDate: Date | string | null;
+  namaHimpunan: string | null;
+  namaKegiatan: string | null;
+  tanggalKegiatan: Date | string | null;
+  emailPengiriman: string | null;
+  noHpWa: string | null;
 };
 
 type RequesterProfile = {
@@ -212,6 +230,10 @@ const statusLabels = {
   inProgress: "Sedang Diproses",
   completed: "Selesai",
   delivered: "Diambil/Dikirim",
+  sikApprovalPending: "Menunggu Verifikasi",
+  sikApprovalRejected: "Ditolak",
+  sikApprovalVerified: "Terverifikasi, lengkapi Form Final",
+  sikFinalSubmitted: "Form Final Terkirim",
 } satisfies Record<RequestStatus, string>;
 
 function isRequestTable(sourceTable: string): sourceTable is RequestTableName {
@@ -254,6 +276,16 @@ function getVerificationStatus(row: DetailRow): RequestStatus {
   if (row.universityDate) return "completed";
   if (row.verificationDate) return "inProgress";
   return "pending";
+}
+
+function getSikStatus(row: DetailRow): RequestStatus {
+  if (row.deliveredDate) return "delivered";
+  if (row.completedDate) return "completed";
+  if (row.processDate) return "inProgress";
+  if (row.finalSubmittedDate) return "sikFinalSubmitted";
+  if (row.approvalStatus === "verified") return "sikApprovalVerified";
+  if (row.approvalStatus === "rejected") return "sikApprovalRejected";
+  return "sikApprovalPending";
 }
 
 async function getRequesterProfile(
@@ -437,7 +469,17 @@ async function getNormalDetail(
       ${columnOrNull(metadata.kotaKabupatenColumn)} AS kotaKabupaten,
       ${columnOrNull(metadata.provinsiColumn)} AS provinsi,
       ${columnOrNull(metadata.tanggalMulaiColumn)} AS tanggalMulai,
-      ${columnOrNull(metadata.tanggalSelesaiColumn)} AS tanggalSelesai
+      ${columnOrNull(metadata.tanggalSelesaiColumn)} AS tanggalSelesai,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
     WHERE \`ID\` = ${id}
     LIMIT 1
@@ -489,8 +531,75 @@ async function getVerificationDetail(
       NULL AS kotaKabupaten,
       NULL AS provinsi,
       NULL AS tanggalMulai,
-      NULL AS tanggalSelesai
+      NULL AS tanggalSelesai,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
+    WHERE \`ID\` = ${id}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getSikDetail(id: string) {
+  const rows = await prisma.$queryRaw<DetailRow[]>`
+    SELECT
+      CAST(\`ID\` AS CHAR) AS id,
+      \`NPM\` AS npm,
+      \`EMAIL_PENGIRIMAN\` AS email,
+      \`NO_HP_WA\` AS phone,
+      \`PERMINTAAN_TGL\` AS requestDate,
+      \`PERMINTAAN_ENTRY\` AS requestEntry,
+      \`PROSES_TGL\` AS processDate,
+      \`PROSES_STAF\` AS processStaff,
+      \`SELESAI_TGL\` AS completedDate,
+      \`SELESAI_STAF\` AS completedStaff,
+      \`DIKIRIM_TGL\` AS deliveredDate,
+      \`DIKIRIM_OLEH\` AS deliveredBy,
+      NULL AS verificationDate,
+      NULL AS verificationStaff,
+      NULL AS facultyDate,
+      NULL AS facultyStaff,
+      NULL AS universityDate,
+      NULL AS universityStaff,
+      NULL AS keperluan,
+      NULL AS keterangan,
+      NULL AS jumlahIjazah,
+      NULL AS jumlahTranskrip,
+      NULL AS jumlahTranslate,
+      NULL AS beasiswa,
+      NULL AS pengantar,
+      NULL AS ditujukan,
+      NULL AS jenisPermohonan,
+      NULL AS kontakPerson,
+      NULL AS tempatPelaksanaan,
+      NULL AS tujuanSurat,
+      NULL AS alamatSurat,
+      NULL AS kecamatanKabupaten,
+      NULL AS kotaKabupaten,
+      NULL AS provinsi,
+      NULL AS tanggalMulai,
+      NULL AS tanggalSelesai,
+      \`APPROVAL_STATUS\` AS approvalStatus,
+      \`APPROVAL_VERIFIKASI_TGL\` AS approvalVerificationDate,
+      \`APPROVAL_VERIFIKASI_STAF\` AS approvalVerificationStaff,
+      \`APPROVAL_REJECT_REASON\` AS approvalRejectReason,
+      \`FINAL_SUBMITTED_TGL\` AS finalSubmittedDate,
+      \`NAMA_HIMPUNAN\` AS namaHimpunan,
+      \`NAMA_KEGIATAN\` AS namaKegiatan,
+      \`TANGGAL_KEGIATAN\` AS tanggalKegiatan,
+      \`EMAIL_PENGIRIMAN\` AS emailPengiriman,
+      \`NO_HP_WA\` AS noHpWa
+    FROM \`surat_izin_kegiatan\`
     WHERE \`ID\` = ${id}
     LIMIT 1
   `;
@@ -512,7 +621,9 @@ export async function getRequestDetail(
   const row =
     metadata.workflow === "normal"
       ? await getNormalDetail(service.sourceTable, metadata, id)
-      : await getVerificationDetail(service.sourceTable, id);
+      : metadata.workflow === "verification"
+        ? await getVerificationDetail(service.sourceTable, id)
+        : await getSikDetail(id);
 
   if (!row) {
     return null;
@@ -521,7 +632,9 @@ export async function getRequestDetail(
   const status =
     metadata.workflow === "normal"
       ? getNormalStatus(row)
-      : getVerificationStatus(row);
+      : metadata.workflow === "verification"
+        ? getVerificationStatus(row)
+        : getSikStatus(row);
   const requesterProfile = await getRequesterProfile(row.npm);
 
   return {
@@ -549,7 +662,7 @@ export async function getRequestDetail(
     deliveredDate: toIso(row.deliveredDate),
     deliveredBy: row.deliveredBy,
     workflow:
-      metadata.workflow === "normal"
+      metadata.workflow === "normal" || metadata.workflow === "sik"
         ? buildNormalWorkflow(row)
         : buildVerificationWorkflow(row),
     jumlahIjazah: row.jumlahIjazah,
@@ -568,5 +681,15 @@ export async function getRequestDetail(
     provinsi: row.provinsi,
     tanggalMulai: toIso(row.tanggalMulai),
     tanggalSelesai: toIso(row.tanggalSelesai),
+    approvalStatus: row.approvalStatus,
+    approvalVerificationDate: toIso(row.approvalVerificationDate),
+    approvalVerificationStaff: row.approvalVerificationStaff,
+    approvalRejectReason: row.approvalRejectReason,
+    finalSubmittedDate: toIso(row.finalSubmittedDate),
+    namaHimpunan: row.namaHimpunan,
+    namaKegiatan: row.namaKegiatan,
+    tanggalKegiatan: toIso(row.tanggalKegiatan),
+    emailPengiriman: row.emailPengiriman,
+    noHpWa: row.noHpWa,
   };
 }

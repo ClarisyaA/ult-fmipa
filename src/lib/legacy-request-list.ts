@@ -27,9 +27,14 @@ type VerificationWorkflowMetadata = {
   workflow: "verification";
 };
 
+type SikWorkflowMetadata = {
+  workflow: "sik";
+};
+
 type RequestTableMetadata =
   | NormalWorkflowMetadata
-  | VerificationWorkflowMetadata;
+  | VerificationWorkflowMetadata
+  | SikWorkflowMetadata;
 
 const requestTableMetadata = {
   masih_kuliah_aktif: {
@@ -86,6 +91,9 @@ const requestTableMetadata = {
       "TANGGAL_SELESAI",
     ],
   },
+  surat_izin_kegiatan: {
+    workflow: "sik",
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
@@ -128,6 +136,10 @@ const requestStatusLabels = {
   inProgress: "Diproses",
   completed: "Selesai",
   delivered: "Diambil/Dikirim",
+  sikApprovalPending: "Menunggu Verifikasi",
+  sikApprovalRejected: "Ditolak",
+  sikApprovalVerified: "Terverifikasi",
+  sikFinalSubmitted: "Form Final Terkirim",
 } satisfies Record<RequestStatus, string>;
 
 const allowedStatuses = new Set<RequestStatus>([
@@ -135,6 +147,10 @@ const allowedStatuses = new Set<RequestStatus>([
   "inProgress",
   "completed",
   "delivered",
+  "sikApprovalPending",
+  "sikApprovalRejected",
+  "sikApprovalVerified",
+  "sikFinalSubmitted",
 ]);
 
 export function maskNpm(npm?: string | null): string {
@@ -235,6 +251,18 @@ function buildVerificationStatusSql() {
   END`;
 }
 
+function buildSikStatusSql() {
+  return Prisma.sql`CASE
+    WHEN \`DIKIRIM_TGL\` IS NOT NULL THEN 'delivered'
+    WHEN \`SELESAI_TGL\` IS NOT NULL THEN 'completed'
+    WHEN \`PROSES_TGL\` IS NOT NULL AND \`SELESAI_TGL\` IS NULL THEN 'inProgress'
+    WHEN \`FINAL_SUBMITTED_TGL\` IS NOT NULL THEN 'sikFinalSubmitted'
+    WHEN \`APPROVAL_STATUS\` = 'verified' THEN 'sikApprovalVerified'
+    WHEN \`APPROVAL_STATUS\` = 'rejected' THEN 'sikApprovalRejected'
+    ELSE 'sikApprovalPending'
+  END`;
+}
+
 function buildPurposeSql(metadata: RequestTableMetadata) {
   if (metadata.workflow !== "normal" || !metadata.purposeColumns?.length) {
     return Prisma.sql`CONVERT(NULL USING utf8mb3) COLLATE utf8mb3_unicode_ci`;
@@ -255,8 +283,21 @@ function buildServiceSelect(service: RequestService) {
   const statusSql =
     metadata.workflow === "normal"
       ? buildNormalStatusSql(metadata.deliveryColumn)
-      : buildVerificationStatusSql();
-  const purposeSql = buildPurposeSql(metadata);
+      : metadata.workflow === "verification"
+        ? buildVerificationStatusSql()
+        : buildSikStatusSql();
+  const purposeSql =
+    metadata.workflow === "sik"
+      ? Prisma.sql`COALESCE(
+          NULLIF(CONVERT(\`NAMA_KEGIATAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+          NULLIF(CONVERT(\`NAMA_HIMPUNAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+          NULLIF(CONVERT(\`APPROVAL_STATUS\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, '')
+        )`
+      : buildPurposeSql(metadata);
+  const requestDateSql =
+    metadata.workflow === "sik"
+      ? Prisma.sql`COALESCE(\`FINAL_SUBMITTED_TGL\`, \`PERMINTAAN_TGL\`)`
+      : Prisma.sql`\`PERMINTAAN_TGL\``;
 
   return Prisma.sql`
     SELECT
@@ -266,7 +307,7 @@ function buildServiceSelect(service: RequestService) {
       ${service.sourceTable} AS sourceTable,
       \`NPM\` AS npm,
       ${purposeSql} AS purpose,
-      \`PERMINTAAN_TGL\` AS requestDate,
+      ${requestDateSql} AS requestDate,
       ${statusSql} AS status
     FROM ${table}
   `;

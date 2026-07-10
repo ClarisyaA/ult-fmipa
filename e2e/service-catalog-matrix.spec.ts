@@ -26,7 +26,8 @@ test.describe("service catalog route matrix", () => {
       // 4. Shows form or unsupported message
       const form = page.getByTestId("service-request-form");
       const unavailable = page.getByText(/belum tersedia/i);
-      await expect(form.or(unavailable)).toBeVisible();
+      const sikWorkflow = page.getByTestId("sik-proof-submit");
+      await expect(form.or(unavailable).or(sikWorkflow)).toBeVisible();
     }
   });
 });

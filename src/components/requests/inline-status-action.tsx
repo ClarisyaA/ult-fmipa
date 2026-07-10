@@ -20,7 +20,7 @@ type InlineStatusActionProps = {
 type ActionConfig = {
   action: RequestStatusAction;
   label: string;
-  activeStatus: RequestStatus;
+  activeStatuses: RequestStatus[];
   confirmation: string;
   successMessage: string;
 };
@@ -29,21 +29,21 @@ const actions: ActionConfig[] = [
   {
     action: "process",
     label: "Proses",
-    activeStatus: "pending",
+    activeStatuses: ["pending", "sikFinalSubmitted"],
     confirmation: "Proses pengajuan ini?",
     successMessage: "Pengajuan berhasil diproses.",
   },
   {
     action: "complete",
     label: "Selesai",
-    activeStatus: "inProgress",
+    activeStatuses: ["inProgress"],
     confirmation: "Tandai pengajuan ini selesai?",
     successMessage: "Pengajuan berhasil ditandai selesai.",
   },
   {
     action: "deliver",
     label: "Diambil/Dikirim",
-    activeStatus: "completed",
+    activeStatuses: ["completed"],
     confirmation: "Tandai pengajuan ini sudah diambil/dikirim?",
     successMessage: "Pengajuan berhasil ditandai diambil/dikirim.",
   },
@@ -65,11 +65,13 @@ function getDisabledTitle(
   }
 
   if (action === "process") {
-    return status === "pending" ? "" : "Sudah diproses";
+    return status === "pending" || status === "sikFinalSubmitted"
+      ? ""
+      : "Sudah diproses";
   }
 
   if (action === "complete") {
-    if (status === "pending") {
+    if (status === "pending" || status === "sikFinalSubmitted") {
       return "Proses dulu";
     }
 
@@ -176,7 +178,7 @@ export function InlineStatusAction({
     <div className="grid gap-2">
       <div className="grid grid-cols-3 gap-2">
         {actions.map((config) => {
-          const enabled = currentStatus === config.activeStatus;
+          const enabled = config.activeStatuses.includes(currentStatus);
           const title = enabled
             ? config.confirmation
             : getDisabledTitle(config.action, currentStatus, supported);

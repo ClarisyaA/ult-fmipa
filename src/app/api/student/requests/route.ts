@@ -10,6 +10,10 @@ const statuses = new Set<RequestStatus>([
   "inProgress",
   "completed",
   "delivered",
+  "sikApprovalPending",
+  "sikApprovalRejected",
+  "sikApprovalVerified",
+  "sikFinalSubmitted",
 ]);
 
 function parseStatus(value: string | null) {

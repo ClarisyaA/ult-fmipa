@@ -2,7 +2,11 @@ export type RequestStatus =
   | "pending"
   | "inProgress"
   | "completed"
-  | "delivered";
+  | "delivered"
+  | "sikApprovalPending"
+  | "sikApprovalRejected"
+  | "sikApprovalVerified"
+  | "sikFinalSubmitted";
 
 export type ServiceRequestListItem = {
   id: string;

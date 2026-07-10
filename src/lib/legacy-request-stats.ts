@@ -93,6 +93,12 @@ const requestTableMetadata = {
     completeColumn: "SELESAI_TGL",
     deliveryColumn: "DIKIRIM_TGL",
   },
+  surat_izin_kegiatan: {
+    workflow: "normal",
+    processColumn: "PROSES_TGL",
+    completeColumn: "SELESAI_TGL",
+    deliveryColumn: "DIKIRIM_TGL",
+  },
   beasiswa: {
     workflow: "normal",
     processColumn: "PROSES_TGL",

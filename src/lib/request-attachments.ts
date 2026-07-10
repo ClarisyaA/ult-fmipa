@@ -173,3 +173,38 @@ export async function deleteRequestAttachmentsForRequest(
 
   return records.length;
 }
+
+export async function deleteRequestAttachmentsByType(
+  serviceSlug: string,
+  sourceTable: string,
+  requestId: string,
+  attachmentType: string
+) {
+  if (!ensureWhitelistedService(serviceSlug, sourceTable)) {
+    throw new Error("Layanan lampiran tidak valid.");
+  }
+
+  const records = await prisma.ult_request_attachments.findMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+      ATTACHMENT_TYPE: attachmentType,
+    },
+  });
+
+  for (const record of records) {
+    await deleteUploadedFile(record.STORAGE_PATH);
+  }
+
+  await prisma.ult_request_attachments.deleteMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+      ATTACHMENT_TYPE: attachmentType,
+    },
+  });
+
+  return records.length;
+}

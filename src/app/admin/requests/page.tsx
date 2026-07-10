@@ -47,6 +47,23 @@ const statusOptions: { value: RequestStatus; label: string }[] = [
 ];
 const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
 
+function supportsInlineStatus(request: {
+  sourceTable: string;
+  status: RequestStatus;
+}) {
+  if (unsupportedInlineStatusTables.has(request.sourceTable)) {
+    return false;
+  }
+
+  if (request.sourceTable !== "surat_izin_kegiatan") {
+    return true;
+  }
+
+  return ["sikFinalSubmitted", "inProgress", "completed"].includes(
+    request.status
+  );
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "-";
@@ -222,11 +239,7 @@ export default async function AdminRequestsPage({
                           id={request.id}
                           status={request.status}
                           staffName={staffName}
-                          supported={
-                            !unsupportedInlineStatusTables.has(
-                              request.sourceTable
-                            )
-                          }
+                          supported={supportsInlineStatus(request)}
                         />
                         <Button asChild variant="outline" size="sm">
                           <Link

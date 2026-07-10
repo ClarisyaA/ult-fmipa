@@ -13,6 +13,11 @@ test.describe("full service submission tests @full-service", () => {
       // Check if submission is supported for this slug on the frontend
       const formVisible = await page.getByTestId("service-request-form").isVisible();
       if (!formVisible) {
+        if (slug === "surat-izin-kegiatan") {
+          await expect(page.getByTestId("sik-proof-submit")).toBeVisible();
+          return;
+        }
+
         // If not supported, expect a clear unavailable message
         await expect(page.getByText(/belum tersedia/i)).toBeVisible();
         return;

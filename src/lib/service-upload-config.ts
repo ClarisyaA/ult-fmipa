@@ -27,6 +27,26 @@ const serviceUploadRules: Record<string, ServiceUploadRule> = {
       "Upload Surat Permohonan dari Program Studi. Maksimal 5 file PDF, masing-masing 10 MB.",
     attachmentType: "program_study_request_letter",
   },
+  "surat-izin-kegiatan:approval-proof": {
+    maxFiles: 5,
+    minFiles: 1,
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+    allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+    description:
+      "Upload bukti ACC Manajer Akademik dan Kemahasiswaan. Maksimal 5 file, masing-masing 10 MB. Format PDF, JPG, atau PNG.",
+    attachmentType: "manager_approval_proof",
+  },
+  "surat-izin-kegiatan:final-spik": {
+    maxFiles: 5,
+    minFiles: 1,
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+    allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+    description:
+      "Upload SPIK final. Maksimal 5 file, masing-masing 10 MB. Format PDF, JPG, atau PNG.",
+    attachmentType: "final_spik_document",
+  },
 };
 
 export function getServiceUploadRule(serviceSlug: string) {

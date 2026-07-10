@@ -40,6 +40,14 @@ function formatAttachmentType(value?: string | null) {
     return "Surat Permohonan dari Program Studi";
   }
 
+  if (value === "manager_approval_proof") {
+    return "Bukti ACC Manajer Akademik dan Kemahasiswaan";
+  }
+
+  if (value === "final_spik_document") {
+    return "SPIK Final";
+  }
+
   return null;
 }
 

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { ServiceRequestForm } from "@/components/services/service-request-form";
+import { SikRequestWorkflow } from "@/components/services/sik-request-workflow";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +18,8 @@ import {
 } from "@/lib/legacy-services";
 import { getCurrentUser } from "@/lib/auth";
 import { isSubmissionSupported } from "@/lib/legacy-request-submit";
+import { getLatestSikRequestForStudent, sikServiceSlug } from "@/lib/sik-requests";
+import { getStudentRequestDetail } from "@/lib/student-request-history";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,6 +56,18 @@ export default async function SubmitServiceRequestPage({
   }
 
   const supported = isSubmissionSupported(service.slug);
+  const latestSikRecord =
+    service.slug === sikServiceSlug && user.npm
+      ? await getLatestSikRequestForStudent(user.npm)
+      : null;
+  const latestSikDetail =
+    service.slug === sikServiceSlug && user.npm && latestSikRecord
+      ? await getStudentRequestDetail(
+          user.npm,
+          service.slug,
+          String(latestSikRecord.ID)
+        )
+      : null;
 
   return (
     <main className="relative bg-[#FEFDF9]" data-testid="service-submit-page">
@@ -81,7 +96,9 @@ export default async function SubmitServiceRequestPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="px-8 pb-8 sm:px-10 sm:pb-10">
-              {supported ? (
+              {service.slug === sikServiceSlug ? (
+                <SikRequestWorkflow latestRequest={latestSikDetail} />
+              ) : supported ? (
                 <ServiceRequestForm
                   serviceSlug={service.slug}
                   defaultValues={{

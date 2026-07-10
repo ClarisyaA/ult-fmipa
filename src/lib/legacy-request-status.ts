@@ -13,6 +13,7 @@ type NormalWorkflowMetadata = {
   workflow: "normal";
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
   deliveryByColumn: "DIAMBIL_OLEH" | "DIKIRIM_OLEH";
+  requireFinalSubmitted?: boolean;
 };
 
 type UnsupportedWorkflowMetadata = {
@@ -83,6 +84,12 @@ const requestTableMetadata = {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
+  },
+  surat_izin_kegiatan: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    deliveryByColumn: "DIKIRIM_OLEH",
+    requireFinalSubmitted: true,
   },
   beasiswa: {
     workflow: "normal",
@@ -219,6 +226,17 @@ export async function updateRequestStatus(
 
     throw new RequestStatusUpdateError(
       message,
+      400
+    );
+  }
+
+  if (
+    "requireFinalSubmitted" in metadata &&
+    metadata.requireFinalSubmitted &&
+    !currentDetail.finalSubmittedDate
+  ) {
+    throw new RequestStatusUpdateError(
+      "Form final SIK belum dikirim oleh mahasiswa.",
       400
     );
   }

@@ -87,7 +87,21 @@ const statusStyles = {
   inProgress: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
   completed: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
   delivered: "border-[#d7d9e5] bg-[#f4f5fa] text-[#4e5566]",
+  sikApprovalPending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  sikApprovalRejected: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+  sikApprovalVerified: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+  sikFinalSubmitted: "border-[#d8d4e4] bg-[#fbfaff] text-[#4f4a5f]",
 } satisfies Record<RequestStatus, string>;
+
+function supportsInlineStatus(request: ServiceRequestListItem) {
+  if (request.sourceTable !== "surat_izin_kegiatan") {
+    return true;
+  }
+
+  return ["sikFinalSubmitted", "inProgress", "completed"].includes(
+    request.status
+  );
+}
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -275,7 +289,7 @@ function RequestPreview({
             id={request.id}
             status={request.status}
             staffName={staffName}
-            supported
+            supported={supportsInlineStatus(request)}
           />
 
           {profileRows.length > 0 ? (

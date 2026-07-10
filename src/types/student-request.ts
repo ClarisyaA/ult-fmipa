@@ -19,6 +19,16 @@ export type StudentRequestDetail = StudentRequestListItem & {
   completedStaff?: string | null;
   deliveredDate?: string | null;
   deliveredBy?: string | null;
+  approvalStatus?: string | null;
+  approvalVerificationDate?: string | null;
+  approvalVerificationStaff?: string | null;
+  approvalRejectReason?: string | null;
+  finalSubmittedDate?: string | null;
+  namaHimpunan?: string | null;
+  namaKegiatan?: string | null;
+  tanggalKegiatan?: string | null;
+  emailPengiriman?: string | null;
+  noHpWa?: string | null;
   workflow: Array<{
     label: string;
     date: string | null;

@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
+import { SikRequestWorkflow } from "@/components/services/sik-request-workflow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,6 +121,21 @@ export default async function StudentHistoryDetailPage({
       </Card>
 
       <RequestAttachmentsList attachments={attachments} />
+
+      {detail.sourceTable === "surat_izin_kegiatan" &&
+      !detail.finalSubmittedDate ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tindak Lanjut SIK</CardTitle>
+            <CardDescription>
+              Lengkapi tahap SIK sesuai status verifikasi terbaru.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SikRequestWorkflow latestRequest={detail} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

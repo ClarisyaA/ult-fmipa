@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
+import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,6 +93,29 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
           label="Tanggal Selesai"
           value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
         />
+        <DetailField label="Status Verifikasi SIK" value={detail.approvalStatus} />
+        <DetailField
+          label="Tanggal Verifikasi SIK"
+          value={
+            detail.approvalVerificationDate
+              ? formatDate(detail.approvalVerificationDate)
+              : null
+          }
+        />
+        <DetailField label="Verifikator SIK" value={detail.approvalVerificationStaff} />
+        <DetailField label="Alasan Penolakan" value={detail.approvalRejectReason} />
+        <DetailField
+          label="Tanggal Form Final"
+          value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+        />
+        <DetailField label="Nama Himpunan" value={detail.namaHimpunan} />
+        <DetailField label="Nama Kegiatan" value={detail.namaKegiatan} />
+        <DetailField
+          label="Tanggal Kegiatan"
+          value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
+        />
+        <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+        <DetailField label="No HP WA Contact Person" value={detail.noHpWa} />
         <DetailField label="Jumlah Ijazah" value={detail.jumlahIjazah} />
         <DetailField label="Jumlah Transkrip" value={detail.jumlahTranskrip} />
         <DetailField label="Jumlah Translate" value={detail.jumlahTranslate} />
@@ -137,13 +161,29 @@ export default async function StaffRequestDetailPage({
         </p>
       </div>
 
-      <RequestStatusActions
-        serviceSlug={detail.serviceSlug}
-        id={detail.id}
-        currentStatus={detail.status}
-        rolePrefix="staff"
-        staffName={user?.name ?? "Staff ULT"}
-      />
+      {detail.sourceTable === "surat_izin_kegiatan" ? (
+        <SikApprovalActions
+          rolePrefix="staff"
+          id={detail.id}
+          approvalStatus={detail.approvalStatus}
+          finalSubmitted={Boolean(detail.finalSubmittedDate)}
+        />
+      ) : null}
+
+      {detail.sourceTable !== "surat_izin_kegiatan" ||
+      detail.finalSubmittedDate ? (
+        <RequestStatusActions
+          serviceSlug={detail.serviceSlug}
+          id={detail.id}
+          currentStatus={detail.status}
+          rolePrefix="staff"
+          staffName={user?.name ?? "Staff ULT"}
+        />
+      ) : (
+        <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+          Form final SIK belum dikirim oleh mahasiswa.
+        </div>
+      )}
 
       <OptionalDetails detail={detail} />
 

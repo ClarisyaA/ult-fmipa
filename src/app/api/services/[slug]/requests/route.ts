@@ -15,6 +15,11 @@ import { getPublicServiceBySlug } from "@/lib/legacy-services";
 import { saveRequestAttachmentMetadata } from "@/lib/request-attachments";
 import { createServiceRequestSchema } from "@/lib/service-request-validation";
 import { getServiceUploadRule } from "@/lib/service-upload-config";
+import {
+  createSikApprovalProofRequest,
+  sikApprovalProofAttachmentType,
+  sikServiceSlug,
+} from "@/lib/sik-requests";
 import { getServerSession } from "next-auth";
 
 function isMultipartRequest(request: Request) {
@@ -113,7 +118,11 @@ export async function POST(
         }
       : await request.json();
     const files = formData ? getAttachmentFiles(formData) : [];
-    const uploadRule = getServiceUploadRule(service.slug);
+    const uploadRuleKey =
+      service.slug === sikServiceSlug
+        ? `${sikServiceSlug}:approval-proof`
+        : service.slug;
+    const uploadRule = getServiceUploadRule(uploadRuleKey);
 
     if (files.length > uploadRule.maxFiles) {
       return NextResponse.json(
@@ -145,7 +154,48 @@ export async function POST(
       );
     }
 
-    files.forEach((file) => validateUploadedFile(file, service.slug));
+    files.forEach((file) => validateUploadedFile(file, uploadRuleKey));
+
+    if (service.slug === sikServiceSlug) {
+      if (!session.user.npm) {
+        return NextResponse.json(
+          { error: "NPM mahasiswa tidak tersedia di session." },
+          { status: 400 }
+        );
+      }
+
+      const created = await createSikApprovalProofRequest({
+        npm: session.user.npm,
+        uploadedBy: session.user.email ?? session.user.npm ?? null,
+      });
+      let attachmentCount = 0;
+
+      for (const file of files) {
+        const savedFile = await saveUploadedFile(file, uploadRuleKey);
+
+        await saveRequestAttachmentMetadata({
+          serviceSlug: service.slug,
+          sourceTable: service.sourceTable,
+          requestId: String(created.ID),
+          uploadedBy: session.user.email ?? session.user.npm ?? null,
+          attachmentType: sikApprovalProofAttachmentType,
+          file: savedFile,
+        });
+        attachmentCount += 1;
+      }
+
+      return NextResponse.json({
+        data: {
+          id: String(created.ID),
+          requestId: String(created.ID),
+          serviceSlug: service.slug,
+          serviceTitle: service.title,
+          status: "sikApprovalPending",
+          attachmentCount,
+        },
+        message: "Bukti ACC berhasil dikirim dan menunggu verifikasi.",
+      });
+    }
 
     const input = createServiceRequestSchema.parse({
       ...body,
