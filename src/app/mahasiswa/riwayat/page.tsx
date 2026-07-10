@@ -33,7 +33,22 @@ const statuses = new Set<RequestStatus>([
   "inProgress",
   "completed",
   "delivered",
+  "sikApprovalPending",
+  "sikApprovalRejected",
+  "sikApprovalVerified",
+  "sikFinalSubmitted",
 ]);
+
+const statusStyles = {
+  pending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  inProgress: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+  completed: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  delivered: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  sikApprovalPending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  sikApprovalRejected: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+  sikApprovalVerified: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
+  sikFinalSubmitted: "border-[#d8d4e4] bg-[#fbfaff] text-[#4f4a5f]",
+} satisfies Record<RequestStatus, string>;
 
 function parseStatus(value?: string) {
   if (!value || !statuses.has(value as RequestStatus)) return undefined;
@@ -118,7 +133,12 @@ export default async function StudentHistoryPage({
                       {formatDate(request.requestDate)}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary">{request.statusLabel}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-sm ${statusStyles[request.status]}`}
+                  >
+                    {request.statusLabel}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="grid gap-4">

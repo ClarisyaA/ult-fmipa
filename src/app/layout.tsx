@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { Toaster } from "sonner";
 import { RouteLoadingBar } from "@/components/layout/route-loading-bar";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import "./globals.css";
@@ -35,6 +36,7 @@ export default function RootLayout({
           <RouteLoadingBar />
         </Suspense>
         {children}
+        <Toaster position="top-right" richColors closeButton />
         <ScrollToTop />
       </body>
     </html>

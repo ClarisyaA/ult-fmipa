@@ -28,3 +28,19 @@ export type PendingDashboardRequestRow = {
   programStudy: string;
   requestDate: string | null;
 };
+
+export type PriorityLevel = "high" | "medium" | "new";
+
+export type PriorityDashboardRequestRow = PendingDashboardRequestRow & {
+  waitingHours: number;
+  waitingDays: number;
+  priorityLevel: PriorityLevel;
+};
+
+export type RequestNotificationSnapshot = {
+  latestKey: string | null;
+  totalPending: number;
+  highPriorityCount: number;
+  requests: PendingDashboardRequestRow[];
+  generatedAt: string;
+};

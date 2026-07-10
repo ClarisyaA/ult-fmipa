@@ -10,6 +10,7 @@ type RequestDeleteButtonProps = {
   id: string;
   label?: string;
   redirectTo?: string;
+  compact?: boolean;
 };
 
 export function RequestDeleteButton({
@@ -17,6 +18,7 @@ export function RequestDeleteButton({
   id,
   label = "Hapus",
   redirectTo,
+  compact = false,
 }: RequestDeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,8 +78,13 @@ export function RequestDeleteButton({
         size="sm"
         onClick={handleDelete}
         disabled={isDeleting}
+        className={
+          compact
+            ? "h-7 rounded-md px-2 text-[10px] font-semibold"
+            : undefined
+        }
       >
-        {isDeleting ? "Menghapus..." : label}
+        {isDeleting ? (compact ? "..." : "Menghapus...") : label}
       </Button>
       {message ? (
         <p

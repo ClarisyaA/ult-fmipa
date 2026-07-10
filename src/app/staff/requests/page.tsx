@@ -87,20 +87,21 @@ const statusStyles = {
   inProgress: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
   completed: "border-[#cce3d3] bg-[#eef9f1] text-[#2f6b44]",
   delivered: "border-[#d7d9e5] bg-[#f4f5fa] text-[#4e5566]",
+  sikApprovalPending: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+  sikApprovalRejected: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+  sikApprovalVerified: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+  sikFinalSubmitted: "border-[#d8d4e4] bg-[#fbfaff] text-[#4f4a5f]",
 } satisfies Record<RequestStatus, string>;
 
-const placeholderServiceFilters: ServiceFilterOption[] = [
-  {
-    title: "Permohonan Magang",
-    slug: "permohonan-magang",
-    category: "Layanan Mahasiswa",
-  },
-  {
-    title: "Surat Izin Kegiatan (SIK)",
-    slug: "surat-izin-kegiatan-sik",
-    category: "Layanan Mahasiswa",
-  },
-];
+function supportsInlineStatus(request: ServiceRequestListItem) {
+  if (request.sourceTable !== "surat_izin_kegiatan") {
+    return true;
+  }
+
+  return ["sikFinalSubmitted", "inProgress", "completed"].includes(
+    request.status
+  );
+}
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -166,10 +167,7 @@ function buildHref(params: {
 }
 
 function getCategoryServices(category?: string) {
-  const services: ServiceFilterOption[] = [
-    ...getPublicServices(),
-    ...placeholderServiceFilters,
-  ];
+  const services: ServiceFilterOption[] = getPublicServices();
   const selectedGroup = serviceGroups.find((group) => group.value === category);
 
   if (!selectedGroup) {
@@ -229,6 +227,22 @@ function RequestPreview({
     { label: "Beasiswa", value: detail.beasiswa },
     { label: "Pengantar", value: detail.pengantar },
     { label: "Ditujukan", value: detail.ditujukan },
+    { label: "Jenis Permohonan", value: detail.jenisPermohonan },
+    { label: "Kontak Person", value: detail.kontakPerson },
+    { label: "Tempat Pelaksanaan", value: detail.tempatPelaksanaan },
+    { label: "Tujuan Surat", value: detail.tujuanSurat },
+    { label: "Alamat Surat", value: detail.alamatSurat },
+    { label: "Kecamatan dan Kabupaten", value: detail.kecamatanKabupaten },
+    { label: "Kota / Kabupaten", value: detail.kotaKabupaten },
+    { label: "Provinsi", value: detail.provinsi },
+    {
+      label: "Tanggal Mulai",
+      value: detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null,
+    },
+    {
+      label: "Tanggal Selesai",
+      value: detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null,
+    },
     { label: "Jumlah Ijazah", value: detail.jumlahIjazah },
     { label: "Jumlah Transkrip", value: detail.jumlahTranskrip },
     { label: "Jumlah Terjemahan", value: detail.jumlahTranslate },
@@ -275,7 +289,7 @@ function RequestPreview({
             id={request.id}
             status={request.status}
             staffName={staffName}
-            supported
+            supported={supportsInlineStatus(request)}
           />
 
           {profileRows.length > 0 ? (
@@ -462,14 +476,34 @@ export default async function StaffRequestsPage({
           serviceTitle: selectedDetail.serviceTitle,
           serviceSlug: selectedDetail.serviceSlug,
           sourceTable: selectedDetail.sourceTable,
+          npm: selectedDetail.npm,
           maskedNpm: maskNpm(selectedDetail.npm),
+          requesterName: selectedDetail.requesterName ?? null,
+          requesterProgram: selectedDetail.requesterProgram ?? null,
+          requesterEmail: selectedDetail.requesterEmail ?? null,
+          requesterPhone: selectedDetail.requesterPhone ?? null,
           purpose:
             selectedDetail.keperluan ??
             selectedDetail.keterangan ??
             selectedDetail.beasiswa ??
             selectedDetail.pengantar ??
+            selectedDetail.jenisPermohonan ??
             null,
           requestDate: selectedDetail.requestDate,
+          processDate: selectedDetail.processDate ?? null,
+          completedDate: selectedDetail.completedDate ?? null,
+          deliveredDate: selectedDetail.deliveredDate ?? null,
+          mainField: null,
+          jenisPermohonan: selectedDetail.jenisPermohonan ?? null,
+          tempatPelaksanaan: selectedDetail.tempatPelaksanaan ?? null,
+          tujuanSurat: selectedDetail.tujuanSurat ?? null,
+          tanggalMulai: selectedDetail.tanggalMulai ?? null,
+          tanggalSelesai: selectedDetail.tanggalSelesai ?? null,
+          namaHimpunan: selectedDetail.namaHimpunan ?? null,
+          namaKegiatan: selectedDetail.namaKegiatan ?? null,
+          tanggalKegiatan: selectedDetail.tanggalKegiatan ?? null,
+          approvalStatus: selectedDetail.approvalStatus ?? null,
+          finalSubmittedDate: selectedDetail.finalSubmittedDate ?? null,
           status: selectedDetail.status,
           statusLabel: selectedDetail.statusLabel,
         }

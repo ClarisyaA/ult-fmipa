@@ -20,16 +20,26 @@ type NormalWorkflowMetadata = {
   workflow: "normal";
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
   deliveryByColumn: "DIAMBIL_OLEH" | "DIKIRIM_OLEH";
-  descriptionColumn?: "KETERANGAN" | "KEPERLUAN" | "BEASISWA" | "PENGANTAR";
+  descriptionColumn?:
+    | "KETERANGAN"
+    | "KEPERLUAN"
+    | "BEASISWA"
+    | "PENGANTAR"
+    | "JENIS_PERMOHONAN";
 };
 
 type VerificationWorkflowMetadata = {
   workflow: "verification";
 };
 
+type SikWorkflowMetadata = {
+  workflow: "sik";
+};
+
 type RequestTableMetadata =
   | NormalWorkflowMetadata
-  | VerificationWorkflowMetadata;
+  | VerificationWorkflowMetadata
+  | SikWorkflowMetadata;
 
 type RequestTableName =
   | "masih_kuliah_aktif"
@@ -43,6 +53,8 @@ type RequestTableName =
   | "referensi"
   | "unggah_karya_ilmiah"
   | "surat_pengantar"
+  | "permohonan_magang"
+  | "surat_izin_kegiatan"
   | "beasiswa"
   | "kelakuan_baik"
   | "ijazah"
@@ -110,6 +122,15 @@ const requestTableMetadata: Record<RequestTableName, RequestTableMetadata> = {
     deliveryByColumn: "DIAMBIL_OLEH",
     descriptionColumn: "PENGANTAR",
   },
+  permohonan_magang: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    deliveryByColumn: "DIKIRIM_OLEH",
+    descriptionColumn: "JENIS_PERMOHONAN",
+  },
+  surat_izin_kegiatan: {
+    workflow: "sik",
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
@@ -160,6 +181,16 @@ type StudentRequestRow = {
   facultyStaff: string | null;
   universityDate: Date | string | null;
   universityStaff: string | null;
+  approvalStatus: string | null;
+  approvalVerificationDate: Date | string | null;
+  approvalVerificationStaff: string | null;
+  approvalRejectReason: string | null;
+  finalSubmittedDate: Date | string | null;
+  namaHimpunan: string | null;
+  namaKegiatan: string | null;
+  tanggalKegiatan: Date | string | null;
+  emailPengiriman: string | null;
+  noHpWa: string | null;
 };
 
 const statusLabels = {
@@ -167,6 +198,10 @@ const statusLabels = {
   inProgress: "Sedang Diproses",
   completed: "Selesai",
   delivered: "Diambil/Dikirim",
+  sikApprovalPending: "Menunggu Verifikasi",
+  sikApprovalRejected: "Ditolak",
+  sikApprovalVerified: "Terverifikasi, lengkapi Form Final",
+  sikFinalSubmitted: "Form Final Terkirim",
 } satisfies Record<RequestStatus, string>;
 
 function isRequestTable(sourceTable: string): sourceTable is RequestTableName {
@@ -231,17 +266,53 @@ function buildVerificationStatusSql() {
   END`;
 }
 
+function buildSikStatusSql() {
+  return Prisma.sql`CASE
+    WHEN \`DIKIRIM_TGL\` IS NOT NULL THEN 'delivered'
+    WHEN \`SELESAI_TGL\` IS NOT NULL THEN 'completed'
+    WHEN \`PROSES_TGL\` IS NOT NULL AND \`SELESAI_TGL\` IS NULL THEN 'inProgress'
+    WHEN \`FINAL_SUBMITTED_TGL\` IS NOT NULL THEN 'sikFinalSubmitted'
+    WHEN \`APPROVAL_STATUS\` = 'verified' THEN 'sikApprovalVerified'
+    WHEN \`APPROVAL_STATUS\` = 'rejected' THEN 'sikApprovalRejected'
+    ELSE 'sikApprovalPending'
+  END`;
+}
+
 function buildListSelect(service: StudentRequestService, npm: string) {
   const metadata = requestTableMetadata[service.sourceTable];
   const table = Prisma.raw(quoteIdentifier(service.sourceTable));
   const statusSql =
     metadata.workflow === "normal"
       ? buildNormalStatusSql(metadata.deliveryColumn)
-      : buildVerificationStatusSql();
+      : metadata.workflow === "verification"
+        ? buildVerificationStatusSql()
+        : buildSikStatusSql();
   const descriptionSql =
     metadata.workflow === "normal"
-      ? columnOrNull(metadata.descriptionColumn)
-      : Prisma.sql`CAST(NULL AS CHAR)`;
+      ? service.sourceTable === "permohonan_magang"
+        ? Prisma.sql`CONCAT_WS(
+            ' | ',
+            NULLIF(CONVERT(\`JENIS_PERMOHONAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONVERT(\`TEMPAT_PELAKSANAAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONCAT(
+              DATE_FORMAT(\`TANGGAL_MULAI\`, '%d/%m/%Y'),
+              ' - ',
+              DATE_FORMAT(\`TANGGAL_SELESAI\`, '%d/%m/%Y')
+            ), ' - ')
+          )`
+        : columnOrNull(metadata.descriptionColumn)
+      : metadata.workflow === "sik"
+        ? Prisma.sql`CONCAT_WS(
+            ' | ',
+            NULLIF(CONVERT(\`NAMA_KEGIATAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONVERT(\`NAMA_HIMPUNAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+            NULLIF(CONCAT('Verifikasi: ', CONVERT(\`APPROVAL_STATUS\` USING utf8mb3) COLLATE utf8mb3_unicode_ci), 'Verifikasi: ')
+          )`
+        : Prisma.sql`CAST(NULL AS CHAR)`;
+  const requestDateSql =
+    metadata.workflow === "sik"
+      ? Prisma.sql`COALESCE(\`FINAL_SUBMITTED_TGL\`, \`PERMINTAAN_TGL\`)`
+      : Prisma.sql`\`PERMINTAAN_TGL\``;
 
   return Prisma.sql`
     SELECT
@@ -249,7 +320,7 @@ function buildListSelect(service: StudentRequestService, npm: string) {
       ${service.title} AS serviceTitle,
       ${service.slug} AS serviceSlug,
       ${service.sourceTable} AS sourceTable,
-      \`PERMINTAAN_TGL\` AS requestDate,
+      ${requestDateSql} AS requestDate,
       ${statusSql} AS status,
       ${descriptionSql} AS description
     FROM ${table}
@@ -358,7 +429,17 @@ function buildNormalDetailSelect(
       NULL AS facultyDate,
       NULL AS facultyStaff,
       NULL AS universityDate,
-      NULL AS universityStaff
+      NULL AS universityStaff,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
     WHERE \`NPM\` = ${npm} AND \`ID\` = ${id}
     LIMIT 1
@@ -393,8 +474,61 @@ function buildVerificationDetailSelect(
       \`FAKULTAS_TGL\` AS facultyDate,
       \`FAKULTAS_STAF\` AS facultyStaff,
       \`UNIVERSITAS_TGL\` AS universityDate,
-      \`UNIVERSITAS_STAF\` AS universityStaff
+      \`UNIVERSITAS_STAF\` AS universityStaff,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
+    WHERE \`NPM\` = ${npm} AND \`ID\` = ${id}
+    LIMIT 1
+  `;
+}
+
+function buildSikDetailSelect(service: StudentRequestService, npm: string, id: string) {
+  return Prisma.sql`
+    SELECT
+      CAST(\`ID\` AS CHAR) AS id,
+      ${service.title} AS serviceTitle,
+      ${service.slug} AS serviceSlug,
+      ${service.sourceTable} AS sourceTable,
+      COALESCE(\`FINAL_SUBMITTED_TGL\`, \`PERMINTAAN_TGL\`) AS requestDate,
+      ${buildSikStatusSql()} AS status,
+      COALESCE(
+        NULLIF(CONVERT(\`NAMA_KEGIATAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+        NULLIF(CONVERT(\`NAMA_HIMPUNAN\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, ''),
+        NULLIF(CONVERT(\`APPROVAL_STATUS\` USING utf8mb3) COLLATE utf8mb3_unicode_ci, '')
+      ) AS description,
+      \`PERMINTAAN_ENTRY\` AS requestEntry,
+      \`PROSES_TGL\` AS processDate,
+      \`PROSES_STAF\` AS processStaff,
+      \`SELESAI_TGL\` AS completedDate,
+      \`SELESAI_STAF\` AS completedStaff,
+      \`DIKIRIM_TGL\` AS deliveredDate,
+      \`DIKIRIM_OLEH\` AS deliveredBy,
+      NULL AS verificationDate,
+      NULL AS verificationStaff,
+      NULL AS facultyDate,
+      NULL AS facultyStaff,
+      NULL AS universityDate,
+      NULL AS universityStaff,
+      \`APPROVAL_STATUS\` AS approvalStatus,
+      \`APPROVAL_VERIFIKASI_TGL\` AS approvalVerificationDate,
+      \`APPROVAL_VERIFIKASI_STAF\` AS approvalVerificationStaff,
+      \`APPROVAL_REJECT_REASON\` AS approvalRejectReason,
+      \`FINAL_SUBMITTED_TGL\` AS finalSubmittedDate,
+      \`NAMA_HIMPUNAN\` AS namaHimpunan,
+      \`NAMA_KEGIATAN\` AS namaKegiatan,
+      \`TANGGAL_KEGIATAN\` AS tanggalKegiatan,
+      \`EMAIL_PENGIRIMAN\` AS emailPengiriman,
+      \`NO_HP_WA\` AS noHpWa
+    FROM \`surat_izin_kegiatan\`
     WHERE \`NPM\` = ${npm} AND \`ID\` = ${id}
     LIMIT 1
   `;
@@ -441,9 +575,13 @@ export async function getStudentRequestDetail(
       ? await prisma.$queryRaw<StudentRequestRow[]>(
           buildNormalDetailSelect(requestService, metadata, npm, id)
         )
-      : await prisma.$queryRaw<StudentRequestRow[]>(
-          buildVerificationDetailSelect(requestService, npm, id)
-        );
+      : metadata.workflow === "verification"
+        ? await prisma.$queryRaw<StudentRequestRow[]>(
+            buildVerificationDetailSelect(requestService, npm, id)
+          )
+        : await prisma.$queryRaw<StudentRequestRow[]>(
+            buildSikDetailSelect(requestService, npm, id)
+          );
   const row = rows[0];
 
   if (!row) return null;
@@ -457,8 +595,18 @@ export async function getStudentRequestDetail(
     completedStaff: row.completedStaff,
     deliveredDate: toIso(row.deliveredDate),
     deliveredBy: row.deliveredBy,
+    approvalStatus: row.approvalStatus,
+    approvalVerificationDate: toIso(row.approvalVerificationDate),
+    approvalVerificationStaff: row.approvalVerificationStaff,
+    approvalRejectReason: row.approvalRejectReason,
+    finalSubmittedDate: toIso(row.finalSubmittedDate),
+    namaHimpunan: row.namaHimpunan,
+    namaKegiatan: row.namaKegiatan,
+    tanggalKegiatan: toIso(row.tanggalKegiatan),
+    emailPengiriman: row.emailPengiriman,
+    noHpWa: row.noHpWa,
     workflow:
-      metadata.workflow === "normal"
+      metadata.workflow === "normal" || metadata.workflow === "sik"
         ? buildNormalWorkflow(row)
         : buildVerificationWorkflow(row),
   };

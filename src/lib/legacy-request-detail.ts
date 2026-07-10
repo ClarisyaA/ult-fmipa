@@ -16,6 +16,16 @@ type NormalWorkflowMetadata = {
   beasiswaColumn?: "BEASISWA";
   pengantarColumn?: "PENGANTAR";
   ditujukanColumn?: "DITUJUKAN";
+  jenisPermohonanColumn?: "JENIS_PERMOHONAN";
+  kontakPersonColumn?: "KONTAK_PERSON";
+  tempatPelaksanaanColumn?: "TEMPAT_PELAKSANAAN";
+  tujuanSuratColumn?: "TUJUAN_SURAT";
+  alamatSuratColumn?: "ALAMAT_SURAT";
+  kecamatanKabupatenColumn?: "KECAMATAN_KABUPATEN";
+  kotaKabupatenColumn?: "KOTA_KABUPATEN";
+  provinsiColumn?: "PROVINSI";
+  tanggalMulaiColumn?: "TANGGAL_MULAI";
+  tanggalSelesaiColumn?: "TANGGAL_SELESAI";
   jumlahIjazahColumn?: "JUMLAH_IJAZAH";
   jumlahTranskripColumn?: "JUMLAH_TRANSKRIP";
   jumlahTranslateColumn?: "JUMLAH_TRANSLET";
@@ -25,9 +35,14 @@ type VerificationWorkflowMetadata = {
   workflow: "verification";
 };
 
+type SikWorkflowMetadata = {
+  workflow: "sik";
+};
+
 type RequestTableMetadata =
   | NormalWorkflowMetadata
-  | VerificationWorkflowMetadata;
+  | VerificationWorkflowMetadata
+  | SikWorkflowMetadata;
 
 const requestTableMetadata = {
   masih_kuliah_aktif: {
@@ -109,6 +124,24 @@ const requestTableMetadata = {
     pengantarColumn: "PENGANTAR",
     ditujukanColumn: "DITUJUKAN",
   },
+  permohonan_magang: {
+    workflow: "normal",
+    deliveryColumn: "DIKIRIM_TGL",
+    deliveryByColumn: "DIKIRIM_OLEH",
+    jenisPermohonanColumn: "JENIS_PERMOHONAN",
+    kontakPersonColumn: "KONTAK_PERSON",
+    tempatPelaksanaanColumn: "TEMPAT_PELAKSANAAN",
+    tujuanSuratColumn: "TUJUAN_SURAT",
+    alamatSuratColumn: "ALAMAT_SURAT",
+    kecamatanKabupatenColumn: "KECAMATAN_KABUPATEN",
+    kotaKabupatenColumn: "KOTA_KABUPATEN",
+    provinsiColumn: "PROVINSI",
+    tanggalMulaiColumn: "TANGGAL_MULAI",
+    tanggalSelesaiColumn: "TANGGAL_SELESAI",
+  },
+  surat_izin_kegiatan: {
+    workflow: "sik",
+  },
   beasiswa: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
@@ -163,6 +196,26 @@ type DetailRow = {
   beasiswa: string | null;
   pengantar: string | null;
   ditujukan: string | null;
+  jenisPermohonan: string | null;
+  kontakPerson: string | null;
+  tempatPelaksanaan: string | null;
+  tujuanSurat: string | null;
+  alamatSurat: string | null;
+  kecamatanKabupaten: string | null;
+  kotaKabupaten: string | null;
+  provinsi: string | null;
+  tanggalMulai: Date | string | null;
+  tanggalSelesai: Date | string | null;
+  approvalStatus: string | null;
+  approvalVerificationDate: Date | string | null;
+  approvalVerificationStaff: string | null;
+  approvalRejectReason: string | null;
+  finalSubmittedDate: Date | string | null;
+  namaHimpunan: string | null;
+  namaKegiatan: string | null;
+  tanggalKegiatan: Date | string | null;
+  emailPengiriman: string | null;
+  noHpWa: string | null;
 };
 
 type RequesterProfile = {
@@ -177,6 +230,10 @@ const statusLabels = {
   inProgress: "Sedang Diproses",
   completed: "Selesai",
   delivered: "Diambil/Dikirim",
+  sikApprovalPending: "Menunggu Verifikasi",
+  sikApprovalRejected: "Ditolak",
+  sikApprovalVerified: "Terverifikasi, lengkapi Form Final",
+  sikFinalSubmitted: "Form Final Terkirim",
 } satisfies Record<RequestStatus, string>;
 
 function isRequestTable(sourceTable: string): sourceTable is RequestTableName {
@@ -219,6 +276,16 @@ function getVerificationStatus(row: DetailRow): RequestStatus {
   if (row.universityDate) return "completed";
   if (row.verificationDate) return "inProgress";
   return "pending";
+}
+
+function getSikStatus(row: DetailRow): RequestStatus {
+  if (row.deliveredDate) return "delivered";
+  if (row.completedDate) return "completed";
+  if (row.processDate) return "inProgress";
+  if (row.finalSubmittedDate) return "sikFinalSubmitted";
+  if (row.approvalStatus === "verified") return "sikApprovalVerified";
+  if (row.approvalStatus === "rejected") return "sikApprovalRejected";
+  return "sikApprovalPending";
 }
 
 async function getRequesterProfile(
@@ -392,7 +459,27 @@ async function getNormalDetail(
       ${numberColumnOrNull(metadata.jumlahTranslateColumn)} AS jumlahTranslate,
       ${columnOrNull(metadata.beasiswaColumn)} AS beasiswa,
       ${columnOrNull(metadata.pengantarColumn)} AS pengantar,
-      ${columnOrNull(metadata.ditujukanColumn)} AS ditujukan
+      ${columnOrNull(metadata.ditujukanColumn)} AS ditujukan,
+      ${columnOrNull(metadata.jenisPermohonanColumn)} AS jenisPermohonan,
+      ${columnOrNull(metadata.kontakPersonColumn)} AS kontakPerson,
+      ${columnOrNull(metadata.tempatPelaksanaanColumn)} AS tempatPelaksanaan,
+      ${columnOrNull(metadata.tujuanSuratColumn)} AS tujuanSurat,
+      ${columnOrNull(metadata.alamatSuratColumn)} AS alamatSurat,
+      ${columnOrNull(metadata.kecamatanKabupatenColumn)} AS kecamatanKabupaten,
+      ${columnOrNull(metadata.kotaKabupatenColumn)} AS kotaKabupaten,
+      ${columnOrNull(metadata.provinsiColumn)} AS provinsi,
+      ${columnOrNull(metadata.tanggalMulaiColumn)} AS tanggalMulai,
+      ${columnOrNull(metadata.tanggalSelesaiColumn)} AS tanggalSelesai,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
     WHERE \`ID\` = ${id}
     LIMIT 1
@@ -434,8 +521,85 @@ async function getVerificationDetail(
       NULL AS jumlahTranslate,
       NULL AS beasiswa,
       NULL AS pengantar,
-      NULL AS ditujukan
+      NULL AS ditujukan,
+      NULL AS jenisPermohonan,
+      NULL AS kontakPerson,
+      NULL AS tempatPelaksanaan,
+      NULL AS tujuanSurat,
+      NULL AS alamatSurat,
+      NULL AS kecamatanKabupaten,
+      NULL AS kotaKabupaten,
+      NULL AS provinsi,
+      NULL AS tanggalMulai,
+      NULL AS tanggalSelesai,
+      NULL AS approvalStatus,
+      NULL AS approvalVerificationDate,
+      NULL AS approvalVerificationStaff,
+      NULL AS approvalRejectReason,
+      NULL AS finalSubmittedDate,
+      NULL AS namaHimpunan,
+      NULL AS namaKegiatan,
+      NULL AS tanggalKegiatan,
+      NULL AS emailPengiriman,
+      NULL AS noHpWa
     FROM ${table}
+    WHERE \`ID\` = ${id}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getSikDetail(id: string) {
+  const rows = await prisma.$queryRaw<DetailRow[]>`
+    SELECT
+      CAST(\`ID\` AS CHAR) AS id,
+      \`NPM\` AS npm,
+      \`EMAIL_PENGIRIMAN\` AS email,
+      \`NO_HP_WA\` AS phone,
+      \`PERMINTAAN_TGL\` AS requestDate,
+      \`PERMINTAAN_ENTRY\` AS requestEntry,
+      \`PROSES_TGL\` AS processDate,
+      \`PROSES_STAF\` AS processStaff,
+      \`SELESAI_TGL\` AS completedDate,
+      \`SELESAI_STAF\` AS completedStaff,
+      \`DIKIRIM_TGL\` AS deliveredDate,
+      \`DIKIRIM_OLEH\` AS deliveredBy,
+      NULL AS verificationDate,
+      NULL AS verificationStaff,
+      NULL AS facultyDate,
+      NULL AS facultyStaff,
+      NULL AS universityDate,
+      NULL AS universityStaff,
+      NULL AS keperluan,
+      NULL AS keterangan,
+      NULL AS jumlahIjazah,
+      NULL AS jumlahTranskrip,
+      NULL AS jumlahTranslate,
+      NULL AS beasiswa,
+      NULL AS pengantar,
+      NULL AS ditujukan,
+      NULL AS jenisPermohonan,
+      NULL AS kontakPerson,
+      NULL AS tempatPelaksanaan,
+      NULL AS tujuanSurat,
+      NULL AS alamatSurat,
+      NULL AS kecamatanKabupaten,
+      NULL AS kotaKabupaten,
+      NULL AS provinsi,
+      NULL AS tanggalMulai,
+      NULL AS tanggalSelesai,
+      \`APPROVAL_STATUS\` AS approvalStatus,
+      \`APPROVAL_VERIFIKASI_TGL\` AS approvalVerificationDate,
+      \`APPROVAL_VERIFIKASI_STAF\` AS approvalVerificationStaff,
+      \`APPROVAL_REJECT_REASON\` AS approvalRejectReason,
+      \`FINAL_SUBMITTED_TGL\` AS finalSubmittedDate,
+      \`NAMA_HIMPUNAN\` AS namaHimpunan,
+      \`NAMA_KEGIATAN\` AS namaKegiatan,
+      \`TANGGAL_KEGIATAN\` AS tanggalKegiatan,
+      \`EMAIL_PENGIRIMAN\` AS emailPengiriman,
+      \`NO_HP_WA\` AS noHpWa
+    FROM \`surat_izin_kegiatan\`
     WHERE \`ID\` = ${id}
     LIMIT 1
   `;
@@ -457,7 +621,9 @@ export async function getRequestDetail(
   const row =
     metadata.workflow === "normal"
       ? await getNormalDetail(service.sourceTable, metadata, id)
-      : await getVerificationDetail(service.sourceTable, id);
+      : metadata.workflow === "verification"
+        ? await getVerificationDetail(service.sourceTable, id)
+        : await getSikDetail(id);
 
   if (!row) {
     return null;
@@ -466,7 +632,9 @@ export async function getRequestDetail(
   const status =
     metadata.workflow === "normal"
       ? getNormalStatus(row)
-      : getVerificationStatus(row);
+      : metadata.workflow === "verification"
+        ? getVerificationStatus(row)
+        : getSikStatus(row);
   const requesterProfile = await getRequesterProfile(row.npm);
 
   return {
@@ -494,7 +662,7 @@ export async function getRequestDetail(
     deliveredDate: toIso(row.deliveredDate),
     deliveredBy: row.deliveredBy,
     workflow:
-      metadata.workflow === "normal"
+      metadata.workflow === "normal" || metadata.workflow === "sik"
         ? buildNormalWorkflow(row)
         : buildVerificationWorkflow(row),
     jumlahIjazah: row.jumlahIjazah,
@@ -503,5 +671,25 @@ export async function getRequestDetail(
     beasiswa: row.beasiswa,
     pengantar: row.pengantar,
     ditujukan: row.ditujukan,
+    jenisPermohonan: row.jenisPermohonan,
+    kontakPerson: row.kontakPerson,
+    tempatPelaksanaan: row.tempatPelaksanaan,
+    tujuanSurat: row.tujuanSurat,
+    alamatSurat: row.alamatSurat,
+    kecamatanKabupaten: row.kecamatanKabupaten,
+    kotaKabupaten: row.kotaKabupaten,
+    provinsi: row.provinsi,
+    tanggalMulai: toIso(row.tanggalMulai),
+    tanggalSelesai: toIso(row.tanggalSelesai),
+    approvalStatus: row.approvalStatus,
+    approvalVerificationDate: toIso(row.approvalVerificationDate),
+    approvalVerificationStaff: row.approvalVerificationStaff,
+    approvalRejectReason: row.approvalRejectReason,
+    finalSubmittedDate: toIso(row.finalSubmittedDate),
+    namaHimpunan: row.namaHimpunan,
+    namaKegiatan: row.namaKegiatan,
+    tanggalKegiatan: toIso(row.tanggalKegiatan),
+    emailPengiriman: row.emailPengiriman,
+    noHpWa: row.noHpWa,
   };
 }

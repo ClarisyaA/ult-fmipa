@@ -30,7 +30,25 @@ const optionalPositiveInteger = z.preprocess(
     .optional()
 );
 
+const magangJenisPermohonan = [
+  "Magang",
+  "Kerja Praktek",
+  "Tugas Akhir (TA)",
+] as const;
+
+const requiredMagangFields = [
+  ["jenisPermohonan", "Jenis permohonan wajib dipilih."],
+  ["tempatPelaksanaan", "Tempat pelaksanaan wajib diisi."],
+  ["tujuanSurat", "Tujuan surat wajib diisi."],
+  ["alamatSurat", "Alamat surat wajib diisi."],
+  ["kecamatanKabupaten", "Kecamatan dan kabupaten wajib diisi."],
+  ["kotaKabupaten", "Kota/kabupaten wajib diisi."],
+  ["tanggalMulai", "Tanggal mulai wajib diisi."],
+  ["tanggalSelesai", "Tanggal selesai wajib diisi."],
+] as const;
+
 export const createServiceRequestSchema = z.object({
+  serviceSlug: optionalText(100),
   npm: z
     .string()
     .trim()
@@ -72,4 +90,54 @@ export const createServiceRequestSchema = z.object({
   jumlahTranskrip: optionalPositiveInteger,
   jumlahIjazah: optionalPositiveInteger,
   jumlahTranslet: optionalPositiveInteger,
+  jenisPermohonan: optionalText(50),
+  kontakPerson: optionalText(150),
+  tempatPelaksanaan: optionalText(200),
+  tujuanSurat: optionalText(200),
+  alamatSurat: optionalText(255),
+  kecamatanKabupaten: optionalText(150),
+  kotaKabupaten: optionalText(100),
+  provinsi: optionalText(100),
+  tanggalMulai: optionalDate,
+  tanggalSelesai: optionalDate,
+}).superRefine((input, context) => {
+  if (input.serviceSlug !== "permohonan-magang-kerja-praktek-ta") {
+    return;
+  }
+
+  for (const [field, message] of requiredMagangFields) {
+    if (!input[field]) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [field],
+        message,
+      });
+    }
+  }
+
+  if (
+    input.jenisPermohonan &&
+    !magangJenisPermohonan.includes(
+      input.jenisPermohonan as (typeof magangJenisPermohonan)[number]
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["jenisPermohonan"],
+      message: "Jenis permohonan tidak valid.",
+    });
+  }
+
+  if (input.tanggalMulai && input.tanggalSelesai) {
+    const start = new Date(input.tanggalMulai);
+    const end = new Date(input.tanggalSelesai);
+
+    if (end < start) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tanggalSelesai"],
+        message: "Tanggal selesai harus sama atau setelah tanggal mulai.",
+      });
+    }
+  }
 });

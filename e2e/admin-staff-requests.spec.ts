@@ -16,19 +16,14 @@ test.describe("admin and staff request tables", () => {
 
     await loginAs(page, "staff", "/staff/requests");
     await expect(
-      page.getByRole("heading", { name: /daftar pengajuan layanan staff/i })
+      page.getByRole("heading", { name: /manajemen pengajuan layanan/i })
     ).toBeVisible();
 
     const emptyText = page.getByText("Tidak ada pengajuan yang sesuai filter.");
     const rowLocator = page.locator("tbody tr").filter({ hasText: /ULT|Kuliah|Keterangan|Surat|Pengajuan/ }).first();
 
     if (await rowLocator.count() > 0 && !(await emptyText.isVisible())) {
-      await expect(rowLocator.getByRole("button", { name: "Proses" })).toBeVisible();
-      await expect(rowLocator.getByRole("button", { name: "Selesai" })).toBeVisible();
-      await expect(
-        rowLocator.getByRole("button", { name: "Diambil/Dikirim" })
-      ).toBeVisible();
-      await expect(rowLocator.getByRole("link", { name: "Detail" })).toBeVisible();
+      await expect(rowLocator.getByRole("link", { name: /lihat detail/i })).toBeVisible();
       await expect(rowLocator.getByRole("button", { name: "Hapus" })).toHaveCount(0);
     } else {
       await expect(emptyText).toBeVisible();
@@ -61,4 +56,3 @@ test.describe("admin and staff request tables", () => {
     }
   });
 });
-

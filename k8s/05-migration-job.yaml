@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ult-fmipa-migrate
+  namespace: ult-fmipa
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: ult-fmipa-migrate
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: ult-fmipa:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - pnpm db:prisma-migrate && pnpm prisma migrate deploy && pnpm db:support-migrate
+          envFrom:
+            - configMapRef:
+                name: ult-fmipa-app-config
+            - secretRef:
+                name: ult-fmipa-app-secret

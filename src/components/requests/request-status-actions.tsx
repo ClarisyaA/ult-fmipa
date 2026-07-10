@@ -26,17 +26,40 @@ const actions: ActionButton[] = [
   {
     action: "process",
     label: "Tandai Diproses",
-    disabledFor: ["inProgress", "completed", "delivered"],
+    disabledFor: [
+      "inProgress",
+      "completed",
+      "delivered",
+      "sikApprovalPending",
+      "sikApprovalRejected",
+      "sikApprovalVerified",
+    ],
   },
   {
     action: "complete",
     label: "Tandai Selesai",
-    disabledFor: ["pending", "completed", "delivered"],
+    disabledFor: [
+      "pending",
+      "completed",
+      "delivered",
+      "sikApprovalPending",
+      "sikApprovalRejected",
+      "sikApprovalVerified",
+      "sikFinalSubmitted",
+    ],
   },
   {
     action: "deliver",
     label: "Tandai Diambil/Dikirim",
-    disabledFor: ["pending", "inProgress", "delivered"],
+    disabledFor: [
+      "pending",
+      "inProgress",
+      "delivered",
+      "sikApprovalPending",
+      "sikApprovalRejected",
+      "sikApprovalVerified",
+      "sikFinalSubmitted",
+    ],
   },
 ];
 

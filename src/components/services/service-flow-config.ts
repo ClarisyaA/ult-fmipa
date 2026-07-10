@@ -10,13 +10,9 @@
  *    - Tidak ada form pengajuan
  *    - Redirect ke https://perpustakaan.fmipa.unpad.ac.id
  * 
- * 2. MAGANG-SIK (Magang & SIK)
- *    Tahapan:
- *    - Ajukan bersama Koordinator (mahasiswa + madam + koordinator)
- *    - Verifikasi & Upload Surat Izin (dari madam)
- *    - Upload ke SBAK
- *    - Diproses SBAK
- *    - Form SBAK (Eksternal) - keluar dari FMIPA
+ * 2. MAGANG-SIK (legacy)
+ *    Alur lama untuk layanan eksternal SIK. Layanan Magang/KP/TA
+ *    memakai form internal di halaman /ajukan, bukan stepper detail layanan.
  * 
  * 3. TEMPLATE (Surat dengan template)
  *    - Tunjangan Orang Tua
@@ -32,7 +28,7 @@
 
 export type ServiceFlowType =
   | "perpus" // Perpustakaan FMIPA - tampil data dari web perpus
-  | "magang-sik" // Magang & SIK - 5 tahap berjenjang
+  | "magang-sik" // Legacy SIK - 5 tahap berjenjang
   | "template" // Surat template - Tunjangan, Kuliah, Kelakuan, Lulus
   | "pengiriman" // Kirim dokumen - upload PDF ke email mahasiswa
   | "default"; // Fallback
@@ -46,8 +42,8 @@ const FLOW_RULES: FlowRule[] = [
   // 1. PERPUS: layanan perpustakaan
   { test: /perpus|pustaka/, flow: "perpus" },
   
-  // 2. MAGANG-SIK: magang dan SIK
-  { test: /magang|^sik$|-sik(-|$)/, flow: "magang-sik" },
+  // 2. MAGANG-SIK: hanya slug SIK legacy, bukan layanan Magang/KP/TA internal
+  { test: /^sik$|-sik(-|$)/, flow: "magang-sik" },
   
   // 3. TEMPLATE: surat-surat dengan template
   { 

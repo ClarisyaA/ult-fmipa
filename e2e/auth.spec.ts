@@ -5,13 +5,13 @@ import { clearSession, loginAs } from "./helpers/auth";
 test.describe("development auth", () => {
   test("student can login and reaches layanan", async ({ page }) => {
     await loginAs(page, "student", "/layanan");
-    await expect(page.getByText("Aktif sebagai Mahasiswa")).toBeVisible();
+    await expect(page.getByTestId("services-page")).toBeVisible();
   });
 
   test("staff can login and reaches staff dashboard", async ({ page }) => {
     await loginAs(page, "staff", "/staff/dashboard");
     await expect(
-      page.getByRole("heading", { name: /dashboard staff/i })
+      page.getByRole("heading", { name: "Dashboard" })
     ).toBeVisible();
   });
 
@@ -36,4 +36,3 @@ test.describe("development auth", () => {
     await expect(page).toHaveURL(/\/layanan$/);
   });
 });
-

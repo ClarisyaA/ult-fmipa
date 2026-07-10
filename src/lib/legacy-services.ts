@@ -72,6 +72,40 @@ export const publicServices = [
     sourceTable: "surat_pengantar",
   },
   {
+    title: "Permohonan Magang / Kerja Praktek / Tugas Akhir",
+    slug: "permohonan-magang-kerja-praktek-ta",
+    category: "Layanan Mahasiswa",
+    description:
+      "Pengajuan surat resmi fakultas untuk kebutuhan Magang, Kerja Praktek, atau Tugas Akhir (TA).",
+    requirements: [
+      "Data diri mahasiswa",
+      "Detail instansi/tempat pelaksanaan",
+      "Tujuan surat",
+      "Periode pelaksanaan",
+      "Surat permohonan dari program studi dalam format PDF",
+    ],
+    processingTime: "2-4 hari kerja",
+    sourceTable: "permohonan_magang",
+  },
+  {
+    title: "Surat Izin Kegiatan",
+    slug: "surat-izin-kegiatan",
+    category: "Layanan Mahasiswa",
+    description:
+      "Layanan ini memerlukan verifikasi bukti ACC Manajer Akademik dan Kemahasiswaan sebelum form final dibuka.",
+    requirements: [
+      "Bukti ACC Manajer Akademik dan Kemahasiswaan",
+      "Nama himpunan",
+      "Nama kegiatan",
+      "Tanggal kegiatan",
+      "Email pengiriman SIK",
+      "SPIK final",
+      "No HP/WhatsApp contact person",
+    ],
+    processingTime: "Bertahap setelah verifikasi bukti ACC",
+    sourceTable: "surat_izin_kegiatan",
+  },
+  {
     title: "Keterangan Lulus",
     slug: "keterangan-lulus",
     category: "Layanan Alumni",

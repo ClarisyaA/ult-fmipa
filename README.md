@@ -14,7 +14,7 @@ tim yang perlu menjalankan, memahami route, dan memakai API aplikasi.
 | --- | --- |
 | Framework | Next.js 16 App Router |
 | UI | React 19, TypeScript, Tailwind CSS 4, shadcn/ui, lucide-react |
-| Auth | NextAuth Credentials Provider untuk development, PAUS OAuth disiapkan |
+| Auth | NextAuth Credentials Provider untuk admin/staff legacy DB dan development, PAUS OAuth disiapkan |
 | Database | MariaDB/MySQL legacy `fmipa_sbpk` |
 | ORM/DB Client | Prisma 7 dengan raw SQL untuk beberapa tabel support |
 | Local infra | Docker Compose, Adminer |
@@ -50,27 +50,179 @@ Mahasiswa tidak boleh mengirim NPM manual untuk riwayat/survei. NPM selalu
 dibaca dari session. Admin/staff tidak boleh melihat data master mahasiswa/alumni
 mentah di UI.
 
-## Local Development Setup
+## Setup di Laptop Lain
 
-Requirements:
+Bagian ini adalah alur paling aman untuk menjalankan project dari nol di laptop
+lain setelah arsitektur project dipindah ke Docker Compose + migrasi support
+table.
 
-- Node.js 22 LTS
-- pnpm
-- Docker Desktop
+### 1. Install kebutuhan dasar
+
+Pastikan laptop tujuan sudah punya:
+
 - Git
+- Docker Desktop
+- Node.js 22 LTS
+- `pnpm`
+
+Cek cepat:
+
+```powershell
+node -v
+pnpm -v
+docker -v
+docker compose version
+git --version
+```
+
+### 2. Clone repository dan pindah ke branch kerja
 
 ```powershell
 git clone <repo-url>
 cd ult-fmipa
 git checkout dev
-pnpm install
-Copy-Item .env.example .env
-docker compose up -d
-pnpm prisma generate
-pnpm dev
 ```
 
-Aplikasi: <http://localhost:3000>
+Kalau branch aktif tim bukan `dev`, ganti sesuai branch yang sedang dipakai.
+
+### 3. Install dependency project
+
+```powershell
+pnpm install
+```
+
+### 4. Buat file environment lokal
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Minimal cek dan sesuaikan nilai berikut di `.env`:
+
+- `NEXTAUTH_URL="http://localhost:3000"`
+- `NEXTAUTH_SECRET`
+- `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD`
+- `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD`
+- `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`
+- `DB_ADMIN_ACCESS_CODES`
+- `DB_STAFF_ACCESS_CODES`
+
+Kalau port dev nanti pindah ke `3001` karena `3000` sedang dipakai, ubah juga
+`NEXTAUTH_URL` menjadi `http://localhost:3001`.
+
+### 5. Nyalakan service Docker
+
+Project ini sekarang bisa dijalankan penuh lewat Docker Compose: Next.js app,
+MariaDB, dan Adminer.
+
+```powershell
+docker compose up -d --build
+```
+
+Service yang akan aktif:
+
+| Service | URL / Host |
+| --- | --- |
+| App | <http://localhost:3000> |
+| Adminer | <http://localhost:8081> |
+| MariaDB dari host | `localhost:13306` |
+| MariaDB antar-container | `db:3306` |
+
+Kalau hanya ingin database + Adminer lalu FE dijalankan lokal dengan `pnpm dev`,
+itu juga boleh. Compose tetap dipakai untuk MariaDB.
+
+### 6. Import database legacy
+
+Kalau database masih kosong, import dump legacy:
+
+```powershell
+docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database/fmipa_sbpk.sql
+```
+
+Kalau terminal Windows menahan command redirection, jalankan versi `cmd`:
+
+```powershell
+cmd /c "docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
+```
+
+Setelah import selesai, data user legacy, data layanan lama, dan data referensi
+akan ikut masuk.
+
+### 7. Jalankan migrasi aplikasi
+
+Jangan ubah dump legacy. Tabel tambahan aplikasi dipasang terpisah.
+
+Kalau app dijalankan di host:
+
+```powershell
+pnpm db:generate
+pnpm db:prisma-migrate
+pnpm db:support-migrate
+```
+
+Kalau semuanya dijalankan penuh di Docker:
+
+```powershell
+docker compose exec app pnpm db:generate
+docker compose exec app pnpm db:prisma-migrate
+docker compose exec app pnpm db:support-migrate
+```
+
+Script `db:support-migrate` akan menjalankan seluruh SQL di
+`database/migrations`, termasuk perubahan layanan terbaru.
+
+### 8. Jalankan aplikasi
+
+Opsi A, full Docker:
+
+```powershell
+docker compose up -d
+```
+
+Opsi B, FE lokal:
+
+```powershell
+pnpm run dev
+```
+
+Buka:
+
+- App: <http://localhost:3000>
+- Adminer: <http://localhost:8081>
+
+Kalau muncul pesan port `3000` sedang dipakai, Next.js biasanya otomatis pindah
+ke `3001`. Sesuaikan `NEXTAUTH_URL` supaya login tidak error callback.
+
+### 9. Login akun development
+
+Ambil dari `.env`. Contoh default dari `.env.example`:
+
+```text
+Admin   : admin@example.com / change-me
+Staff   : staff@example.com / change-me
+Student : student@example.com / change-me
+```
+
+Di environment kerja tim, nilai ini biasanya sudah diganti menjadi akun dev
+yang lebih mudah dipakai untuk testing.
+
+Untuk admin/staff, selain akun dev, login juga bisa membaca user legacy dari
+`data_users` sesuai mapping:
+
+- `DB_ADMIN_ACCESS_CODES="SUPER_USER"`
+- `DB_STAFF_ACCESS_CODES="ADMIN,OPERATOR,KRS,PIMPINAN"`
+
+### 10. Cek apakah setup berhasil
+
+Urutan cek yang disarankan:
+
+1. Buka halaman login.
+2. Login sebagai `student`, pastikan bisa masuk ke halaman layanan mahasiswa.
+3. Login sebagai `staff`, pastikan dashboard staff dan daftar pengajuan terbuka.
+4. Login sebagai `admin`, pastikan dashboard admin, pengajuan layanan, dan report terbuka.
+5. Cek notifikasi request di dashboard admin/staff, lalu izinkan browser notification jika diminta.
+6. Cek halaman report layanan, kinerja staf, dan kinerja unit.
+7. Cek Adminer untuk memastikan tabel support sudah ada.
 
 Useful checks:
 
@@ -94,6 +246,8 @@ Gunakan `.env.example` sebagai template. Jangan commit `.env` atau secret asli.
 | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` | Credential staff development |
 | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD` | Credential mahasiswa development |
 | `DEV_STUDENT_NAME`, `DEV_STUDENT_NPM`, `DEV_STUDENT_PHONE` | Profil mahasiswa development |
+| `DB_ADMIN_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role admin, default `SUPER_USER` |
+| `DB_STAFF_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role staff, default `ADMIN,OPERATOR,KRS,PIMPINAN` |
 | `PAUS_MODE` | `modern` atau `legacy`; saat ini PAUS belum diaktifkan untuk production |
 | `PAUS_CLIENT_ID`, `PAUS_CLIENT_SECRET` | Placeholder OAuth PAUS, jangan hardcode |
 | `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Endpoint PAUS |
@@ -123,10 +277,16 @@ Password: ult_password
 Database: fmipa_sbpk
 ```
 
-Jika memiliki dump legacy lokal, letakkan di `database\fmipa_sbpk.sql`, lalu:
+Jika database masih kosong, import dump legacy:
 
 ```powershell
-cmd /c "docker exec -i ult-fmipa-db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
+docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database/fmipa_sbpk.sql
+```
+
+Fallback untuk PowerShell Windows:
+
+```powershell
+cmd /c "docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
 ```
 
 File dump bersifat sensitif dan tidak boleh masuk repository.
@@ -141,27 +301,95 @@ Attachment table `ult_request_attachments` berada di Prisma migration:
 pnpm prisma migrate deploy
 ```
 
-Custom support tables di `database/migrations` dijalankan dengan command
-PowerShell-safe berikut:
+Custom support tables dan patch layanan terbaru sekarang dijalankan lewat script:
 
 ```powershell
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\002_create_ult_service_surveys.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\005_create_ult_information_post_images.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
+pnpm db:generate
+pnpm db:prisma-migrate
+pnpm db:support-migrate
 ```
 
-Setelah database siap:
+Kalau memakai full Docker Compose:
 
 ```powershell
-pnpm prisma generate
+docker compose exec app pnpm db:generate
+docker compose exec app pnpm db:prisma-migrate
+docker compose exec app pnpm db:support-migrate
 ```
+
+Script ini lebih aman daripada menjalankan file SQL satu per satu karena sudah
+mengikuti urutan migrasi di repository saat ini.
 
 ## Running the Project
 
 ```powershell
 docker compose up -d
 pnpm dev
+```
+
+## Full Docker Compose
+
+Docker Compose can also run the full stack: Next.js app, MariaDB, and Adminer.
+
+```powershell
+docker compose up -d --build
+docker compose exec app pnpm db:generate
+docker compose exec app pnpm db:prisma-migrate
+docker compose exec app pnpm db:support-migrate
+```
+
+Services:
+
+| Service | URL / Host |
+| --- | --- |
+| App | <http://localhost:3000> |
+| Adminer | <http://localhost:8081> |
+| MariaDB from host | `localhost:13306` |
+| MariaDB from containers | `db:3306` |
+
+The app container stores uploaded service attachments and information images in
+the `ult_fmipa_storage` Docker volume mounted at `/app/storage`.
+
+## Kubernetes Deployment
+
+Kubernetes manifests are available in `k8s/`. They include:
+
+- MariaDB `StatefulSet` with persistent storage.
+- Next.js app `Deployment` and `Service`.
+- Upload storage `PersistentVolumeClaim` mounted at `/app/storage`.
+- `ConfigMap` and `Secret` for environment variables.
+- One-off migration `Job` for Prisma migrations and support SQL migrations.
+- NGINX `Ingress` template.
+
+Build the app image first:
+
+```powershell
+docker build -t ult-fmipa:latest .
+```
+
+For a remote cluster, tag and push the image to your registry, then update the
+image in `k8s/05-migration-job.yaml` and `k8s/06-app.yaml`.
+
+Before production deploy, replace:
+
+- `ult-fmipa.example.com` in `k8s/02-configmap.yaml` and `k8s/07-ingress.yaml`.
+- Placeholder values in `k8s/01-secrets.yaml`.
+- The MariaDB manifest with a managed database or a hardened StatefulSet if the
+  deployment is not just for demo/internal use.
+
+Apply in order:
+
+```powershell
+kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/01-secrets.yaml
+kubectl apply -f k8s/02-configmap.yaml
+kubectl apply -f k8s/03-mariadb.yaml
+kubectl apply -f k8s/04-storage.yaml
+kubectl -n ult-fmipa wait --for=condition=ready pod -l app=ult-fmipa-mariadb --timeout=180s
+kubectl apply -f k8s/05-migration-job.yaml
+kubectl -n ult-fmipa wait --for=condition=complete job/ult-fmipa-migrate --timeout=180s
+kubectl apply -f k8s/06-app.yaml
+kubectl apply -f k8s/07-ingress.yaml
 ```
 
 Quality checks:
@@ -223,7 +451,7 @@ cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbp
 cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
 ```
 
-## Development Auth Accounts
+## Auth Accounts
 
 Credential development dibaca dari `.env`.
 
@@ -232,6 +460,20 @@ Credential development dibaca dari `.env`.
 | Admin | `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` |
 | Staff | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` |
 | Student | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`, `DEV_STUDENT_NPM` |
+
+Admin/staff juga dapat login memakai `USER_NAME` atau `EMAIL` dari tabel legacy
+`data_users`, selama `CONFIRMED = 1` dan password cocok dengan hash legacy.
+Mapping role default:
+
+| Legacy `ACCESS_CODE` | Role aplikasi baru |
+| --- | --- |
+| `SUPER_USER` | Admin |
+| `ADMIN`, `OPERATOR`, `KRS`, `PIMPINAN` | Staff |
+
+Mahasiswa production tidak memakai password lokal aplikasi. Mahasiswa login
+melalui PAUS/SIAT/Unpad SSO, lalu aplikasi memakai NPM dari session untuk
+riwayat dan pengajuan layanan. Credential student di `.env` hanya untuk testing
+lokal selama PAUS belum aktif.
 
 ## Folder Structure
 

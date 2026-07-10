@@ -16,6 +16,7 @@ type AttachmentRecord = {
   STORAGE_PATH: string;
   UPLOADED_BY: string | null;
   UPLOADED_AT: Date;
+  ATTACHMENT_TYPE: string | null;
 };
 
 type SaveAttachmentInput = {
@@ -23,6 +24,7 @@ type SaveAttachmentInput = {
   sourceTable: string;
   requestId: string;
   uploadedBy?: string | null;
+  attachmentType?: string | null;
   file: SavedUploadMetadata;
 };
 
@@ -54,6 +56,7 @@ function toAttachment(record: AttachmentRecord): RequestAttachment {
     storedName: record.STORED_NAME,
     mimeType: record.MIME_TYPE,
     sizeBytes: record.SIZE_BYTES,
+    attachmentType: record.ATTACHMENT_TYPE,
     uploadedBy: record.UPLOADED_BY,
     uploadedAt: record.UPLOADED_AT.toISOString(),
   };
@@ -64,6 +67,7 @@ export async function saveRequestAttachmentMetadata({
   sourceTable,
   requestId,
   uploadedBy,
+  attachmentType,
   file,
 }: SaveAttachmentInput) {
   if (!ensureWhitelistedService(serviceSlug, sourceTable)) {
@@ -81,6 +85,7 @@ export async function saveRequestAttachmentMetadata({
       SIZE_BYTES: file.sizeBytes,
       STORAGE_PATH: file.storagePath,
       UPLOADED_BY: uploadedBy,
+      ATTACHMENT_TYPE: attachmentType ?? null,
     },
   });
 
@@ -163,6 +168,41 @@ export async function deleteRequestAttachmentsForRequest(
       SERVICE_SLUG: serviceSlug,
       SOURCE_TABLE: sourceTable,
       REQUEST_ID: toBigIntId(requestId),
+    },
+  });
+
+  return records.length;
+}
+
+export async function deleteRequestAttachmentsByType(
+  serviceSlug: string,
+  sourceTable: string,
+  requestId: string,
+  attachmentType: string
+) {
+  if (!ensureWhitelistedService(serviceSlug, sourceTable)) {
+    throw new Error("Layanan lampiran tidak valid.");
+  }
+
+  const records = await prisma.ult_request_attachments.findMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+      ATTACHMENT_TYPE: attachmentType,
+    },
+  });
+
+  for (const record of records) {
+    await deleteUploadedFile(record.STORAGE_PATH);
+  }
+
+  await prisma.ult_request_attachments.deleteMany({
+    where: {
+      SERVICE_SLUG: serviceSlug,
+      SOURCE_TABLE: sourceTable,
+      REQUEST_ID: toBigIntId(requestId),
+      ATTACHMENT_TYPE: attachmentType,
     },
   });
 

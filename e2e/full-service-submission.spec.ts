@@ -13,6 +13,11 @@ test.describe("full service submission tests @full-service", () => {
       // Check if submission is supported for this slug on the frontend
       const formVisible = await page.getByTestId("service-request-form").isVisible();
       if (!formVisible) {
+        if (slug === "surat-izin-kegiatan") {
+          await expect(page.getByTestId("sik-proof-submit")).toBeVisible();
+          return;
+        }
+
         // If not supported, expect a clear unavailable message
         await expect(page.getByText(/belum tersedia/i)).toBeVisible();
         return;
@@ -44,7 +49,9 @@ test.describe("full service submission tests @full-service", () => {
 
       // Assert success state or request ID appears
       await expect(page.getByTestId("request-success")).toBeVisible();
-      await expect(page.getByText(requestId)).toBeVisible();
+      await expect(
+        page.getByText(`Nomor pengajuan: ${requestId}.`, { exact: false })
+      ).toBeVisible();
 
       // Navigate to /mahasiswa/riwayat and assert page loads
       await page.goto("/mahasiswa/riwayat");

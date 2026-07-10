@@ -19,6 +19,8 @@
     "format:check": "prettier --check .",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
+    "db:prisma-migrate": "node scripts/deploy-prisma-migrations.mjs",
+    "db:support-migrate": "node scripts/run-support-migrations.mjs",
     "prepare": "husky"
   },
   "dependencies": {

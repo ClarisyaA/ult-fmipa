@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { loginAs } from "./helpers/auth";
-import { serviceSlugs } from "./helpers/services";
+import { serviceSlugs, serviceTitles } from "./helpers/services";
 
 test.describe("service catalog route matrix", () => {
   test("all service slugs routes and API load without crash", async ({ page, request }) => {
@@ -15,7 +15,9 @@ test.describe("service catalog route matrix", () => {
 
       // 2. /layanan/[slug] opens without crash
       await page.goto(`/layanan/${slug}`);
-      await expect(page.getByTestId("service-detail-page")).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: serviceTitles[slug] })
+      ).toBeVisible();
 
       // 3. /layanan/[slug]/ajukan opens without crash
       await page.goto(`/layanan/${slug}/ajukan`);
@@ -24,7 +26,8 @@ test.describe("service catalog route matrix", () => {
       // 4. Shows form or unsupported message
       const form = page.getByTestId("service-request-form");
       const unavailable = page.getByText(/belum tersedia/i);
-      await expect(form.or(unavailable)).toBeVisible();
+      const sikWorkflow = page.getByTestId("sik-proof-submit");
+      await expect(form.or(unavailable).or(sikWorkflow)).toBeVisible();
     }
   });
 });

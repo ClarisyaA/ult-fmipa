@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 
+import {
+  AdminPageShell,
+  AdminStatusBadge,
+} from "@/components/admin/admin-ui";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
-import { Badge } from "@/components/ui/badge";
+import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -59,7 +64,122 @@ function DetailField({
   );
 }
 
+function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-3 rounded-lg border border-[#E7DED0] bg-white p-4">
+      <p className="text-sm font-semibold text-[#18130E]">{title}</p>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </div>
+  );
+}
+
 function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
+  if (detail.sourceTable === "permohonan_magang") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Detail Pengajuan Magang/KP/TA</CardTitle>
+          <CardDescription>
+            Data pengajuan dikelompokkan sesuai kebutuhan proses layanan.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <DetailSection title="Data Mahasiswa">
+            <DetailField label="Nama" value={detail.requesterName} />
+            <DetailField label="NPM" value={detail.npm} />
+            <DetailField label="Prodi" value={detail.requesterProgram} />
+          </DetailSection>
+          <DetailSection title="Jenis Pengajuan">
+            <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
+            <DetailField
+              label="Tanggal Mulai"
+              value={detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null}
+            />
+            <DetailField
+              label="Tanggal Selesai"
+              value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
+            />
+          </DetailSection>
+          <DetailSection title="Detail Instansi">
+            <DetailField label="Tempat Pelaksanaan" value={detail.tempatPelaksanaan} />
+            <DetailField label="Kontak Person" value={detail.kontakPerson} />
+            <DetailField label="Tujuan Surat" value={detail.tujuanSurat} />
+            <DetailField label="Alamat Surat" value={detail.alamatSurat} />
+            <DetailField label="Kecamatan dan Kabupaten" value={detail.kecamatanKabupaten} />
+            <DetailField label="Kota / Kabupaten" value={detail.kotaKabupaten} />
+            <DetailField label="Provinsi" value={detail.provinsi} />
+          </DetailSection>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (detail.sourceTable === "surat_izin_kegiatan") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Detail Surat Izin Kegiatan</CardTitle>
+          <CardDescription>
+            Tahap verifikasi, form final, dan pemrosesan surat dipisahkan agar mudah ditindaklanjuti.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <DetailSection title="Tahap Verifikasi ACC">
+            <DetailField label="Status Verifikasi" value={detail.approvalStatus} />
+            <DetailField
+              label="Tanggal Verifikasi"
+              value={
+                detail.approvalVerificationDate
+                  ? formatDate(detail.approvalVerificationDate)
+                  : null
+              }
+            />
+            <DetailField label="Verifikator" value={detail.approvalVerificationStaff} />
+            <DetailField label="Alasan Penolakan" value={detail.approvalRejectReason} />
+          </DetailSection>
+          <DetailSection title="Form Final SIK">
+            <DetailField label="Nama Himpunan" value={detail.namaHimpunan} />
+            <DetailField label="Nama Kegiatan" value={detail.namaKegiatan} />
+            <DetailField
+              label="Tanggal Kegiatan"
+              value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
+            />
+            <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+            <DetailField label="No HP WA" value={detail.noHpWa} />
+            <DetailField
+              label="Tanggal Form Final"
+              value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+            />
+          </DetailSection>
+          <DetailSection title="Riwayat Singkat">
+            <DetailField label="Bukti Diunggah" value={formatDate(detail.requestDate)} />
+            <DetailField
+              label="Verifikasi"
+              value={
+                detail.approvalVerificationDate
+                  ? formatDate(detail.approvalVerificationDate)
+                  : null
+              }
+            />
+            <DetailField
+              label="Form Final"
+              value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+            />
+            <DetailField label="Diproses" value={formatDate(detail.processDate)} />
+            <DetailField label="Selesai" value={formatDate(detail.completedDate)} />
+            <DetailField label="Dikirim" value={formatDate(detail.deliveredDate)} />
+          </DetailSection>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -77,6 +197,45 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
         <DetailField label="Beasiswa" value={detail.beasiswa} />
         <DetailField label="Pengantar" value={detail.pengantar} />
         <DetailField label="Ditujukan" value={detail.ditujukan} />
+        <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
+        <DetailField label="Kontak Person" value={detail.kontakPerson} />
+        <DetailField label="Tempat Pelaksanaan" value={detail.tempatPelaksanaan} />
+        <DetailField label="Tujuan Surat" value={detail.tujuanSurat} />
+        <DetailField label="Alamat Surat" value={detail.alamatSurat} />
+        <DetailField label="Kecamatan dan Kabupaten" value={detail.kecamatanKabupaten} />
+        <DetailField label="Kota / Kabupaten" value={detail.kotaKabupaten} />
+        <DetailField label="Provinsi" value={detail.provinsi} />
+        <DetailField
+          label="Tanggal Mulai"
+          value={detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null}
+        />
+        <DetailField
+          label="Tanggal Selesai"
+          value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
+        />
+        <DetailField label="Status Verifikasi SIK" value={detail.approvalStatus} />
+        <DetailField
+          label="Tanggal Verifikasi SIK"
+          value={
+            detail.approvalVerificationDate
+              ? formatDate(detail.approvalVerificationDate)
+              : null
+          }
+        />
+        <DetailField label="Verifikator SIK" value={detail.approvalVerificationStaff} />
+        <DetailField label="Alasan Penolakan" value={detail.approvalRejectReason} />
+        <DetailField
+          label="Tanggal Form Final"
+          value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+        />
+        <DetailField label="Nama Himpunan" value={detail.namaHimpunan} />
+        <DetailField label="Nama Kegiatan" value={detail.namaKegiatan} />
+        <DetailField
+          label="Tanggal Kegiatan"
+          value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
+        />
+        <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+        <DetailField label="No HP WA Contact Person" value={detail.noHpWa} />
         <DetailField label="Jumlah Ijazah" value={detail.jumlahIjazah} />
         <DetailField label="Jumlah Transkrip" value={detail.jumlahTranskrip} />
         <DetailField label="Jumlah Translate" value={detail.jumlahTranslate} />
@@ -103,9 +262,13 @@ export default async function AdminRequestDetailPage({
   );
 
   return (
-    <div className="grid gap-6">
+    <AdminPageShell>
       <div>
-        <Button asChild variant="ghost" className="-ml-2 mb-4">
+        <Button
+          asChild
+          variant="ghost"
+          className="-ml-2 mb-4 text-[#6B5E52] hover:bg-transparent hover:text-[#0f5b45]"
+        >
           <Link href="/admin/requests">
             <ArrowLeft className="size-4" />
             Kembali ke Pengajuan
@@ -116,7 +279,7 @@ export default async function AdminRequestDetailPage({
             <h1 className="text-2xl font-semibold tracking-normal">
               {detail.serviceTitle}
             </h1>
-            <Badge variant="secondary">{detail.statusLabel}</Badge>
+            <AdminStatusBadge>{detail.statusLabel}</AdminStatusBadge>
           </div>
           <RequestDeleteButton
             serviceSlug={detail.serviceSlug}
@@ -125,18 +288,34 @@ export default async function AdminRequestDetailPage({
             redirectTo="/admin/requests"
           />
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-[#566258]">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
       </div>
 
-      <RequestStatusActions
-        serviceSlug={detail.serviceSlug}
-        id={detail.id}
-        currentStatus={detail.status}
-        rolePrefix="admin"
-        staffName={user?.name ?? "Admin ULT"}
-      />
+      {detail.sourceTable === "surat_izin_kegiatan" ? (
+        <SikApprovalActions
+          rolePrefix="admin"
+          id={detail.id}
+          approvalStatus={detail.approvalStatus}
+          finalSubmitted={Boolean(detail.finalSubmittedDate)}
+        />
+      ) : null}
+
+      {detail.sourceTable !== "surat_izin_kegiatan" ||
+      detail.finalSubmittedDate ? (
+        <RequestStatusActions
+          serviceSlug={detail.serviceSlug}
+          id={detail.id}
+          currentStatus={detail.status}
+          rolePrefix="admin"
+          staffName={user?.name ?? "Admin ULT"}
+        />
+      ) : (
+        <div className="rounded-lg border border-[#e3d9ca] bg-[#fffdf9] p-4 text-sm text-[#6f746f]">
+          Form final SIK belum dikirim oleh mahasiswa.
+        </div>
+      )}
 
       <OptionalDetails detail={detail} />
 
@@ -170,6 +349,6 @@ export default async function AdminRequestDetailPage({
           ))}
         </CardContent>
       </Card>
-    </div>
+    </AdminPageShell>
   );
 }

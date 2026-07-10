@@ -314,6 +314,36 @@ model masih_kuliah_aktif {
   TTD_NIP              String?   @db.VarChar(30)
 }
 
+model permohonan_magang {
+  ID                    BigInt    @id @default(autoincrement())
+  NPM                   String?   @db.VarChar(15)
+  NAMA                  String?   @db.VarChar(100)
+  PRODI                 String?   @db.VarChar(150)
+  JENIS_PERMOHONAN      String?   @db.VarChar(50)
+  KONTAK_PERSON         String?   @db.VarChar(150)
+  TEMPAT_PELAKSANAAN    String?   @db.VarChar(200)
+  TUJUAN_SURAT          String?   @db.VarChar(200)
+  ALAMAT_SURAT          String?   @db.VarChar(255)
+  KECAMATAN_KABUPATEN   String?   @db.VarChar(150)
+  KOTA_KABUPATEN        String?   @db.VarChar(100)
+  PROVINSI              String?   @db.VarChar(100)
+  TANGGAL_MULAI         DateTime? @db.Date
+  TANGGAL_SELESAI       DateTime? @db.Date
+  PERMINTAAN_TGL        DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY      String?   @db.VarChar(100)
+  PERMINTAAN_IP         String?   @db.VarChar(45)
+  PROSES_TGL            DateTime? @db.Timestamp(0)
+  PROSES_STAF           String?   @db.VarChar(100)
+  SELESAI_TGL           DateTime? @db.Timestamp(0)
+  SELESAI_STAF          String?   @db.VarChar(100)
+  DIKIRIM_TGL           DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH          String?   @db.VarChar(100)
+
+  @@index([NPM], map: "idx_permohonan_magang_npm")
+  @@index([PERMINTAAN_TGL], map: "idx_permohonan_magang_permintaan_tgl")
+  @@index([JENIS_PERMOHONAN], map: "idx_permohonan_magang_jenis")
+}
+
 model plagiarisme {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
@@ -351,6 +381,36 @@ model referensi {
 model surat_jenis {
   ID         Int     @id @default(autoincrement())
   KETERANGAN String? @db.VarChar(50)
+}
+
+model surat_izin_kegiatan {
+  ID                       BigInt    @id @default(autoincrement())
+  NPM                      String?   @db.VarChar(15)
+  NAMA                     String?   @db.VarChar(100)
+  PRODI                    String?   @db.VarChar(150)
+  APPROVAL_STATUS          String?   @default("pending") @db.VarChar(20)
+  APPROVAL_VERIFIKASI_TGL  DateTime? @db.Timestamp(0)
+  APPROVAL_VERIFIKASI_STAF String?   @db.VarChar(100)
+  APPROVAL_REJECT_REASON   String?   @db.Text
+  FINAL_SUBMITTED_TGL      DateTime? @db.Timestamp(0)
+  NAMA_HIMPUNAN            String?   @db.VarChar(150)
+  NAMA_KEGIATAN            String?   @db.VarChar(200)
+  TANGGAL_KEGIATAN         DateTime? @db.Date
+  EMAIL_PENGIRIMAN         String?   @db.VarChar(100)
+  NO_HP_WA                 String?   @db.VarChar(30)
+  PERMINTAAN_TGL           DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY         String?   @db.VarChar(100)
+  PERMINTAAN_IP            String?   @db.VarChar(45)
+  PROSES_TGL               DateTime? @db.Timestamp(0)
+  PROSES_STAF              String?   @db.VarChar(100)
+  SELESAI_TGL              DateTime? @db.Timestamp(0)
+  SELESAI_STAF             String?   @db.VarChar(100)
+  DIKIRIM_TGL              DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH             String?   @db.VarChar(100)
+
+  @@index([NPM], map: "idx_surat_izin_kegiatan_npm")
+  @@index([APPROVAL_STATUS], map: "idx_surat_izin_kegiatan_approval_status")
+  @@index([PERMINTAAN_TGL], map: "idx_surat_izin_kegiatan_permintaan_tgl")
 }
 
 model surat_keluar {
@@ -549,6 +609,7 @@ model ult_request_attachments {
   STORAGE_PATH  String   @db.VarChar(500)
   UPLOADED_BY   String?  @db.VarChar(100)
   UPLOADED_AT   DateTime @default(now())
+  ATTACHMENT_TYPE String? @db.VarChar(50)
 }
 
 model ult_service_surveys {

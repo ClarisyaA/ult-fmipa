@@ -4,6 +4,7 @@ import {
   StaffMobileMenu,
   StaffSidebar,
 } from "@/components/layout/staff-sidebar";
+import { OpsRequestNotifier } from "@/components/requests/ops-request-notifier";
 import { staffNavItems } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -56,6 +57,7 @@ export default async function StaffLayout({
           <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
             {children}
           </main>
+          <OpsRequestNotifier role="staff" />
         </div>
       </div>
     </div>

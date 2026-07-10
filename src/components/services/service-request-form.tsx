@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getServiceUploadRule, type ServiceUploadRule } from "@/lib/service-upload-config";
 import type { CreateServiceRequestResult } from "@/types/submission";
 
 type ServiceRequestFormProps = {
@@ -23,19 +24,11 @@ type ApiIssue = {
   message: string;
 };
 
-const maxAttachmentCount = 3;
-const maxAttachmentSizeBytes = 5 * 1024 * 1024;
-const supportedAttachmentMimeTypes = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-]);
-const supportedAttachmentExtensions = new Set([
-  ".pdf",
-  ".jpg",
-  ".jpeg",
-  ".png",
-]);
+const magangJenisPermohonan = [
+  "Magang",
+  "Kerja Praktek",
+  "Tugas Akhir (TA)",
+];
 
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -53,14 +46,16 @@ function getFileExtension(filename: string) {
   return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
 }
 
-function validateAttachmentFile(file: File) {
-  if (file.size > maxAttachmentSizeBytes) {
-    return `File ${file.name} melebihi 5 MB.`;
+function validateAttachmentFile(file: File, uploadRule: ServiceUploadRule) {
+  if (file.size > uploadRule.maxFileSizeBytes) {
+    return `File ${file.name} melebihi ${Math.floor(
+      uploadRule.maxFileSizeBytes / (1024 * 1024)
+    )} MB.`;
   }
 
   if (
-    !supportedAttachmentMimeTypes.has(file.type) ||
-    !supportedAttachmentExtensions.has(getFileExtension(file.name))
+    !uploadRule.allowedMimeTypes.includes(file.type) ||
+    !uploadRule.allowedExtensions.includes(getFileExtension(file.name))
   ) {
     return `Format file ${file.name} tidak didukung.`;
   }
@@ -77,6 +72,11 @@ export function ServiceRequestForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CreateServiceRequestResult | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const uploadRule = getServiceUploadRule(serviceSlug);
+  const acceptAttribute = [
+    ...uploadRule.allowedExtensions,
+    ...uploadRule.allowedMimeTypes,
+  ].join(",");
 
   function setAttachmentValidationError(message: string) {
     setError(message);
@@ -95,7 +95,7 @@ export function ServiceRequestForm({
     setError((current) =>
       current.startsWith("File ") ||
       current.startsWith("Format file ") ||
-      current === "Maksimal 3 file lampiran."
+      current === `Maksimal ${uploadRule.maxFiles} file lampiran.`
         ? ""
         : current
     );
@@ -113,7 +113,7 @@ export function ServiceRequestForm({
     }
 
     const invalidMessage = files
-      .map(validateAttachmentFile)
+      .map((file) => validateAttachmentFile(file, uploadRule))
       .find((message) => message);
 
     if (invalidMessage) {
@@ -121,8 +121,10 @@ export function ServiceRequestForm({
       return;
     }
 
-    if (selectedFiles.length + files.length > maxAttachmentCount) {
-      setAttachmentValidationError("Maksimal 3 file lampiran.");
+    if (selectedFiles.length + files.length > uploadRule.maxFiles) {
+      setAttachmentValidationError(
+        `Maksimal ${uploadRule.maxFiles} file lampiran.`
+      );
       return;
     }
 
@@ -174,18 +176,38 @@ export function ServiceRequestForm({
         jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
         jumlahIjazah: getFormString(formData, "jumlahIjazah"),
         jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+        jenisPermohonan: getFormString(formData, "jenisPermohonan"),
+        kontakPerson: getFormString(formData, "kontakPerson"),
+        tempatPelaksanaan: getFormString(formData, "tempatPelaksanaan"),
+        tujuanSurat: getFormString(formData, "tujuanSurat"),
+        alamatSurat: getFormString(formData, "alamatSurat"),
+        kecamatanKabupaten: getFormString(formData, "kecamatanKabupaten"),
+        kotaKabupaten: getFormString(formData, "kotaKabupaten"),
+        provinsi: getFormString(formData, "provinsi"),
+        tanggalMulai: getFormString(formData, "tanggalMulai"),
+        tanggalSelesai: getFormString(formData, "tanggalSelesai"),
       };
 
-      if (selectedFiles.length > maxAttachmentCount) {
-        setError("Maksimal 3 file lampiran.");
+      if (selectedFiles.length > uploadRule.maxFiles) {
+        const message = `Maksimal ${uploadRule.maxFiles} file lampiran.`;
+
+        setError(message);
         setFieldErrors({
-          attachments: "Maksimal 3 file lampiran.",
+          attachments: message,
+        });
+        return;
+      }
+
+      if (selectedFiles.length < (uploadRule.minFiles ?? 0)) {
+        setError("Lampiran wajib diunggah.");
+        setFieldErrors({
+          attachments: "Lampiran wajib diunggah.",
         });
         return;
       }
 
       const invalidMessage = selectedFiles
-        .map(validateAttachmentFile)
+        .map((file) => validateAttachmentFile(file, uploadRule))
         .find((message) => message);
 
       if (invalidMessage) {
@@ -276,8 +298,13 @@ export function ServiceRequestForm({
   const isTranskrip = serviceSlug === "penerbitan-transkrip";
   const isLegalisir = serviceSlug === "legalisir-ijazah-transkrip";
   const isUnggahKaryaIlmiah = serviceSlug === "unggah-karya-ilmiah";
+  const isMagang = serviceSlug === "permohonan-magang-kerja-praktek-ta";
   const showDescription =
-    !isSuratPengantar && !isKeteranganLulus && !isIjazah && !isTranskrip;
+    !isSuratPengantar &&
+    !isKeteranganLulus &&
+    !isIjazah &&
+    !isTranskrip &&
+    !isMagang;
 
   // Custom input class with red border
   const inputClass = "border-[#EE1C25]/40 focus:border-[#EE1C25] focus:ring-[#EE1C25]/20";
@@ -285,6 +312,51 @@ export function ServiceRequestForm({
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit} data-testid="service-request-form" id="service-request-form">
+      {isMagang ? (
+        <div className="grid gap-4 rounded-lg border border-[#E7DED0] bg-[#FFFDF9] p-4">
+          <div className="flex gap-3">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#EE1C25]/25 bg-[#FFF3F3] text-sm font-semibold text-[#EE1C25]">
+              1
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#18130E]">
+                Siapkan Surat Permohonan dari Program Studi
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-[#6B5E52]">
+                Sebelum mengisi formulir ini, mahasiswa perlu mengajukan atau
+                menyiapkan surat permohonan dari program studi masing-masing
+                terlebih dahulu. Surat tersebut akan diunggah pada tahap
+                pengajuan layanan.
+              </p>
+              <ul className="mt-3 grid gap-1.5 text-sm text-[#6B5E52]">
+                <li>Surat berasal dari program studi.</li>
+                <li>File yang diunggah harus PDF.</li>
+                <li>Maksimal 5 file, masing-masing 10 MB.</li>
+                <li>
+                  Pastikan data instansi dan periode pelaksanaan sudah benar.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex gap-3 border-t border-[#EFE7DB] pt-4">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full border border-[#EE1C25]/25 bg-[#FFF3F3] text-sm font-semibold text-[#EE1C25]">
+              2
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#18130E]">
+                Isi Form Permohonan Magang/Kerja Praktek/Tugas Akhir
+              </p>
+              <p className="mt-1 text-sm text-[#6B5E52]">
+                Setelah surat dari prodi tersedia, lengkapi form di bawah ini.
+                Data pengajuan akan tersimpan langsung ke database layanan
+                Magang/Kerja Praktek/Tugas Akhir.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div id={isMagang ? "magang-form-fields" : undefined} className="grid gap-4">
       <div className="grid gap-2">
         <Label htmlFor="npm" className="text-[#18130E] font-medium">NPM</Label>
         <Input
@@ -597,6 +669,142 @@ export function ServiceRequestForm({
         </div>
       ) : null}
 
+      {isMagang ? (
+        <div className="grid gap-4 rounded-lg border border-[#EE1C25]/40 p-4">
+          <p className="text-sm font-medium text-[#18130E]">
+            Data Permohonan Magang
+          </p>
+          <div className="grid gap-2">
+            <Label htmlFor="jenisPermohonan" className="text-[#18130E] font-medium">
+              Jenis Permohonan
+            </Label>
+            <select
+              id="jenisPermohonan"
+              name="jenisPermohonan"
+              required
+              className={`${inputClass} h-10 rounded-md border bg-background px-3 py-2 text-sm outline-none`}
+            >
+              <option value="">Pilih jenis permohonan</option>
+              {magangJenisPermohonan.map((jenis) => (
+                <option key={jenis} value={jenis}>
+                  {jenis}
+                </option>
+              ))}
+            </select>
+            {fieldErrors.jenisPermohonan ? (
+              <p className="text-sm text-destructive">
+                {fieldErrors.jenisPermohonan}
+              </p>
+            ) : null}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="kontakPerson" className="text-[#18130E] font-medium">
+                Kontak Person
+              </Label>
+              <Input id="kontakPerson" name="kontakPerson" maxLength={150} className={inputClass} />
+              {fieldErrors.kontakPerson ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.kontakPerson}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tempatPelaksanaan" className="text-[#18130E] font-medium">
+                Tempat Pelaksanaan
+              </Label>
+              <Input id="tempatPelaksanaan" name="tempatPelaksanaan" maxLength={200} required className={inputClass} />
+              {fieldErrors.tempatPelaksanaan ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.tempatPelaksanaan}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="tujuanSurat" className="text-[#18130E] font-medium">
+              Tujuan Surat
+            </Label>
+            <Input id="tujuanSurat" name="tujuanSurat" maxLength={200} required className={inputClass} />
+            {fieldErrors.tujuanSurat ? (
+              <p className="text-sm text-destructive">
+                {fieldErrors.tujuanSurat}
+              </p>
+            ) : null}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="alamatSurat" className="text-[#18130E] font-medium">
+              Alamat Surat
+            </Label>
+            <Textarea id="alamatSurat" name="alamatSurat" maxLength={255} required className={textareaClass} />
+            {fieldErrors.alamatSurat ? (
+              <p className="text-sm text-destructive">
+                {fieldErrors.alamatSurat}
+              </p>
+            ) : null}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2">
+              <Label htmlFor="kecamatanKabupaten" className="text-[#18130E] font-medium">
+                Kecamatan dan Kabupaten
+              </Label>
+              <Input id="kecamatanKabupaten" name="kecamatanKabupaten" maxLength={150} required className={inputClass} />
+              {fieldErrors.kecamatanKabupaten ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.kecamatanKabupaten}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="kotaKabupaten" className="text-[#18130E] font-medium">
+                Kota / Kabupaten
+              </Label>
+              <Input id="kotaKabupaten" name="kotaKabupaten" maxLength={100} required className={inputClass} />
+              {fieldErrors.kotaKabupaten ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.kotaKabupaten}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="provinsi" className="text-[#18130E] font-medium">
+                Provinsi
+              </Label>
+              <Input id="provinsi" name="provinsi" maxLength={100} className={inputClass} />
+              {fieldErrors.provinsi ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.provinsi}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="tanggalMulai" className="text-[#18130E] font-medium">
+                Tanggal Mulai
+              </Label>
+              <Input id="tanggalMulai" name="tanggalMulai" type="date" required className={inputClass} />
+              {fieldErrors.tanggalMulai ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.tanggalMulai}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tanggalSelesai" className="text-[#18130E] font-medium">
+                Tanggal Selesai
+              </Label>
+              <Input id="tanggalSelesai" name="tanggalSelesai" type="date" required className={inputClass} />
+              {fieldErrors.tanggalSelesai ? (
+                <p className="text-sm text-destructive">
+                  {fieldErrors.tanggalSelesai}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showDescription ? (
         <div className="grid gap-2">
           <Label htmlFor="description" className="text-[#18130E] font-medium">Keterangan/Keperluan</Label>
@@ -617,17 +825,17 @@ export function ServiceRequestForm({
             name="attachments"
             type="file"
             multiple
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            accept={acceptAttribute}
             onChange={handleAttachmentChange}
             className="border-[#EE1C25]/40 focus:border-[#EE1C25] focus:ring-[#EE1C25]/20 flex items-center file:inline-flex file:items-center file:justify-center file:bg-[#EE1C25] file:text-white file:border-0 file:px-4 file:h-9 file:rounded-md file:hover:bg-[#EE1C25]/90 file:cursor-pointer file:mr-4 h-12"
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          Maksimal 3 file, masing-masing 5 MB. Format PDF, JPG, atau PNG.
+          {uploadRule.description}
         </p>
         <div className="grid gap-2 rounded-md border border-[#EE1C25]/40 px-3 py-2">
           <p className="text-sm font-medium text-[#18130E]">
-            {selectedFiles.length} dari {maxAttachmentCount} file dipilih
+            {selectedFiles.length} dari {uploadRule.maxFiles} file dipilih
           </p>
           {selectedFiles.length > 0 ? (
             <ul className="grid gap-1">
@@ -688,6 +896,7 @@ export function ServiceRequestForm({
       >
         <Link href={`/layanan/${serviceSlug}`}>Kembali</Link>
       </Button>
+      </div>
     </form>
   );
 }

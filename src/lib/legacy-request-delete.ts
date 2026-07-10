@@ -17,6 +17,8 @@ const deletableSourceTables = new Set([
   "referensi",
   "unggah_karya_ilmiah",
   "surat_pengantar",
+  "permohonan_magang",
+  "surat_izin_kegiatan",
   "beasiswa",
   "kelakuan_baik",
   "ijazah",

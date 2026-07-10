@@ -3,6 +3,11 @@ export type NavItem = {
   href: string;
 };
 
+export type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
 export const publicNavItems: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Profil", href: "/profil" },
@@ -13,10 +18,56 @@ export const publicNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard" },
-  { label: "Pengajuan", href: "/admin/requests" },
+  { label: "Pengajuan Layanan", href: "/admin/requests" },
   { label: "Informasi", href: "/admin/informasi" },
   { label: "Survei", href: "/admin/surveys" },
+  { label: "Reporting", href: "/admin/reports" },
+  { label: "Data Mahasiswa", href: "/admin/master/mahasiswa" },
+  { label: "Tracer Study Alumni", href: "/admin/alumni/tracer-study" },
+  { label: "Data Level", href: "/admin/system/levels" },
+  { label: "Unit List", href: "/admin/system/units" },
+  { label: "User List", href: "/admin/system/users" },
+  { label: "User Log", href: "/admin/system/user-log" },
   { label: "Website Publik", href: "/" },
+];
+
+export const adminNavGroups: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [{ label: "Dashboard", href: "/admin/dashboard" }],
+  },
+  {
+    label: "Operasional",
+    items: [
+      { label: "Pengajuan Layanan", href: "/admin/requests" },
+      { label: "Informasi", href: "/admin/informasi" },
+      { label: "Survei", href: "/admin/surveys" },
+    ],
+  },
+  {
+    label: "Reporting",
+    items: [{ label: "Reporting", href: "/admin/reports" }],
+  },
+  {
+    label: "Data",
+    items: [
+      { label: "Data Mahasiswa", href: "/admin/master/mahasiswa" },
+      { label: "Tracer Study Alumni", href: "/admin/alumni/tracer-study" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { label: "Data Level", href: "/admin/system/levels" },
+      { label: "Unit List", href: "/admin/system/units" },
+      { label: "User List", href: "/admin/system/users" },
+      { label: "User Log", href: "/admin/system/user-log" },
+    ],
+  },
+  {
+    label: "Shortcut",
+    items: [{ label: "Website Publik", href: "/" }],
+  },
 ];
 
 export const staffNavItems: NavItem[] = [

@@ -14,6 +14,12 @@ import {
 import { getPublicServiceBySlug } from "@/lib/legacy-services";
 import { saveRequestAttachmentMetadata } from "@/lib/request-attachments";
 import { createServiceRequestSchema } from "@/lib/service-request-validation";
+import { getServiceUploadRule } from "@/lib/service-upload-config";
+import {
+  createSikApprovalProofRequest,
+  sikApprovalProofAttachmentType,
+  sikServiceSlug,
+} from "@/lib/sik-requests";
 import { getServerSession } from "next-auth";
 
 function isMultipartRequest(request: Request) {
@@ -99,18 +105,33 @@ export async function POST(
           jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
           jumlahIjazah: getFormString(formData, "jumlahIjazah"),
           jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+          jenisPermohonan: getFormString(formData, "jenisPermohonan"),
+          kontakPerson: getFormString(formData, "kontakPerson"),
+          tempatPelaksanaan: getFormString(formData, "tempatPelaksanaan"),
+          tujuanSurat: getFormString(formData, "tujuanSurat"),
+          alamatSurat: getFormString(formData, "alamatSurat"),
+          kecamatanKabupaten: getFormString(formData, "kecamatanKabupaten"),
+          kotaKabupaten: getFormString(formData, "kotaKabupaten"),
+          provinsi: getFormString(formData, "provinsi"),
+          tanggalMulai: getFormString(formData, "tanggalMulai"),
+          tanggalSelesai: getFormString(formData, "tanggalSelesai"),
         }
       : await request.json();
     const files = formData ? getAttachmentFiles(formData) : [];
+    const uploadRuleKey =
+      service.slug === sikServiceSlug
+        ? `${sikServiceSlug}:approval-proof`
+        : service.slug;
+    const uploadRule = getServiceUploadRule(uploadRuleKey);
 
-    if (files.length > 3) {
+    if (files.length > uploadRule.maxFiles) {
       return NextResponse.json(
         {
-          error: "Maksimal 3 file lampiran.",
+          error: `Maksimal ${uploadRule.maxFiles} file lampiran.`,
           issues: [
             {
               field: "attachments",
-              message: "Maksimal 3 file lampiran.",
+              message: `Maksimal ${uploadRule.maxFiles} file lampiran.`,
             },
           ],
         },
@@ -118,10 +139,67 @@ export async function POST(
       );
     }
 
-    files.forEach(validateUploadedFile);
+    if (files.length < (uploadRule.minFiles ?? 0)) {
+      return NextResponse.json(
+        {
+          error: "Lampiran wajib diunggah.",
+          issues: [
+            {
+              field: "attachments",
+              message: "Lampiran wajib diunggah.",
+            },
+          ],
+        },
+        { status: 400 }
+      );
+    }
+
+    files.forEach((file) => validateUploadedFile(file, uploadRuleKey));
+
+    if (service.slug === sikServiceSlug) {
+      if (!session.user.npm) {
+        return NextResponse.json(
+          { error: "NPM mahasiswa tidak tersedia di session." },
+          { status: 400 }
+        );
+      }
+
+      const created = await createSikApprovalProofRequest({
+        npm: session.user.npm,
+        uploadedBy: session.user.email ?? session.user.npm ?? null,
+      });
+      let attachmentCount = 0;
+
+      for (const file of files) {
+        const savedFile = await saveUploadedFile(file, uploadRuleKey);
+
+        await saveRequestAttachmentMetadata({
+          serviceSlug: service.slug,
+          sourceTable: service.sourceTable,
+          requestId: String(created.ID),
+          uploadedBy: session.user.email ?? session.user.npm ?? null,
+          attachmentType: sikApprovalProofAttachmentType,
+          file: savedFile,
+        });
+        attachmentCount += 1;
+      }
+
+      return NextResponse.json({
+        data: {
+          id: String(created.ID),
+          requestId: String(created.ID),
+          serviceSlug: service.slug,
+          serviceTitle: service.title,
+          status: "sikApprovalPending",
+          attachmentCount,
+        },
+        message: "Bukti ACC berhasil dikirim dan menunggu verifikasi.",
+      });
+    }
 
     const input = createServiceRequestSchema.parse({
       ...body,
+      serviceSlug: service.slug,
       npm: session.user.npm || body?.npm,
       email: session.user.email || body?.email,
       phone: body?.phone || session.user.phone,
@@ -130,13 +208,14 @@ export async function POST(
     let attachmentCount = 0;
 
     for (const file of files) {
-      const savedFile = await saveUploadedFile(file);
+      const savedFile = await saveUploadedFile(file, service.slug);
 
       await saveRequestAttachmentMetadata({
         serviceSlug: result.serviceSlug,
         sourceTable: service.sourceTable,
         requestId: result.id,
         uploadedBy: session.user.email ?? session.user.npm ?? null,
+        attachmentType: uploadRule.attachmentType,
         file: savedFile,
       });
       attachmentCount += 1;
