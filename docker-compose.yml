@@ -1,4 +1,47 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ult-fmipa-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql://ult_user:ult_password@db:3306/fmipa_sbpk
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ult_user
+      DB_PASSWORD: ult_password
+      DB_NAME: fmipa_sbpk
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me}
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-admin@gmail.com}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-admin123}
+      DEV_STAFF_EMAIL: ${DEV_STAFF_EMAIL:-staff@gmail.com}
+      DEV_STAFF_PASSWORD: ${DEV_STAFF_PASSWORD:-staff123}
+      DEV_STUDENT_EMAIL: ${DEV_STUDENT_EMAIL:-student@gmail.com}
+      DEV_STUDENT_PASSWORD: ${DEV_STUDENT_PASSWORD:-student123}
+      DEV_STUDENT_NAME: ${DEV_STUDENT_NAME:-Mahasiswa ULT}
+      DEV_STUDENT_NPM: ${DEV_STUDENT_NPM:-140810230017}
+      DEV_STUDENT_PHONE: ${DEV_STUDENT_PHONE:-}
+      DB_ADMIN_ACCESS_CODES: ${DB_ADMIN_ACCESS_CODES:-SUPER_USER}
+      DB_STAFF_ACCESS_CODES: ${DB_STAFF_ACCESS_CODES:-ADMIN,OPERATOR,KRS,PIMPINAN}
+      PAUS_MODE: ${PAUS_MODE:-modern}
+      PAUS_CLIENT_ID: ${PAUS_CLIENT_ID:-}
+      PAUS_CLIENT_SECRET: ${PAUS_CLIENT_SECRET:-}
+      PAUS_AUTHORIZATION_URL: ${PAUS_AUTHORIZATION_URL:-https://paus.unpad.ac.id/oauth}
+      PAUS_TOKEN_URL: ${PAUS_TOKEN_URL:-https://paus.unpad.ac.id/oauth/access-token}
+      PAUS_USERINFO_URL: ${PAUS_USERINFO_URL:-https://paus.unpad.ac.id/api/}
+      PAUS_SIGN_OUT_URL: ${PAUS_SIGN_OUT_URL:-https://paus.unpad.ac.id/oauth/sign-out}
+      PAUS_LEGACY_LOGIN_URL: ${PAUS_LEGACY_LOGIN_URL:-}
+      PAUS_BRIDGE_SECRET: ${PAUS_BRIDGE_SECRET:-change-me}
+      PAUS_BRIDGE_TOKEN_TTL_SECONDS: ${PAUS_BRIDGE_TOKEN_TTL_SECONDS:-120}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ult_fmipa_storage:/app/storage
+    depends_on:
+      - db
+
   db:
     image: mariadb:11
     container_name: ult-fmipa-db
@@ -24,3 +67,4 @@ services:
 
 volumes:
   ult_fmipa_db_data:
+  ult_fmipa_storage:

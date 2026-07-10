@@ -27,6 +27,11 @@ export async function loginAs(
       : "/layanan"
 ) {
   await page.goto(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+
+  if (!(await page.getByTestId("login-email").isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Masuk sebagai Sivitas" }).click();
+  }
+
   await page.getByTestId("login-email").fill(credentials[role].email);
   await page.getByTestId("login-password").fill(credentials[role].password);
   await page.getByTestId("login-submit").click();

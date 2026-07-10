@@ -14,7 +14,7 @@ tim yang perlu menjalankan, memahami route, dan memakai API aplikasi.
 | --- | --- |
 | Framework | Next.js 16 App Router |
 | UI | React 19, TypeScript, Tailwind CSS 4, shadcn/ui, lucide-react |
-| Auth | NextAuth Credentials Provider untuk development, PAUS OAuth disiapkan |
+| Auth | NextAuth Credentials Provider untuk admin/staff legacy DB dan development, PAUS OAuth disiapkan |
 | Database | MariaDB/MySQL legacy `fmipa_sbpk` |
 | ORM/DB Client | Prisma 7 dengan raw SQL untuk beberapa tabel support |
 | Local infra | Docker Compose, Adminer |
@@ -94,6 +94,8 @@ Gunakan `.env.example` sebagai template. Jangan commit `.env` atau secret asli.
 | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` | Credential staff development |
 | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD` | Credential mahasiswa development |
 | `DEV_STUDENT_NAME`, `DEV_STUDENT_NPM`, `DEV_STUDENT_PHONE` | Profil mahasiswa development |
+| `DB_ADMIN_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role admin, default `SUPER_USER` |
+| `DB_STAFF_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role staff, default `ADMIN,OPERATOR,KRS,PIMPINAN` |
 | `PAUS_MODE` | `modern` atau `legacy`; saat ini PAUS belum diaktifkan untuk production |
 | `PAUS_CLIENT_ID`, `PAUS_CLIENT_SECRET` | Placeholder OAuth PAUS, jangan hardcode |
 | `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Endpoint PAUS |
@@ -164,6 +166,72 @@ docker compose up -d
 pnpm dev
 ```
 
+## Full Docker Compose
+
+Docker Compose can also run the full stack: Next.js app, MariaDB, and Adminer.
+
+```powershell
+docker compose build
+docker compose up -d
+docker compose exec app pnpm db:prisma-migrate
+docker compose exec app pnpm prisma migrate deploy
+docker compose exec app pnpm db:support-migrate
+```
+
+Services:
+
+| Service | URL / Host |
+| --- | --- |
+| App | <http://localhost:3000> |
+| Adminer | <http://localhost:8081> |
+| MariaDB from host | `localhost:13306` |
+| MariaDB from containers | `db:3306` |
+
+The app container stores uploaded service attachments and information images in
+the `ult_fmipa_storage` Docker volume mounted at `/app/storage`.
+
+## Kubernetes Deployment
+
+Kubernetes manifests are available in `k8s/`. They include:
+
+- MariaDB `StatefulSet` with persistent storage.
+- Next.js app `Deployment` and `Service`.
+- Upload storage `PersistentVolumeClaim` mounted at `/app/storage`.
+- `ConfigMap` and `Secret` for environment variables.
+- One-off migration `Job` for Prisma migrations and support SQL migrations.
+- NGINX `Ingress` template.
+
+Build the app image first:
+
+```powershell
+docker build -t ult-fmipa:latest .
+```
+
+For a remote cluster, tag and push the image to your registry, then update the
+image in `k8s/05-migration-job.yaml` and `k8s/06-app.yaml`.
+
+Before production deploy, replace:
+
+- `ult-fmipa.example.com` in `k8s/02-configmap.yaml` and `k8s/07-ingress.yaml`.
+- Placeholder values in `k8s/01-secrets.yaml`.
+- The MariaDB manifest with a managed database or a hardened StatefulSet if the
+  deployment is not just for demo/internal use.
+
+Apply in order:
+
+```powershell
+kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/01-secrets.yaml
+kubectl apply -f k8s/02-configmap.yaml
+kubectl apply -f k8s/03-mariadb.yaml
+kubectl apply -f k8s/04-storage.yaml
+kubectl -n ult-fmipa wait --for=condition=ready pod -l app=ult-fmipa-mariadb --timeout=180s
+kubectl apply -f k8s/05-migration-job.yaml
+kubectl -n ult-fmipa wait --for=condition=complete job/ult-fmipa-migrate --timeout=180s
+kubectl apply -f k8s/06-app.yaml
+kubectl apply -f k8s/07-ingress.yaml
+```
+
 Quality checks:
 
 ```powershell
@@ -223,7 +291,7 @@ cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbp
 cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
 ```
 
-## Development Auth Accounts
+## Auth Accounts
 
 Credential development dibaca dari `.env`.
 
@@ -232,6 +300,20 @@ Credential development dibaca dari `.env`.
 | Admin | `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` |
 | Staff | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` |
 | Student | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`, `DEV_STUDENT_NPM` |
+
+Admin/staff juga dapat login memakai `USER_NAME` atau `EMAIL` dari tabel legacy
+`data_users`, selama `CONFIRMED = 1` dan password cocok dengan hash legacy.
+Mapping role default:
+
+| Legacy `ACCESS_CODE` | Role aplikasi baru |
+| --- | --- |
+| `SUPER_USER` | Admin |
+| `ADMIN`, `OPERATOR`, `KRS`, `PIMPINAN` | Staff |
+
+Mahasiswa production tidak memakai password lokal aplikasi. Mahasiswa login
+melalui PAUS/SIAT/Unpad SSO, lalu aplikasi memakai NPM dari session untuk
+riwayat dan pengajuan layanan. Credential student di `.env` hanya untuk testing
+lokal selama PAUS belum aktif.
 
 ## Folder Structure
 

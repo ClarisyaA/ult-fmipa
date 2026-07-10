@@ -6,6 +6,7 @@ import {
   mapDevUserToSessionUser,
   type AppRole,
 } from "@/lib/auth-user-mapper";
+import { authorizeDbCredentialUser } from "@/lib/auth-db-users";
 import {
   mapPausBridgePayloadToSessionUser,
   verifyPausBridgeToken,
@@ -167,7 +168,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Development Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Username atau email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
@@ -199,6 +200,19 @@ export const authOptions: NextAuthOptions = {
           password === process.env.DEV_STUDENT_PASSWORD
         ) {
           return mapDevUserToSessionUser("student", email);
+        }
+
+        if (email && password) {
+          try {
+            return await authorizeDbCredentialUser(email, password);
+          } catch (error) {
+            console.error("[auth:db-users] login failed", {
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Gagal memeriksa user database.",
+            });
+          }
         }
 
         return null;
