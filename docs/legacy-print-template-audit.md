@@ -13,6 +13,8 @@ Legacy ULT FMIPA mencetak surat resmi memakai FPDF, bukan browser print atau HTM
 
 Setiap file membaca `id_data` dari query string, mengambil satu record request, join ke `mahasiswa`, lalu menggambar PDF A4 portrait secara manual memakai koordinat millimeter.
 
+Update migrasi: Phase 1 sudah mengimplementasikan generator PDF Next.js untuk pilot template `keterangan-lulus`. Detail implementasi dicatat di `docs/print-template-migration.md`.
+
 ## Pola Umum FPDF
 
 Pola shared:

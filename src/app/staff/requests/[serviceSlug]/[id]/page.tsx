@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
@@ -240,6 +240,25 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   );
 }
 
+function PrintLetterButton({ detail }: { detail: ServiceRequestDetail }) {
+  if (detail.serviceSlug !== "keterangan-lulus") {
+    return null;
+  }
+
+  return (
+    <Button asChild variant="outline">
+      <Link
+        href={`/api/requests/${detail.serviceSlug}/${detail.id}/pdf`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FileText className="size-4" />
+        Cetak Surat
+      </Link>
+    </Button>
+  );
+}
+
 export default async function StaffRequestDetailPage({
   params,
 }: RequestDetailPageProps) {
@@ -266,15 +285,24 @@ export default async function StaffRequestDetailPage({
             Kembali ke Pengajuan
           </Link>
         </Button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {detail.serviceTitle}
-          </h1>
-          <Badge variant="secondary">{detail.statusLabel}</Badge>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {detail.serviceTitle}
+            </h1>
+            <Badge variant="secondary">{detail.statusLabel}</Badge>
+          </div>
+          <PrintLetterButton detail={detail} />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
+        {detail.serviceSlug === "keterangan-lulus" ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pastikan data nomor surat dan penandatangan sudah lengkap sebelum
+            mencetak.
+          </p>
+        ) : null}
       </div>
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (

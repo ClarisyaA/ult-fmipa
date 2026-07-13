@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 
 import {
   AdminPageShell,
@@ -244,6 +244,25 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   );
 }
 
+function PrintLetterButton({ detail }: { detail: ServiceRequestDetail }) {
+  if (detail.serviceSlug !== "keterangan-lulus") {
+    return null;
+  }
+
+  return (
+    <Button asChild variant="outline">
+      <Link
+        href={`/api/requests/${detail.serviceSlug}/${detail.id}/pdf`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FileText className="size-4" />
+        Cetak Surat
+      </Link>
+    </Button>
+  );
+}
+
 export default async function AdminRequestDetailPage({
   params,
 }: RequestDetailPageProps) {
@@ -281,16 +300,25 @@ export default async function AdminRequestDetailPage({
             </h1>
             <AdminStatusBadge>{detail.statusLabel}</AdminStatusBadge>
           </div>
-          <RequestDeleteButton
-            serviceSlug={detail.serviceSlug}
-            id={detail.id}
-            label="Hapus Pengajuan"
-            redirectTo="/admin/requests"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <PrintLetterButton detail={detail} />
+            <RequestDeleteButton
+              serviceSlug={detail.serviceSlug}
+              id={detail.id}
+              label="Hapus Pengajuan"
+              redirectTo="/admin/requests"
+            />
+          </div>
         </div>
         <p className="mt-2 text-sm text-[#566258]">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
+        {detail.serviceSlug === "keterangan-lulus" ? (
+          <p className="mt-1 text-sm text-[#6f746f]">
+            Pastikan data nomor surat dan penandatangan sudah lengkap sebelum
+            mencetak.
+          </p>
+        ) : null}
       </div>
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (
