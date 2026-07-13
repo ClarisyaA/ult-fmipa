@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { SikRequestError, updateSikApproval } from "@/lib/sik-requests";
 
 export async function PATCH(
@@ -64,9 +65,10 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(
-      { error: "Approval SIK gagal diperbarui." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:sik:approval:patch",
+      "Approval SIK gagal diperbarui."
     );
   }
 }

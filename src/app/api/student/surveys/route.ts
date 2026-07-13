@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   createOrUpdateSurvey,
   SurveyTableUnavailableError,
@@ -49,11 +50,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const detail = await getStudentRequestDetail(
-    session.user.npm,
-    serviceSlug,
-    requestId
-  );
+  let detail;
+
+  try {
+    detail = await getStudentRequestDetail(
+      session.user.npm,
+      serviceSlug,
+      requestId
+    );
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:student:surveys:detail",
+      "Pengajuan survei gagal dimuat."
+    );
+  }
 
   if (!detail) {
     return NextResponse.json(
@@ -111,9 +122,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Survei kepuasan gagal disimpan." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:student:surveys:post",
+      "Survei kepuasan gagal disimpan."
     );
   }
 }

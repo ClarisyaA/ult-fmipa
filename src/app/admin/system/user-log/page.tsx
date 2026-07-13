@@ -4,6 +4,7 @@ import {
   AdminPageShell,
   AdminSectionCard,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getUserLogRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,7 +45,18 @@ export default async function AdminSystemUserLogPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const rows = await getUserLogRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getUserLogRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getUserLogRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:system:user-log", error);
+  }
   const csvRows = rows.map((row) => ({
     Waktu: formatDate(row.time),
     User: row.userName,
@@ -71,7 +84,9 @@ export default async function AdminSystemUserLogPage({
         </form>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel User Log">
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
             title="Log tidak ditemukan"
             description="Tidak ada log yang cocok dengan pencarian saat ini."

@@ -6,6 +6,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { RequestPriorityTable } from "@/components/requests/request-priority-table";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   getLatestPendingDashboardRequestsByDate,
   getPriorityDashboardRequests,
 } from "@/lib/legacy-request-stats";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -42,50 +44,72 @@ export default async function AdminDashboardPage({
   searchParams,
 }: AdminDashboardPageProps) {
   const params = await searchParams;
-  const [summary, priorityRows, latestRows] = await Promise.all([
-    getDashboardSummary(),
-    getPriorityDashboardRequests(12, {
-      dateFrom: params.dateFrom,
-      dateTo: params.dateTo,
-    }),
-    getLatestPendingDashboardRequestsByDate({
-      dateFrom: params.dateFrom,
-      dateTo: params.dateTo,
-    }),
-  ]);
-  const isPriorityFilterActive = Boolean(params.dateFrom || params.dateTo);
-  const metrics = [
-    {
-      label: "Total Pengajuan",
-      value: summary.totalRequests,
-      description: `${summary.totalServices} layanan aktif`,
-      tone: "neutral" as const,
-    },
-    {
-      label: "Menunggu Proses",
-      value: summary.totalPending,
-      description: "Belum masuk tahap proses",
-      tone: "warning" as const,
-    },
-    {
-      label: "Sedang Diproses",
-      value: summary.totalInProgress,
-      description: "Sudah diproses",
-      tone: "info" as const,
-    },
-    {
-      label: "Selesai",
-      value: summary.totalCompleted,
-      description: "Sudah memiliki tanggal selesai",
-      tone: "success" as const,
-    },
-    {
-      label: "Diambil/Dikirim",
-      value: summary.totalDelivered,
-      description: "Sudah diterima atau dikirim",
-      tone: "success" as const,
-    },
+  let dashboardData: [
+    Awaited<ReturnType<typeof getDashboardSummary>>,
+    Awaited<ReturnType<typeof getPriorityDashboardRequests>>,
+    Awaited<ReturnType<typeof getLatestPendingDashboardRequestsByDate>>,
+  ] | null = null;
+
+  try {
+    dashboardData = await Promise.all([
+      getDashboardSummary(),
+      getPriorityDashboardRequests(12, {
+        dateFrom: params.dateFrom,
+        dateTo: params.dateTo,
+      }),
+      getLatestPendingDashboardRequestsByDate({
+        dateFrom: params.dateFrom,
+        dateTo: params.dateTo,
+      }),
+    ]);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    logServerError("admin:dashboard", error);
+  }
+
+  const [summary, priorityRows, latestRows] = dashboardData ?? [
+    null,
+    [],
+    [],
   ];
+  const isUnavailable = !dashboardData;
+  const isPriorityFilterActive = Boolean(params.dateFrom || params.dateTo);
+  const metrics = summary
+    ? [
+        {
+          label: "Total Pengajuan",
+          value: summary.totalRequests,
+          description: `${summary.totalServices} layanan aktif`,
+          tone: "neutral" as const,
+        },
+        {
+          label: "Menunggu Proses",
+          value: summary.totalPending,
+          description: "Belum masuk tahap proses",
+          tone: "warning" as const,
+        },
+        {
+          label: "Sedang Diproses",
+          value: summary.totalInProgress,
+          description: "Sudah diproses",
+          tone: "info" as const,
+        },
+        {
+          label: "Selesai",
+          value: summary.totalCompleted,
+          description: "Sudah memiliki tanggal selesai",
+          tone: "success" as const,
+        },
+        {
+          label: "Diambil/Dikirim",
+          value: summary.totalDelivered,
+          description: "Sudah diterima atau dikirim",
+          tone: "success" as const,
+        },
+      ]
+    : [];
 
   return (
     <AdminPageShell>
@@ -105,7 +129,12 @@ export default async function AdminDashboardPage({
       />
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {metrics.map((metric) => (
+        {isUnavailable ? (
+          <div className="xl:col-span-5">
+            <AdminUnavailableState />
+          </div>
+        ) : (
+        metrics.map((metric) => (
           <div
             key={metric.label}
             className="rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
@@ -125,7 +154,7 @@ export default async function AdminDashboardPage({
               {metric.description}
             </p>
           </div>
-        ))}
+        )))}
       </div>
 
       <AdminSectionCard
@@ -197,7 +226,11 @@ export default async function AdminDashboardPage({
             : "Daftar pengajuan pending yang paling lama menunggu dan sebaiknya diproses lebih dulu oleh admin."
         }
       >
-        <RequestPriorityTable rows={priorityRows} role="admin" />
+        {isUnavailable ? (
+          <AdminUnavailableState />
+        ) : (
+          <RequestPriorityTable rows={priorityRows} role="admin" />
+        )}
       </AdminSectionCard>
 
       <AdminSectionCard
@@ -208,6 +241,9 @@ export default async function AdminDashboardPage({
             : "Pantau permintaan terbaru yang belum masuk ke tahap proses."
         }
       >
+        {isUnavailable || !summary ? (
+          <AdminUnavailableState />
+        ) : (
         <div className="overflow-x-auto rounded-md border border-[#edf0e9]">
           <Table className="min-w-[900px]">
             <TableHeader className="bg-[#eef3ec]">
@@ -265,12 +301,16 @@ export default async function AdminDashboardPage({
             </TableBody>
           </Table>
         </div>
+        )}
       </AdminSectionCard>
 
       <AdminSectionCard
         title="Ringkasan per Layanan"
         description="Count per tabel layanan yang sudah dipetakan secara aman."
       >
+        {isUnavailable ? (
+          <AdminUnavailableState />
+        ) : (
         <AdminTableScroll>
           <Table className="min-w-[900px]">
             <TableHeader className="bg-[#eef3ec]">
@@ -284,7 +324,7 @@ export default async function AdminDashboardPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {summary.services.map((service) => (
+              {summary!.services.map((service) => (
                 <TableRow key={service.slug}>
                   <TableCell className="font-medium">{service.title}</TableCell>
                   <TableCell className="text-right">
@@ -307,6 +347,7 @@ export default async function AdminDashboardPage({
             </TableBody>
           </Table>
         </AdminTableScroll>
+        )}
       </AdminSectionCard>
     </AdminPageShell>
   );

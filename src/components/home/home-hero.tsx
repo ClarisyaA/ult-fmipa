@@ -64,7 +64,7 @@ const furniture = [
     src: "/beranda-new/MejaKiri.svg",
     width: 2680,
     height: 2669,
-    style: { left: 150, bottom: 27, width: 400 } as React.CSSProperties,
+    style: { left: 150, bottom: 25, width: 400 } as React.CSSProperties,
     sizesRatio: 0.24,
   },
   {

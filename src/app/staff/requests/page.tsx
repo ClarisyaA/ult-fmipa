@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import {
   getServiceRequestList,
@@ -447,15 +448,35 @@ export default async function StaffRequestsPage({
   const limit = Number(params.limit ?? 10);
   const status = parseRequestStatus(params.status);
   const visibleServices = getCategoryServices(activeCategory);
-  const result = await getServiceRequestList({
-    service: params.service,
-    serviceSlugs: params.service
-      ? undefined
-      : visibleServices.map((service) => service.slug),
-    status,
-    page,
-    limit,
-  });
+  let result: Awaited<ReturnType<typeof getServiceRequestList>>;
+  let unavailable = false;
+
+  try {
+    result = await getServiceRequestList({
+      service: params.service,
+      serviceSlugs: params.service
+        ? undefined
+        : visibleServices.map((service) => service.slug),
+      status,
+      page,
+      limit,
+    });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("staff:requests:list", error);
+    result = {
+      data: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 1,
+      },
+    };
+  }
   const rows = result.data;
   const user = await getCurrentUser();
   const staffName = user?.name ?? "Staff ULT";
@@ -464,10 +485,22 @@ export default async function StaffRequestsPage({
       request.serviceSlug === params.previewService &&
       request.id === params.previewId,
   );
-  const selectedDetail =
-    params.previewService && params.previewId
-      ? await getRequestDetail(params.previewService, params.previewId)
-      : null;
+  let selectedDetail: ServiceRequestDetail | null = null;
+
+  if (params.previewService && params.previewId && !unavailable) {
+    try {
+      selectedDetail = await getRequestDetail(
+        params.previewService,
+        params.previewId,
+      );
+    } catch (error) {
+      if (!isDatabaseUnavailableError(error)) {
+        throw error;
+      }
+      unavailable = true;
+      logServerError("staff:requests:preview", error);
+    }
+  }
   const previewRequest =
     selectedRequest ??
     (selectedDetail
@@ -716,8 +749,16 @@ export default async function StaffRequestsPage({
             >
               <div className="grid gap-2 md:hidden">
                 {rows.length === 0 ? (
-                  <div className="grid min-h-[140px] place-items-center rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-8 text-center text-sm text-[#6f746f]">
-                    Tidak ada pengajuan yang sesuai filter.
+                  <div
+                    className={`grid min-h-[140px] place-items-center rounded-md border px-4 py-8 text-center text-sm ${
+                      unavailable
+                        ? "border-[#edd2c5] bg-[#fff7f2] text-[#8a3d23]"
+                        : "border-[#edf0e9] bg-[#fbfdf9] text-[#6f746f]"
+                    }`}
+                  >
+                    {unavailable
+                      ? "Data belum dapat dimuat. Koneksi database sedang tidak tersedia."
+                      : "Tidak ada pengajuan yang sesuai filter."}
                   </div>
                 ) : (
                   rows.map((request) => {
@@ -784,7 +825,9 @@ export default async function StaffRequestsPage({
                         colSpan={6}
                         className="h-24 text-center text-sm text-[#6f746f]"
                       >
-                        Tidak ada pengajuan yang sesuai filter.
+                        {unavailable
+                          ? "Data belum dapat dimuat. Koneksi database sedang tidak tersedia."
+                          : "Tidak ada pengajuan yang sesuai filter."}
                       </TableCell>
                     </TableRow>
                   ) : (

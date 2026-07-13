@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getInformationApiErrorStatus } from "@/lib/information-api";
 import { getInformationPostById } from "@/lib/information-posts";
 import {
@@ -44,9 +45,10 @@ export async function POST(_request: Request, { params }: CoverRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Cover gagal diperbarui." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:staff:information:image-cover:post",
+      "Cover gagal diperbarui."
     );
   }
 }

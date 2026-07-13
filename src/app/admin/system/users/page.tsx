@@ -5,6 +5,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getUserRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +32,18 @@ export default async function AdminSystemUsersPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const rows = await getUserRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getUserRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getUserRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:system:users", error);
+  }
   const csvRows = rows.map((row) => ({
     Username: row.USER_NAME,
     Nama: row.FULL_NAME,
@@ -65,7 +78,9 @@ export default async function AdminSystemUsersPage({
         </p>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel User">
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState title="Data user tidak ditemukan" />
         ) : (
           <AdminTableScroll>

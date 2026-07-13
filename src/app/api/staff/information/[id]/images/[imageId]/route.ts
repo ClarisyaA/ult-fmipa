@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getInformationApiErrorStatus } from "@/lib/information-api";
 import { getInformationPostById } from "@/lib/information-posts";
 import {
@@ -53,9 +54,10 @@ export async function PATCH(request: Request, { params }: ImageRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Gambar gagal diperbarui." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:staff:information:image:patch",
+      "Gambar gagal diperbarui."
     );
   }
 }
@@ -90,9 +92,10 @@ export async function DELETE(_request: Request, { params }: ImageRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Gambar gagal dihapus." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:staff:information:image:delete",
+      "Gambar gagal dihapus."
     );
   }
 }

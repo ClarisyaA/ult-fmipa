@@ -1,5 +1,6 @@
 import { getPublicServiceBySlug, getPublicServices } from "@/lib/legacy-services";
 import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import { getStudentRequestHistory } from "@/lib/student-request-history";
 
 export type ServiceSurvey = {
@@ -222,6 +223,10 @@ function warnMissingSurveyTable() {
 }
 
 function handleSurveyReadError(error: unknown) {
+  if (isDatabaseUnavailableError(error)) {
+    throw error;
+  }
+
   if (isMissingSurveyTableError(error)) {
     warnMissingSurveyTable();
     return;
@@ -333,6 +338,10 @@ export async function createOrUpdateSurvey(input: ServiceSurveyInput) {
         UPDATED_AT = CURRENT_TIMESTAMP(3)
     `;
   } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+
     if (isMissingSurveyTableError(error)) {
       warnMissingSurveyTable();
       throw new SurveyTableUnavailableError();

@@ -4,6 +4,7 @@ import {
   AdminPageShell,
   AdminSectionCard,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getLevelRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,7 +31,18 @@ export default async function AdminSystemLevelsPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const rows = await getLevelRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getLevelRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getLevelRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:system:levels", error);
+  }
   const csvRows = rows.map((row) => ({
     ID: row.LEVEL_DATA_ID,
     "Nama Level": row.LEVEL_DATA_NAME,
@@ -61,7 +74,9 @@ export default async function AdminSystemLevelsPage({
         </p>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel Data Level">
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState title="Data level tidak ditemukan" />
         ) : (
           <AdminTableScroll>

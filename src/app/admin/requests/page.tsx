@@ -8,6 +8,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { RequestExportButton } from "@/components/admin/request-export-button";
 import {
@@ -31,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import {
   getServiceRequestList,
@@ -664,18 +666,38 @@ export default async function AdminRequestsPage({
   const limit = Number(params.limit ?? 10);
   const status = parseRequestStatus(params.status);
   const sort = params.sort === "oldest" ? "oldest" : "newest";
-  const result = await getServiceRequestList({
-    service: params.service,
-    serviceSlugs: params.service
-      ? undefined
-      : activeCategory === "all"
+  let result: Awaited<ReturnType<typeof getServiceRequestList>>;
+  let unavailable = false;
+
+  try {
+    result = await getServiceRequestList({
+      service: params.service,
+      serviceSlugs: params.service
         ? undefined
-        : visibleServices.map((service) => service.slug),
-    status,
-    sort,
-    page,
-    limit,
-  });
+        : activeCategory === "all"
+          ? undefined
+          : visibleServices.map((service) => service.slug),
+      status,
+      sort,
+      page,
+      limit,
+    });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:requests:list", error);
+    result = {
+      data: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 1,
+      },
+    };
+  }
   const user = await getCurrentUser();
   const staffName = user?.name ?? "Admin ULT";
   const totalPages = Math.max(result.pagination.totalPages, 1);
@@ -686,10 +708,22 @@ export default async function AdminRequestsPage({
       request.serviceSlug === params.previewService &&
       request.id === params.previewId,
   );
-  const selectedDetail =
-    params.previewService && params.previewId
-      ? await getRequestDetail(params.previewService, params.previewId)
-      : null;
+  let selectedDetail: ServiceRequestDetail | null = null;
+
+  if (params.previewService && params.previewId && !unavailable) {
+    try {
+      selectedDetail = await getRequestDetail(
+        params.previewService,
+        params.previewId,
+      );
+    } catch (error) {
+      if (!isDatabaseUnavailableError(error)) {
+        throw error;
+      }
+      unavailable = true;
+      logServerError("admin:requests:preview", error);
+    }
+  }
   const previewRequest =
     selectedRequest ?? (selectedDetail ? toPreviewRequest(selectedDetail) : null);
   const hasPreview = Boolean(previewRequest && selectedDetail);
@@ -868,7 +902,9 @@ export default async function AdminRequestsPage({
           className="min-w-0"
         >
           <BulkRequestDeleteProvider items={bulkItems}>
-            {result.data.length === 0 ? (
+            {unavailable ? (
+              <AdminUnavailableState />
+            ) : result.data.length === 0 ? (
               <AdminEmptyState
                 title="Tidak ada pengajuan"
                 description="Tidak ada pengajuan yang sesuai dengan filter saat ini."

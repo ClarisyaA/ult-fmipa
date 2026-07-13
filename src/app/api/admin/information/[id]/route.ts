@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   getInformationApiErrorStatus,
   parseInformationPostRequest,
@@ -50,9 +51,10 @@ export async function GET(_request: Request, { params }: InformationRouteProps) 
       );
     }
 
-    return NextResponse.json(
-      { error: "Informasi gagal dimuat." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:id:get",
+      "Informasi gagal dimuat."
     );
   }
 }
@@ -95,9 +97,10 @@ export async function PATCH(request: Request, { params }: InformationRouteProps)
       );
     }
 
-    return NextResponse.json(
-      { error: "Informasi gagal diperbarui." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:id:patch",
+      "Informasi gagal diperbarui."
     );
   }
 }
@@ -130,9 +133,10 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json(
-      { error: "Informasi gagal dihapus." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:id:delete",
+      "Informasi gagal dihapus."
     );
   }
 }

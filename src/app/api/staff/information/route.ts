@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   getInformationApiErrorStatus,
   parseInformationPostRequest,
@@ -16,16 +17,24 @@ function getActorName(user: { name?: string | null; email?: string | null }) {
 }
 
 export async function GET() {
-  const result = await getStaffInformationApiData();
+  try {
+    const result = await getStaffInformationApiData();
 
-  if (result.error) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.status }
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status }
+      );
+    }
+
+    return NextResponse.json({ data: result.data });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:staff:information:get",
+      "Informasi gagal dimuat."
     );
   }
-
-  return NextResponse.json({ data: result.data });
 }
 
 export async function POST(request: Request) {
@@ -60,9 +69,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Informasi gagal dibuat." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:staff:information:post",
+      "Informasi gagal dibuat."
     );
   }
 }

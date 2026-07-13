@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getInformationApiErrorStatus, saveInformationImagesForPost } from "@/lib/information-api";
 import { getInformationPostById } from "@/lib/information-posts";
 
@@ -46,10 +47,10 @@ export async function POST(request: Request, { params }: ImagesRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Gambar gagal ditambahkan." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:images:post",
+      "Gambar gagal ditambahkan."
     );
   }
 }
-

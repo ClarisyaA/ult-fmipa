@@ -4,6 +4,7 @@ import {
   RequestStatusUpdateError,
   updateRequestStatus,
 } from "@/lib/legacy-request-status";
+import { jsonApiError } from "@/lib/error-utils";
 import type { UpdateRequestStatusInput } from "@/types/request-action";
 
 export async function PATCH(
@@ -33,11 +34,10 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(
-      {
-        error: "Status pengajuan gagal diperbarui.",
-      },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:staff:requests:status:patch",
+      "Status pengajuan gagal diperbarui."
     );
   }
 }

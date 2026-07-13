@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getCompletedUnsurveyedRequestsForStudent } from "@/lib/service-surveys";
 
 export async function GET() {
@@ -22,11 +23,19 @@ export async function GET() {
     );
   }
 
-  const pendingRequest = await getCompletedUnsurveyedRequestsForStudent(
-    session.user.npm
-  );
+  try {
+    const pendingRequest = await getCompletedUnsurveyedRequestsForStudent(
+      session.user.npm
+    );
 
-  return NextResponse.json({
-    data: pendingRequest,
-  });
+    return NextResponse.json({
+      data: pendingRequest,
+    });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:student:surveys:pending:get",
+      "Daftar survei tertunda gagal dimuat."
+    );
+  }
 }

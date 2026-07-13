@@ -135,6 +135,25 @@ export function AdminEmptyState({
   );
 }
 
+export function AdminUnavailableState({
+  title = "Data belum dapat dimuat",
+  description = "Koneksi database sedang tidak tersedia. Coba muat ulang halaman beberapa saat lagi.",
+}: {
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <div className="grid min-h-[140px] place-items-center rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-8 text-center">
+      <div>
+        <p className="text-sm font-semibold text-[#8a3d23]">{title}</p>
+        <p className="mt-1 text-xs leading-relaxed text-[#8a3d23]/80">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AdminStatusBadge({
   children,
   tone = "neutral",

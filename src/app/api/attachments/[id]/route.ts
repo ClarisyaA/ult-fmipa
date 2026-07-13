@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getAttachmentRecordById } from "@/lib/request-attachments";
 import { getStudentRequestDetail } from "@/lib/student-request-history";
 
@@ -41,7 +42,17 @@ export async function GET(
   }
 
   const { id } = await params;
-  const attachment = await getAttachmentRecordById(id);
+  let attachment;
+
+  try {
+    attachment = await getAttachmentRecordById(id);
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:attachments:get",
+      "Lampiran gagal dimuat."
+    );
+  }
 
   if (!attachment) {
     return NextResponse.json({ error: "Lampiran tidak ditemukan." }, { status: 404 });
@@ -52,11 +63,21 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const detail = await getStudentRequestDetail(
-      session.user.npm,
-      attachment.SERVICE_SLUG,
-      String(attachment.REQUEST_ID)
-    );
+    let detail;
+
+    try {
+      detail = await getStudentRequestDetail(
+        session.user.npm,
+        attachment.SERVICE_SLUG,
+        String(attachment.REQUEST_ID)
+      );
+    } catch (error) {
+      return jsonApiError(
+        error,
+        "api:attachments:student-detail:get",
+        "Lampiran gagal dimuat."
+      );
+    }
 
     if (!detail || detail.sourceTable !== attachment.SOURCE_TABLE) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

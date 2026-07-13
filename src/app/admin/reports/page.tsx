@@ -7,6 +7,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { PerformanceRankingChart } from "@/components/admin/performance-ranking-chart";
@@ -24,6 +25,7 @@ import {
   getDashboardSummary,
   getPerformanceSummary,
 } from "@/lib/legacy-request-stats";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getPublicServices } from "@/lib/legacy-services";
 
 export const dynamic = "force-dynamic";
@@ -62,20 +64,33 @@ export default async function AdminReportsPage({
   )
     ? params.service
     : undefined;
-  const summary = await getDashboardSummary({
-    service: activeTab === "layanan" ? activeService : undefined,
-    dateFrom: params.dateFrom,
-    dateTo: params.dateTo,
-    q: activeTab === "layanan" ? params.q : undefined,
-  });
-  const performance =
-    activeTab === "layanan"
-      ? null
-      : await getPerformanceSummary({
-          dateFrom: params.dateFrom,
-          dateTo: params.dateTo,
-          q: params.q,
-        });
+  let summary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
+  let performance: Awaited<ReturnType<typeof getPerformanceSummary>> | null =
+    null;
+  let unavailable = false;
+
+  try {
+    summary = await getDashboardSummary({
+      service: activeTab === "layanan" ? activeService : undefined,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      q: activeTab === "layanan" ? params.q : undefined,
+    });
+    performance =
+      activeTab === "layanan"
+        ? null
+        : await getPerformanceSummary({
+            dateFrom: params.dateFrom,
+            dateTo: params.dateTo,
+            q: params.q,
+          });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:reports", error);
+  }
   const performanceRanking =
     activeTab === "staf"
       ? (performance?.staff ?? []).map((staff) => ({
@@ -92,12 +107,12 @@ export default async function AdminReportsPage({
         }));
   const topPerformance = performanceRanking.slice(0, 3);
   const performanceChartRows = performanceRanking;
-  const topServices = [...summary.services]
+  const topServices = [...(summary?.services ?? [])]
     .sort((left, right) => right.total - left.total)
     .slice(0, 3);
   const isAllData =
     !activeService && !params.dateFrom && !params.dateTo && !params.q?.trim();
-  const reportRows = summary.services.map((service) => ({
+  const reportRows = (summary?.services ?? []).map((service) => ({
     Layanan: service.title,
     Total: service.total,
     Menunggu: service.pending,
@@ -242,6 +257,10 @@ export default async function AdminReportsPage({
           title="Report Layanan"
           description="Ringkasan jumlah pengajuan per layanan dari tabel yang sudah dipetakan."
         >
+          {unavailable || !summary ? (
+            <AdminUnavailableState />
+          ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <AdminStatusBadge tone={isAllData ? "success" : "info"}>
               {isAllData ? "Menampilkan semua data" : "Filter aktif"}
@@ -364,12 +383,18 @@ export default async function AdminReportsPage({
               </TableBody>
             </Table>
           </AdminTableScroll>
+          </>
+          )}
         </AdminSectionCard>
       ) : (
         <AdminSectionCard
           title={activeTab === "staf" ? "Kinerja Staf" : "Kinerja Unit"}
           description="Agregasi aktivitas staf dan unit berdasarkan timestamp workflow pada data layanan."
         >
+          {unavailable ? (
+            <AdminUnavailableState />
+          ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <AdminStatusBadge tone="info">
               {params.dateFrom || params.dateTo || params.q?.trim()
@@ -514,6 +539,8 @@ export default async function AdminReportsPage({
                 </TableBody>
               </Table>
             </AdminTableScroll>
+          )}
+          </>
           )}
         </AdminSectionCard>
       )}

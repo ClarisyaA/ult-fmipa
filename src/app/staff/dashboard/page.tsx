@@ -16,6 +16,7 @@ import {
   getLatestPendingDashboardRequestsByDate,
   getPriorityDashboardRequests,
 } from "@/lib/legacy-request-stats";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import type {
   PendingDashboardRequestRow,
   PriorityDashboardRequestRow,
@@ -87,9 +88,12 @@ export default async function StaffDashboardPage({
       }),
     ]);
   } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
     dashboardError =
-      "Data dashboard belum bisa dimuat. Coba muat ulang halaman.";
-    console.error("Failed to load staff dashboard pending requests", error);
+      "Koneksi database sedang tidak tersedia. Coba muat ulang halaman beberapa saat lagi.";
+    logServerError("staff:dashboard", error);
   }
 
   return (

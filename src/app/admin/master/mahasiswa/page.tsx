@@ -5,6 +5,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getMahasiswaRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,7 +30,18 @@ type PageProps = {
 
 export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const rows = await getMahasiswaRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getMahasiswaRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getMahasiswaRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:master:mahasiswa", error);
+  }
   const csvRows = rows.map((row) => ({
     NPM: row.npm,
     Nama: row.nama,
@@ -75,7 +88,9 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
         title="Tabel Mahasiswa"
         description={`Menampilkan maksimal ${rows.length} baris pertama sesuai filter.`}
       >
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
             title="Data mahasiswa tidak ditemukan"
             description="Tidak ada baris yang cocok dengan pencarian saat ini."

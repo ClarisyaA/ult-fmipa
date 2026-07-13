@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
 import { getDefaultRedirectByRole } from "@/lib/auth-redirect";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getStudentRequestHistory } from "@/lib/student-request-history";
 import type { RequestStatus } from "@/types/request";
 
@@ -82,12 +83,21 @@ export default async function StudentHistoryPage({
   }
 
   const params = await searchParams;
-  const result = await getStudentRequestHistory({
-    npm: session.user.npm,
-    status: parseStatus(params.status),
-    page: Number(params.page ?? 1),
-    limit: Number(params.limit ?? 10),
-  });
+  let result: Awaited<ReturnType<typeof getStudentRequestHistory>> | null = null;
+
+  try {
+    result = await getStudentRequestHistory({
+      npm: session.user.npm,
+      status: parseStatus(params.status),
+      page: Number(params.page ?? 1),
+      limit: Number(params.limit ?? 10),
+    });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    logServerError("mahasiswa:riwayat", error);
+  }
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-12 sm:px-6 lg:px-8">
@@ -106,7 +116,22 @@ export default async function StudentHistoryPage({
         </p>
       </div>
 
-      {result.data.length === 0 ? (
+      {!result ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Data belum dapat dimuat</CardTitle>
+            <CardDescription>
+              Koneksi database sedang tidak tersedia. Coba muat ulang halaman
+              beberapa saat lagi.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/mahasiswa/riwayat">Muat ulang</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : result.data.length === 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Belum ada pengajuan</CardTitle>
