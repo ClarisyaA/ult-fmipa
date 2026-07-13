@@ -33,11 +33,22 @@ export type LetterMetadataPayload = {
   serviceSlug: string;
   requestId: string;
   readiness: KeteranganLulusPrintReadiness | null;
+  duplicateNumber: LetterNumberDuplicateInfo;
   signerPickerAvailable: boolean;
   signerPickerMessage: string | null;
   signers: LetterSignerOption[];
   commonFields: LetterMetadataField[];
   serviceFields: LetterMetadataField[];
+};
+
+export type LetterNumberDuplicateInfo = {
+  hasDuplicateNumber: boolean;
+  duplicateCount: number;
+  duplicateSamples: Array<{
+    serviceSlug: string;
+    id: string;
+    npm?: string;
+  }>;
 };
 
 type FieldConfig = {
@@ -47,6 +58,11 @@ type FieldConfig = {
   maxLength?: number;
   required?: boolean;
   numeric?: "decimal" | "loose";
+};
+
+type DuplicateCheckConfig = {
+  serviceSlug: MetadataServiceSlug;
+  sourceTable: ServiceMetadataConfig["sourceTable"];
 };
 
 type ServiceMetadataConfig = {
@@ -159,6 +175,22 @@ const METADATA_CONFIG = {
 
 type MetadataServiceSlug = keyof typeof METADATA_CONFIG;
 
+const DUPLICATE_CHECK_TABLES = Object.entries(METADATA_CONFIG).map(
+  ([serviceSlug, config]) => ({
+    serviceSlug: serviceSlug as MetadataServiceSlug,
+    sourceTable: config.sourceTable,
+  }),
+) satisfies DuplicateCheckConfig[];
+
+const LETTER_NUMBER_MISSING_MESSAGE =
+  "Nomor surat belum diisi. Lengkapi nomor surat sebelum mencetak PDF resmi.";
+
+const LETTER_NUMBER_DUPLICATE_READY_MESSAGE =
+  "Data surat siap dicetak, tetapi nomor surat terdeteksi pernah digunakan pada pengajuan lain.";
+
+const LETTER_NUMBER_OVERWRITE_MESSAGE =
+  "Nomor surat sudah terisi. Konfirmasi diperlukan untuk mengganti nomor surat.";
+
 export class LetterMetadataError extends Error {
   statusCode: number;
 
@@ -213,6 +245,14 @@ function toFieldValue(value: unknown, type: MetadataFieldType) {
   return String(value);
 }
 
+function normalizeLetterNumber(value: unknown) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
 function buildFields(configs: FieldConfig[], row: Record<string, unknown>) {
   return configs.map((field) => ({
     name: field.name,
@@ -231,6 +271,82 @@ async function getReadiness(serviceSlug: MetadataServiceSlug, id: string) {
   }
 
   return getOfficialPrintReadiness(config.template, id);
+}
+
+function hasText(value: unknown) {
+  return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
+}
+
+function isMissingOnlyLetterNumber(
+  serviceSlug: MetadataServiceSlug,
+  row: Record<string, unknown>,
+) {
+  if (hasText(row.TTD_NO_SURAT)) {
+    return false;
+  }
+
+  const commonRequired = [
+    "TTD_TANGGAL",
+    "TTD_TEMPAT",
+    "TTD_JABATAN",
+    "TTD_NAMA",
+    "TTD_NIP",
+  ];
+  const serviceRequired: Record<MetadataServiceSlug, string[]> = {
+    "keterangan-lulus": [
+      "TGL_LULUS",
+      "IPK",
+      "YUDISIUM",
+      "TTD_TANGGAL_BERLAKU",
+    ],
+    "ket-tunjangan-orang-tua": [
+      "SEMESTER",
+      "TAHUN_AKADEMIK",
+      "NAMA_ORANG_TUA",
+      "NIP_NRP",
+      "PANGKAT_GOLONGAN",
+      "INSTANSI",
+      "TTD_PANGKAT_GOLONGAN",
+    ],
+    "keterangan-masih-kuliah": [
+      "SEMESTER",
+      "TAHUN_AKADEMIK",
+      "ALAMAT",
+      "TTD_PANGKAT_GOLONGAN",
+    ],
+    "keterangan-kelakuan-baik": ["ALAMAT", "TTD_PANGKAT_GOLONGAN"],
+  };
+
+  return [...commonRequired, ...serviceRequired[serviceSlug]].every((field) =>
+    hasText(row[field]),
+  );
+}
+
+function applyNumberReadinessMessage(
+  serviceSlug: MetadataServiceSlug,
+  row: Record<string, unknown>,
+  readiness: KeteranganLulusPrintReadiness | null,
+  duplicateNumber: LetterNumberDuplicateInfo,
+) {
+  if (!readiness) {
+    return readiness;
+  }
+
+  if (!readiness.isReady && isMissingOnlyLetterNumber(serviceSlug, row)) {
+    return {
+      ...readiness,
+      message: LETTER_NUMBER_MISSING_MESSAGE,
+    };
+  }
+
+  if (readiness.isReady && duplicateNumber.hasDuplicateNumber) {
+    return {
+      ...readiness,
+      message: LETTER_NUMBER_DUPLICATE_READY_MESSAGE,
+    };
+  }
+
+  return readiness;
 }
 
 async function getMetadataRow(serviceSlug: MetadataServiceSlug, id: string) {
@@ -255,6 +371,59 @@ async function getMetadataRow(serviceSlug: MetadataServiceSlug, id: string) {
   `;
 
   return rows[0] ?? null;
+}
+
+async function getDuplicateLetterNumber(
+  serviceSlug: MetadataServiceSlug,
+  id: string,
+  letterNumber: unknown,
+): Promise<LetterNumberDuplicateInfo> {
+  const trimmed = normalizeLetterNumber(letterNumber);
+
+  if (!trimmed) {
+    return {
+      hasDuplicateNumber: false,
+      duplicateCount: 0,
+      duplicateSamples: [],
+    };
+  }
+
+  const samples: LetterNumberDuplicateInfo["duplicateSamples"] = [];
+  let duplicateCount = 0;
+
+  for (const tableConfig of DUPLICATE_CHECK_TABLES) {
+    const table = Prisma.raw(quoteIdentifier(tableConfig.sourceTable));
+    const rows = await prisma.$queryRaw<
+      Array<{ ID: bigint | number | string; NPM: string | null }>
+    >`
+      SELECT \`ID\`, \`NPM\`
+      FROM ${table}
+      WHERE TRIM(\`TTD_NO_SURAT\`) = ${trimmed}
+        AND NOT (${tableConfig.serviceSlug} = ${serviceSlug} AND \`ID\` = ${id})
+      ORDER BY \`ID\` DESC
+      LIMIT 6
+    `;
+
+    duplicateCount += rows.length;
+
+    for (const row of rows) {
+      if (samples.length >= 5) {
+        continue;
+      }
+
+      samples.push({
+        serviceSlug: tableConfig.serviceSlug,
+        id: String(row.ID),
+        npm: row.NPM ?? undefined,
+      });
+    }
+  }
+
+  return {
+    hasDuplicateNumber: duplicateCount > 0,
+    duplicateCount,
+    duplicateSamples: samples,
+  };
 }
 
 export async function getLetterSigners(): Promise<LetterSignerOption[]> {
@@ -296,6 +465,11 @@ export async function getLetterMetadata(
   }
 
   let signers: LetterSignerOption[] = [];
+  let duplicateNumber: LetterNumberDuplicateInfo = {
+    hasDuplicateNumber: false,
+    duplicateCount: 0,
+    duplicateSamples: [],
+  };
 
   try {
     signers = await getLetterSigners();
@@ -303,10 +477,28 @@ export async function getLetterMetadata(
     signers = [];
   }
 
+  try {
+    duplicateNumber = await getDuplicateLetterNumber(slug, id, row.TTD_NO_SURAT);
+  } catch {
+    duplicateNumber = {
+      hasDuplicateNumber: false,
+      duplicateCount: 0,
+      duplicateSamples: [],
+    };
+  }
+
+  const readiness = applyNumberReadinessMessage(
+    slug,
+    row,
+    await getReadiness(slug, id),
+    duplicateNumber,
+  );
+
   return {
     serviceSlug,
     requestId: id,
-    readiness: await getReadiness(slug, id),
+    readiness,
+    duplicateNumber,
     signerPickerAvailable: signers.length > 0,
     signerPickerMessage:
       signers.length > 0
@@ -361,6 +553,13 @@ function parseText(value: unknown, field: FieldConfig) {
 
   if (!trimmed) {
     return null;
+  }
+
+  if (field.name === "TTD_NO_SURAT" && /[\r\n\t\u0000-\u001f\u007f]/.test(trimmed)) {
+    throw new LetterMetadataError(
+      "Nomor Surat tidak boleh berisi newline atau karakter kontrol.",
+      400,
+    );
   }
 
   if (field.maxLength && trimmed.length > field.maxLength) {
@@ -419,10 +618,11 @@ export async function updateLetterMetadata({
   const input = payload as Record<string, unknown>;
   const allowedFields = [...config.commonFields, ...config.serviceFields];
   const allowedFieldNames = new Set(allowedFields.map((field) => field.name));
+  const controlFieldNames = new Set(["confirmNumberOverwrite"]);
   const data: Record<string, unknown> = {};
 
   for (const fieldName of Object.keys(input)) {
-    if (!allowedFieldNames.has(fieldName)) {
+    if (!allowedFieldNames.has(fieldName) && !controlFieldNames.has(fieldName)) {
       throw new LetterMetadataError(`Field ${fieldName} tidak dapat diperbarui.`, 400);
     }
   }
@@ -435,6 +635,24 @@ export async function updateLetterMetadata({
 
   if (Object.keys(data).length === 0) {
     throw new LetterMetadataError("Tidak ada field surat yang dapat diperbarui.", 400);
+  }
+
+  const existingLetterNumber = normalizeLetterNumber(existing.TTD_NO_SURAT);
+  const incomingHasLetterNumber = Object.prototype.hasOwnProperty.call(
+    data,
+    "TTD_NO_SURAT",
+  );
+  const incomingLetterNumber = incomingHasLetterNumber
+    ? normalizeLetterNumber(data.TTD_NO_SURAT)
+    : existingLetterNumber;
+  const confirmNumberOverwrite = input.confirmNumberOverwrite === true;
+  const changesExistingNumber =
+    existingLetterNumber &&
+    incomingLetterNumber &&
+    existingLetterNumber !== incomingLetterNumber;
+
+  if (changesExistingNumber && !confirmNumberOverwrite) {
+    throw new LetterMetadataError(LETTER_NUMBER_OVERWRITE_MESSAGE, 409);
   }
 
   if (config.sourceTable === "keterangan_lulus") {
@@ -462,7 +680,9 @@ export async function updateLetterMetadata({
   await writeAuditLog({
     actor,
     request,
-    action: `Memperbarui data surat ${serviceSlug} #${id}`,
+    action: changesExistingNumber
+      ? `Mengubah nomor surat ${serviceSlug} #${id}`
+      : `Memperbarui data surat ${serviceSlug} #${id}`,
   });
 
   return getLetterMetadata(serviceSlug, id);

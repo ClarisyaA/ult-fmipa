@@ -273,6 +273,48 @@ Setelah hardening, cek cepat:
 - Belum ada template PDF baru di luar empat layanan supported.
 - Automated browser tests tidak ditambahkan karena belum ada fixture DB stabil yang aman untuk semua environment.
 
+## Phase 5A: Audit Penomoran Surat
+
+Phase 5A mendokumentasikan perilaku legacy penomoran surat di `docs/letter-numbering-audit.md`.
+
+Finding utama:
+
+- Empat layanan printable legacy memakai input manual `nomor_surat`.
+- Nomor surat disimpan ke snapshot `TTD_NO_SURAT`.
+- File cetak membaca `TTD_NO_SURAT`.
+- Tidak ditemukan auto-numbering aktif, insert `surat_keluar`, integrasi `no_surat`, transaction lock, atau duplicate prevention pada flow empat layanan tersebut.
+
+## Phase 5B: Manual Letter Numbering Safety Cleanup
+
+Phase 5B tetap mempertahankan penomoran manual. Tidak ada generator, tidak ada write ke `surat_keluar`, tidak ada integrasi `no_surat`, dan tidak ada schema/migration baru.
+
+Perubahan safety:
+
+- `TTD_NO_SURAT` di-trim saat metadata disimpan.
+- Format internal seperti slash, titik, dash, spasi, dan kode resmi tetap dipertahankan.
+- Nomor surat tidak di-auto-format, tidak di-uppercase/lowercase otomatis, dan tidak diubah kecuali user menyimpan edit.
+- Nilai kosong/whitespace disimpan sebagai belum lengkap.
+- Nilai yang mengandung newline atau karakter kontrol ditolak.
+- Duplicate number dicek advisory-only pada tabel printable whitelist:
+  - `keterangan_lulus`
+  - `masih_kuliah`
+  - `masih_kuliah_aktif`
+  - `kelakuan_baik`
+- Duplicate warning tidak memblokir save dan tidak memblokir PDF jika field wajib lengkap.
+- Jika record sudah punya `TTD_NO_SURAT` dan user menggantinya dengan nomor non-empty lain, server meminta konfirmasi overwrite (`409`) dan UI menampilkan konfirmasi sebelum submit ulang.
+- Audit log mencatat perubahan nomor surat dengan aksi `Mengubah nomor surat {serviceSlug} #ID`.
+
+Helper text pada editor `Data Surat` menegaskan bahwa nomor masih diisi manual sesuai format resmi fakultas dan sistem belum melakukan auto-numbering.
+
+Known limitation Phase 5B:
+
+- Belum ada tombol generate nomor surat.
+- Belum ada preview auto-number.
+- Belum ada transactional numbering.
+- Belum ada registry `surat_keluar`.
+- Belum ada integrasi `no_surat`.
+- Duplicate warning bersifat advisory karena data legacy dapat mengandung duplikasi historis.
+
 ## Proteksi Akses
 
 PDF hanya bisa diakses oleh user dengan role:

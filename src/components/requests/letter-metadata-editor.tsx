@@ -73,6 +73,7 @@ function FieldControl({
   onChange: (name: string, value: string) => void;
 }) {
   const id = `letter-${field.name}`;
+  const isLetterNumber = field.name === "TTD_NO_SURAT";
 
   return (
     <div className="grid gap-2">
@@ -95,6 +96,13 @@ function FieldControl({
           onChange={(event) => onChange(field.name, event.target.value)}
         />
       )}
+      {isLetterNumber ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {value.trim()
+            ? "Nomor surat masih diisi manual sesuai format resmi fakultas. Sistem belum melakukan auto-numbering."
+            : "Nomor surat wajib diisi sebelum PDF dapat dicetak."}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -211,7 +219,7 @@ export function LetterMetadataEditor({
     setSuccess(null);
   };
 
-  const save = async () => {
+  const save = async (options?: { confirmNumberOverwrite?: boolean }) => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -220,17 +228,32 @@ export function LetterMetadataEditor({
       const payload = Object.fromEntries(
         allFields.map((field) => [field.name, values[field.name] ?? ""]),
       );
+      const requestBody = options?.confirmNumberOverwrite
+        ? { ...payload, confirmNumberOverwrite: true }
+        : payload;
       const response = await fetch(endpoint, {
         method: "PATCH",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
       const body = (await response.json()) as unknown;
 
       if (!response.ok) {
+        if (response.status === 409 && !options?.confirmNumberOverwrite) {
+          const confirmed = window.confirm(
+            "Nomor surat pada data ini sudah terisi. Mengubah nomor akan memengaruhi PDF yang dicetak ulang dari pengajuan ini. Lanjutkan?",
+          );
+
+          if (confirmed) {
+            await save({ confirmNumberOverwrite: true });
+          }
+
+          return;
+        }
+
         throw new Error(getErrorMessage(body, "Data surat gagal disimpan."));
       }
 
@@ -284,6 +307,15 @@ export function LetterMetadataEditor({
 
         {metadata && !loading ? (
           <>
+            {metadata.duplicateNumber.hasDuplicateNumber ? (
+              <Alert>
+                <AlertDescription>
+                  Nomor surat ini terdeteksi sudah pernah digunakan pada pengajuan
+                  lain. Periksa kembali sebelum mencetak.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
             <div className="grid gap-2">
               <Label htmlFor="letter-signer-picker">Pilih Penandatangan</Label>
               {metadata.signerPickerAvailable ? (
@@ -343,7 +375,7 @@ export function LetterMetadataEditor({
               >
                 Reset
               </Button>
-              <Button type="button" disabled={saving} onClick={save}>
+              <Button type="button" disabled={saving} onClick={() => save()}>
                 {saving ? "Menyimpan..." : "Simpan Data Surat"}
               </Button>
             </div>
