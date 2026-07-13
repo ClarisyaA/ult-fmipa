@@ -8,7 +8,10 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
-import { UserRowActions } from "@/components/admin/master-actions/admin-master-actions";
+import {
+  UserCreateButton,
+  UserRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +27,7 @@ import {
   getUnitOptions,
   getUserRows,
 } from "@/lib/admin-readonly-data";
+import { getCurrentUser } from "@/lib/auth";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +45,10 @@ export default async function AdminSystemUsersPage({
   let accessRows: Awaited<ReturnType<typeof getAccessRows>> = [];
   let units: Awaited<ReturnType<typeof getUnitOptions>> = [];
   let unavailable = false;
+  const currentUser = await getCurrentUser();
+  const currentLegacyUsername = currentUser?.id?.startsWith("legacy-")
+    ? currentUser.id.slice("legacy-".length)
+    : null;
 
   try {
     [rows, accessRows, units] = await Promise.all([
@@ -69,6 +77,9 @@ export default async function AdminSystemUsersPage({
       <AdminPageHeader
         title="User List"
         description="Kelola field user yang aman. Password hash dan field sensitif tidak ditampilkan."
+        action={
+          <UserCreateButton accessRows={accessRows} units={units} />
+        }
       />
       <AdminSectionCard title="Pencarian">
         <form className="flex flex-col gap-2 md:flex-row md:items-end">
@@ -128,6 +139,8 @@ export default async function AdminSystemUsersPage({
                         row={row}
                         accessRows={accessRows}
                         units={units}
+                        currentUserEmail={currentUser?.email}
+                        currentLegacyUsername={currentLegacyUsername}
                       />
                     </TableCell>
                   </TableRow>

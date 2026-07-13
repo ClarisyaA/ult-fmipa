@@ -19,7 +19,7 @@ function parseAccessCodes(value: string | undefined, fallback: string[]) {
   return codes.length > 0 ? codes : fallback;
 }
 
-function mapAccessCodeToRole(accessCode: string): AppRole | null {
+export function mapAccessCodeToRole(accessCode: string): AppRole | null {
   const code = accessCode.trim().toUpperCase();
   const adminAccessCodes = parseAccessCodes(
     process.env.DB_ADMIN_ACCESS_CODES,
@@ -64,6 +64,12 @@ function verifyLegacyPassword(password: string, passwordHash: string) {
     .digest("hex");
 
   return timingSafeEqualText(sha1Password, storedHash);
+}
+
+export function hashLegacyPassword(password: string) {
+  // Keep using the existing legacy SHA-1 storage convention so DB users remain
+  // compatible with the current login flow.
+  return createHash("sha1").update(password, "utf8").digest("hex");
 }
 
 export async function authorizeDbCredentialUser(

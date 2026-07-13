@@ -338,7 +338,7 @@ function UnitFormFields({
         <select
           name="levelDataId"
           defaultValue={row?.levelDataId ?? levels[0]?.LEVEL_DATA_ID ?? ""}
-          className="h-9 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+          className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
           required
         >
           {levels.map((level) => (
@@ -821,13 +821,19 @@ export function UserRowActions({
   row,
   accessRows,
   units,
+  currentUserEmail,
+  currentLegacyUsername,
 }: {
   row: UserRow;
   accessRows: AccessRow[];
   units: UnitOption[];
+  currentUserEmail?: string | null;
+  currentLegacyUsername?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const action = useSaveAction();
+  const isSelf =
+    currentLegacyUsername === row.USER_NAME || currentUserEmail === row.EMAIL;
   const currentUnit = useMemo(
     () => units.find((unit) => Number(unit.unitId) === row.UNIT_ID),
     [row.UNIT_ID, units],
@@ -846,7 +852,7 @@ export function UserRowActions({
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Password tidak ditampilkan dan tidak diubah dari form ini.
+              Password tidak ditampilkan. Kosongkan jika tidak ingin mengubah password.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -866,6 +872,8 @@ export function UserRowActions({
                       accessCode: form.get("accessCode"),
                       unitId: form.get("unitId"),
                       confirmed: form.get("confirmed") === "1",
+                      password: form.get("password"),
+                      confirmPassword: form.get("confirmPassword"),
                     },
                   ),
                 "Data user berhasil diperbarui.",
@@ -874,6 +882,21 @@ export function UserRowActions({
             }}
           >
             <div className="grid gap-3 sm:grid-cols-2">
+              {isSelf ? (
+                <>
+                  <input
+                    type="hidden"
+                    name="accessCode"
+                    value={row.ACCESS_CODE}
+                  />
+                  <input
+                    type="hidden"
+                    name="unitId"
+                    value={currentUnit?.unitId ?? String(row.UNIT_ID)}
+                  />
+                  <input type="hidden" name="confirmed" value="1" />
+                </>
+              ) : null}
               <Field label="Nama">
                 <Input name="fullName" defaultValue={row.FULL_NAME} required />
               </Field>
@@ -887,7 +910,13 @@ export function UserRowActions({
                 <select
                   name="accessCode"
                   defaultValue={row.ACCESS_CODE}
-                  className="h-9 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+                  disabled={isSelf}
+                  title={
+                    isSelf
+                      ? "Akses akun yang sedang login tidak dapat diubah."
+                      : undefined
+                  }
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm disabled:bg-[#f4f1eb]"
                   required
                 >
                   {accessRows.map((access) => (
@@ -901,7 +930,13 @@ export function UserRowActions({
                 <select
                   name="unitId"
                   defaultValue={currentUnit?.unitId ?? String(row.UNIT_ID)}
-                  className="h-9 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+                  disabled={isSelf}
+                  title={
+                    isSelf
+                      ? "Unit akun yang sedang login tidak dapat diubah."
+                      : undefined
+                  }
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm disabled:bg-[#f4f1eb]"
                   required
                 >
                   {units.map((unit) => (
@@ -916,7 +951,184 @@ export function UserRowActions({
                   name="confirmed"
                   type="checkbox"
                   value="1"
+                  disabled={isSelf}
+                  title={
+                    isSelf
+                      ? "Akun yang sedang login tidak dapat dinonaktifkan."
+                      : undefined
+                  }
                   defaultChecked={row.CONFIRMED === "1"}
+                />
+                Aktif
+              </label>
+              <Field label="Password Baru">
+                <Input
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Kosongkan jika tidak diubah"
+                />
+              </Field>
+              <Field label="Konfirmasi Password Baru">
+                <Input
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Kosongkan jika tidak diubah"
+                />
+              </Field>
+            </div>
+            <DialogError error={action.error} />
+            <Button disabled={action.isPending} className="bg-[#0f3d2e]">
+              Simpan
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        disabled={action.isPending || isSelf}
+        title={
+          isSelf
+            ? "Akun yang sedang login tidak dapat dihapus."
+            : "Hapus user"
+        }
+        onClick={() => {
+          if (!window.confirm("Hapus user ini?")) return;
+          action.run(
+            () =>
+              sendJson(
+                `/api/admin/system/users/${encodeURIComponent(row.USER_NAME)}`,
+                "DELETE",
+              ),
+            "User berhasil dihapus.",
+          );
+        }}
+      >
+        <Trash2 className="size-3.5" />
+        Hapus
+      </Button>
+      <ActionMessage message={action.message} />
+      <DialogError error={action.error} />
+    </div>
+  );
+}
+
+export function UserCreateButton({
+  accessRows,
+  units,
+}: {
+  accessRows: AccessRow[];
+  units: UnitOption[];
+}) {
+  const [open, setOpen] = useState(false);
+  const action = useSaveAction();
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="h-9 rounded-md bg-[#0f3d2e] text-xs">
+            <Plus className="size-4" />
+            Tambah User
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Tambah User</DialogTitle>
+            <DialogDescription>
+              Password disimpan mengikuti format login legacy yang sudah dipakai.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              action.run(
+                () =>
+                  sendJson("/api/admin/system/users", "POST", {
+                    username: form.get("username"),
+                    fullName: form.get("fullName"),
+                    email: form.get("email"),
+                    telephone: form.get("telephone"),
+                    accessCode: form.get("accessCode"),
+                    unitId: form.get("unitId"),
+                    confirmed: form.get("confirmed") === "1",
+                    password: form.get("password"),
+                    confirmPassword: form.get("confirmPassword"),
+                  }),
+                "User berhasil ditambahkan.",
+                () => setOpen(false),
+              );
+            }}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Username">
+                <Input name="username" maxLength={20} required />
+              </Field>
+              <Field label="Nama">
+                <Input name="fullName" maxLength={50} required />
+              </Field>
+              <Field label="Email">
+                <Input name="email" type="email" maxLength={50} required />
+              </Field>
+              <Field label="Telepon">
+                <Input name="telephone" maxLength={50} />
+              </Field>
+              <Field label="Akses">
+                <select
+                  name="accessCode"
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+                  required
+                >
+                  {accessRows.map((access) => (
+                    <option key={access.ACCESS_CODE} value={access.ACCESS_CODE}>
+                      {access.ACCESS_CODE} - {access.DESCRIPTION}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Unit">
+                <select
+                  name="unitId"
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+                  required
+                >
+                  {units.map((unit) => (
+                    <option key={unit.unitId} value={unit.unitId}>
+                      {unit.unitName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Password">
+                <Input
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </Field>
+              <Field label="Konfirmasi Password">
+                <Input
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </Field>
+              <label className="flex items-center gap-2 text-[11px] font-semibold text-[#5d665f]">
+                <input
+                  name="confirmed"
+                  type="checkbox"
+                  value="1"
+                  defaultChecked
                 />
                 Aktif
               </label>
@@ -929,7 +1141,6 @@ export function UserRowActions({
         </DialogContent>
       </Dialog>
       <ActionMessage message={action.message} />
-      <DialogError error={action.error} />
-    </div>
+    </>
   );
 }

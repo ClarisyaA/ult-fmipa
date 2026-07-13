@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import type { Session } from "next-auth";
 
 import { requireRole } from "@/lib/auth";
 import { jsonApiError } from "@/lib/error-utils";
 
 export type AdminValidationResult =
-  | { ok: true }
+  | { ok: true; user: Session["user"] }
   | { ok: false; response: NextResponse };
 
 export class AdminActionError extends Error {
@@ -36,7 +37,7 @@ export async function requireAdminApi(): Promise<AdminValidationResult> {
     };
   }
 
-  return { ok: true };
+  return { ok: true, user };
 }
 
 export function validationError(message: string, status = 400) {
