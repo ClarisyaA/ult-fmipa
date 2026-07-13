@@ -43,6 +43,103 @@ Phase 2 menambahkan tiga template resmi yang sudah punya file cetak legacy jelas
 
 Ketiga template membaca snapshot `TTD_*` dari row request dan tidak memakai master `surat_ttd` live.
 
+## Phase 3: Editor Metadata Surat
+
+Phase 3 menambahkan editor `Data Surat` di halaman detail pengajuan admin dan staff untuk empat layanan printable:
+
+- `keterangan-lulus`
+- `ket-tunjangan-orang-tua`
+- `keterangan-masih-kuliah`
+- `keterangan-kelakuan-baik`
+
+Editor ini memakai route:
+
+- `GET /api/requests/{serviceSlug}/{id}/letter-metadata`
+- `PATCH /api/requests/{serviceSlug}/{id}/letter-metadata`
+
+Route hanya bisa diakses oleh role `admin` dan `staff`. Service di luar whitelist tetap tidak memiliki editor metadata dan route mengembalikan respons aman.
+
+### Cara Mengisi Data Surat
+
+1. Buka detail pengajuan dari halaman admin atau staff.
+2. Pada section `Data Surat`, lengkapi nomor surat, tanggal surat, tempat surat, dan data penandatangan.
+3. Lengkapi field layanan yang masih wajib untuk template tersebut.
+4. Jika master `surat_ttd` tersedia, pilih penandatangan dari dropdown untuk mengisi snapshot nama, jabatan, pangkat/golongan, dan NIP.
+5. Sesuaikan field hasil prefill bila perlu.
+6. Klik `Simpan Data Surat`.
+7. Status kesiapan cetak akan refresh dari server. Tombol `Cetak Surat` tetap memakai route PDF yang sama.
+
+### Snapshot Rule
+
+Picker penandatangan hanya membaca master `surat_ttd` untuk membantu pengisian form. Saat disimpan, data pejabat disalin ke kolom snapshot request:
+
+- `TTD_JABATAN`
+- `TTD_PANGKAT_GOLONGAN` jika tabel layanan memilikinya
+- `TTD_NAMA`
+- `TTD_NIP`
+- `TTD_AN` untuk `keterangan_lulus` bila dipilih dari `JABATAN_AN`
+
+PDF tetap membaca snapshot di row request. PDF tidak bergantung pada master `surat_ttd` terbaru, sehingga surat lama tetap reproducible walaupun master pejabat berubah.
+
+### Field Yang Dapat Diedit
+
+Common TTD fields:
+
+- `TTD_NO_SURAT`
+- `TTD_TANGGAL`
+- `TTD_TEMPAT`
+- `TTD_PANGKAT_GOLONGAN` untuk tiga template Phase 2
+- `TTD_JABATAN`
+- `TTD_NAMA`
+- `TTD_NIP`
+
+Keterangan Lulus:
+
+- `TTD_TANGGAL_BERLAKU`
+- `TTD_AN`
+- `TEMPAT_LAHIR`
+- `TGL_LAHIR`
+- `TGL_LULUS`
+- `IPK`
+- `YUDISIUM`
+- `DASAR_SURAT_NO`
+- `DASAR_SURAT_PERIHAL`
+- `DASAR_SURAT_TGL`
+
+Masih Kuliah / Ket. Tunjangan Orang Tua:
+
+- `SEMESTER`
+- `TAHUN_AKADEMIK`
+- `NAMA_ORANG_TUA`
+- `NIP_NRP`
+- `PANGKAT_GOLONGAN`
+- `INSTANSI`
+
+Masih Kuliah Aktif:
+
+- `SEMESTER`
+- `TAHUN_AKADEMIK`
+- `ALAMAT`
+- `KEPERLUAN` untuk catatan operasional, tidak ditampilkan di PDF karena legacy template tidak mencetaknya
+
+Kelakuan Baik:
+
+- `ALAMAT`
+- `KEPERLUAN` untuk catatan operasional, tidak ditampilkan di PDF karena legacy template tidak mencetaknya
+
+### Validasi Metadata
+
+Server hanya menerima field whitelist per layanan. Route metadata tidak memperbarui:
+
+- `PERMINTAAN_IP`
+- `PROSES_TGL`
+- `SELESAI_TGL`
+- `DIAMBIL_TGL`
+- `DIKIRIM_TGL`
+- kolom workflow/status lain
+
+Text field di-trim, tanggal harus valid, `IPK` dan `SEMESTER` harus terlihat numerik bila diisi, dan panjang string dibatasi mengikuti schema saat memungkinkan. Save draft yang belum lengkap tetap boleh, tetapi kesiapan cetak tetap tidak ready sampai field wajib PDF lengkap.
+
 ## Proteksi Akses
 
 PDF hanya bisa diakses oleh user dengan role:
@@ -422,6 +519,20 @@ Phase 2 manual checklist tambahan:
 5. Bandingkan visual dengan PDF legacy jika memungkinkan: kop, judul, nomor surat, identitas penandatangan, identitas mahasiswa, body statement, dan blok tanda tangan.
 6. Pastikan PDF tidak menampilkan `undefined`, `null`, atau `Invalid Date`.
 
+Phase 3 manual checklist tambahan:
+
+1. Buka `/admin/requests/keterangan-lulus/{ID}` dan pastikan section `Data Surat` muncul.
+2. Isi atau ubah common TTD fields dan field khusus Keterangan Lulus, lalu simpan.
+3. Pastikan status kesiapan cetak berubah dari server setelah simpan.
+4. Klik `Cetak Surat` dan pastikan PDF memakai snapshot terbaru dari row request.
+5. Ulangi untuk `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, dan `keterangan-kelakuan-baik`.
+6. Jika master `surat_ttd` berisi data, pilih satu penandatangan dan pastikan field snapshot terisi.
+7. Ubah manual salah satu field hasil picker, simpan, lalu pastikan PDF memakai nilai manual yang tersimpan.
+8. Buka halaman staff untuk layanan yang sama dan pastikan editor juga bisa dipakai.
+9. Buka detail service unsupported dan pastikan section `Data Surat` tidak muncul.
+10. Akses API metadata sebagai student/public atau tanpa login dan pastikan ditolak aman.
+11. Stop database, coba load atau simpan `Data Surat`, dan pastikan UI menampilkan pesan aman tanpa crash.
+
 ## Keterangan Lulus Legacy Parity Notes
 
 Source of truth:
@@ -474,8 +585,8 @@ Belum diimplementasikan:
 
 - Template Surat Pengantar
 - Penomoran surat otomatis
-- Picker pejabat dari `surat_ttd`
-- Form edit `TTD_*`
+- Registry `surat_keluar` / nomor surat keluar
+- CRUD master pejabat / penandatangan
 - Schema/migration baru
 
 ## Template Berikutnya

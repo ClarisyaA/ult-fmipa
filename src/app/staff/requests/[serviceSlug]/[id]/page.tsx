@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft, FileText } from "lucide-react";
 
+import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
@@ -370,6 +371,14 @@ export default async function StaffRequestDetailPage({
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
+
+      {printableTemplateBySlug[detail.serviceSlug] ? (
+        <LetterMetadataEditor
+          serviceSlug={detail.serviceSlug}
+          id={detail.id}
+          initialReadiness={printReadiness}
+        />
+      ) : null}
 
       <OptionalDetails detail={detail} />
 

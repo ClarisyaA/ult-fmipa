@@ -7,6 +7,7 @@ import {
   AdminPageShell,
   AdminStatusBadge,
 } from "@/components/admin/admin-ui";
+import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
@@ -386,6 +387,14 @@ export default async function AdminRequestDetailPage({
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
+
+      {printableTemplateBySlug[detail.serviceSlug] ? (
+        <LetterMetadataEditor
+          serviceSlug={detail.serviceSlug}
+          id={detail.id}
+          initialReadiness={printReadiness}
+        />
+      ) : null}
 
       <OptionalDetails detail={detail} />
 
