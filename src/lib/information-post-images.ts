@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
   deleteInformationImageFile,
   type SavedInformationImageMetadata,
@@ -65,18 +66,6 @@ function isMissingImageTableError(error: unknown) {
   );
 }
 
-function isDatabaseConnectionUnavailableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-
-  return (
-    message.includes("pool timeout") ||
-    message.includes("failed to retrieve a connection") ||
-    message.includes("45028") ||
-    message.includes("Can't reach database") ||
-    message.includes("ECONNREFUSED")
-  );
-}
-
 function warnMissingImageTable() {
   if (process.env.NODE_ENV !== "production") {
     console.warn(
@@ -107,7 +96,7 @@ async function hasImageTable() {
     warnMissingImageTable();
     return false;
   } catch (error) {
-    if (isDatabaseConnectionUnavailableError(error)) {
+    if (isDatabaseUnavailableError(error)) {
       warnImageDatabaseUnavailable(error);
       return false;
     }
@@ -144,7 +133,7 @@ export async function getInformationPostImages(postId: string) {
       return [];
     }
 
-    if (isDatabaseConnectionUnavailableError(error)) {
+    if (isDatabaseUnavailableError(error)) {
       warnImageDatabaseUnavailable(error);
       return [];
     }

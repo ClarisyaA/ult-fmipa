@@ -6,6 +6,7 @@ import {
   ServiceRequestSubmitError,
 } from "@/lib/legacy-request-submit";
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   FileUploadError,
   saveUploadedFile,
@@ -271,11 +272,10 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
-      {
-        error: "Pengajuan layanan gagal dikirim.",
-      },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:services:requests:post",
+      "Pengajuan layanan gagal dikirim.",
     );
   }
 }

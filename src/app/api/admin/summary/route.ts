@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { jsonApiError } from "@/lib/error-utils";
 import { getDashboardSummary } from "@/lib/legacy-request-stats";
 
 export async function GET() {
-  const dashboardSummary = await getDashboardSummary();
+  try {
+    const dashboardSummary = await getDashboardSummary();
 
-  return NextResponse.json({
-    data: dashboardSummary,
-  });
+    return NextResponse.json({
+      data: dashboardSummary,
+    });
+  } catch (error) {
+    return jsonApiError(error, "api:admin:summary", "Ringkasan gagal dimuat.");
+  }
 }

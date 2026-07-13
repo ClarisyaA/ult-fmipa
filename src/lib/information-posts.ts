@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
   normalizeInformationTitle,
   slugifyInformationTitle,
@@ -122,18 +123,6 @@ function isMissingInformationTableError(error: unknown) {
   );
 }
 
-function isDatabaseConnectionUnavailableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-
-  return (
-    message.includes("pool timeout") ||
-    message.includes("failed to retrieve a connection") ||
-    message.includes("45028") ||
-    message.includes("Can't reach database") ||
-    message.includes("ECONNREFUSED")
-  );
-}
-
 function warnMissingInformationTable() {
   if (process.env.NODE_ENV !== "production") {
     console.warn(
@@ -154,7 +143,7 @@ function handleReadError(error: unknown) {
     return;
   }
 
-  if (isDatabaseConnectionUnavailableError(error)) {
+  if (isDatabaseUnavailableError(error)) {
     warnInformationDatabaseUnavailable(error);
     return;
   }
@@ -178,7 +167,7 @@ async function hasInformationTable() {
     warnMissingInformationTable();
     return false;
   } catch (error) {
-    if (isDatabaseConnectionUnavailableError(error)) {
+    if (isDatabaseUnavailableError(error)) {
       warnInformationDatabaseUnavailable(error);
       return false;
     }

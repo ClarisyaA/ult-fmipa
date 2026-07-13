@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { deleteRequestAttachmentsByType } from "@/lib/request-attachments";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 
 export const sikServiceSlug = "surat-izin-kegiatan";
 export const sikSourceTable = "surat_izin_kegiatan";
@@ -36,15 +37,7 @@ export class SikRequestError extends Error {
 }
 
 export function isSikDatabaseUnavailableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-
-  return (
-    message.includes("pool timeout") ||
-    message.includes("failed to retrieve a connection") ||
-    message.includes("45028") ||
-    message.includes("ECONNREFUSED") ||
-    message.includes("Can't reach database")
-  );
+  return isDatabaseUnavailableError(error);
 }
 
 function sikDatabaseUnavailableError() {

@@ -80,7 +80,9 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [isUnavailable, setIsUnavailable] = useState(false);
   const initializedRef = useRef(false);
+  const hasLoggedFailureRef = useRef(false);
 
   useEffect(() => {
     if (!("Notification" in window)) {
@@ -109,6 +111,16 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
         });
 
         if (!response.ok) {
+          setIsUnavailable(true);
+          if (
+            process.env.NODE_ENV !== "production" &&
+            !hasLoggedFailureRef.current
+          ) {
+            hasLoggedFailureRef.current = true;
+            console.warn(
+              `Request notifications unavailable (${response.status}).`,
+            );
+          }
           return;
         }
 
@@ -122,6 +134,8 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
 
         const nextSnapshot = payload.data;
         setSnapshot(nextSnapshot);
+        setIsUnavailable(false);
+        hasLoggedFailureRef.current = false;
 
         const latestKey = nextSnapshot.latestKey;
         const seenKey = window.localStorage.getItem(seenKeyStorage);
@@ -177,7 +191,14 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
         const unreadItems = getItemsBeforeKey(nextSnapshot.requests, refreshedSeenKey);
         setUnreadCount(unreadItems.length);
       } catch (error) {
-        console.error("Failed to load request notifications", error);
+        setIsUnavailable(true);
+        if (
+          process.env.NODE_ENV !== "production" &&
+          !hasLoggedFailureRef.current
+        ) {
+          hasLoggedFailureRef.current = true;
+          console.warn("Request notifications unavailable.", error);
+        }
       }
     }
 
@@ -271,6 +292,13 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
                 <CheckCheck className="size-4 text-[#2f6b44]" />
                 Aktifkan notifikasi browser
               </button>
+            ) : null}
+
+            {isUnavailable ? (
+              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800">
+                Notifikasi sementara tidak dapat dimuat. Sistem akan mencoba lagi
+                otomatis.
+              </div>
             ) : null}
 
             <div className="grid max-h-[360px] gap-2 overflow-y-auto pr-1">

@@ -4,6 +4,7 @@ import {
   getServiceRequestList,
   parseRequestStatus,
 } from "@/lib/legacy-request-list";
+import { jsonApiError } from "@/lib/error-utils";
 
 export async function GET(request: Request) {
   try {
@@ -23,12 +24,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Failed to load request list",
-        message: String(error),
-      },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:requests",
+      "Daftar pengajuan gagal dimuat.",
     );
   }
 }
