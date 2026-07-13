@@ -140,6 +140,139 @@ Server hanya menerima field whitelist per layanan. Route metadata tidak memperba
 
 Text field di-trim, tanggal harus valid, `IPK` dan `SEMESTER` harus terlihat numerik bila diisi, dan panjang string dibatasi mengikuti schema saat memungkinkan. Save draft yang belum lengkap tetap boleh, tetapi kesiapan cetak tetap tidak ready sampai field wajib PDF lengkap.
 
+## Phase 4: End-to-End QA Hardening
+
+Phase 4 adalah tahap verifikasi sebelum penomoran otomatis atau template baru ditambahkan. Tidak ada perubahan schema, migration, wording PDF, atau template baru pada tahap ini.
+
+### Scope QA
+
+Uji empat layanan printable:
+
+- `keterangan-lulus`
+- `ket-tunjangan-orang-tua`
+- `keterangan-masih-kuliah`
+- `keterangan-kelakuan-baik`
+
+Untuk setiap layanan, pastikan:
+
+- Halaman detail admin menampilkan `Data Surat`.
+- Halaman detail staff menampilkan `Data Surat`.
+- Halaman detail admin menampilkan `Cetak Surat`.
+- Halaman detail staff menampilkan `Cetak Surat`.
+- Metadata GET hanya mengembalikan field whitelist dan data picker penandatangan yang aman.
+- Metadata PATCH hanya menerima field whitelist.
+- Metadata PATCH menolak field asing seperti `PERMINTAAN_IP`, `PROSES_TGL`, `SELESAI_TGL`, `DIAMBIL_TGL`, atau field arbitrary lain.
+- PDF membaca snapshot `TTD_*` dari row request.
+- PDF tidak membaca live master `surat_ttd` saat render.
+- Tidak ada password, token, secret, atau `PERMINTAAN_IP` yang tampil di UI/API metadata.
+
+Untuk layanan unsupported, pastikan:
+
+- `Data Surat` tidak muncul.
+- `Cetak Surat` tidak muncul.
+- Metadata route mengembalikan `404`.
+- PDF route mengembalikan `404`.
+
+### Browser Test Steps
+
+1. Cari record lengkap dan belum lengkap memakai query di bagian `Manual Test Data Query` dan `Phase 2 Complete Record Queries`.
+2. Buka detail admin untuk satu record supported.
+3. Ubah satu field TTD yang aman untuk diuji di database lokal.
+4. Klik `Simpan Data Surat`.
+5. Pastikan tombol menampilkan loading dan tidak bisa diklik ganda saat request berjalan.
+6. Pastikan pesan sukses muncul.
+7. Pastikan readiness refresh dari server.
+8. Klik `Cetak Surat`.
+9. Pastikan PDF terbuka di tab baru dan memakai snapshot terbaru.
+10. Ulangi di halaman staff.
+11. Ulangi untuk semua layanan supported.
+
+### Signer Snapshot Test
+
+Jika `surat_ttd` berisi data:
+
+1. Pilih penandatangan dari dropdown `Pilih Penandatangan`.
+2. Pastikan field nama, jabatan, pangkat/golongan bila ada, dan NIP terisi.
+3. Ubah salah satu field hasil picker secara manual.
+4. Simpan metadata.
+5. Generate PDF dan pastikan PDF memakai field manual yang tersimpan.
+6. Jika aman di database lokal, ubah master `surat_ttd` setelah metadata tersimpan.
+7. Generate PDF yang sama lagi.
+8. Pastikan PDF tetap memakai snapshot request, bukan perubahan live master.
+
+Jangan melakukan mutasi master penandatangan di production.
+
+### Missing Data Test
+
+Untuk record incomplete:
+
+1. Buka detail supported service.
+2. Pastikan readiness menampilkan warning.
+3. Buka route PDF.
+4. Pastikan respons `422` dengan pesan aman.
+5. Pastikan PDF tidak dibuat dengan placeholder kosong, `undefined`, `null`, atau `Invalid Date`.
+
+Pesan aman official letter:
+
+`Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, data penandatangan, dan data utama layanan terlebih dahulu.`
+
+### DB Stopped Test
+
+1. Matikan database lokal.
+2. Buka detail request supported.
+3. Coba load `Data Surat`.
+4. Coba simpan metadata.
+5. Buka route PDF.
+6. Pastikan API mengembalikan structured `503`.
+7. Pastikan UI menampilkan pesan ramah database tidak tersedia.
+8. Pastikan tidak ada stack trace atau raw Prisma/MariaDB error di browser.
+
+### Access Control Test
+
+1. Akses metadata route tanpa login dan pastikan `401`.
+2. Akses metadata route sebagai student/public dan pastikan `403`.
+3. Akses metadata route sebagai admin dan pastikan allowed.
+4. Akses metadata route sebagai staff dan pastikan allowed.
+5. Ulangi pola yang sama untuk route PDF.
+
+### PDF Safety Checklist
+
+Untuk setiap PDF supported, pastikan:
+
+- Filename benar: `skl_{NPM}.pdf`, `skmk_{NPM}.pdf`, `skmka_{NPM}.pdf`, atau `skkb_{NPM}.pdf`.
+- Logo tampil.
+- Watermark hanya tampil pada template yang memakai watermark legacy.
+- Tidak ada `undefined`.
+- Tidak ada `null`.
+- Tidak ada `Invalid Date`.
+- Tidak ada raw JSON.
+- Tidak ada stack trace.
+- Tidak ada raw DB error.
+- Long text seperti alamat tetap wrap dan tidak merusak tanda tangan.
+- Wording official tidak berubah dari implementasi parity legacy.
+
+### Regression Checklist
+
+Setelah hardening, cek cepat:
+
+- Admin request detail tetap terbuka.
+- Staff request detail tetap terbuka.
+- Tombol status proses/selesai/kirim tetap bekerja.
+- SIK approval dan detail tidak berubah.
+- Magang detail tidak berubah.
+- Information CRUD tidak berubah.
+- Survey pages tidak berubah.
+- Admin user management tidak berubah.
+- Existing PDF `keterangan-lulus` tetap bisa dibuka.
+
+### Phase 4 Known Limitations
+
+- Belum ada penomoran surat otomatis.
+- Belum ada registry `surat_keluar` / `no_surat`.
+- Belum ada CRUD master pejabat.
+- Belum ada template PDF baru di luar empat layanan supported.
+- Automated browser tests tidak ditambahkan karena belum ada fixture DB stabil yang aman untuk semua environment.
+
 ## Proteksi Akses
 
 PDF hanya bisa diakses oleh user dengan role:

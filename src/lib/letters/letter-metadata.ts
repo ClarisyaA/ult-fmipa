@@ -46,7 +46,7 @@ type FieldConfig = {
   type: MetadataFieldType;
   maxLength?: number;
   required?: boolean;
-  numeric?: boolean;
+  numeric?: "decimal" | "loose";
 };
 
 type ServiceMetadataConfig = {
@@ -105,7 +105,7 @@ const METADATA_CONFIG = {
       { name: "TEMPAT_LAHIR", label: "Tempat Lahir", type: "text", maxLength: 100 },
       { name: "TGL_LAHIR", label: "Tanggal Lahir", type: "date" },
       { name: "TGL_LULUS", label: "Tanggal Lulus", type: "date", required: true },
-      { name: "IPK", label: "IPK", type: "text", maxLength: 5, numeric: true },
+      { name: "IPK", label: "IPK", type: "text", maxLength: 5, numeric: "decimal" },
       { name: "YUDISIUM", label: "Yudisium", type: "text", maxLength: 25 },
       { name: "DASAR_SURAT_NO", label: "Nomor Dasar Surat", type: "text", maxLength: 30 },
       {
@@ -122,7 +122,7 @@ const METADATA_CONFIG = {
     template: "masih-kuliah",
     commonFields: COMMON_TTD_FIELDS,
     serviceFields: [
-      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 25, numeric: true },
+      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 25, numeric: "loose" },
       { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 10 },
       { name: "NAMA_ORANG_TUA", label: "Nama Orang Tua/Wali", type: "text", maxLength: 100 },
       { name: "NIP_NRP", label: "NIP/NRP Orang Tua/Wali", type: "text", maxLength: 100 },
@@ -140,7 +140,7 @@ const METADATA_CONFIG = {
     template: "masih-kuliah-aktif",
     commonFields: COMMON_TTD_FIELDS,
     serviceFields: [
-      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 11, numeric: true },
+      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 11, numeric: "loose" },
       { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 11 },
       { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
       { name: "KEPERLUAN", label: "Keperluan", type: "text", maxLength: 100 },
@@ -333,9 +333,15 @@ function parseRequestDate(value: unknown, label: string) {
     throw new LetterMetadataError(`${label} harus berupa tanggal valid.`, 400);
   }
 
+  const [year, month, day] = trimmed.split("-").map(Number);
   const date = new Date(`${trimmed}T00:00:00.000Z`);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
     throw new LetterMetadataError(`${label} harus berupa tanggal valid.`, 400);
   }
 
@@ -364,7 +370,11 @@ function parseText(value: unknown, field: FieldConfig) {
     );
   }
 
-  if (field.numeric && !/^[0-9.,\s/-]+$/.test(trimmed)) {
+  if (field.numeric === "decimal" && !/^\d+(?:[.,]\d+)?$/.test(trimmed)) {
+    throw new LetterMetadataError(`${field.label} harus berupa angka.`, 400);
+  }
+
+  if (field.numeric === "loose" && !/^[0-9.,\s/-]+$/.test(trimmed)) {
     throw new LetterMetadataError(`${field.label} harus berupa angka.`, 400);
   }
 
@@ -408,7 +418,14 @@ export async function updateLetterMetadata({
 
   const input = payload as Record<string, unknown>;
   const allowedFields = [...config.commonFields, ...config.serviceFields];
+  const allowedFieldNames = new Set(allowedFields.map((field) => field.name));
   const data: Record<string, unknown> = {};
+
+  for (const fieldName of Object.keys(input)) {
+    if (!allowedFieldNames.has(fieldName)) {
+      throw new LetterMetadataError(`Field ${fieldName} tidak dapat diperbarui.`, 400);
+    }
+  }
 
   for (const field of allowedFields) {
     if (Object.prototype.hasOwnProperty.call(input, field.name)) {
