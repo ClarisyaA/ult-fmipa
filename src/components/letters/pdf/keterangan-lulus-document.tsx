@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
     left: 8,
     width: 579,
     height: 827,
-    opacity: 0.18,
   },
   content: {
     position: "relative",
@@ -43,7 +42,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     fontSize: 18,
     textAlign: "center",
-    textDecoration: "underline",
   },
   letterNumber: {
     marginTop: 3,
@@ -54,13 +52,13 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.55,
+    lineHeight: 1.35,
   },
   shortParagraph: {
-    marginTop: 12,
+    marginTop: 16,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.55,
+    lineHeight: 1.35,
   },
   identityTable: {
     marginTop: 26,
@@ -93,7 +91,13 @@ const styles = StyleSheet.create({
     marginTop: 22,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.55,
+    lineHeight: 1.35,
+  },
+  validityFollowup: {
+    marginTop: 10,
+    marginLeft: 28,
+    fontSize: 11,
+    lineHeight: 1.35,
   },
 });
 
@@ -139,7 +143,7 @@ export function KeteranganLulusDocument({
           </Text>
 
           <Text style={styles.paragraph}>
-            Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas
+            Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam  Universitas
             Padjadjaran, menerangkan
           </Text>
           <Text style={styles.shortParagraph}>bahwa :</Text>
@@ -163,8 +167,10 @@ export function KeteranganLulusDocument({
           </View>
 
           <Text style={styles.validity}>
-            Keterangan ini diberikan atas permintaan yang bersangkutan selama
-            Ijazah dalam proses penerbitan dan berlaku sampai dengan {validUntil}.
+            Keterangan  ini  diberikan  atas  permintaan  yang  bersangkutan  selama  Ijazah  dalam  proses
+          </Text>
+          <Text style={styles.validityFollowup}>
+            penerbitan  dan berlaku sampai dengan {validUntil}.
           </Text>
 
           <SignatureBlock signer={data.signer} />

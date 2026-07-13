@@ -199,6 +199,36 @@ Jika query complete menghasilkan record tetapi PDF route tetap `422`, cek apakah
 19. Akses `/api/requests/keterangan-lulus/not-a-number/pdf` dan pastikan `400`.
 20. Stop database, buka route PDF, dan pastikan respons aman `503` tanpa stack trace atau raw Prisma/MariaDB error.
 
+## Keterangan Lulus Legacy Parity Notes
+
+Source of truth:
+
+- `ULT-Lama/layanan_staf/keterangan_lulus_cetak.php`
+
+Area parity yang sudah dicek dan diselaraskan:
+
+- A4 portrait dan area margin mendekati FPDF legacy.
+- Kop surat memakai logo Unpad, hierarchy font, dan garis tebal/tipis seperti legacy.
+- Watermark memakai asset legacy `watermark_A4.png`.
+- Judul dan nomor surat mengikuti struktur legacy.
+- Urutan blok body mengikuti legacy: pembuka, identitas mahasiswa, pernyataan kelulusan, detail kelulusan, masa berlaku, dan tanda tangan.
+- Field dinamis tetap memakai snapshot request, terutama `TTD_*`.
+- `JENJANG` ditampilkan uppercase seperti legacy.
+- Tanggal memakai formatter Indonesia deterministik.
+- Filename tetap `skl_{NPM}.pdf`.
+
+Manual comparison checklist:
+
+1. Generate PDF legacy dari aplikasi lama untuk satu record lokal non-sensitif jika memungkinkan.
+2. Generate PDF baru dari Next.js untuk `ID` yang sama.
+3. Bandingkan kop surat, logo, watermark, judul, nomor surat, blok identitas mahasiswa, pernyataan kelulusan, masa berlaku, blok tanda tangan, dan filename.
+4. Pastikan tidak ada teks literal `undefined`, `null`, atau `Invalid Date`.
+5. Jangan commit PDF hasil test atau screenshot yang berisi data mahasiswa nyata.
+
+Known limitation:
+
+- Implementasi baru memakai `@react-pdf/renderer`, sedangkan legacy memakai FPDF berbasis koordinat millimeter. Output tidak ditargetkan binary-perfect, tetapi struktur visual dan semantik dibuat sedekat mungkin. Jika kelak perlu posisi absolut yang benar-benar sama, `pdf-lib` atau renderer koordinat manual bisa dievaluasi untuk template tertentu.
+
 ## Asset
 
 Asset legacy yang disalin untuk PDF:
