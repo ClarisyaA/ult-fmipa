@@ -6,6 +6,7 @@ export type LetterSigner = {
   validUntil: LetterDateValue;
   place: string | null;
   actingFor: string | null;
+  rank: string | null;
   title: string | null;
   name: string | null;
   nip: string | null;
@@ -28,7 +29,33 @@ export type KeteranganLulusLetterData = {
   signer: LetterSigner;
 };
 
+export type BaseOfficialLetterData = {
+  requestId: string;
+  npm: string;
+  studentName: string;
+  programStudy: string | null;
+  level: string | null;
+  semester?: string | null;
+  academicYear?: string | null;
+  address?: string | null;
+  parentName?: string | null;
+  parentNipNrp?: string | null;
+  parentRank?: string | null;
+  parentInstitution?: string | null;
+  signer: LetterSigner;
+};
+
+export type OfficialLetterTemplate =
+  | "keterangan-lulus"
+  | "masih-kuliah"
+  | "masih-kuliah-aktif"
+  | "kelakuan-baik";
+
 export type PrintableLetterService = {
-  sourceTable: "keterangan_lulus";
-  template: "keterangan-lulus";
+  sourceTable:
+    | "keterangan_lulus"
+    | "masih_kuliah"
+    | "masih_kuliah_aktif"
+    | "kelakuan_baik";
+  template: OfficialLetterTemplate;
 };

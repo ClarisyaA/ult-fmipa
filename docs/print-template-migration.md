@@ -18,6 +18,31 @@ Route mengembalikan PDF inline dengan header:
 - `Content-Disposition: inline; filename="skl_{NPM}.pdf"`
 - `Cache-Control: no-store`
 
+## Phase 2: Tiga Surat Resmi Legacy
+
+Phase 2 menambahkan tiga template resmi yang sudah punya file cetak legacy jelas:
+
+- Ket. Tunjangan Orang Tua / Masih Kuliah
+  - Slug: `ket-tunjangan-orang-tua`
+  - Table: `masih_kuliah`
+  - Route: `GET /api/requests/ket-tunjangan-orang-tua/{id}/pdf`
+  - Filename: `skmk_{NPM}.pdf`
+  - Legacy source: `ULT-Lama/layanan_staf/masih_kuliah_cetak.php`
+- Keterangan Masih Kuliah Aktif
+  - Slug: `keterangan-masih-kuliah`
+  - Table: `masih_kuliah_aktif`
+  - Route: `GET /api/requests/keterangan-masih-kuliah/{id}/pdf`
+  - Filename: `skmka_{NPM}.pdf`
+  - Legacy source: `ULT-Lama/layanan_staf/masih_kuliah_aktif_cetak.php`
+- Keterangan Kelakuan Baik
+  - Slug: `keterangan-kelakuan-baik`
+  - Table: `kelakuan_baik`
+  - Route: `GET /api/requests/keterangan-kelakuan-baik/{id}/pdf`
+  - Filename: `skkb_{NPM}.pdf`
+  - Legacy source: `ULT-Lama/layanan_staf/kelakuan_baik_cetak.php`
+
+Ketiga template membaca snapshot `TTD_*` dari row request dan tidak memakai master `surat_ttd` live.
+
 ## Proteksi Akses
 
 PDF hanya bisa diakses oleh user dengan role:
@@ -86,6 +111,58 @@ Pesan aman:
 
 `Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, dan data penandatangan terlebih dahulu.`
 
+Untuk tiga template Phase 2, route mengembalikan `422` jika field utama layanan atau snapshot TTD tidak lengkap.
+
+Pesan aman:
+
+`Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, data penandatangan, dan data utama layanan terlebih dahulu.`
+
+Field wajib Masih Kuliah / Ket. Tunjangan Orang Tua:
+
+- `NPM`
+- Nama mahasiswa
+- `SEMESTER`
+- `TAHUN_AKADEMIK`
+- `NAMA_ORANG_TUA`
+- `NIP_NRP`
+- `PANGKAT_GOLONGAN`
+- `INSTANSI`
+- `TTD_NO_SURAT`
+- `TTD_TANGGAL`
+- `TTD_TEMPAT`
+- `TTD_PANGKAT_GOLONGAN`
+- `TTD_JABATAN`
+- `TTD_NAMA`
+- `TTD_NIP`
+
+Field wajib Masih Kuliah Aktif:
+
+- `NPM`
+- Nama mahasiswa
+- `SEMESTER`
+- `TAHUN_AKADEMIK`
+- `ALAMAT`
+- `TTD_NO_SURAT`
+- `TTD_TANGGAL`
+- `TTD_TEMPAT`
+- `TTD_PANGKAT_GOLONGAN`
+- `TTD_JABATAN`
+- `TTD_NAMA`
+- `TTD_NIP`
+
+Field wajib Kelakuan Baik:
+
+- `NPM`
+- Nama mahasiswa
+- `ALAMAT`
+- `TTD_NO_SURAT`
+- `TTD_TANGGAL`
+- `TTD_TEMPAT`
+- `TTD_PANGKAT_GOLONGAN`
+- `TTD_JABATAN`
+- `TTD_NAMA`
+- `TTD_NIP`
+
 ## UI
 
 Tombol `Cetak Surat` ditambahkan di:
@@ -94,6 +171,12 @@ Tombol `Cetak Surat` ditambahkan di:
 - Staff request detail
 
 Tombol hanya muncul untuk `serviceSlug === "keterangan-lulus"` dan membuka PDF di tab baru.
+
+Setelah Phase 2, tombol juga muncul untuk:
+
+- `ket-tunjangan-orang-tua`
+- `keterangan-masih-kuliah`
+- `keterangan-kelakuan-baik`
 
 Detail page juga menampilkan indikator kesiapan cetak khusus untuk `keterangan-lulus`:
 
@@ -176,6 +259,137 @@ Jika query complete menghasilkan record tetapi PDF route tetap `422`, cek apakah
 - `mahasiswa_sd_2015`
 - `alumni`
 
+### Phase 2 Complete Record Queries
+
+Masih Kuliah / Ket. Tunjangan Orang Tua:
+
+```sql
+SELECT
+  ID,
+  NPM,
+  SEMESTER,
+  TAHUN_AKADEMIK,
+  NAMA_ORANG_TUA,
+  NIP_NRP,
+  PANGKAT_GOLONGAN,
+  INSTANSI,
+  TTD_NO_SURAT,
+  TTD_TANGGAL,
+  TTD_TEMPAT,
+  TTD_PANGKAT_GOLONGAN,
+  TTD_JABATAN,
+  TTD_NAMA,
+  TTD_NIP
+FROM masih_kuliah
+WHERE
+  NPM IS NOT NULL AND NPM <> ''
+  AND SEMESTER IS NOT NULL AND SEMESTER <> ''
+  AND TAHUN_AKADEMIK IS NOT NULL AND TAHUN_AKADEMIK <> ''
+  AND NAMA_ORANG_TUA IS NOT NULL AND NAMA_ORANG_TUA <> ''
+  AND NIP_NRP IS NOT NULL AND NIP_NRP <> ''
+  AND PANGKAT_GOLONGAN IS NOT NULL AND PANGKAT_GOLONGAN <> ''
+  AND INSTANSI IS NOT NULL AND INSTANSI <> ''
+  AND TTD_NO_SURAT IS NOT NULL AND TTD_NO_SURAT <> ''
+  AND TTD_TANGGAL IS NOT NULL
+  AND TTD_TEMPAT IS NOT NULL AND TTD_TEMPAT <> ''
+  AND TTD_PANGKAT_GOLONGAN IS NOT NULL AND TTD_PANGKAT_GOLONGAN <> ''
+  AND TTD_JABATAN IS NOT NULL AND TTD_JABATAN <> ''
+  AND TTD_NAMA IS NOT NULL AND TTD_NAMA <> ''
+  AND TTD_NIP IS NOT NULL AND TTD_NIP <> ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
+Masih Kuliah Aktif:
+
+```sql
+SELECT
+  ID,
+  NPM,
+  SEMESTER,
+  TAHUN_AKADEMIK,
+  ALAMAT,
+  TTD_NO_SURAT,
+  TTD_TANGGAL,
+  TTD_TEMPAT,
+  TTD_PANGKAT_GOLONGAN,
+  TTD_JABATAN,
+  TTD_NAMA,
+  TTD_NIP
+FROM masih_kuliah_aktif
+WHERE
+  NPM IS NOT NULL AND NPM <> ''
+  AND SEMESTER IS NOT NULL AND SEMESTER <> ''
+  AND TAHUN_AKADEMIK IS NOT NULL AND TAHUN_AKADEMIK <> ''
+  AND ALAMAT IS NOT NULL AND ALAMAT <> ''
+  AND TTD_NO_SURAT IS NOT NULL AND TTD_NO_SURAT <> ''
+  AND TTD_TANGGAL IS NOT NULL
+  AND TTD_TEMPAT IS NOT NULL AND TTD_TEMPAT <> ''
+  AND TTD_PANGKAT_GOLONGAN IS NOT NULL AND TTD_PANGKAT_GOLONGAN <> ''
+  AND TTD_JABATAN IS NOT NULL AND TTD_JABATAN <> ''
+  AND TTD_NAMA IS NOT NULL AND TTD_NAMA <> ''
+  AND TTD_NIP IS NOT NULL AND TTD_NIP <> ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
+Kelakuan Baik:
+
+```sql
+SELECT
+  ID,
+  NPM,
+  ALAMAT,
+  TTD_NO_SURAT,
+  TTD_TANGGAL,
+  TTD_TEMPAT,
+  TTD_PANGKAT_GOLONGAN,
+  TTD_JABATAN,
+  TTD_NAMA,
+  TTD_NIP
+FROM kelakuan_baik
+WHERE
+  NPM IS NOT NULL AND NPM <> ''
+  AND ALAMAT IS NOT NULL AND ALAMAT <> ''
+  AND TTD_NO_SURAT IS NOT NULL AND TTD_NO_SURAT <> ''
+  AND TTD_TANGGAL IS NOT NULL
+  AND TTD_TEMPAT IS NOT NULL AND TTD_TEMPAT <> ''
+  AND TTD_PANGKAT_GOLONGAN IS NOT NULL AND TTD_PANGKAT_GOLONGAN <> ''
+  AND TTD_JABATAN IS NOT NULL AND TTD_JABATAN <> ''
+  AND TTD_NAMA IS NOT NULL AND TTD_NAMA <> ''
+  AND TTD_NIP IS NOT NULL AND TTD_NIP <> ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
+### Phase 2 Incomplete Record Queries
+
+Gunakan query negative test ini untuk memastikan route mengembalikan `422`.
+
+```sql
+SELECT ID, NPM, SEMESTER, TAHUN_AKADEMIK, NAMA_ORANG_TUA, NIP_NRP, PANGKAT_GOLONGAN, INSTANSI, TTD_NO_SURAT, TTD_TANGGAL, TTD_TEMPAT, TTD_PANGKAT_GOLONGAN, TTD_JABATAN, TTD_NAMA, TTD_NIP
+FROM masih_kuliah
+WHERE NPM IS NULL OR NPM = '' OR SEMESTER IS NULL OR SEMESTER = '' OR TAHUN_AKADEMIK IS NULL OR TAHUN_AKADEMIK = '' OR NAMA_ORANG_TUA IS NULL OR NAMA_ORANG_TUA = '' OR NIP_NRP IS NULL OR NIP_NRP = '' OR PANGKAT_GOLONGAN IS NULL OR PANGKAT_GOLONGAN = '' OR INSTANSI IS NULL OR INSTANSI = '' OR TTD_NO_SURAT IS NULL OR TTD_NO_SURAT = '' OR TTD_TANGGAL IS NULL OR TTD_TEMPAT IS NULL OR TTD_TEMPAT = '' OR TTD_PANGKAT_GOLONGAN IS NULL OR TTD_PANGKAT_GOLONGAN = '' OR TTD_JABATAN IS NULL OR TTD_JABATAN = '' OR TTD_NAMA IS NULL OR TTD_NAMA = '' OR TTD_NIP IS NULL OR TTD_NIP = ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
+```sql
+SELECT ID, NPM, SEMESTER, TAHUN_AKADEMIK, ALAMAT, TTD_NO_SURAT, TTD_TANGGAL, TTD_TEMPAT, TTD_PANGKAT_GOLONGAN, TTD_JABATAN, TTD_NAMA, TTD_NIP
+FROM masih_kuliah_aktif
+WHERE NPM IS NULL OR NPM = '' OR SEMESTER IS NULL OR SEMESTER = '' OR TAHUN_AKADEMIK IS NULL OR TAHUN_AKADEMIK = '' OR ALAMAT IS NULL OR ALAMAT = '' OR TTD_NO_SURAT IS NULL OR TTD_NO_SURAT = '' OR TTD_TANGGAL IS NULL OR TTD_TEMPAT IS NULL OR TTD_TEMPAT = '' OR TTD_PANGKAT_GOLONGAN IS NULL OR TTD_PANGKAT_GOLONGAN = '' OR TTD_JABATAN IS NULL OR TTD_JABATAN = '' OR TTD_NAMA IS NULL OR TTD_NAMA = '' OR TTD_NIP IS NULL OR TTD_NIP = ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
+```sql
+SELECT ID, NPM, ALAMAT, TTD_NO_SURAT, TTD_TANGGAL, TTD_TEMPAT, TTD_PANGKAT_GOLONGAN, TTD_JABATAN, TTD_NAMA, TTD_NIP
+FROM kelakuan_baik
+WHERE NPM IS NULL OR NPM = '' OR ALAMAT IS NULL OR ALAMAT = '' OR TTD_NO_SURAT IS NULL OR TTD_NO_SURAT = '' OR TTD_TANGGAL IS NULL OR TTD_TEMPAT IS NULL OR TTD_TEMPAT = '' OR TTD_PANGKAT_GOLONGAN IS NULL OR TTD_PANGKAT_GOLONGAN = '' OR TTD_JABATAN IS NULL OR TTD_JABATAN = '' OR TTD_NAMA IS NULL OR TTD_NAMA = '' OR TTD_NIP IS NULL OR TTD_NIP = ''
+ORDER BY ID DESC
+LIMIT 10;
+```
+
 ## Manual QA Checklist
 
 1. Start database dan Next.js dev server.
@@ -199,6 +413,15 @@ Jika query complete menghasilkan record tetapi PDF route tetap `422`, cek apakah
 19. Akses `/api/requests/keterangan-lulus/not-a-number/pdf` dan pastikan `400`.
 20. Stop database, buka route PDF, dan pastikan respons aman `503` tanpa stack trace atau raw Prisma/MariaDB error.
 
+Phase 2 manual checklist tambahan:
+
+1. Buka `/admin/requests/ket-tunjangan-orang-tua/{ID}` dan pastikan PDF terbuka sebagai `skmk_{NPM}.pdf`.
+2. Buka `/admin/requests/keterangan-masih-kuliah/{ID}` dan pastikan PDF terbuka sebagai `skmka_{NPM}.pdf`.
+3. Buka `/admin/requests/keterangan-kelakuan-baik/{ID}` dan pastikan PDF terbuka sebagai `skkb_{NPM}.pdf`.
+4. Ulangi dari halaman staff untuk tiga service tersebut.
+5. Bandingkan visual dengan PDF legacy jika memungkinkan: kop, judul, nomor surat, identitas penandatangan, identitas mahasiswa, body statement, dan blok tanda tangan.
+6. Pastikan PDF tidak menampilkan `undefined`, `null`, atau `Invalid Date`.
+
 ## Keterangan Lulus Legacy Parity Notes
 
 Source of truth:
@@ -216,6 +439,13 @@ Area parity yang sudah dicek dan diselaraskan:
 - `JENJANG` ditampilkan uppercase seperti legacy.
 - Tanggal memakai formatter Indonesia deterministik.
 - Filename tetap `skl_{NPM}.pdf`.
+
+Phase 2 parity notes:
+
+- Source of truth: `masih_kuliah_cetak.php`, `masih_kuliah_aktif_cetak.php`, dan `kelakuan_baik_cetak.php`.
+- Ketiga template memakai kop surat shared, tanpa watermark, sesuai legacy.
+- Judul, field order, signer identity block, student identity block, parent/guardian section, alamat, dan statement NAPZA mengikuti struktur legacy.
+- Output tidak binary-perfect karena React PDF bukan FPDF koordinat manual, tetapi struktur visual dan semantik dibuat dekat dengan legacy.
 
 Manual comparison checklist:
 
@@ -238,13 +468,10 @@ Asset legacy yang disalin untuk PDF:
 
 PDF tetap tidak boleh bergantung pada hotlink eksternal.
 
-## Limitasi Phase 1
+## Limitasi Saat Ini
 
 Belum diimplementasikan:
 
-- Template Masih Kuliah / Ket. Tunjangan Orang Tua
-- Template Masih Kuliah Aktif
-- Template Kelakuan Baik
 - Template Surat Pengantar
 - Penomoran surat otomatis
 - Picker pejabat dari `surat_ttd`

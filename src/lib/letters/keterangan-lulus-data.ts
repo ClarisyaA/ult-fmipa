@@ -3,13 +3,8 @@ import {
   validateKeteranganLulusLetterData,
   LetterDataError,
 } from "@/lib/letters/letter-data";
+import { getLetterStudentProfile } from "@/lib/letters/letter-students";
 import type { KeteranganLulusLetterData } from "@/lib/letters/letter-types";
-
-type StudentProfile = {
-  name: string | null;
-  programStudy: string | null;
-  level: string | null;
-};
 
 export type KeteranganLulusPrintReadiness = {
   isReady: boolean;
@@ -19,65 +14,6 @@ export type KeteranganLulusPrintReadiness = {
 const READY_MESSAGE = "Data surat siap dicetak.";
 const NOT_READY_MESSAGE =
   "Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, masa berlaku, data kelulusan, dan penandatangan sebelum mencetak.";
-
-async function getStudentProfile(npm: string | null): Promise<StudentProfile | null> {
-  if (!npm) {
-    return null;
-  }
-
-  const activeStudent = await prisma.mahasiswa.findUnique({
-    where: { NPM: npm },
-    select: {
-      NAMA: true,
-      PROGRAM_STUDI: true,
-      JENJANG: true,
-    },
-  });
-
-  if (activeStudent) {
-    return {
-      name: activeStudent.NAMA,
-      programStudy: activeStudent.PROGRAM_STUDI,
-      level: activeStudent.JENJANG,
-    };
-  }
-
-  const archivedStudent = await prisma.mahasiswa_sd_2015.findUnique({
-    where: { NPM: npm },
-    select: {
-      NAMA: true,
-      PROGRAM_STUDI: true,
-      JENJANG: true,
-    },
-  });
-
-  if (archivedStudent) {
-    return {
-      name: archivedStudent.NAMA,
-      programStudy: archivedStudent.PROGRAM_STUDI,
-      level: archivedStudent.JENJANG,
-    };
-  }
-
-  const alumni = await prisma.alumni.findFirst({
-    where: { npm },
-    select: {
-      nama: true,
-      program: true,
-      prodi: true,
-    },
-  });
-
-  if (alumni) {
-    return {
-      name: alumni.nama,
-      programStudy: [alumni.program, alumni.prodi].filter(Boolean).join(" "),
-      level: alumni.program,
-    };
-  }
-
-  return null;
-}
 
 export async function getKeteranganLulusLetterData(
   id: string,
@@ -116,7 +52,7 @@ export async function getKeteranganLulusLetterData(
     return null;
   }
 
-  const student = await getStudentProfile(row.NPM);
+  const student = await getLetterStudentProfile(row.NPM);
   const data: KeteranganLulusLetterData = {
     requestId: row.ID.toString(),
     npm: row.NPM ?? "",
@@ -137,6 +73,7 @@ export async function getKeteranganLulusLetterData(
       validUntil: row.TTD_TANGGAL_BERLAKU,
       place: row.TTD_TEMPAT,
       actingFor: row.TTD_AN,
+      rank: null,
       title: row.TTD_JABATAN,
       name: row.TTD_NAMA,
       nip: row.TTD_NIP,
@@ -181,7 +118,7 @@ export async function getKeteranganLulusPrintReadiness(
     return null;
   }
 
-  const student = await getStudentProfile(row.NPM);
+  const student = await getLetterStudentProfile(row.NPM);
 
   try {
     validateKeteranganLulusLetterData({

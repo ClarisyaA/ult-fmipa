@@ -3,6 +3,7 @@ import { renderToStream } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import type { Readable } from "node:stream";
 
+import { OfficialLetterDocument } from "@/components/letters/pdf/official-letter-document";
 import { KeteranganLulusDocument } from "@/components/letters/pdf/keterangan-lulus-document";
 import { getCurrentUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit-log";
@@ -11,8 +12,13 @@ import {
   getPrintableLetterService,
   LetterDataError,
 } from "@/lib/letters/letter-data";
-import { keteranganLulusFilename } from "@/lib/letters/letter-format";
+import {
+  keteranganLulusFilename,
+  officialLetterFilename,
+} from "@/lib/letters/letter-format";
 import { getKeteranganLulusLetterData } from "@/lib/letters/keterangan-lulus-data";
+import { getOfficialLetterData } from "@/lib/letters/official-letter-data";
+import type { BaseOfficialLetterData, KeteranganLulusLetterData } from "@/lib/letters/letter-types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +58,56 @@ function errorResponse(request: Request, message: string, status: number) {
   });
 }
 
+function getRouteResult(
+  template: string,
+  data: KeteranganLulusLetterData | BaseOfficialLetterData,
+) {
+  if (template === "keterangan-lulus") {
+    return {
+      document: React.createElement(KeteranganLulusDocument, {
+        data: data as KeteranganLulusLetterData,
+      }),
+      filename: keteranganLulusFilename(data.npm),
+      auditAction: `Mencetak surat keterangan lulus #${data.requestId}`,
+    };
+  }
+
+  if (template === "masih-kuliah") {
+    return {
+      document: React.createElement(OfficialLetterDocument, {
+        data: data as BaseOfficialLetterData,
+        template,
+      }),
+      filename: officialLetterFilename("skmk", data.npm),
+      auditAction: `Mencetak surat masih kuliah #${data.requestId}`,
+    };
+  }
+
+  if (template === "masih-kuliah-aktif") {
+    return {
+      document: React.createElement(OfficialLetterDocument, {
+        data: data as BaseOfficialLetterData,
+        template,
+      }),
+      filename: officialLetterFilename("skmka", data.npm),
+      auditAction: `Mencetak surat masih aktif kuliah #${data.requestId}`,
+    };
+  }
+
+  if (template === "kelakuan-baik") {
+    return {
+      document: React.createElement(OfficialLetterDocument, {
+        data: data as BaseOfficialLetterData,
+        template,
+      }),
+      filename: officialLetterFilename("skkb", data.npm),
+      auditAction: `Mencetak surat kelakuan baik #${data.requestId}`,
+    };
+  }
+
+  return null;
+}
+
 export async function GET(request: Request, { params }: PdfRouteProps) {
   const user = await getCurrentUser();
 
@@ -75,34 +131,38 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
       return errorResponse(request, "ID pengajuan tidak valid.", 400);
     }
 
-    if (service.template !== "keterangan-lulus") {
-      return errorResponse(request, "Template surat tidak ditemukan.", 404);
-    }
-
-    const letterData = await getKeteranganLulusLetterData(id);
+    const letterData =
+      service.template === "keterangan-lulus"
+        ? await getKeteranganLulusLetterData(id)
+        : await getOfficialLetterData(service.template, id);
 
     if (!letterData) {
       return errorResponse(request, "Pengajuan tidak ditemukan.", 404);
     }
 
-    const document = React.createElement(KeteranganLulusDocument, {
-      data: letterData,
-    }) as unknown as Parameters<typeof renderToStream>[0];
+    const result = getRouteResult(service.template, letterData);
+
+    if (!result) {
+      return errorResponse(request, "Template surat tidak ditemukan.", 404);
+    }
+
+    const document = result.document as unknown as Parameters<
+      typeof renderToStream
+    >[0];
     const stream = (await renderToStream(document)) as Readable;
     const pdfBuffer = await streamToBuffer(stream);
-    const filename = keteranganLulusFilename(letterData.npm);
 
     await writeAuditLog({
       actor: user,
       request,
-      action: `Mencetak surat keterangan lulus #${letterData.requestId}`,
+      action: result.auditAction,
     });
 
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": `inline; filename="${result.filename}"`,
         "Cache-Control": "no-store",
       },
     });

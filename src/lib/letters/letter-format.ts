@@ -41,3 +41,12 @@ export function keteranganLulusFilename(npm: string | null | undefined) {
 
   return safeNpm ? `skl_${safeNpm}.pdf` : "skl_surat.pdf";
 }
+
+export function officialLetterFilename(
+  prefix: "skmk" | "skmka" | "skkb",
+  npm: string | null | undefined,
+) {
+  const safeNpm = sanitizePdfFilename(npm);
+
+  return safeNpm ? `${prefix}_${safeNpm}.pdf` : `${prefix}_surat.pdf`;
+}

@@ -5,12 +5,26 @@ export const PRINTABLE_LETTER_SERVICES = {
     sourceTable: "keterangan_lulus",
     template: "keterangan-lulus",
   },
+  "ket-tunjangan-orang-tua": {
+    sourceTable: "masih_kuliah",
+    template: "masih-kuliah",
+  },
+  "keterangan-masih-kuliah": {
+    sourceTable: "masih_kuliah_aktif",
+    template: "masih-kuliah-aktif",
+  },
+  "keterangan-kelakuan-baik": {
+    sourceTable: "kelakuan_baik",
+    template: "kelakuan-baik",
+  },
 } satisfies Record<string, PrintableLetterService>;
 
 export type PrintableLetterSlug = keyof typeof PRINTABLE_LETTER_SERVICES;
 
 export const MISSING_LETTER_DATA_MESSAGE =
   "Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, dan data penandatangan terlebih dahulu.";
+export const MISSING_OFFICIAL_LETTER_DATA_MESSAGE =
+  "Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, data penandatangan, dan data utama layanan terlebih dahulu.";
 
 export class LetterDataError extends Error {
   statusCode: number;
@@ -78,5 +92,36 @@ export function validateKeteranganLulusLetterData(data: {
 
   if (!valid) {
     throw new LetterDataError(MISSING_LETTER_DATA_MESSAGE, 422);
+  }
+}
+
+export function validateOfficialLetterData(data: {
+  npm: string | null;
+  studentName: string | null;
+  requiredText: Array<string | null | undefined>;
+  signer: {
+    letterNumber: string | null;
+    letterDate: Date | string | null;
+    place: string | null;
+    rank: string | null;
+    title: string | null;
+    name: string | null;
+    nip: string | null;
+  };
+}) {
+  const valid =
+    hasText(data.npm) &&
+    hasText(data.studentName) &&
+    data.requiredText.every((value) => hasText(value)) &&
+    hasText(data.signer.letterNumber) &&
+    hasDate(data.signer.letterDate) &&
+    hasText(data.signer.place) &&
+    hasText(data.signer.rank) &&
+    hasText(data.signer.title) &&
+    hasText(data.signer.name) &&
+    hasText(data.signer.nip);
+
+  if (!valid) {
+    throw new LetterDataError(MISSING_OFFICIAL_LETTER_DATA_MESSAGE, 422);
   }
 }

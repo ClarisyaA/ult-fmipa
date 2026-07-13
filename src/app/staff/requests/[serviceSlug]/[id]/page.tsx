@@ -18,6 +18,8 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
 import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
+import type { OfficialLetterTemplate } from "@/lib/letters/letter-types";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { getRequestAttachments } from "@/lib/request-attachments";
 import type { ServiceRequestDetail } from "@/types/request-detail";
@@ -243,7 +245,7 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
 }
 
 function PrintLetterButton({ detail }: { detail: ServiceRequestDetail }) {
-  if (detail.serviceSlug !== "keterangan-lulus") {
+  if (!printableTemplateBySlug[detail.serviceSlug]) {
     return null;
   }
 
@@ -284,6 +286,25 @@ function PrintReadinessNotice({
   );
 }
 
+const printableTemplateBySlug: Record<string, OfficialLetterTemplate> = {
+  "keterangan-lulus": "keterangan-lulus",
+  "ket-tunjangan-orang-tua": "masih-kuliah",
+  "keterangan-masih-kuliah": "masih-kuliah-aktif",
+  "keterangan-kelakuan-baik": "kelakuan-baik",
+};
+
+async function getPrintReadiness(serviceSlug: string, id: string) {
+  const template = printableTemplateBySlug[serviceSlug];
+
+  if (!template) return null;
+
+  if (template === "keterangan-lulus") {
+    return getKeteranganLulusPrintReadiness(id);
+  }
+
+  return getOfficialPrintReadiness(template, id);
+}
+
 export default async function StaffRequestDetailPage({
   params,
 }: RequestDetailPageProps) {
@@ -300,10 +321,7 @@ export default async function StaffRequestDetailPage({
     detail.sourceTable,
     detail.id
   );
-  const printReadiness =
-    detail.serviceSlug === "keterangan-lulus"
-      ? await getKeteranganLulusPrintReadiness(detail.id)
-      : null;
+  const printReadiness = await getPrintReadiness(detail.serviceSlug, detail.id);
 
   return (
     <div className="grid gap-6">
