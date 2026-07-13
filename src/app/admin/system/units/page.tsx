@@ -7,6 +7,10 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import {
+  UnitCreateButton,
+  UnitRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUnitRows } from "@/lib/admin-readonly-data";
+import { getLevelOptions, getUnitRows } from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +36,14 @@ export default async function AdminSystemUnitsPage({
 }: PageProps) {
   const params = await searchParams;
   let rows: Awaited<ReturnType<typeof getUnitRows>> = [];
+  let levels: Awaited<ReturnType<typeof getLevelOptions>> = [];
   let unavailable = false;
 
   try {
-    rows = await getUnitRows({ search: params.q });
+    [rows, levels] = await Promise.all([
+      getUnitRows({ search: params.q }),
+      getLevelOptions(),
+    ]);
   } catch (error) {
     if (!isDatabaseUnavailableError(error)) {
       throw error;
@@ -54,7 +62,8 @@ export default async function AdminSystemUnitsPage({
     <AdminPageShell>
       <AdminPageHeader
         title="Unit List"
-        description="Shell read-only untuk daftar unit. Import dan perubahan data masih rencana."
+        description="Kelola daftar unit dengan validasi level dan pemakaian user."
+        action={<UnitCreateButton levels={levels} />}
       />
       <AdminSectionCard title="Pencarian">
         <form className="flex flex-col gap-2 md:flex-row md:items-end">
@@ -69,10 +78,6 @@ export default async function AdminSystemUnitsPage({
           </Button>
           <CsvDownloadButton filename="system-units.csv" rows={csvRows} />
         </form>
-        <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import belum ditampilkan sampai endpoint
-          unit yang aman tersedia.
-        </p>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel Unit">
         {unavailable ? (
@@ -88,6 +93,7 @@ export default async function AdminSystemUnitsPage({
                   <TableHead>Nama Unit</TableHead>
                   <TableHead>Level ID</TableHead>
                   <TableHead>Kode Level</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,6 +105,9 @@ export default async function AdminSystemUnitsPage({
                     </TableCell>
                     <TableCell>{row.levelDataId}</TableCell>
                     <TableCell>{row.levelDataCode}</TableCell>
+                    <TableCell>
+                      <UnitRowActions row={row} levels={levels} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

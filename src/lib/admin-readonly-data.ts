@@ -45,9 +45,12 @@ export async function getMahasiswaRows({
     select: {
       NPM: true,
       NAMA: true,
+      KD_PS: true,
+      KD_PA: true,
       PROGRAM_STUDI: true,
       ANGKATAN: true,
       JENJANG: true,
+      FAK: true,
     },
     orderBy: { NPM: "asc" },
     take: safeTake(limit),
@@ -56,9 +59,12 @@ export async function getMahasiswaRows({
   return rows.map((row) => ({
     npm: row.NPM,
     nama: row.NAMA,
+    kdPs: row.KD_PS,
+    kdPa: row.KD_PA,
     programStudi: row.PROGRAM_STUDI,
     angkatan: row.ANGKATAN,
     status: row.JENJANG,
+    fak: row.FAK,
   }));
 }
 
@@ -88,6 +94,7 @@ export async function getTracerStudyRows({
       nama: true,
       program: true,
       prodi: true,
+      tahun_masuk: true,
       tahun_lulus: true,
       instansi: true,
       Jabatan: true,
@@ -102,6 +109,9 @@ export async function getTracerStudyRows({
     npm: row.npm,
     nama: row.nama,
     programStudi: [row.program, row.prodi].filter(Boolean).join(" ") || null,
+    program: row.program,
+    prodi: row.prodi,
+    tahunMasuk: row.tahun_masuk,
     tahunLulus: row.tahun_lulus,
     instansi: row.instansi,
     jabatan: row.Jabatan,
@@ -196,12 +206,40 @@ export async function getUserRows({
       USER_NAME: true,
       FULL_NAME: true,
       EMAIL: true,
+      TELEPHONE: true,
       CONFIRMED: true,
       ACCESS_CODE: true,
       UNIT_ID: true,
     },
     orderBy: { USER_NAME: "asc" },
     take: safeTake(limit),
+  });
+}
+
+export async function getUnitOptions() {
+  const rows = await prisma.data_unit.findMany({
+    select: {
+      UNIT_ID: true,
+      UNIT_NAME: true,
+    },
+    orderBy: { UNIT_NAME: "asc" },
+    take: 200,
+  });
+
+  return rows.map((row) => ({
+    unitId: row.UNIT_ID.toString(),
+    unitName: row.UNIT_NAME,
+  }));
+}
+
+export async function getLevelOptions() {
+  return prisma.data_level.findMany({
+    select: {
+      LEVEL_DATA_ID: true,
+      LEVEL_DATA_NAME: true,
+    },
+    orderBy: { LEVEL_DATA_ID: "asc" },
+    take: 100,
   });
 }
 

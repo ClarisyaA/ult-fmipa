@@ -7,6 +7,10 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import {
+  LevelCreateButton,
+  LevelRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,7 +57,8 @@ export default async function AdminSystemLevelsPage({
     <AdminPageShell>
       <AdminPageHeader
         title="Data Level"
-        description="Shell read-only untuk data level. Perubahan data disiapkan sebagai rencana."
+        description="Kelola data level sistem dengan validasi aman."
+        action={<LevelCreateButton />}
       />
       <AdminSectionCard title="Pencarian">
         <form className="flex flex-col gap-2 md:flex-row md:items-end">
@@ -68,10 +73,6 @@ export default async function AdminSystemLevelsPage({
           </Button>
           <CsvDownloadButton filename="data-level.csv" rows={csvRows} />
         </form>
-        <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import belum ditampilkan sampai endpoint
-          master system yang aman tersedia.
-        </p>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel Data Level">
         {unavailable ? (
@@ -86,6 +87,7 @@ export default async function AdminSystemLevelsPage({
                   <TableHead>ID</TableHead>
                   <TableHead>Nama Level</TableHead>
                   <TableHead>Field Name</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -96,6 +98,9 @@ export default async function AdminSystemLevelsPage({
                       {row.LEVEL_DATA_NAME}
                     </TableCell>
                     <TableCell>{row.FIELD_NAME}</TableCell>
+                    <TableCell>
+                      <LevelRowActions row={row} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

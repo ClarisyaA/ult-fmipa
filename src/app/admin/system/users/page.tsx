@@ -8,6 +8,7 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import { UserRowActions } from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUserRows } from "@/lib/admin-readonly-data";
+import {
+  getAccessRows,
+  getUnitOptions,
+  getUserRows,
+} from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +38,16 @@ export default async function AdminSystemUsersPage({
 }: PageProps) {
   const params = await searchParams;
   let rows: Awaited<ReturnType<typeof getUserRows>> = [];
+  let accessRows: Awaited<ReturnType<typeof getAccessRows>> = [];
+  let units: Awaited<ReturnType<typeof getUnitOptions>> = [];
   let unavailable = false;
 
   try {
-    rows = await getUserRows({ search: params.q });
+    [rows, accessRows, units] = await Promise.all([
+      getUserRows({ search: params.q }),
+      getAccessRows({ limit: 100 }),
+      getUnitOptions(),
+    ]);
   } catch (error) {
     if (!isDatabaseUnavailableError(error)) {
       throw error;
@@ -57,7 +68,7 @@ export default async function AdminSystemUsersPage({
     <AdminPageShell>
       <AdminPageHeader
         title="User List"
-        description="Read-only daftar user admin/staff. Password hash dan field sensitif tidak ditampilkan."
+        description="Kelola field user yang aman. Password hash dan field sensitif tidak ditampilkan."
       />
       <AdminSectionCard title="Pencarian">
         <form className="flex flex-col gap-2 md:flex-row md:items-end">
@@ -73,8 +84,7 @@ export default async function AdminSystemUsersPage({
           <CsvDownloadButton filename="system-users.csv" rows={csvRows} />
         </form>
         <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import user tidak ditampilkan karena pola
-          password dan provisioning user belum aman untuk diubah dari halaman ini.
+          Password tidak dapat dilihat atau diubah dari halaman ini.
         </p>
       </AdminSectionCard>
       <AdminSectionCard title="Tabel User">
@@ -93,6 +103,7 @@ export default async function AdminSystemUsersPage({
                   <TableHead>Akses</TableHead>
                   <TableHead>Unit</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -111,6 +122,13 @@ export default async function AdminSystemUsersPage({
                       >
                         {row.CONFIRMED === "1" ? "Aktif" : "Belum konfirmasi"}
                       </AdminStatusBadge>
+                    </TableCell>
+                    <TableCell>
+                      <UserRowActions
+                        row={row}
+                        accessRows={accessRows}
+                        units={units}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

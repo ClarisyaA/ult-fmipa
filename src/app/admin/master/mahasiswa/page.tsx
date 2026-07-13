@@ -8,6 +8,10 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import {
+  MahasiswaCreateButton,
+  MahasiswaRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,7 +58,8 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
     <AdminPageShell>
       <AdminPageHeader
         title="Daftar Mahasiswa"
-        description="Read-only data mahasiswa aktif. Kolom dibatasi untuk kebutuhan operasional layanan."
+        description="Kelola data mahasiswa aktif. Kolom dibatasi sesuai struktur tabel master."
+        action={<MahasiswaCreateButton />}
       />
 
       <AdminSectionCard
@@ -78,10 +83,6 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
           </Button>
           <CsvDownloadButton filename="data-mahasiswa.csv" rows={csvRows} />
         </form>
-        <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import disembunyikan dulu karena belum ada
-          API master data yang aman untuk validasi perubahan massal.
-        </p>
       </AdminSectionCard>
 
       <AdminSectionCard
@@ -105,6 +106,7 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                   <TableHead>Program Studi</TableHead>
                   <TableHead>Angkatan</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -118,6 +120,9 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                       <AdminStatusBadge tone="neutral">
                         {row.status ?? "Aktif"}
                       </AdminStatusBadge>
+                    </TableCell>
+                    <TableCell>
+                      <MahasiswaRowActions row={row} />
                     </TableCell>
                   </TableRow>
                 ))}
