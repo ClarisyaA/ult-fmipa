@@ -16,6 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
+import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { getRequestAttachments } from "@/lib/request-attachments";
 import type { ServiceRequestDetail } from "@/types/request-detail";
@@ -251,11 +253,34 @@ function PrintLetterButton({ detail }: { detail: ServiceRequestDetail }) {
         href={`/api/requests/${detail.serviceSlug}/${detail.id}/pdf`}
         target="_blank"
         rel="noopener noreferrer"
+        title="Buka PDF surat di tab baru"
       >
         <FileText className="size-4" />
         Cetak Surat
       </Link>
     </Button>
+  );
+}
+
+function PrintReadinessNotice({
+  readiness,
+}: {
+  readiness: KeteranganLulusPrintReadiness | null;
+}) {
+  if (!readiness) {
+    return null;
+  }
+
+  return (
+    <p
+      className={
+        readiness.isReady
+          ? "mt-1 text-sm text-[#0f5b45]"
+          : "mt-1 text-sm text-[#9a3412]"
+      }
+    >
+      {readiness.message}
+    </p>
   );
 }
 
@@ -275,6 +300,10 @@ export default async function StaffRequestDetailPage({
     detail.sourceTable,
     detail.id
   );
+  const printReadiness =
+    detail.serviceSlug === "keterangan-lulus"
+      ? await getKeteranganLulusPrintReadiness(detail.id)
+      : null;
 
   return (
     <div className="grid gap-6">
@@ -297,12 +326,7 @@ export default async function StaffRequestDetailPage({
         <p className="mt-2 text-sm text-muted-foreground">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
-        {detail.serviceSlug === "keterangan-lulus" ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Pastikan data nomor surat dan penandatangan sudah lengkap sebelum
-            mencetak.
-          </p>
-        ) : null}
+        <PrintReadinessNotice readiness={printReadiness} />
       </div>
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (
