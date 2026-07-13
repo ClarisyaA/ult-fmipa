@@ -11,6 +11,7 @@ type RequestExportButtonProps = {
   href: string;
   label: string;
   variant?: "default" | "outline";
+  disabled?: boolean;
 };
 
 function getFilename(contentDisposition: string | null) {
@@ -27,14 +28,16 @@ export function RequestExportButton({
   href,
   label,
   variant = "default",
+  disabled = false,
 }: RequestExportButtonProps) {
   const [state, setState] = useState<ExportState>("idle");
   const [progress, setProgress] = useState(0);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBusy = state === "preparing" || state === "downloading";
+  const isDisabled = disabled || isBusy;
 
   async function downloadExport() {
-    if (isBusy) return;
+    if (isDisabled) return;
 
     if (resetTimer.current) clearTimeout(resetTimer.current);
     setState("preparing");
@@ -113,13 +116,13 @@ export function RequestExportButton({
     <Button
       type="button"
       variant={variant}
-      disabled={isBusy}
+      disabled={isDisabled}
       onClick={downloadExport}
       aria-live="polite"
       className={
         variant === "outline"
-          ? "h-9 min-w-[174px] rounded-md border-[#d8cdbd] bg-white px-4 text-[12px] font-bold text-[#173d2d] hover:bg-[#f6f1e8]"
-          : "h-9 min-w-[190px] rounded-md bg-[#0f3d2e] px-4 text-[12px] font-bold text-white hover:bg-[#164b39]"
+          ? "h-9 w-full justify-center rounded-md border-[#d8cdbd] bg-white px-4 text-[12px] font-bold text-[#173d2d] hover:bg-[#f6f1e8] sm:w-auto"
+          : "h-9 w-full justify-center rounded-md bg-[#0f3d2e] px-4 text-[12px] font-bold text-white hover:bg-[#164b39] sm:w-auto"
       }
     >
       {isBusy ? (

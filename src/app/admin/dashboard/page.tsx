@@ -219,21 +219,6 @@ export default async function AdminDashboardPage({
       </AdminSectionCard>
 
       <AdminSectionCard
-        title="Prioritas Tindak Lanjut"
-        description={
-          isPriorityFilterActive
-            ? "Daftar prioritas sudah disaring berdasarkan rentang tanggal pengajuan yang dipilih."
-            : "Daftar pengajuan pending yang paling lama menunggu dan sebaiknya diproses lebih dulu oleh admin."
-        }
-      >
-        {isUnavailable ? (
-          <AdminUnavailableState />
-        ) : (
-          <RequestPriorityTable rows={priorityRows} role="admin" />
-        )}
-      </AdminSectionCard>
-
-      <AdminSectionCard
         title="Pengajuan Baru Masuk"
         description={
           isPriorityFilterActive
@@ -347,6 +332,21 @@ export default async function AdminDashboardPage({
             </TableBody>
           </Table>
         </AdminTableScroll>
+        )}
+      </AdminSectionCard>
+
+      <AdminSectionCard
+        title="Prioritas Tindak Lanjut"
+        description={
+          isPriorityFilterActive
+            ? "Daftar prioritas sudah disaring berdasarkan rentang tanggal pengajuan yang dipilih."
+            : "Daftar pengajuan pending yang paling lama menunggu dan sebaiknya diproses lebih dulu oleh admin."
+        }
+      >
+        {isUnavailable ? (
+          <AdminUnavailableState />
+        ) : (
+          <RequestPriorityTable rows={priorityRows} role="admin" />
         )}
       </AdminSectionCard>
     </AdminPageShell>

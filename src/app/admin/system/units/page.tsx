@@ -67,7 +67,7 @@ export default async function AdminSystemUnitsPage({
           <Button className="h-9 rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39]">
             Tampilkan
           </Button>
-          <CsvDownloadButton filename="unit-list.csv" rows={csvRows} />
+          <CsvDownloadButton filename="system-units.csv" rows={csvRows} />
         </form>
         <p className="mt-3 text-[11px] text-[#7a7166]">
           Tambah, edit, hapus, dan import belum ditampilkan sampai endpoint

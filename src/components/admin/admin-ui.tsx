@@ -63,18 +63,20 @@ export function AdminPageHeader({
   action,
 }: AdminPageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 text-[#173d2d]">
+    <div className="flex flex-wrap items-start gap-4 text-[#173d2d]">
       <div>
-        <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+            {title}
+          </h1>
+          {action}
+        </div>
         {description ? (
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[#566258]">
             {description}
           </p>
         ) : null}
       </div>
-      {action}
     </div>
   );
 }

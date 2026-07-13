@@ -80,7 +80,7 @@ export function RequestDeleteButton({
         disabled={isDeleting}
         className={
           compact
-            ? "h-7 rounded-md px-2 text-[10px] font-semibold"
+            ? "h-7 w-full rounded-md px-2 text-[10px] font-semibold"
             : undefined
         }
       >

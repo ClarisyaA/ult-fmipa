@@ -21,6 +21,7 @@ type InlineStatusActionProps = {
 type RequestStatusActionButtonProps = InlineStatusActionProps & {
   action: RequestStatusAction;
   label?: string;
+  disabledTitle?: string;
 };
 
 type ActionConfig = {
@@ -264,6 +265,7 @@ export function RequestStatusActionButton({
   compact = false,
   action,
   label,
+  disabledTitle,
 }: RequestStatusActionButtonProps) {
   const router = useRouter();
   const [optimisticStatus, setOptimisticStatus] =
@@ -280,6 +282,8 @@ export function RequestStatusActionButton({
   const enabled = supported && config.activeStatuses.includes(currentStatus);
   const title = enabled
     ? config.confirmation
+    : disabledTitle && !supported
+      ? disabledTitle
     : getDisabledTitle(config.action, currentStatus, supported);
 
   async function handleClick() {
@@ -324,10 +328,10 @@ export function RequestStatusActionButton({
       className={
         enabled
           ? compact
-            ? "h-7 rounded-md bg-[#111111] px-2.5 text-[11px] text-white hover:bg-[#252525]"
+            ? "h-7 w-full rounded-md bg-[#111111] px-1.5 text-[10px] text-white hover:bg-[#252525]"
             : "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
           : compact
-            ? "h-7 rounded-md border-[#e2dee8] bg-white px-2.5 text-[11px] text-[#b7b2bd]"
+            ? "h-7 w-full rounded-md border-[#e2dee8] bg-white px-1.5 text-[10px] text-[#b7b2bd]"
             : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
       }
       onClick={handleClick}

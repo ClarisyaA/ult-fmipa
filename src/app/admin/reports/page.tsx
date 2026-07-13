@@ -112,14 +112,34 @@ export default async function AdminReportsPage({
     .slice(0, 3);
   const isAllData =
     !activeService && !params.dateFrom && !params.dateTo && !params.q?.trim();
-  const reportRows = (summary?.services ?? []).map((service) => ({
-    Layanan: service.title,
-    Total: service.total,
-    Menunggu: service.pending,
-    Diproses: service.inProgress,
-    Selesai: service.completed,
-    "Diambil/Dikirim": service.delivered,
-  }));
+  const reportRows =
+    activeTab === "layanan"
+      ? (summary?.services ?? []).map((service) => ({
+          Layanan: service.title,
+          Total: service.total,
+          Menunggu: service.pending,
+          Diproses: service.inProgress,
+          Selesai: service.completed,
+          "Diambil/Dikirim": service.delivered,
+        }))
+      : activeTab === "staf"
+        ? (performance?.staff ?? []).map((staff) => ({
+            Staf: staff.fullName,
+            Username: staff.userName,
+            Unit: staff.unitName,
+            "Total Aktivitas": staff.total,
+            "Proses/Verifikasi": staff.processed,
+            Selesai: staff.completed,
+            "Diambil/Dikirim": staff.delivered,
+          }))
+        : (performance?.units ?? []).map((unit) => ({
+            Unit: unit.unitName,
+            "Jumlah Staf": unit.staffCount,
+            "Total Aktivitas": unit.total,
+            "Proses/Verifikasi": unit.processed,
+            Selesai: unit.completed,
+            "Diambil/Dikirim": unit.delivered,
+          }));
 
   return (
     <AdminPageShell>
@@ -223,10 +243,10 @@ export default async function AdminReportsPage({
               />
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               type="submit"
-              className="h-9 rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39]"
+              className="h-9 w-full rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39] sm:w-auto"
             >
               Tampilkan
             </Button>
@@ -234,7 +254,7 @@ export default async function AdminReportsPage({
               asChild
               type="button"
               variant="outline"
-              className="h-9 rounded-md border-[#d8cdbd] bg-white px-4 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+              className="h-9 w-full rounded-md border-[#d8cdbd] bg-white px-4 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
             >
               <Link href={`/admin/reports?tab=${activeTab}`}>
                 Tampilkan Semua
@@ -246,7 +266,8 @@ export default async function AdminReportsPage({
                   ? "report-layanan.csv"
                   : `report-${activeTab}.csv`
               }
-              rows={activeTab === "layanan" ? reportRows : []}
+              rows={reportRows}
+              className="h-9 w-full justify-center rounded-md border-[#e1d8ca] bg-white px-3 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
             />
           </div>
         </form>
