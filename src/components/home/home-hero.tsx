@@ -11,24 +11,24 @@ const DESKTOP_BREAKPOINT = 1024;
 
 const personWrapperConfig = {
   orang1: {
-    left: 466,
+    left: 432,
     bottom: 54,
     width: 274,
     height: 411,
-    zoneLeft: 300,
+    zoneLeft: 80,
     zoneRight: 660,
-    travelLeft: -82,
-    travelRight: 62,
+    travelLeft: -420,
+    travelRight: 110,
   },
   orang2: {
-    left: 888,
+    left: 916,
     bottom: 52,
-    width: 280,
-    height: 381,
+    width: 294,
+    height: 400,
     zoneLeft: 780,
     zoneRight: 1160,
-    travelLeft: -64,
-    travelRight: 86,
+    travelLeft: -230,
+    travelRight: 120,
   },
 } satisfies Record<
   ActivePerson,
@@ -221,10 +221,10 @@ function scaleSceneStyle(style: React.CSSProperties, scale: number) {
 
 function getPersonTravel(person: ActivePerson, localX: number) {
   const cfg = personWrapperConfig[person];
-  const zoneProgress =
-    (localX - cfg.zoneLeft) / Math.max(cfg.zoneRight - cfg.zoneLeft, 1);
-  const clamped = Math.min(1, Math.max(0, zoneProgress));
-  return cfg.travelLeft + (cfg.travelRight - cfg.travelLeft) * clamped;
+  const personCenter = cfg.left + cfg.width / 2;
+  const targetTravel = localX - personCenter;
+
+  return Math.min(cfg.travelRight, Math.max(cfg.travelLeft, targetTravel));
 }
 
 function getScrollTravel(person: ActivePerson, progress: number) {
@@ -249,8 +249,8 @@ function movePerson(el: HTMLElement | null, tx: number, ty: number) {
   gsap.to(el, {
     x: tx,
     y: ty,
-    duration: 0.62,
-    ease: "power3.out",
+    duration: 0.08,
+    ease: "none",
     overwrite: "auto",
   });
 }
@@ -402,6 +402,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
       rafId.current = requestAnimationFrame(() => {
         const b = hero.getBoundingClientRect();
         const localX = e.clientX - b.left;
+        const baselineLocalX = localX / sceneScale;
         const localY = e.clientY - b.top;
         const nx =
           (Math.min(1, Math.max(0, localX / sceneSize.width)) - 0.5) * 2;
@@ -430,7 +431,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         if (next === "orang1") {
           movePerson(
             person1Wrap.current,
-            getPersonTravel("orang1", localX) * sceneScale,
+            getPersonTravel("orang1", baselineLocalX) * sceneScale,
             ty,
           );
           movePerson(person2Wrap.current, 0, 0);
@@ -438,7 +439,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
           movePerson(person1Wrap.current, 0, 0);
           movePerson(
             person2Wrap.current,
-            getPersonTravel("orang2", localX) * sceneScale,
+            getPersonTravel("orang2", baselineLocalX) * sceneScale,
             ty,
           );
         }
