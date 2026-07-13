@@ -19,6 +19,7 @@ import {
   createSikApprovalProofRequest,
   sikApprovalProofAttachmentType,
   sikServiceSlug,
+  SikRequestError,
 } from "@/lib/sik-requests";
 import { getServerSession } from "next-auth";
 
@@ -244,6 +245,15 @@ export async function POST(
     }
 
     if (error instanceof ServiceRequestSubmitError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+        },
+        { status: error.statusCode }
+      );
+    }
+
+    if (error instanceof SikRequestError) {
       return NextResponse.json(
         {
           error: error.message,

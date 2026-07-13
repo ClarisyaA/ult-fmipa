@@ -128,7 +128,7 @@ Service yang akan aktif:
 | MariaDB dari host | `localhost:13306` |
 | MariaDB antar-container | `db:3306` |
 
-Kalau hanya ingin database + Adminer lalu FE dijalankan lokal dengan `pnpm dev`,
+Kalau hanya ingin database + Adminer lalu FE dijalankan lokal dengan `pnpm run dev`,
 itu juga boleh. Compose tetap dipakai untuk MariaDB.
 
 ### 6. Import database legacy
@@ -324,7 +324,7 @@ mengikuti urutan migrasi di repository saat ini.
 
 ```powershell
 docker compose up -d
-pnpm dev
+pnpm run dev
 ```
 
 ## Full Docker Compose

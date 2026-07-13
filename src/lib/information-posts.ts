@@ -122,11 +122,29 @@ function isMissingInformationTableError(error: unknown) {
   );
 }
 
+function isDatabaseConnectionUnavailableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    message.includes("pool timeout") ||
+    message.includes("failed to retrieve a connection") ||
+    message.includes("45028") ||
+    message.includes("Can't reach database") ||
+    message.includes("ECONNREFUSED")
+  );
+}
+
 function warnMissingInformationTable() {
   if (process.env.NODE_ENV !== "production") {
     console.warn(
       "Table informasi belum tersedia. Jalankan migration 003_create_ult_information_posts.sql."
     );
+  }
+}
+
+function warnInformationDatabaseUnavailable(error: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("Database informasi sementara tidak tersedia.", error);
   }
 }
 
@@ -136,23 +154,37 @@ function handleReadError(error: unknown) {
     return;
   }
 
+  if (isDatabaseConnectionUnavailableError(error)) {
+    warnInformationDatabaseUnavailable(error);
+    return;
+  }
+
   throw error;
 }
 
 async function hasInformationTable() {
-  const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
-    SELECT COUNT(*) AS tableCount
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'ult_information_posts'
-  `;
+  try {
+    const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
+      SELECT COUNT(*) AS tableCount
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'ult_information_posts'
+    `;
 
-  if (Number(rows[0]?.tableCount ?? 0) > 0) {
-    return true;
+    if (Number(rows[0]?.tableCount ?? 0) > 0) {
+      return true;
+    }
+
+    warnMissingInformationTable();
+    return false;
+  } catch (error) {
+    if (isDatabaseConnectionUnavailableError(error)) {
+      warnInformationDatabaseUnavailable(error);
+      return false;
+    }
+
+    throw error;
   }
-
-  warnMissingInformationTable();
-  return false;
 }
 
 async function getInformationTableCapabilities(): Promise<InformationTableCapabilities> {

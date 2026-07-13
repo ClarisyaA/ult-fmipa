@@ -65,6 +65,18 @@ function isMissingImageTableError(error: unknown) {
   );
 }
 
+function isDatabaseConnectionUnavailableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    message.includes("pool timeout") ||
+    message.includes("failed to retrieve a connection") ||
+    message.includes("45028") ||
+    message.includes("Can't reach database") ||
+    message.includes("ECONNREFUSED")
+  );
+}
+
 function warnMissingImageTable() {
   if (process.env.NODE_ENV !== "production") {
     console.warn(
@@ -73,20 +85,35 @@ function warnMissingImageTable() {
   }
 }
 
-async function hasImageTable() {
-  const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
-    SELECT COUNT(*) AS tableCount
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'ult_information_post_images'
-  `;
-
-  if (Number(rows[0]?.tableCount ?? 0) > 0) {
-    return true;
+function warnImageDatabaseUnavailable(error: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("Database gambar informasi sementara tidak tersedia.", error);
   }
+}
 
-  warnMissingImageTable();
-  return false;
+async function hasImageTable() {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
+      SELECT COUNT(*) AS tableCount
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'ult_information_post_images'
+    `;
+
+    if (Number(rows[0]?.tableCount ?? 0) > 0) {
+      return true;
+    }
+
+    warnMissingImageTable();
+    return false;
+  } catch (error) {
+    if (isDatabaseConnectionUnavailableError(error)) {
+      warnImageDatabaseUnavailable(error);
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 function assertId(value: string, message: string) {
@@ -114,6 +141,11 @@ export async function getInformationPostImages(postId: string) {
   } catch (error) {
     if (isMissingImageTableError(error)) {
       warnMissingImageTable();
+      return [];
+    }
+
+    if (isDatabaseConnectionUnavailableError(error)) {
+      warnImageDatabaseUnavailable(error);
       return [];
     }
 
