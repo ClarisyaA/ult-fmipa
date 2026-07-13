@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -59,6 +60,11 @@ export async function PATCH(
         FIELD_NAME: true,
       },
     });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Data Level: Mengubah data level: ${row.LEVEL_DATA_ID}`,
+    });
 
     return successJson(row, "Data level berhasil diperbarui.");
   } catch (error) {
@@ -92,6 +98,11 @@ export async function DELETE(
     }
 
     await prisma.data_level.delete({ where: { LEVEL_DATA_ID: id } });
+    await writeAuditLog({
+      actor: auth.user,
+      request: _request,
+      action: `Data Level: Menghapus data level: ${id}`,
+    });
 
     return successJson({ id }, "Data level berhasil dihapus.");
   } catch (error) {

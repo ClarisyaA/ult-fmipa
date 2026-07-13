@@ -2,6 +2,7 @@ import { getServerSession, type NextAuthOptions } from "next-auth";
 import type { OAuthConfig } from "next-auth/providers/oauth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   mapDevUserToSessionUser,
   type AppRole,
@@ -282,6 +283,27 @@ export const authOptions: NextAuthOptions = {
       }
 
       return session;
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      await writeAuditLog({
+        actor: user,
+        action: "Auth: Login",
+      });
+    },
+    async signOut(message) {
+      const token = "token" in message ? message.token : null;
+      await writeAuditLog({
+        actor: token
+          ? {
+              id: typeof token.id === "string" ? token.id : "",
+              email: typeof token.email === "string" ? token.email : null,
+              name: typeof token.name === "string" ? token.name : null,
+            }
+          : null,
+        action: "Auth: Logout",
+      });
     },
   },
 };

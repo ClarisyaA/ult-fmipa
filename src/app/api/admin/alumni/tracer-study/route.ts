@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
         Jabatan: true,
         status_isi: true,
       },
+    });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Tracer Study: Membuat data tracer alumni: ${row.id}`,
     });
 
     return successJson(row, "Data tracer study berhasil ditambahkan.", 201);

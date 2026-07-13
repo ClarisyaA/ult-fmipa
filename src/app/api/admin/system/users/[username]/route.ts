@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import { hashLegacyPassword, mapAccessCodeToRole } from "@/lib/auth-db-users";
 import {
   AdminActionError,
@@ -154,6 +155,16 @@ export async function PATCH(
         UNIT_ID: true,
       },
     });
+    const activity = passwordHash
+      ? `User: Reset password user: ${row.USER_NAME}`
+      : confirmed !== user.CONFIRMED
+        ? `User: ${confirmed === "1" ? "Mengaktifkan" : "Menonaktifkan"} user: ${row.USER_NAME}`
+        : `User: Mengubah data user: ${row.USER_NAME}`;
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: activity,
+    });
 
     return successJson(row, "Data user berhasil diperbarui.");
   } catch (error) {
@@ -250,6 +261,11 @@ export async function DELETE(
     }
 
     await prisma.data_users.delete({ where: { USER_NAME: username } });
+    await writeAuditLog({
+      actor: auth.user,
+      request: _request,
+      action: `User: Menghapus user: ${username}`,
+    });
 
     return successJson({ username }, "User berhasil dihapus.");
   } catch (error) {

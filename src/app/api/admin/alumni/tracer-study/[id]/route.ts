@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -75,6 +76,11 @@ export async function PATCH(
         status_isi: true,
       },
     });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Tracer Study: Mengubah data tracer alumni: ${row.id}`,
+    });
 
     return successJson(row, "Data tracer study berhasil diperbarui.");
   } catch (error) {
@@ -98,6 +104,11 @@ export async function DELETE(
     const id = parseId(idParam);
 
     await prisma.alumni.delete({ where: { id } });
+    await writeAuditLog({
+      actor: auth.user,
+      request: _request,
+      action: `Tracer Study: Menghapus data tracer alumni: ${id}`,
+    });
 
     return successJson({ id }, "Data tracer study berhasil dihapus.");
   } catch (error) {

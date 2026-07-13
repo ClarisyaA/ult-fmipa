@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit-log";
 import { jsonApiError } from "@/lib/error-utils";
 import {
   deleteServiceRequest,
@@ -50,6 +51,11 @@ export async function DELETE(
   try {
     const { serviceSlug, id } = await params;
     await deleteServiceRequest(serviceSlug, id);
+    await writeAuditLog({
+      actor: user,
+      request: _request,
+      action: `Pengajuan: Menghapus pengajuan layanan: ${serviceSlug} #${id}`,
+    });
 
     return NextResponse.json({
       message: "Pengajuan berhasil dihapus.",

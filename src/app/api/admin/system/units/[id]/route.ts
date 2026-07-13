@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -83,6 +84,11 @@ export async function PATCH(
         UNIT_NAME: true,
       },
     });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Unit: Mengubah unit: ${row.UNIT_NAME}`,
+    });
 
     return successJson(
       {
@@ -129,6 +135,11 @@ export async function DELETE(
     }
 
     await prisma.data_unit.delete({ where: { UNIT_ID: id } });
+    await writeAuditLog({
+      actor: auth.user,
+      request: _request,
+      action: `Unit: Menghapus unit: ${id.toString()}`,
+    });
 
     return successJson({ unitId: id.toString() }, "Unit berhasil dihapus.");
   } catch (error) {

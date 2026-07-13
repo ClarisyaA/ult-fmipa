@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -55,6 +56,11 @@ export async function POST(request: Request) {
         LEVEL_DATA_CODE: true,
         UNIT_NAME: true,
       },
+    });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Unit: Membuat unit: ${row.UNIT_NAME}`,
     });
 
     return successJson(

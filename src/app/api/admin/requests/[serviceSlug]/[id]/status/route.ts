@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getCurrentUser } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   RequestStatusUpdateError,
   updateRequestStatus,
@@ -14,11 +16,17 @@ export async function PATCH(
   try {
     const { serviceSlug, id } = await params;
     const body = (await request.json()) as UpdateRequestStatusInput;
+    const user = await getCurrentUser();
     const updatedRequestDetail = await updateRequestStatus(
       serviceSlug,
       id,
       body
     );
+    await writeAuditLog({
+      actor: user,
+      request,
+      action: `Pengajuan: ${body.action} pengajuan layanan: ${serviceSlug} #${id}`,
+    });
 
     return NextResponse.json({
       data: updatedRequestDetail,

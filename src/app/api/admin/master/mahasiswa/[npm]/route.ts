@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -131,6 +132,11 @@ export async function PATCH(
         ANGKATAN: true,
       },
     });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Mahasiswa: Mengubah data mahasiswa NPM: ${row.NPM}`,
+    });
 
     return successJson(row, "Data mahasiswa berhasil diperbarui.");
   } catch (error) {
@@ -173,6 +179,11 @@ export async function DELETE(
     }
 
     await prisma.mahasiswa.delete({ where: { NPM: npm } });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Mahasiswa: Menghapus data mahasiswa NPM: ${npm}`,
+    });
 
     return successJson({ npm }, "Data mahasiswa berhasil dihapus.");
   } catch (error) {

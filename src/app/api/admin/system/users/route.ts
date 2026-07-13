@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import { hashLegacyPassword, mapAccessCodeToRole } from "@/lib/auth-db-users";
 import {
   AdminActionError,
@@ -119,6 +120,11 @@ export async function POST(request: Request) {
         ACCESS_CODE: true,
         UNIT_ID: true,
       },
+    });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `User: Membuat akun user: ${row.USER_NAME}`,
     });
 
     return successJson(row, "User berhasil ditambahkan.", 201);

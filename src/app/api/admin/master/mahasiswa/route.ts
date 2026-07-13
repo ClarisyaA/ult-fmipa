@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -62,6 +63,11 @@ export async function POST(request: Request) {
         JENJANG: true,
         ANGKATAN: true,
       },
+    });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Mahasiswa: Membuat data mahasiswa NPM: ${row.NPM}`,
     });
 
     return successJson(row, "Data mahasiswa berhasil ditambahkan.", 201);

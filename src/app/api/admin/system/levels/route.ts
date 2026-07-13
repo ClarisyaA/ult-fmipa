@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   AdminActionError,
   cleanString,
@@ -48,6 +49,11 @@ export async function POST(request: Request) {
         LEVEL_DATA_NAME: true,
         FIELD_NAME: true,
       },
+    });
+    await writeAuditLog({
+      actor: auth.user,
+      request,
+      action: `Data Level: Membuat data level: ${row.LEVEL_DATA_ID}`,
     });
 
     return successJson(row, "Data level berhasil ditambahkan.", 201);
