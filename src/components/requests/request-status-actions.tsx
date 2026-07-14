@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { RequestStatus } from "@/types/request";
 
@@ -74,6 +75,7 @@ export function RequestStatusActions({
   const [pendingAction, setPendingAction] = useState<RequestStatusAction | null>(
     null
   );
+  const [emailDialogSignal, setEmailDialogSignal] = useState(0);
   const [error, setError] = useState("");
 
   if (currentStatus === "delivered") {
@@ -119,11 +121,20 @@ export function RequestStatusActions({
     }
 
     setPendingAction(null);
+    if (action === "complete") {
+      setEmailDialogSignal((value) => value + 1);
+    }
     router.refresh();
   }
 
   return (
     <div className="grid gap-3 rounded-lg border bg-background p-4">
+      <RequestEmailHelper
+        serviceSlug={serviceSlug}
+        id={id}
+        mode="completion-dialog"
+        openSignal={emailDialogSignal}
+      />
       <div>
         <p className="text-sm font-medium">Update Status</p>
         <p className="mt-1 text-sm text-muted-foreground">

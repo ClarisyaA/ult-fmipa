@@ -1059,6 +1059,7 @@ Refresh:
 | Request Export | GET | `/api/admin/requests/export` | Admin | CSV | Admin export | `text/csv` |
 | Letter PDF | GET | `/api/requests/[serviceSlug]/[id]/pdf` | Admin/Staff | PDF/Text/JSON | Detail pengajuan | `application/pdf` |
 | Letter Metadata | GET/PATCH | `/api/requests/[serviceSlug]/[id]/letter-metadata` | Admin/Staff | JSON | Detail pengajuan | 409 overwrite |
+| Email Draft Helper | GET | `/api/requests/[serviceSlug]/[id]/email-draft` | Admin/Staff | JSON | Detail pengajuan | Compose only, manual attachment |
 | Admin Home Activities | GET/POST | `/api/admin/home/activities` | Admin | JSON | Admin CMS | List/create |
 | Admin Home Activity Detail | GET/PATCH/DELETE | `/api/admin/home/activities/[id]` | Admin | JSON | Admin CMS | Detail/update/delete |
 | Staff Home Activities | GET/POST | `/api/staff/home/activities` | Staff | JSON | Staff CMS | List/create |
@@ -1101,6 +1102,21 @@ Refresh:
 | Staff Profile Hours | POST | `/api/staff/profile/location/hours` | Staff | JSON | Profile CMS | Add hour |
 | Staff Profile Hour Detail | PATCH/DELETE | `/api/staff/profile/location/hours/[id]` | Staff | JSON | Profile CMS | Update/delete |
 
+## Email Delivery Helper Level 1
+
+`GET /api/requests/[serviceSlug]/[id]/email-draft` menyiapkan data Gmail compose untuk admin/staff:
+
+- `recipientEmail` jika tersedia dari field request atau alumni profile.
+- `subject` dengan format `Penyelesaian Pengajuan {serviceTitle} - ULT FMIPA Unpad`.
+- `body` default yang netral dan tidak menyebut auto-attachment.
+- `gmailComposeUrl`.
+- `supportsGeneratedPdf` dan `pdfUrl` hanya untuk layanan printable.
+- `attachmentInstruction` selalu berisi instruksi lampiran manual.
+
+Fitur ini menggunakan Gmail compose URL. Sistem hanya mengisi email tujuan, subjek, dan isi pesan. File hasil layanan tetap harus dilampirkan manual oleh admin/staff. Fitur ini tidak memakai `mailto:`, tidak mengirim email otomatis, tidak memakai SMTP, tidak memakai Gmail API, dan tidak mengubah generator PDF.
+
+Layanan printable (`keterangan-lulus`, `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`) hanya menampilkan tombol bantu `Buka PDF Surat`; PDF tetap harus dibuka/diunduh lalu dilampirkan manual di Gmail.
+
 ## Belum Tersedia / Tidak Ditemukan
 
 - Tidak ada route `PUT` di `src/app/api`.
@@ -1133,4 +1149,3 @@ export type ApiErrorPayload =
   | { error: string; issues?: Array<{ field: string; message: string }> }
   | { success: false; error: { code?: string; message: string } };
 ```
-

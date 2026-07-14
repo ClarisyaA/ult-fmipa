@@ -23,6 +23,7 @@ import {
   RequestStatusActionButton,
 } from "@/components/requests/inline-status-action";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Button } from "@/components/ui/button";
@@ -556,6 +557,8 @@ function AdminRequestPreview({
             staffName={staffName}
             supported={supportsInlineStatus(request)}
           />
+
+          <RequestEmailHelper serviceSlug={request.serviceSlug} id={request.id} />
 
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">

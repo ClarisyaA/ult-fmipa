@@ -5,6 +5,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 
 import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
@@ -461,6 +462,8 @@ export default async function StaffRequestDetailPage({
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
+
+      <RequestEmailHelper serviceSlug={detail.serviceSlug} id={detail.id} />
 
       {printableInfo ? (
         <LetterMetadataEditor

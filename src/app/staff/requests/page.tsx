@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Badge } from "@/components/ui/badge";
@@ -369,6 +370,8 @@ function RequestPreview({
             staffName={staffName}
             supported={supportsInlineStatus(request)}
           />
+
+          <RequestEmailHelper serviceSlug={request.serviceSlug} id={request.id} />
 
           {profileRows.length > 0 ? (
             <div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { RequestStatus } from "@/types/request";
 
@@ -115,6 +116,7 @@ export function InlineStatusAction({
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
     useState<ForwardRequestStatusAction | null>(null);
+  const [emailDialogSignal, setEmailDialogSignal] = useState(0);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const currentStatus = optimisticStatus ?? status;
@@ -202,6 +204,9 @@ export function InlineStatusAction({
 
       setMessage(config.successMessage);
       setOptimisticStatus(nextStatusByAction[config.action]);
+      if (config.action === "complete") {
+        setEmailDialogSignal((value) => value + 1);
+      }
       router.refresh();
     } finally {
       setSubmittingAction(null);
@@ -210,6 +215,12 @@ export function InlineStatusAction({
 
   return (
     <div className="grid gap-2">
+      <RequestEmailHelper
+        serviceSlug={serviceSlug}
+        id={id}
+        mode="completion-dialog"
+        openSignal={emailDialogSignal}
+      />
       <div className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}>
         {actions.map((config) => {
           const enabled = config.activeStatuses.includes(currentStatus);
@@ -277,6 +288,7 @@ export function RequestStatusActionButton({
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
     useState<ForwardRequestStatusAction | null>(null);
+  const [emailDialogSignal, setEmailDialogSignal] = useState(0);
   const currentStatus = optimisticStatus ?? status;
   const config = getActionConfig(action);
 
@@ -319,6 +331,9 @@ export function RequestStatusActionButton({
       }
 
       setOptimisticStatus(nextStatusByAction[config.action]);
+      if (config.action === "complete") {
+        setEmailDialogSignal((value) => value + 1);
+      }
       router.refresh();
     } finally {
       setSubmittingAction(null);
@@ -326,6 +341,13 @@ export function RequestStatusActionButton({
   }
 
   return (
+    <>
+      <RequestEmailHelper
+        serviceSlug={serviceSlug}
+        id={id}
+        mode="completion-dialog"
+        openSignal={emailDialogSignal}
+      />
     <Button
       type="button"
       variant={enabled ? "default" : "outline"}
@@ -349,5 +371,6 @@ export function RequestStatusActionButton({
           : "Menyimpan..."
         : label ?? config.label}
     </Button>
+    </>
   );
 }
