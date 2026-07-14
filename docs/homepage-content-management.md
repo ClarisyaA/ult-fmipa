@@ -42,6 +42,7 @@ Format yang didukung:
 Batas ukuran mengikuti konvensi upload informasi saat ini: maksimal 2 MB per gambar.
 Form gambar mendukung klik untuk memilih file atau drag-and-drop ke area upload.
 File upload asli disimpan di `storage/home-activities` dan tidak boleh ikut commit. Folder ini di-ignore kecuali `.gitkeep`.
+SVG hanya didukung untuk upload gambar CMS, bukan lampiran dokumen resmi. SVG yang mengandung konten tidak aman seperti script, event handler, `javascript:`, `foreignObject`, atau referensi remote akan ditolak.
 
 Field **Tampilan Gambar** mengatur cara gambar ditampilkan di carousel homepage dan preview admin/staff:
 

@@ -1346,6 +1346,7 @@ export function HomeLandingSections() {
                   src={featuredInformation?.image ?? "/gedung-fmipa.svg"}
                   alt={featuredInformation?.imageAlt ?? "Informasi Layanan"}
                   fill
+                  unoptimized
                   sizes="(max-width: 1024px) 90vw, 50vw"
                   className={featuredInformationImageClass}
                 />
@@ -1404,6 +1405,7 @@ export function HomeLandingSections() {
                         src={info.image}
                         alt={info.imageAlt}
                         fill
+                        unoptimized
                         sizes="76px"
                         className={thumbnailImageClass}
                       />

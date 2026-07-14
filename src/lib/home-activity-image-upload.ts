@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { validateSafeSvgBuffer } from "@/lib/safe-svg";
+
 export type SavedHomeActivityImageMetadata = {
   originalName: string;
   storedName: string;
@@ -54,7 +56,7 @@ export function validateHomeActivityImage(file: File) {
     !allowedExtensions.has(getExtension(file.name))
   ) {
     throw new HomeActivityImageUploadError(
-      `Format gambar ${file.name} tidak didukung.`
+      "Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG."
     );
   }
 }
@@ -70,6 +72,10 @@ export async function saveHomeActivityImage(
   const storedName = `${randomUUID()}${extension}`;
   const absolutePath = path.join(activityImageDir, storedName);
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (file.type === "image/svg+xml" && !validateSafeSvgBuffer(buffer)) {
+    throw new HomeActivityImageUploadError("File SVG mengandung konten yang tidak aman.");
+  }
 
   await writeFile(absolutePath, buffer);
 

@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { validateSafeSvgBuffer } from "@/lib/safe-svg";
+
 export type SavedInformationImageMetadata = {
   originalName: string;
   storedName: string;
@@ -12,12 +14,18 @@ export type SavedInformationImageMetadata = {
 
 const informationImageDir = path.join(process.cwd(), "storage", "information");
 const maxImageSizeBytes = 2 * 1024 * 1024;
-const allowedMimeTypes = new Set(["image/webp", "image/png", "image/jpeg"]);
-const allowedExtensions = new Set([".webp", ".png", ".jpg", ".jpeg"]);
+const allowedMimeTypes = new Set([
+  "image/webp",
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+]);
+const allowedExtensions = new Set([".webp", ".png", ".jpg", ".jpeg", ".svg"]);
 const extensionByMimeType: Record<string, string> = {
   "image/webp": ".webp",
   "image/png": ".png",
   "image/jpeg": ".jpg",
+  "image/svg+xml": ".svg",
 };
 
 export class InformationImageUploadError extends Error {
@@ -48,7 +56,7 @@ export function validateInformationImage(file: File) {
     !allowedExtensions.has(getExtension(file.name))
   ) {
     throw new InformationImageUploadError(
-      `Format gambar ${file.name} tidak didukung.`
+      "Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG."
     );
   }
 }
@@ -64,6 +72,10 @@ export async function saveInformationImage(
   const storedName = `${randomUUID()}${extension}`;
   const absolutePath = path.join(informationImageDir, storedName);
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (file.type === "image/svg+xml" && !validateSafeSvgBuffer(buffer)) {
+    throw new InformationImageUploadError("File SVG mengandung konten yang tidak aman.");
+  }
 
   await writeFile(absolutePath, buffer);
 

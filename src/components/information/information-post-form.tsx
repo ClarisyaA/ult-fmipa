@@ -41,8 +41,13 @@ type PendingImage = {
 
 const maxImages = 5;
 const maxImageSize = 2 * 1024 * 1024;
-const allowedImageTypes = new Set(["image/webp", "image/png", "image/jpeg"]);
-const allowedImageExtensions = [".webp", ".png", ".jpg", ".jpeg"];
+const allowedImageTypes = new Set([
+  "image/webp",
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+]);
+const allowedImageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".svg"];
 
 function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -151,7 +156,7 @@ export function InformationPostForm({
 
     for (const file of files) {
       if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
-        setError(`Format gambar ${file.name} tidak didukung.`);
+        setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
         validImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
         return;
       }
@@ -165,7 +170,10 @@ export function InformationPostForm({
       validImages.push({
         file,
         previewUrl: URL.createObjectURL(file),
-        imageFit: "cover",
+        imageFit:
+          file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")
+            ? "contain"
+            : "cover",
       });
     }
 
@@ -491,14 +499,14 @@ export function InformationPostForm({
             name="images"
             type="file"
             multiple
-            accept=".webp,.png,.jpg,.jpeg,image/webp,image/png,image/jpeg"
+            accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
             className="min-h-10 rounded-md border-[#e1d8ca] text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[#0f3d2e] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
             onChange={handleImageSelection}
             disabled={totalImages >= maxImages}
           />
           <p className="text-xs leading-relaxed text-[#7a7166]">
-            {totalImages} dari 5 gambar dipilih. Format WEBP, PNG, JPG, atau
-            JPEG. Maksimal 2 MB per gambar.
+            {totalImages} dari 5 gambar dipilih. Format WEBP, PNG, JPG, JPEG,
+            atau SVG. Maksimal 2 MB per gambar.
           </p>
         </div>
 
@@ -518,6 +526,7 @@ export function InformationPostForm({
                     alt={image.altText ?? image.originalName}
                     width={640}
                     height={360}
+                    unoptimized
                     className={getPreviewImageClass(imageFitDrafts[image.id] ?? "cover")}
                   />
                   <div className="flex items-start justify-between gap-2">

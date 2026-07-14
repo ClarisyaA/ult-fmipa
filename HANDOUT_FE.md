@@ -522,8 +522,9 @@ Rules:
 
 - Max 5 images.
 - Max 2 MB per image.
-- Allowed: WebP, PNG, JPG/JPEG.
-- SVG not allowed.
+- Allowed: WebP, PNG, JPG/JPEG, SVG.
+- SVG support applies to CMS image uploads only. Official document attachments may still reject SVG.
+- SVG files are rejected if they contain unsafe content such as scripts, event handlers, `javascript:`, `foreignObject`, or remote references.
 - `imageFit` defaults to `cover`. Use `cover` / **Penuhi Card** for normal photos and `contain` / **Tampilkan Utuh** for logos, posters, or graphics that must not be cropped.
 - `displayEndAt` must be after `displayStartAt`.
 
