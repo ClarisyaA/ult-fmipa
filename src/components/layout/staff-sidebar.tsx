@@ -13,7 +13,9 @@ import {
   Home,
   Images,
   LogOut,
+  MapPin,
   Menu,
+  Network,
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
@@ -34,6 +36,8 @@ const navIcons = {
   Pengajuan: FileText,
   Informasi: Newspaper,
   "Kegiatan Mahasiswa": Images,
+  "Profil - Struktur": Network,
+  "Profil - Lokasi": MapPin,
   Survei: BarChart3,
   "Website Publik": Globe,
 };

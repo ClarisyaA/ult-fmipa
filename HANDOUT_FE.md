@@ -635,6 +635,53 @@ Render image:
 - Forgetting confirmation before delete.
 - Showing hidden/draft/archived information publicly.
 
+## Profile CMS
+
+Halaman publik `/profil` mengambil data dinamis untuk **Struktur Organisasi** dan **Lokasi Kami**. Jika API/DB tidak tersedia, UI memakai fallback statis.
+
+Public endpoints:
+
+| Method | Endpoint | Notes |
+| --- | --- | --- |
+| `GET` | `/api/profile/organization` | Active organization tree |
+| `GET` | `/api/profile/location` | Active location settings and hours |
+| `GET` | `/api/profile/images/[type]/[id]` | `type`: `organization` or `location` |
+
+Admin endpoints:
+
+| Method | Endpoint | Notes |
+| --- | --- | --- |
+| `GET` | `/api/admin/profile/organization` | List all nodes |
+| `POST` | `/api/admin/profile/organization` | Create node with optional image |
+| `GET` | `/api/admin/profile/organization/[id]` | Node detail |
+| `PATCH` | `/api/admin/profile/organization/[id]` | Update node |
+| `DELETE` | `/api/admin/profile/organization/[id]` | Delete node, blocked if it has children |
+| `GET` | `/api/admin/profile/location` | Location settings |
+| `PATCH` | `/api/admin/profile/location` | Update location settings with optional image |
+| `POST` | `/api/admin/profile/location/hours` | Add operating hour |
+| `PATCH` | `/api/admin/profile/location/hours/[id]` | Update operating hour |
+| `DELETE` | `/api/admin/profile/location/hours/[id]` | Delete operating hour |
+
+Staff endpoints mirror admin under `/api/staff/profile/...`.
+
+Organization payload fields:
+
+```ts
+{
+  parentId?: string | "root";
+  name: string;
+  positionTitle: string;
+  roleLabel?: string;
+  photoAlt?: string;
+  colorVariant?: "emerald" | "red" | "amber";
+  isActive?: boolean;
+  sortOrder?: number;
+  image?: File; // multipart only
+}
+```
+
+Location settings support `imageFit: "cover" | "contain"`. Use `contain` for maps, logos, SVG, or graphics that must stay fully visible.
+
 ## Minimal TypeScript Types
 
 These are FE-facing helper types, not a full backend mirror.
