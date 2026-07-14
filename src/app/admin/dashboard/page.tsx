@@ -9,6 +9,7 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { RequestPriorityTable } from "@/components/requests/request-priority-table";
+import { AdminDashboardTutorialButton } from "@/components/tutorial/admin-dashboard-tutorial-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -116,20 +117,14 @@ export default async function AdminDashboardPage({
       <AdminPageHeader
         title="Dashboard Admin"
         description="Ringkasan agregat read-only dari layanan ULT. Data pribadi pemohon tidak ditampilkan di dashboard."
-        action={
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
-          >
-            <Link href="/">Website Publik</Link>
-          </Button>
-        }
+        action={<AdminDashboardTutorialButton />}
       />
 
       <div className="overflow-x-auto pb-1">
-        <div className="grid min-w-[1120px] grid-cols-5 gap-3">
+        <div
+          className="grid min-w-[1120px] grid-cols-5 gap-3"
+          data-tour="admin-dashboard-summary"
+        >
         {isUnavailable ? (
           <div className="col-span-5">
             <AdminUnavailableState />
@@ -220,18 +215,19 @@ export default async function AdminDashboardPage({
         </form>
       </AdminSectionCard>
 
-      <AdminSectionCard
-        title="Pengajuan Baru Masuk"
-        description={
-          isPriorityFilterActive
-            ? "Daftar pengajuan baru mengikuti rentang tanggal filter yang sama."
-            : "Pantau permintaan terbaru yang belum masuk ke tahap proses."
-        }
-      >
-        {isUnavailable || !summary ? (
-          <AdminUnavailableState />
-        ) : (
-        <div className="overflow-x-auto rounded-md border border-[#edf0e9]">
+      <div data-tour="admin-dashboard-latest">
+        <AdminSectionCard
+          title="Pengajuan Baru Masuk"
+          description={
+            isPriorityFilterActive
+              ? "Daftar pengajuan baru mengikuti rentang tanggal filter yang sama."
+              : "Pantau permintaan terbaru yang belum masuk ke tahap proses."
+          }
+        >
+          {isUnavailable || !summary ? (
+            <AdminUnavailableState />
+          ) : (
+          <div className="overflow-x-auto rounded-md border border-[#edf0e9]">
           <Table className="min-w-[900px]">
             <TableHeader className="bg-[#eef3ec]">
               <TableRow>
@@ -287,9 +283,10 @@ export default async function AdminDashboardPage({
               )}
             </TableBody>
           </Table>
-        </div>
-        )}
-      </AdminSectionCard>
+          </div>
+          )}
+        </AdminSectionCard>
+      </div>
 
       <AdminSectionCard
         title="Ringkasan per Layanan"

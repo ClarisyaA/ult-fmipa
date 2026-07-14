@@ -5,9 +5,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  FileDown,
   FileText,
-  LockKeyhole,
   Mail,
   ShieldCheck,
   UploadCloud,
@@ -18,7 +16,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ServiceFlowType } from "./service-flow-config";
-import type { PublicService } from "@/types/service";
+
+type PublicTemplateLink = {
+  label: string;
+  url: string;
+  isActive: boolean;
+};
 
 /* ================================================================
  * KONSTANTA
@@ -35,17 +38,24 @@ const AUTHENTICATED_STUDENT_EMAIL = "nama.mahasiswa@mail.unpad.ac.id";
 interface ServiceFlowProps {
   slug: string;
   flow: ServiceFlowType;
-  service: PublicService;
+  templateLinks?: {
+    scholarshipRecommendation?: PublicTemplateLink;
+  };
 }
 
-export function ServiceFlow({ slug, flow, service }: ServiceFlowProps) {
+export function ServiceFlow({ slug, flow, templateLinks }: ServiceFlowProps) {
   switch (flow) {
     case "perpus":
       return <PerpusFlow />;
     case "magang-sik":
       return <MagangSikFlow />;
     case "template":
-      return <TemplateFlow slug={slug} serviceTitle={service.title} />;
+      return (
+        <TemplateFlow
+          slug={slug}
+          scholarshipTemplateLink={templateLinks?.scholarshipRecommendation}
+        />
+      );
     case "pengiriman":
       return <PengirimanFlow />;
     default:
@@ -273,54 +283,70 @@ function MagangSikFlow() {
 
 function TemplateFlow({
   slug,
-  serviceTitle,
+  scholarshipTemplateLink,
 }: {
   slug: string;
-  serviceTitle: string;
+  scholarshipTemplateLink?: PublicTemplateLink;
 }) {
-  const templateHref = `/templates/${slug}.docx`;
+  const isScholarshipService = slug === "rekomendasi-beasiswa";
+  const activeScholarshipLink =
+    isScholarshipService && scholarshipTemplateLink?.isActive
+      ? scholarshipTemplateLink
+      : null;
 
-  return (
-    <div className="mt-4 space-y-4">
-      <div className="flex items-center gap-4 rounded-xl border border-[#E8DECE] bg-[#FAF7EF] p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#EE1C25]/8">
-          <FileText className="size-5 text-[#EE1C25]" />
+  if (isScholarshipService) {
+    return (
+      <div className="mt-4 space-y-4">
+        <div className="flex items-center gap-4 rounded-xl border border-[#E8DECE] bg-[#FAF7EF] p-4">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#EE1C25]/8">
+            <FileText className="size-5 text-[#EE1C25]" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-[#18130E]">
+              {scholarshipTemplateLink?.label ?? "Template Surat Rekomendasi Beasiswa"}
+            </p>
+            <p className="text-xs text-[#A0917F]">
+              Google Docs/Drive · Dibuka di tab baru
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-[#18130E]">
-            Template {serviceTitle}
+
+        {activeScholarshipLink ? (
+          <Button asChild size="lg" className="w-full bg-[#EE1C25] hover:bg-[#EE1C25]/90">
+            <a
+              href={activeScholarshipLink.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="size-4 mr-2" />
+              Buka Template Rekomendasi Beasiswa
+            </a>
+          </Button>
+        ) : (
+          <p className="rounded-xl border border-[#E8DECE] bg-[#FAF7EF] p-4 text-sm text-[#6B5E52]">
+            Link template Rekomendasi Beasiswa sedang nonaktif. Silakan hubungi ULT FMIPA.
           </p>
-          <p className="text-xs text-[#A0917F]">Format .docx · Siap diisi</p>
-        </div>
+        )}
+
+        <ol className="space-y-2 text-sm text-[#6B5E52]">
+          <li className="flex gap-2">
+            <span className="font-bold text-[#EE1C25]">1.</span>
+            Buka atau salin template dari Google Docs.
+          </li>
+          <li className="flex gap-2">
+            <span className="font-bold text-[#EE1C25]">2.</span>
+            Isi dokumen sesuai kebutuhan beasiswa.
+          </li>
+          <li className="flex gap-2">
+            <span className="font-bold text-[#EE1C25]">3.</span>
+            Unggah dokumen yang sudah dilengkapi pada bagian Dokumen Pendukung.
+          </li>
+        </ol>
       </div>
+    );
+  }
 
-      <Button asChild size="lg" className="w-full bg-[#EE1C25] hover:bg-[#EE1C25]/90">
-        <a href={templateHref} download>
-          <FileDown className="size-4 mr-2" />
-          Unduh Template
-        </a>
-      </Button>
-
-      <ol className="space-y-2 text-sm text-[#6B5E52]">
-        <li className="flex gap-2">
-          <span className="font-bold text-[#EE1C25]">1.</span>
-          Unduh template surat sesuai layanan
-        </li>
-        <li className="flex gap-2">
-          <span className="font-bold text-[#EE1C25]">2.</span>
-          Isi data dengan lengkap dan benar
-        </li>
-        <li className="flex gap-2">
-          <span className="font-bold text-[#EE1C25]">3.</span>
-          Mintakan tanda tangan dari pihak terkait
-        </li>
-        <li className="flex gap-2">
-          <span className="font-bold text-[#EE1C25]">4.</span>
-          Serahkan berkas ke ULT FMIPA
-        </li>
-      </ol>
-    </div>
-  );
+  return <DefaultFlow />;
 }
 
 /* ================================================================
@@ -480,15 +506,5 @@ function PengirimanFlow() {
  * ================================================================ */
 
 function DefaultFlow() {
-  return (
-    <div className="mt-4">
-      <div className="flex items-start gap-3 rounded-xl border border-[#E8DECE] bg-[#FAF7EF] p-4 text-sm text-[#6B5E52]">
-        <LockKeyhole className="mt-0.5 size-4 shrink-0 text-[#EE1C25]" />
-        <p>
-          Form ini akan menyimpan data pengajuan minimum. 
-          Untuk layanan dengan alur khusus, silakan pilih layanan yang sesuai.
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }

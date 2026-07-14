@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 import type { RequestStatusAction } from "@/types/request-action";
 
 type RequestStatusCancelButtonProps = {
@@ -34,7 +35,13 @@ export function RequestStatusCancelButton({
   const [error, setError] = useState("");
 
   async function cancelStatus() {
-    if (!window.confirm(confirmation)) {
+    if (
+      !(await confirmToast({
+        title: "Batalkan status permohonan?",
+        description: confirmation,
+        confirmLabel: "Batalkan",
+      }))
+    ) {
       return;
     }
 

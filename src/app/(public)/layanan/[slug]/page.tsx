@@ -25,8 +25,6 @@ import {
   getCanonicalServiceSlug,
   getPublicServiceBySlug,
 } from "@/lib/legacy-services";
-import { getServiceFlowType } from "@/components/services/service-flow-config";
-import { ServiceFlow } from "@/components/services/service-flow";
 
 /* ================================================================
  * DEKORASI DINAMIS — berdasarkan slug
@@ -207,7 +205,6 @@ export default async function ServiceDetailPage({
     notFound();
   }
 
-  const flowType = getServiceFlowType(slug);
   const Icon = getServiceIcon(slug);
 
   return (
@@ -301,21 +298,6 @@ export default async function ServiceDetailPage({
                       </li>
                     ))}
                   </ul>
-                </div>
-              </div>
-
-              {/* Pengajuan Layanan */}
-              <div 
-                id="pengajuan"
-                className="relative rounded-3xl bg-white p-6 shadow-sm sm:p-7 border border-[#F5F0E8] hover:shadow-md transition-shadow overflow-hidden scroll-mt-[100px] lg:scroll-mt-[120px]"
-              >
-                <div className="absolute -right-6 -top-6 h-12 w-12 rounded-full bg-[#EE1C25]/5" />
-                
-                <div className="relative">
-                  <h2 className="text-lg font-black tracking-tight text-[#18130E]">
-                    Pengajuan Layanan
-                  </h2>
-                  <ServiceFlow slug={slug} flow={flowType} service={service} />
                 </div>
               </div>
             </div>

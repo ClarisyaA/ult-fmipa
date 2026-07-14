@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { confirmToast } from "@/lib/confirm-toast";
 import type {
   ProfileImageFit,
   ProfileLocationHour,
@@ -278,7 +279,14 @@ export function ProfileLocationManager({
   }
 
   async function deleteHour(hour: ProfileLocationHour) {
-    if (!window.confirm(`Hapus jam layanan ${hour.dayLabel}?`)) {
+    if (
+      !(await confirmToast({
+        title: "Hapus jam layanan?",
+        description: `Hapus jam layanan ${hour.dayLabel}?`,
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
+    ) {
       return;
     }
 
@@ -323,39 +331,75 @@ export function ProfileLocationManager({
         <div className="grid gap-3 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Eyebrow</Label>
-            <Input value={eyebrow} onChange={(event) => setEyebrow(event.currentTarget.value)} maxLength={100} />
+            <Input
+              value={eyebrow}
+              onChange={(event) => setEyebrow(event.currentTarget.value)}
+              maxLength={100}
+              data-tour="admin-profile-location-eyebrow"
+            />
           </div>
           <div className="grid gap-2">
             <Label>Title</Label>
-            <Input value={title} onChange={(event) => setTitle(event.currentTarget.value)} maxLength={150} required />
+            <Input
+              value={title}
+              onChange={(event) => setTitle(event.currentTarget.value)}
+              maxLength={150}
+              required
+              data-tour="admin-profile-location-title"
+            />
           </div>
         </div>
 
         <div className="grid gap-2">
           <Label>Description</Label>
-          <Textarea value={description} onChange={(event) => setDescription(event.currentTarget.value)} required className="min-h-32" />
+          <Textarea
+            value={description}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+            required
+            className="min-h-32"
+            data-tour="admin-profile-location-description"
+          />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Direction Label</Label>
-            <Input value={directionLabel} onChange={(event) => setDirectionLabel(event.currentTarget.value)} required maxLength={80} />
+            <Input
+              value={directionLabel}
+              onChange={(event) => setDirectionLabel(event.currentTarget.value)}
+              required
+              maxLength={80}
+              data-tour="admin-profile-location-direction-label"
+            />
           </div>
           <div className="grid gap-2">
             <Label>Direction URL</Label>
-            <Input value={directionUrl} onChange={(event) => setDirectionUrl(event.currentTarget.value)} placeholder="https://..." />
+            <Input
+              value={directionUrl}
+              onChange={(event) => setDirectionUrl(event.currentTarget.value)}
+              placeholder="https://..."
+              data-tour="admin-profile-location-direction-url"
+            />
           </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Email</Label>
-            <Input type="email" value={email} onChange={(event) => setEmail(event.currentTarget.value)} />
+            <Input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+              data-tour="admin-profile-location-email"
+            />
           </div>
           <div className="grid gap-2">
             <Label>Image Fit</Label>
             <Select value={imageFit} onValueChange={(value) => setImageFit(value as ProfileImageFit)}>
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger
+                className="w-full bg-white"
+                data-tour="admin-profile-location-image-fit"
+              >
                 <SelectValue placeholder="Pilih tampilan gambar" />
               </SelectTrigger>
               <SelectContent>
@@ -366,7 +410,10 @@ export function ProfileLocationManager({
           </div>
         </div>
 
-        <label className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm">
+        <label
+          className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          data-tour="admin-profile-location-active"
+        >
           <input
             type="checkbox"
             className="size-4 accent-[#0f5b45]"
@@ -427,12 +474,20 @@ export function ProfileLocationManager({
           </p>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting} className="w-fit">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-fit"
+          data-tour="admin-profile-location-save"
+        >
           {isSubmitting ? "Menyimpan..." : "Simpan Lokasi"}
         </Button>
       </form>
 
-      <div className="grid content-start gap-4 rounded-xl border bg-white p-4">
+      <div
+        className="grid content-start gap-4 rounded-xl border bg-white p-4"
+        data-tour="admin-profile-location-hours"
+      >
         <div>
           <h2 className="font-semibold">Jam Operasional</h2>
           <p className="mt-1 text-sm text-muted-foreground">

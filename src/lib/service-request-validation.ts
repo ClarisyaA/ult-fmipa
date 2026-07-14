@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+import {
+  IPK_INVALID_MESSAGE,
+  isValidIpk,
+  isValidYudisium,
+  YUDISIUM_INVALID_MESSAGE,
+} from "@/lib/letters/graduation-validation";
+
 const optionalText = (maxLength: number) =>
   z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -64,6 +71,98 @@ const requiredMagangFields = [
   ["tanggalSelesai", "Tanggal selesai wajib diisi."],
 ] as const;
 
+const requiredCommonContactFields = [
+  ["email", "Email wajib diisi."],
+  ["phone", "No HP/WhatsApp wajib diisi."],
+  ["bahasaSurat", "Bahasa surat wajib dipilih."],
+] as const;
+
+const requiredFieldsByService = {
+  "kartu-prestasi-akademik": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "kartu-kemajuan-studi": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "rekomendasi-beasiswa": [
+    ...requiredCommonContactFields,
+    ["scholarshipName", "Nama beasiswa wajib diisi."],
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "ket-tunjangan-orang-tua": [
+    ...requiredCommonContactFields,
+    ["semester", "Semester wajib diisi."],
+    ["tahunAkademik", "Tahun akademik wajib diisi."],
+    ["namaOrangTua", "Nama orang tua wajib diisi."],
+    ["nipNrp", "NIP/NRP wajib diisi."],
+    ["pangkatGolongan", "Pangkat/golongan wajib diisi."],
+    ["instansi", "Instansi wajib diisi."],
+  ],
+  "keterangan-masih-kuliah": [
+    ...requiredCommonContactFields,
+    ["semester", "Semester wajib diisi."],
+    ["tahunAkademik", "Tahun akademik wajib diisi."],
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "keterangan-kelakuan-baik": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "surat-pengantar": [
+    ...requiredCommonContactFields,
+    ["pengantar", "Pengantar wajib diisi."],
+    ["ditujukan", "Tujuan surat wajib diisi."],
+    ["dasarSuratNo", "No. dasar surat wajib diisi."],
+    ["dasarSuratPerihal", "Perihal dasar surat wajib diisi."],
+    ["dasarSuratTgl", "Tanggal dasar surat wajib diisi."],
+  ],
+  "keterangan-lulus": [
+    ...requiredCommonContactFields,
+    ["tempatLahir", "Tempat lahir wajib diisi."],
+    ["tanggalLahir", "Tanggal lahir wajib diisi."],
+  ],
+  "penerbitan-transkrip": [
+    ...requiredCommonContactFields,
+    ["tanggalLulus", "Tanggal lulus wajib diisi."],
+  ],
+  "penerbitan-ijazah": [
+    ...requiredCommonContactFields,
+    ["tanggalLulus", "Tanggal lulus wajib diisi."],
+  ],
+  "legalisir-ijazah-transkrip": [
+    ...requiredCommonContactFields,
+    ["jumlahTranskrip", "Jumlah transkrip wajib diisi."],
+    ["jumlahIjazah", "Jumlah ijazah wajib diisi."],
+    ["jumlahTranslet", "Jumlah terjemahan wajib diisi."],
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "bebas-peminjaman": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "unggah-karya-ilmiah": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "cek-plagiarisme": [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  referensi: [
+    ...requiredCommonContactFields,
+    ["description", "Keterangan/keperluan wajib diisi."],
+  ],
+  "permohonan-magang-kerja-praktek-ta": [
+    ...requiredCommonContactFields,
+    ...requiredMagangFields,
+  ],
+} as const;
+
+type RequiredFieldName =
+  (typeof requiredFieldsByService)[keyof typeof requiredFieldsByService][number][0];
+
 export const createServiceRequestSchema = z.object({
   serviceSlug: optionalText(100),
   npm: z
@@ -74,7 +173,13 @@ export const createServiceRequestSchema = z.object({
     .regex(/^\d+$/, "NPM hanya boleh berisi angka."),
   email: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z.string().trim().email("Email tidak valid.").optional()
+    z.string().trim().email("Email tidak valid.").max(150, "Email maksimal 150 karakter.").optional()
+  ),
+  bahasaSurat: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.enum(["id", "en"], {
+      error: "Bahasa surat tidak valid.",
+    }).default("id")
   ),
   phone: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -119,18 +224,48 @@ export const createServiceRequestSchema = z.object({
   tanggalMulai: optionalDate,
   tanggalSelesai: optionalDate,
 }).superRefine((input, context) => {
-  if (input.serviceSlug !== "permohonan-magang-kerja-praktek-ta") {
-    return;
-  }
+  const requiredFields = input.serviceSlug
+    ? requiredFieldsByService[input.serviceSlug as keyof typeof requiredFieldsByService]
+    : undefined;
 
-  for (const [field, message] of requiredMagangFields) {
-    if (!input[field]) {
+  for (const [field, message] of requiredFields ?? []) {
+    if (!input[field as RequiredFieldName]) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: [field],
         message,
       });
     }
+  }
+
+  if (input.serviceSlug === "keterangan-lulus") {
+    if (!input.tanggalLulus && !input.tglLulus) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tanggalLulus"],
+        message: "Tanggal lulus wajib diisi.",
+      });
+    }
+
+    if (!input.ipk || !isValidIpk(input.ipk)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ipk"],
+        message: IPK_INVALID_MESSAGE,
+      });
+    }
+
+    if (!input.yudisium || !isValidYudisium(input.yudisium)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["yudisium"],
+        message: YUDISIUM_INVALID_MESSAGE,
+      });
+    }
+  }
+
+  if (input.serviceSlug !== "permohonan-magang-kerja-praktek-ta") {
+    return;
   }
 
   if (

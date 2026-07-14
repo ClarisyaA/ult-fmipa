@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PublicService } from "@/types/service";
@@ -1110,13 +1111,15 @@ export function HomeLandingSections() {
 
                     {/* Image block */}
                     <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F5F0E8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
-                      <Image
+                      <HomeActivityImage
                         src={act.image}
                         alt={act.imageAlt}
                         fill
                         unoptimized
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className={imageFitClass}
+                        fallbackClassName="absolute inset-0 grid place-items-center bg-[#F5F0E8] p-6 text-center text-[#6B5E52]"
+                        fallbackDescription="File gambar belum tersedia di storage lokal."
                       />
                       {/* Eyebrow number badge */}
                       <div
@@ -1272,10 +1275,10 @@ export function HomeLandingSections() {
               asChild
               className="group shrink-0 rounded-2xl bg-[#03B36B] px-6 font-bold text-white shadow-lg shadow-[#03B36B]/20 transition-all duration-200 hover:bg-[#029458] hover:scale-[1.02]"
             >
-              <a href="https://forms.google.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+              <Link href="/usulkan-layanan" className="flex items-center gap-2">
                 Usulkan Layanan
                 <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </a>
+              </Link>
             </Button>
           </div>
         </div>

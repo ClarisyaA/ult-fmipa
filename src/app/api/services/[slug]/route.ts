@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getPublicServiceBySlug } from "@/lib/legacy-services";
+import { getPublicServiceTemplateLinks } from "@/lib/service-links";
 
 export async function GET(
   _request: Request,
@@ -18,7 +19,12 @@ export async function GET(
     );
   }
 
+  const templateLinks = await getPublicServiceTemplateLinks(service.slug);
+
   return NextResponse.json({
-    data: service,
+    data: {
+      ...service,
+      templateLinks,
+    },
   });
 }

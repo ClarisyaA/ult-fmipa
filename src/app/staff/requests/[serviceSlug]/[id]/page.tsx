@@ -5,6 +5,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 
 import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/letters/letter-data";
 import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
 import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getMagangPrintReadiness } from "@/lib/letters/magang-letter-data";
 import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { getRequestAttachments } from "@/lib/request-attachments";
@@ -85,6 +87,18 @@ function DetailSection({
   );
 }
 
+function formatLanguage(value: string | null | undefined) {
+  if (value === "en") {
+    return "Bahasa Inggris";
+  }
+
+  if (value === "id") {
+    return "Bahasa Indonesia";
+  }
+
+  return value ?? null;
+}
+
 function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   if (detail.sourceTable === "permohonan_magang") {
     return (
@@ -100,6 +114,8 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
             <DetailField label="Nama" value={detail.requesterName} />
             <DetailField label="NPM" value={detail.npm} />
             <DetailField label="Prodi" value={detail.requesterProgram} />
+            <DetailField label="Email" value={detail.requesterEmail} />
+            <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
           </DetailSection>
           <DetailSection title="Jenis Pengajuan">
             <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
@@ -157,6 +173,7 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
               value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
             />
             <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+            <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
             <DetailField label="No HP WA" value={detail.noHpWa} />
             <DetailField
               label="Tanggal Form Final"
@@ -196,6 +213,8 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <DetailField label="NPM" value={detail.npm} />
+        <DetailField label="Email" value={detail.requesterEmail} />
+        <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
         <DetailField label="Tanggal Pengajuan" value={formatDate(detail.requestDate)} />
         <DetailField label="Keperluan" value={detail.keperluan} />
         <DetailField label="Keterangan" value={detail.keterangan} />
@@ -304,17 +323,30 @@ function PrintLetterButton({
 
   return (
     <div className="grid gap-1 text-right">
-      <Button asChild variant="outline">
-        <Link
-          href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf`}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Buka PDF surat di tab baru"
-        >
-          <FileText className="size-4" />
-          Cetak Surat
-        </Link>
-      </Button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild variant="outline">
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=id`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Indonesia di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Indo
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=en`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Inggris di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Inggris
+          </Link>
+        </Button>
+      </div>
       <p className="max-w-[260px] text-xs text-muted-foreground">
         Pastikan Data Surat sudah lengkap sebelum mencetak PDF resmi.
       </p>
@@ -392,6 +424,10 @@ async function getPrintReadiness(
     return getKeteranganLulusPrintReadiness(id);
   }
 
+  if (template === "magang") {
+    return getMagangPrintReadiness(id);
+  }
+
   return getOfficialPrintReadiness(template, id);
 }
 
@@ -461,6 +497,8 @@ export default async function StaffRequestDetailPage({
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
+
+      <RequestEmailHelper serviceSlug={detail.serviceSlug} id={detail.id} />
 
       {printableInfo ? (
         <LetterMetadataEditor

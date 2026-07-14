@@ -321,16 +321,17 @@ function columnOrNull(column: string, sourceTable: RequestTableName) {
   const tableColumns: Record<RequestTableName, Set<string>> = {
     masih_kuliah_aktif: new Set(["EMAIL", "NO_HP", "KEPERLUAN"]),
     masih_kuliah: new Set(["EMAIL", "NO_HP"]),
-    keterangan_lulus: new Set([]),
+    keterangan_lulus: new Set(["EMAIL"]),
     kpa: new Set(["EMAIL", "NO_HP", "KEPERLUAN"]),
-    legalisir: new Set(["KEPERLUAN"]),
-    transkrip: new Set([]),
+    legalisir: new Set(["EMAIL", "KEPERLUAN"]),
+    transkrip: new Set(["EMAIL"]),
     bebas_pinjaman: new Set(["EMAIL", "HP_WA", "KETERANGAN"]),
     plagiarisme: new Set(["EMAIL", "HP_WA", "KETERANGAN"]),
     referensi: new Set(["EMAIL", "HP_WA", "KETERANGAN"]),
     unggah_karya_ilmiah: new Set(["EMAIL", "HP_WA", "KETERANGAN"]),
-    surat_pengantar: new Set(["PENGANTAR", "DITUJUKAN"]),
+    surat_pengantar: new Set(["EMAIL", "PENGANTAR", "DITUJUKAN"]),
     permohonan_magang: new Set([
+      "EMAIL",
       "NAMA",
       "PRODI",
       "JENIS_PERMOHONAN",
@@ -348,9 +349,9 @@ function columnOrNull(column: string, sourceTable: RequestTableName) {
       "APPROVAL_STATUS",
       "FINAL_SUBMITTED_TGL",
     ]),
-    beasiswa: new Set(["BEASISWA"]),
-    kelakuan_baik: new Set(["KEPERLUAN"]),
-    ijazah: new Set([]),
+    beasiswa: new Set(["EMAIL", "BEASISWA"]),
+    kelakuan_baik: new Set(["EMAIL", "KEPERLUAN"]),
+    ijazah: new Set(["EMAIL"]),
     kks: new Set(["EMAIL", "NO_HP", "KEPERLUAN"]),
   };
 
@@ -494,7 +495,11 @@ function buildServiceSelect(service: RequestService) {
       ${normalizedTextSql(Prisma.sql`requests.\`NPM\``)} AS npm,
       ${textColumnOrNull("NAMA", service.sourceTable)} AS requesterName,
       ${textColumnOrNull("PRODI", service.sourceTable)} AS requesterProgram,
-      ${textColumnOrNull("EMAIL", service.sourceTable)} AS requesterEmail,
+      ${
+        service.sourceTable === "surat_izin_kegiatan"
+          ? normalizedTextSql(Prisma.sql`requests.\`EMAIL_PENGIRIMAN\``)
+          : textColumnOrNull("EMAIL", service.sourceTable)
+      } AS requesterEmail,
       COALESCE(${textColumnOrNull("NO_HP", service.sourceTable)}, ${textColumnOrNull("HP_WA", service.sourceTable)}) AS requesterPhone,
       ${purposeSql} AS purpose,
       ${requestDateSql} AS requestDate,

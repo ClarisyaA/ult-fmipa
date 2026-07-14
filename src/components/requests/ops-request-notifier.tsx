@@ -83,6 +83,7 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
   const [isUnavailable, setIsUnavailable] = useState(false);
   const initializedRef = useRef(false);
   const hasLoggedFailureRef = useRef(false);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (!("Notification" in window)) {
@@ -104,11 +105,22 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
 
     let cancelled = false;
 
-    async function loadNotifications() {
+    async function loadNotifications(signal?: AbortSignal) {
+      if (inFlightRef.current) {
+        return;
+      }
+
+      inFlightRef.current = true;
+
       try {
         const response = await fetch(`/api/${role}/notifications/requests`, {
           cache: "no-store",
+          signal,
         });
+
+        if (cancelled || signal?.aborted) {
+          return;
+        }
 
         if (!response.ok) {
           setIsUnavailable(true);
@@ -128,7 +140,7 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
           data: RequestNotificationSnapshot;
         };
 
-        if (cancelled) {
+        if (cancelled || signal?.aborted) {
           return;
         }
 
@@ -191,24 +203,38 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
         const unreadItems = getItemsBeforeKey(nextSnapshot.requests, refreshedSeenKey);
         setUnreadCount(unreadItems.length);
       } catch (error) {
+        if (cancelled || signal?.aborted) {
+          return;
+        }
+
         setIsUnavailable(true);
+        const isTransientFetchFailure =
+          error instanceof TypeError &&
+          error.message.toLowerCase().includes("failed to fetch");
+
         if (
           process.env.NODE_ENV !== "production" &&
-          !hasLoggedFailureRef.current
+          !hasLoggedFailureRef.current &&
+          !isTransientFetchFailure
         ) {
           hasLoggedFailureRef.current = true;
           console.warn("Request notifications unavailable.", error);
         }
+      } finally {
+        inFlightRef.current = false;
       }
     }
 
-    void loadNotifications();
+    const controller = new AbortController();
+
+    void loadNotifications(controller.signal);
     const interval = window.setInterval(() => {
-      void loadNotifications();
+      void loadNotifications(controller.signal);
     }, 30000);
 
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearInterval(interval);
     };
   }, [role]);
@@ -240,6 +266,7 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
           type="button"
           variant="outline"
           size="icon"
+          data-tour={`${role}-notification-button`}
           className="relative size-11 rounded-full border-[#d7e3d4] bg-white text-[#173d2d] shadow-[0_10px_28px_rgba(18,53,39,0.16)] hover:bg-[#f7fbf6]"
           aria-label="Buka notifikasi pengajuan"
           onClick={() => {

@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
+import { confirmToast } from "@/lib/confirm-toast";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { RequestStatus } from "@/types/request";
 
@@ -115,6 +118,7 @@ export function InlineStatusAction({
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
     useState<ForwardRequestStatusAction | null>(null);
+  const [emailDialogSignal, setEmailDialogSignal] = useState(0);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const currentStatus = optimisticStatus ?? status;
@@ -168,7 +172,13 @@ export function InlineStatusAction({
   }
 
   async function handleClick(config: ActionConfig) {
-    if (!window.confirm(config.confirmation)) {
+    if (
+      !(await confirmToast({
+        title: "Perbarui status permohonan?",
+        description: config.confirmation,
+        confirmLabel: config.label,
+      }))
+    ) {
       return;
     }
 
@@ -202,6 +212,9 @@ export function InlineStatusAction({
 
       setMessage(config.successMessage);
       setOptimisticStatus(nextStatusByAction[config.action]);
+      if (config.action === "complete") {
+        setEmailDialogSignal((value) => value + 1);
+      }
       router.refresh();
     } finally {
       setSubmittingAction(null);
@@ -210,6 +223,12 @@ export function InlineStatusAction({
 
   return (
     <div className="grid gap-2">
+      <RequestEmailHelper
+        serviceSlug={serviceSlug}
+        id={id}
+        mode="completion-dialog"
+        openSignal={emailDialogSignal}
+      />
       <div className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}>
         {actions.map((config) => {
           const enabled = config.activeStatuses.includes(currentStatus);
@@ -277,6 +296,7 @@ export function RequestStatusActionButton({
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
     useState<ForwardRequestStatusAction | null>(null);
+  const [emailDialogSignal, setEmailDialogSignal] = useState(0);
   const currentStatus = optimisticStatus ?? status;
   const config = getActionConfig(action);
 
@@ -292,7 +312,14 @@ export function RequestStatusActionButton({
     : getDisabledTitle(config.action, currentStatus, supported);
 
   async function handleClick() {
-    if (!config || !window.confirm(config.confirmation)) {
+    if (
+      !config ||
+      !(await confirmToast({
+        title: "Perbarui status permohonan?",
+        description: config.confirmation,
+        confirmLabel: config.label,
+      }))
+    ) {
       return;
     }
 
@@ -314,11 +341,14 @@ export function RequestStatusActionButton({
       );
 
       if (!response.ok) {
-        window.alert("Status pengajuan gagal diperbarui.");
+        toast.error("Gagal memperbarui status permohonan.");
         return;
       }
 
       setOptimisticStatus(nextStatusByAction[config.action]);
+      if (config.action === "complete") {
+        setEmailDialogSignal((value) => value + 1);
+      }
       router.refresh();
     } finally {
       setSubmittingAction(null);
@@ -326,6 +356,13 @@ export function RequestStatusActionButton({
   }
 
   return (
+    <>
+      <RequestEmailHelper
+        serviceSlug={serviceSlug}
+        id={id}
+        mode="completion-dialog"
+        openSignal={emailDialogSignal}
+      />
     <Button
       type="button"
       variant={enabled ? "default" : "outline"}
@@ -349,5 +386,6 @@ export function RequestStatusActionButton({
           : "Menyimpan..."
         : label ?? config.label}
     </Button>
+    </>
   );
 }

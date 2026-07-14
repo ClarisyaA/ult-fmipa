@@ -85,6 +85,7 @@ export async function POST(
           npm: getFormString(formData, "npm"),
           email: getFormString(formData, "email"),
           phone: getFormString(formData, "phone"),
+          bahasaSurat: getFormString(formData, "bahasaSurat"),
           description: getFormString(formData, "description"),
           scholarshipName: getFormString(formData, "scholarshipName"),
           semester: getFormString(formData, "semester"),
@@ -170,6 +171,8 @@ export async function POST(
       const created = await createSikApprovalProofRequest({
         npm: session.user.npm,
         uploadedBy: session.user.email ?? session.user.npm ?? null,
+        emailPengiriman: body?.email,
+        bahasaSurat: body?.bahasaSurat,
       });
       let attachmentCount = 0;
 
@@ -204,7 +207,7 @@ export async function POST(
       ...body,
       serviceSlug: service.slug,
       npm: session.user.npm || body?.npm,
-      email: session.user.email || body?.email,
+      email: body?.email || session.user.email,
       phone: body?.phone || session.user.phone,
     });
     const result = await createServiceRequest(slug, input);

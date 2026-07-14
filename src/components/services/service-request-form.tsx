@@ -7,11 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { YUDISIUM_OPTIONS } from "@/lib/letters/graduation-validation";
 import { getServiceUploadRule, type ServiceUploadRule } from "@/lib/service-upload-config";
 import type { CreateServiceRequestResult } from "@/types/submission";
 
 type ServiceRequestFormProps = {
   serviceSlug: string;
+  templateLinks?: {
+    scholarshipRecommendation?: {
+      label: string;
+      url: string;
+      isActive: boolean;
+    };
+  };
   defaultValues?: {
     npm?: string;
     email?: string | null;
@@ -59,6 +67,31 @@ function OptionalMark() {
     <span className="text-xs font-normal text-[#7A6A5C]">
       Opsional
     </span>
+  );
+}
+
+function FieldLabel({
+  htmlFor,
+  children,
+  required = false,
+  optional = false,
+  className = "",
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+  required?: boolean;
+  optional?: boolean;
+  className?: string;
+}) {
+  return (
+    <Label
+      htmlFor={htmlFor}
+      className={`inline-flex flex-wrap items-center gap-1 text-[#18130E] font-medium ${className}`}
+    >
+      {children}
+      {required ? <RequiredMark /> : null}
+      {!required && optional ? <OptionalMark /> : null}
+    </Label>
   );
 }
 
@@ -111,6 +144,7 @@ function validateAttachmentFile(file: File, uploadRule: ServiceUploadRule) {
 
 export function ServiceRequestForm({
   serviceSlug,
+  templateLinks,
   defaultValues,
 }: ServiceRequestFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -200,6 +234,7 @@ export function ServiceRequestForm({
         npm: getFormString(formData, "npm"),
         email: getFormString(formData, "email"),
         phone: getFormString(formData, "phone"),
+        bahasaSurat: getFormString(formData, "bahasaSurat"),
         description: getFormString(formData, "description"),
         scholarshipName: getFormString(formData, "scholarshipName"),
         semester: getFormString(formData, "semester"),
@@ -334,6 +369,7 @@ export function ServiceRequestForm({
   }
 
   const isScholarshipService = serviceSlug === "rekomendasi-beasiswa";
+  const scholarshipTemplateLink = templateLinks?.scholarshipRecommendation;
   const needsAcademicFields = [
     "ket-tunjangan-orang-tua",
     "keterangan-masih-kuliah",
@@ -346,6 +382,12 @@ export function ServiceRequestForm({
   const isLegalisir = serviceSlug === "legalisir-ijazah-transkrip";
   const isUnggahKaryaIlmiah = serviceSlug === "unggah-karya-ilmiah";
   const isMagang = serviceSlug === "permohonan-magang-kerja-praktek-ta";
+  const isRequiredUpload = Boolean(uploadRule.minFiles);
+  const uploadHelperText = isRequiredUpload
+    ? isScholarshipService
+      ? "Dokumen pendukung wajib diunggah. Gunakan template Google Docs, isi dokumen, lalu unggah file yang sudah dilengkapi."
+      : uploadRule.description
+    : "Lampiran dokumen pendukung bersifat opsional.";
   const showDescription =
     !isSuratPengantar &&
     !isKeteranganLulus &&
@@ -408,10 +450,42 @@ export function ServiceRequestForm({
       ) : null}
 
       <div id={isMagang ? "magang-form-fields" : undefined} className="grid gap-4">
+      {isScholarshipService ? (
+        <div className="grid gap-3 rounded-lg border border-[#EE1C25]/40 bg-[#FFFDF9] p-4">
+          <div>
+            <p className="text-sm font-semibold text-[#18130E]">
+              Template Surat Rekomendasi Beasiswa
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-[#6B5E52]">
+              Unduh atau salin template dari Google Docs, isi sesuai kebutuhan,
+              lalu unggah dokumen yang sudah dilengkapi pada bagian Dokumen
+              Pendukung.
+            </p>
+          </div>
+          {scholarshipTemplateLink?.isActive ? (
+            <Button
+              asChild
+              type="button"
+              className="w-full bg-[#EE1C25] hover:bg-[#EE1C25]/90 sm:w-fit"
+            >
+              <a
+                href={scholarshipTemplateLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Buka Template Rekomendasi Beasiswa
+              </a>
+            </Button>
+          ) : (
+            <p className="rounded-md border border-[#E8DECE] bg-[#FAF7EF] px-3 py-2 text-sm text-[#6B5E52]">
+              Link template Rekomendasi Beasiswa sedang nonaktif. Silakan hubungi ULT FMIPA.
+            </p>
+          )}
+        </div>
+      ) : null}
+
       <div className="grid gap-2">
-        <Label htmlFor="npm" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-          NPM <RequiredMark />
-        </Label>
+        <FieldLabel htmlFor="npm" required>NPM</FieldLabel>
         <Input
           id="npm"
           name="npm"
@@ -433,9 +507,7 @@ export function ServiceRequestForm({
 
       {isMagang ? (
         <div className="grid gap-2">
-          <Label htmlFor="programStudi" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-            Program Studi <RequiredMark />
-          </Label>
+          <FieldLabel htmlFor="programStudi" required>Program Studi</FieldLabel>
           <select
             id="programStudi"
             name="programStudi"
@@ -459,12 +531,14 @@ export function ServiceRequestForm({
 
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="email" className="text-[#18130E] font-medium">Email</Label>
+          <FieldLabel htmlFor="email" required>Email</FieldLabel>
           <Input
             id="email"
             name="email"
             type="email"
+            maxLength={150}
             defaultValue={defaultValues?.email ?? ""}
+            required
             className={inputClass}
           />
           {fieldErrors.email ? (
@@ -472,12 +546,34 @@ export function ServiceRequestForm({
           ) : null}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="phone" className="text-[#18130E] font-medium">No HP/WhatsApp</Label>
+          <FieldLabel htmlFor="bahasaSurat" required>Bahasa Surat</FieldLabel>
+          <select
+            id="bahasaSurat"
+            name="bahasaSurat"
+            defaultValue="id"
+            required
+            className={`${inputClass} h-10 rounded-md border bg-background px-3 py-2 text-sm outline-none`}
+          >
+            <option value="id">Bahasa Indonesia</option>
+            <option value="en">Bahasa Inggris</option>
+          </select>
+          {fieldErrors.bahasaSurat ? (
+            <p className="text-sm text-destructive">
+              {fieldErrors.bahasaSurat}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <FieldLabel htmlFor="phone" required>No HP/WhatsApp</FieldLabel>
           <Input
             id="phone"
             name="phone"
             maxLength={30}
             defaultValue={defaultValues?.phone ?? ""}
+            required
             className={inputClass}
           />
           {fieldErrors.phone ? (
@@ -488,8 +584,8 @@ export function ServiceRequestForm({
 
       {isScholarshipService ? (
         <div className="grid gap-2">
-          <Label htmlFor="scholarshipName" className="text-[#18130E] font-medium">Nama Beasiswa</Label>
-          <Input id="scholarshipName" name="scholarshipName" maxLength={100} className={inputClass} />
+          <FieldLabel htmlFor="scholarshipName" required>Nama Beasiswa</FieldLabel>
+          <Input id="scholarshipName" name="scholarshipName" maxLength={100} required className={inputClass} />
           {fieldErrors.scholarshipName ? (
             <p className="text-sm text-destructive">
               {fieldErrors.scholarshipName}
@@ -501,8 +597,8 @@ export function ServiceRequestForm({
       {needsAcademicFields ? (
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="grid gap-2">
-            <Label htmlFor="semester" className="text-[#18130E] font-medium">Semester</Label>
-            <Input id="semester" name="semester" maxLength={25} data-testid="request-semester" className={inputClass} />
+            <FieldLabel htmlFor="semester" required>Semester</FieldLabel>
+            <Input id="semester" name="semester" maxLength={25} data-testid="request-semester" required className={inputClass} />
             {fieldErrors.semester ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.semester}
@@ -510,8 +606,8 @@ export function ServiceRequestForm({
             ) : null}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="tahunAkademik" className="text-[#18130E] font-medium">Tahun Akademik</Label>
-            <Input id="tahunAkademik" name="tahunAkademik" maxLength={10} data-testid="request-tahun-akademik" className={inputClass} />
+            <FieldLabel htmlFor="tahunAkademik" required>Tahun Akademik</FieldLabel>
+            <Input id="tahunAkademik" name="tahunAkademik" maxLength={10} data-testid="request-tahun-akademik" required className={inputClass} />
             {fieldErrors.tahunAkademik ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.tahunAkademik}
@@ -526,8 +622,8 @@ export function ServiceRequestForm({
           <p className="text-sm font-medium text-[#18130E]">Data Orang Tua</p>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="namaOrangTua" className="text-[#18130E] font-medium">Nama Orang Tua</Label>
-              <Input id="namaOrangTua" name="namaOrangTua" maxLength={100} className={inputClass} />
+              <FieldLabel htmlFor="namaOrangTua" required>Nama Orang Tua</FieldLabel>
+              <Input id="namaOrangTua" name="namaOrangTua" maxLength={100} required className={inputClass} />
               {fieldErrors.namaOrangTua ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.namaOrangTua}
@@ -535,8 +631,8 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="nipNrp" className="text-[#18130E] font-medium">NIP/NRP</Label>
-              <Input id="nipNrp" name="nipNrp" maxLength={100} className={inputClass} />
+              <FieldLabel htmlFor="nipNrp" required>NIP/NRP</FieldLabel>
+              <Input id="nipNrp" name="nipNrp" maxLength={100} required className={inputClass} />
               {fieldErrors.nipNrp ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.nipNrp}
@@ -546,11 +642,12 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="pangkatGolongan" className="text-[#18130E] font-medium">Pangkat/Golongan</Label>
+              <FieldLabel htmlFor="pangkatGolongan" required>Pangkat/Golongan</FieldLabel>
               <Input
                 id="pangkatGolongan"
                 name="pangkatGolongan"
                 maxLength={100}
+                required
                 className={inputClass}
               />
               {fieldErrors.pangkatGolongan ? (
@@ -560,8 +657,8 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="instansi" className="text-[#18130E] font-medium">Instansi</Label>
-              <Input id="instansi" name="instansi" maxLength={100} className={inputClass} />
+              <FieldLabel htmlFor="instansi" required>Instansi</FieldLabel>
+              <Input id="instansi" name="instansi" maxLength={100} required className={inputClass} />
               {fieldErrors.instansi ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.instansi}
@@ -576,8 +673,8 @@ export function ServiceRequestForm({
         <div className="grid gap-4 rounded-lg border border-[#EE1C25]/40 p-4">
           <p className="text-sm font-medium text-[#18130E]">Data Surat Pengantar</p>
           <div className="grid gap-2">
-            <Label htmlFor="pengantar" className="text-[#18130E] font-medium">Pengantar</Label>
-            <Textarea id="pengantar" name="pengantar" maxLength={150} className={textareaClass} />
+            <FieldLabel htmlFor="pengantar" required>Pengantar</FieldLabel>
+            <Textarea id="pengantar" name="pengantar" maxLength={150} required className={textareaClass} />
             {fieldErrors.pengantar ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.pengantar}
@@ -585,8 +682,8 @@ export function ServiceRequestForm({
             ) : null}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="ditujukan" className="text-[#18130E] font-medium">Ditujukan</Label>
-            <Input id="ditujukan" name="ditujukan" maxLength={150} className={inputClass} />
+            <FieldLabel htmlFor="ditujukan" required>Ditujukan</FieldLabel>
+            <Input id="ditujukan" name="ditujukan" maxLength={150} required className={inputClass} />
             {fieldErrors.ditujukan ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.ditujukan}
@@ -595,8 +692,8 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="dasarSuratNo" className="text-[#18130E] font-medium">No. Dasar Surat</Label>
-              <Input id="dasarSuratNo" name="dasarSuratNo" maxLength={30} className={inputClass} />
+              <FieldLabel htmlFor="dasarSuratNo" required>No. Dasar Surat</FieldLabel>
+              <Input id="dasarSuratNo" name="dasarSuratNo" maxLength={30} required className={inputClass} />
               {fieldErrors.dasarSuratNo ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.dasarSuratNo}
@@ -604,11 +701,12 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="dasarSuratPerihal" className="text-[#18130E] font-medium">Perihal</Label>
+              <FieldLabel htmlFor="dasarSuratPerihal" required>Perihal</FieldLabel>
               <Input
                 id="dasarSuratPerihal"
                 name="dasarSuratPerihal"
                 maxLength={100}
+                required
                 className={inputClass}
               />
               {fieldErrors.dasarSuratPerihal ? (
@@ -618,8 +716,8 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="dasarSuratTgl" className="text-[#18130E] font-medium">Tanggal Dasar Surat</Label>
-              <Input id="dasarSuratTgl" name="dasarSuratTgl" type="date" className={inputClass} />
+              <FieldLabel htmlFor="dasarSuratTgl" required>Tanggal Dasar Surat</FieldLabel>
+              <Input id="dasarSuratTgl" name="dasarSuratTgl" type="date" required className={inputClass} />
               {fieldErrors.dasarSuratTgl ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.dasarSuratTgl}
@@ -636,8 +734,8 @@ export function ServiceRequestForm({
           {isKeteranganLulus ? (
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="tempatLahir" className="text-[#18130E] font-medium">Tempat Lahir</Label>
-                <Input id="tempatLahir" name="tempatLahir" maxLength={100} className={inputClass} />
+                <FieldLabel htmlFor="tempatLahir" required>Tempat Lahir</FieldLabel>
+                <Input id="tempatLahir" name="tempatLahir" maxLength={100} required className={inputClass} />
                 {fieldErrors.tempatLahir ? (
                   <p className="text-sm text-destructive">
                     {fieldErrors.tempatLahir}
@@ -645,8 +743,8 @@ export function ServiceRequestForm({
                 ) : null}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="tanggalLahir" className="text-[#18130E] font-medium">Tanggal Lahir</Label>
-                <Input id="tanggalLahir" name="tanggalLahir" type="date" className={inputClass} />
+                <FieldLabel htmlFor="tanggalLahir" required>Tanggal Lahir</FieldLabel>
+                <Input id="tanggalLahir" name="tanggalLahir" type="date" required className={inputClass} />
                 {fieldErrors.tanggalLahir ? (
                   <p className="text-sm text-destructive">
                     {fieldErrors.tanggalLahir}
@@ -657,8 +755,8 @@ export function ServiceRequestForm({
           ) : null}
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="tanggalLulus" className="text-[#18130E] font-medium">Tanggal Lulus</Label>
-              <Input id="tanggalLulus" name="tanggalLulus" type="date" className={inputClass} />
+              <FieldLabel htmlFor="tanggalLulus" required>Tanggal Lulus</FieldLabel>
+              <Input id="tanggalLulus" name="tanggalLulus" type="date" required className={inputClass} />
               {fieldErrors.tanggalLulus ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.tanggalLulus}
@@ -668,8 +766,8 @@ export function ServiceRequestForm({
             {isKeteranganLulus ? (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="ipk" className="text-[#18130E] font-medium">IPK</Label>
-                  <Input id="ipk" name="ipk" maxLength={5} className={inputClass} />
+                  <FieldLabel htmlFor="ipk" required>IPK</FieldLabel>
+                  <Input id="ipk" name="ipk" maxLength={5} required className={inputClass} />
                   {fieldErrors.ipk ? (
                     <p className="text-sm text-destructive">
                       {fieldErrors.ipk}
@@ -677,8 +775,21 @@ export function ServiceRequestForm({
                   ) : null}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="yudisium" className="text-[#18130E] font-medium">Yudisium</Label>
-                  <Input id="yudisium" name="yudisium" maxLength={25} className={inputClass} />
+                  <FieldLabel htmlFor="yudisium" required>Yudisium</FieldLabel>
+                  <select
+                    id="yudisium"
+                    name="yudisium"
+                    required
+                    className={inputClass}
+                    defaultValue=""
+                  >
+                    <option value="">Pilih Yudisium</option>
+                    {YUDISIUM_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                   {fieldErrors.yudisium ? (
                     <p className="text-sm text-destructive">
                       {fieldErrors.yudisium}
@@ -702,13 +813,14 @@ export function ServiceRequestForm({
           <p className="text-sm font-medium text-[#18130E]">Jumlah Dokumen</p>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="jumlahTranskrip" className="text-[#18130E] font-medium">Transkrip</Label>
+              <FieldLabel htmlFor="jumlahTranskrip" required>Transkrip</FieldLabel>
               <Input
                 id="jumlahTranskrip"
                 name="jumlahTranskrip"
                 type="number"
                 min={1}
                 defaultValue={1}
+                required
                 className={inputClass}
               />
               {fieldErrors.jumlahTranskrip ? (
@@ -718,13 +830,14 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="jumlahIjazah" className="text-[#18130E] font-medium">Ijazah</Label>
+              <FieldLabel htmlFor="jumlahIjazah" required>Ijazah</FieldLabel>
               <Input
                 id="jumlahIjazah"
                 name="jumlahIjazah"
                 type="number"
                 min={1}
                 defaultValue={1}
+                required
                 className={inputClass}
               />
               {fieldErrors.jumlahIjazah ? (
@@ -734,13 +847,14 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="jumlahTranslet" className="text-[#18130E] font-medium">Terjemahan</Label>
+              <FieldLabel htmlFor="jumlahTranslet" required>Terjemahan</FieldLabel>
               <Input
                 id="jumlahTranslet"
                 name="jumlahTranslet"
                 type="number"
                 min={1}
                 defaultValue={1}
+                required
                 className={inputClass}
               />
               {fieldErrors.jumlahTranslet ? (
@@ -759,9 +873,7 @@ export function ServiceRequestForm({
             Data Permohonan Magang
           </p>
           <div className="grid gap-2">
-            <Label htmlFor="jenisPermohonan" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-              Perihal <RequiredMark />
-            </Label>
+            <FieldLabel htmlFor="jenisPermohonan" required>Perihal</FieldLabel>
             <select
               id="jenisPermohonan"
               name="jenisPermohonan"
@@ -783,9 +895,7 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="kontakPerson" className="inline-flex flex-wrap items-center gap-2 text-[#18130E] font-medium">
-                Kontak Person <OptionalMark />
-              </Label>
+              <FieldLabel htmlFor="kontakPerson" optional>Kontak Person</FieldLabel>
               <FieldHint className="sm:min-h-[2.25rem]">
                 Jika ada, tuliskan lengkap nama dan jabatannya.
               </FieldHint>
@@ -803,9 +913,7 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="tempatPelaksanaan" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-                Tempat Pelaksanaan <RequiredMark />
-              </Label>
+              <FieldLabel htmlFor="tempatPelaksanaan" required>Tempat Pelaksanaan</FieldLabel>
               <FieldHint className="sm:min-h-[2.25rem]">
                 Contoh: Dinas Pendapatan Daerah (DPD) atau PT. Telkom Indonesia Tbk.
               </FieldHint>
@@ -825,9 +933,7 @@ export function ServiceRequestForm({
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="tujuanSurat" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-              Tujuan Surat <RequiredMark />
-            </Label>
+            <FieldLabel htmlFor="tujuanSurat" required>Tujuan Surat</FieldLabel>
             <FieldHint>
               Diisi jabatan dari instansi yang dituju, misalnya Kepala Dinas Pendapatan Daerah,
               Direktur PT. PLN Persero, atau HRD PT. ...
@@ -847,9 +953,7 @@ export function ServiceRequestForm({
             ) : null}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="alamatSurat" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-              Alamat Surat <RequiredMark />
-            </Label>
+            <FieldLabel htmlFor="alamatSurat" required>Alamat Surat</FieldLabel>
             <FieldHint>
               Diisi secara singkat. Contoh: Jl. Ir. H. Djuanda No. 35
             </FieldHint>
@@ -869,9 +973,7 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="kecamatanKabupaten" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-                Kecamatan dan Kabupaten <RequiredMark />
-              </Label>
+              <FieldLabel htmlFor="kecamatanKabupaten" required>Kecamatan dan Kabupaten</FieldLabel>
               <FieldHint>
                 Contoh: Kecamatan Cibeunying Kaler
               </FieldHint>
@@ -890,9 +992,7 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="kotaKabupaten" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-                Kota / Kabupaten <RequiredMark />
-              </Label>
+              <FieldLabel htmlFor="kotaKabupaten" required>Kota / Kabupaten</FieldLabel>
               <FieldHint>
                 Contoh: Kota Bandung atau Kabupaten Bandung
               </FieldHint>
@@ -911,9 +1011,7 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="provinsi" className="inline-flex flex-wrap items-center gap-2 text-[#18130E] font-medium">
-                Provinsi <OptionalMark />
-              </Label>
+              <FieldLabel htmlFor="provinsi" optional>Provinsi</FieldLabel>
               <FieldHint>
                 Boleh diisi atau tidak. Contoh: Jawa Barat
               </FieldHint>
@@ -933,9 +1031,7 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="tanggalMulai" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-                Tanggal Mulai Magang/Kerja/Data <RequiredMark />
-              </Label>
+              <FieldLabel htmlFor="tanggalMulai" required>Tanggal Mulai Magang/Kerja/Data</FieldLabel>
               <Input id="tanggalMulai" name="tanggalMulai" type="date" required className={inputClass} />
               {fieldErrors.tanggalMulai ? (
                 <p className="text-sm text-destructive">
@@ -944,9 +1040,7 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="tanggalSelesai" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
-                Tanggal Selesai Magang/Kerja/Data <RequiredMark />
-              </Label>
+              <FieldLabel htmlFor="tanggalSelesai" required>Tanggal Selesai Magang/Kerja/Data</FieldLabel>
               <Input id="tanggalSelesai" name="tanggalSelesai" type="date" required className={inputClass} />
               {fieldErrors.tanggalSelesai ? (
                 <p className="text-sm text-destructive">
@@ -960,8 +1054,8 @@ export function ServiceRequestForm({
 
       {showDescription ? (
         <div className="grid gap-2">
-          <Label htmlFor="description" className="text-[#18130E] font-medium">Keterangan/Keperluan</Label>
-          <Textarea id="description" name="description" maxLength={100} data-testid="request-description" className={textareaClass} />
+          <FieldLabel htmlFor="description" required>Keterangan/Keperluan</FieldLabel>
+          <Textarea id="description" name="description" maxLength={100} required data-testid="request-description" className={textareaClass} />
           {fieldErrors.description ? (
             <p className="text-sm text-destructive">
               {fieldErrors.description}
@@ -971,9 +1065,16 @@ export function ServiceRequestForm({
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="attachments" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+        <Label htmlFor="attachments" className="inline-flex items-center gap-2 text-[#18130E] font-medium">
           {isMagang ? "Upload Surat Permohonan Dari Program Studi" : "Lampiran Dokumen Pendukung"}
-          {uploadRule.minFiles ? <RequiredMark /> : null}
+          {isRequiredUpload ? (
+            <>
+              <RequiredMark />
+              <span className="text-xs font-semibold text-[#EE1C25]">Wajib</span>
+            </>
+          ) : (
+            <OptionalMark />
+          )}
         </Label>
         <div className="relative">
           <Input
@@ -982,12 +1083,13 @@ export function ServiceRequestForm({
             type="file"
             multiple
             accept={acceptAttribute}
+            aria-required={isRequiredUpload}
             onChange={handleAttachmentChange}
             className="border-[#EE1C25]/40 focus:border-[#EE1C25] focus:ring-[#EE1C25]/20 flex items-center file:inline-flex file:items-center file:justify-center file:bg-[#EE1C25] file:text-white file:border-0 file:px-4 file:h-9 file:rounded-md file:hover:bg-[#EE1C25]/90 file:cursor-pointer file:mr-4 h-12"
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          {uploadRule.description}
+          {uploadHelperText}
         </p>
         <div className="grid gap-2 rounded-md border border-[#EE1C25]/40 px-3 py-2">
           <p className="text-sm font-medium text-[#18130E]">

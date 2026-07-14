@@ -76,7 +76,10 @@ export function SurveySummaryView({
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        data-tour="admin-survey-summary"
+      >
         {metrics.map((metric) => (
           <Card key={metric.label}>
             <CardHeader>

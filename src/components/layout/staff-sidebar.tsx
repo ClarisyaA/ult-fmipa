@@ -8,6 +8,8 @@ import { useState } from "react";
 import {
   BarChart3,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   FileText,
   Globe,
   Home,
@@ -15,10 +17,9 @@ import {
   LogOut,
   MapPin,
   Menu,
+  MessageSquarePlus,
   Network,
   Newspaper,
-  PanelLeftClose,
-  PanelLeftOpen,
   X,
 } from "lucide-react";
 
@@ -34,6 +35,7 @@ type StaffSidebarProps = {
 const navIcons = {
   Dashboard: Home,
   Pengajuan: FileText,
+  "Usulan Layanan": MessageSquarePlus,
   Informasi: Newspaper,
   "Kegiatan Mahasiswa": Images,
   "Profil - Struktur": Network,
@@ -110,19 +112,20 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={`mt-4 h-8 rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white ${
-            isCollapsed ? "w-full px-0" : "justify-start px-3"
+          className={`mt-5 min-h-10 rounded-lg bg-[#ecfff4] px-3 py-2 text-sm font-semibold text-[#27614d] shadow-[0_10px_22px_rgba(0,0,0,0.14)] transition-all duration-200 hover:bg-[#ecfff4] hover:text-[#27614d] ${
+            isCollapsed ? "mx-auto w-10 justify-center px-0" : "w-full justify-start gap-3"
           }`}
+          title={isCollapsed ? "Buka sidebar" : "Ciutkan sidebar"}
           aria-label={isCollapsed ? "Buka sidebar staff" : "Tutup sidebar staff"}
           aria-expanded={!isCollapsed}
           onClick={() => setIsCollapsed((current) => !current)}
         >
           {isCollapsed ? (
-            <PanelLeftOpen className="size-4" />
+            <ChevronsRight className="size-4 text-[#3d8067]" />
           ) : (
             <>
-              <PanelLeftClose className="size-4" />
-              <span>Ciutkan</span>
+              <ChevronsLeft className="size-4 shrink-0 text-[#3d8067]" />
+              <span className="truncate text-[#27614d]">Ciutkan menu</span>
             </>
           )}
         </Button>

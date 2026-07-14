@@ -170,6 +170,26 @@ docker compose exec app pnpm db:support-migrate
 
 Script `db:support-migrate` akan menjalankan seluruh SQL di
 `database/migrations`, termasuk perubahan layanan terbaru.
+Runner support migration tidak menyimpan tabel riwayat applied migration, jadi
+file SQL aktif harus idempotent. Clean support migrations sekarang aktif di
+`database/migrations`, sedangkan chain kompatibilitas lama disimpan di
+`database/migrations_legacy_backup`. Jangan jalankan folder backup dan folder
+aktif pada DB yang sama. Catatan audit ada di
+[`docs/migration-audit.md`](docs/migration-audit.md).
+Rencana dan hasil validasi clean support migrations ada di
+[`docs/database-reset-baseline-plan.md`](docs/database-reset-baseline-plan.md)
+dan tetap bergantung pada import `database/fmipa_sbpk.sql` sebagai base legacy
+dump.
+
+## Local Setup
+
+Untuk setup lokal dari awal, gunakan panduan:
+
+[`docs/local-setup.md`](docs/local-setup.md)
+
+Catatan: `database/fmipa_sbpk.sql` adalah base legacy dump, sedangkan
+`database/migrations` berisi clean support migrations aktif. Jangan jalankan
+`database/migrations_legacy_backup`.
 
 ### 8. Jalankan aplikasi
 

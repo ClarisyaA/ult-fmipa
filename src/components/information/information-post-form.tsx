@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { confirmToast } from "@/lib/confirm-toast";
 import type {
   InformationImageFit,
   InformationPostImage,
@@ -230,7 +231,14 @@ export function InformationPostForm({
   }
 
   async function deleteExistingImage(imageId: string) {
-    if (!confirm("Hapus gambar ini?")) {
+    if (
+      !(await confirmToast({
+        title: "Hapus gambar?",
+        description: "Hapus gambar ini?",
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
+    ) {
       return;
     }
 
@@ -343,12 +351,16 @@ export function InformationPostForm({
           onChange={(event) => setTitle(event.currentTarget.value)}
           required
           data-testid="information-title"
+          data-tour="admin-info-title"
         />
       </div>
 
       <div className="grid gap-2">
         <p className="text-xs font-semibold text-[#39433c]">Pratinjau Tautan</p>
-        <p className="min-w-0 break-all rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-3 py-2 text-xs text-[#6f746f] sm:text-sm">
+        <p
+          className="min-w-0 break-all rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-3 py-2 text-xs text-[#6f746f] sm:text-sm"
+          data-tour="admin-info-slug"
+        >
           {linkPreview ? `/informasi/${linkPreview}` : "/informasi/..."}
         </p>
       </div>
@@ -367,6 +379,7 @@ export function InformationPostForm({
             className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
             value={category}
             onChange={(event) => setCategory(event.currentTarget.value)}
+            data-tour="admin-info-category"
           />
         </div>
         <div className="grid gap-2">
@@ -380,6 +393,7 @@ export function InformationPostForm({
             id="status"
             className="h-10 w-full rounded-md border border-[#e1d8ca] bg-white px-3 text-sm text-[#303b34] outline-none transition-colors focus:border-[#0f5b45] focus:ring-2 focus:ring-[#0f5b45]/15"
             value={status}
+            data-tour="admin-info-status"
             onChange={(event) =>
               setStatus(event.currentTarget.value as InformationPostStatus)
             }
@@ -393,7 +407,10 @@ export function InformationPostForm({
 
       <div className="grid gap-3 rounded-md border border-[#e3d9ca] bg-[#fffdf9] p-3 sm:p-4">
         <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-4">
-          <label className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]">
+          <label
+            className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]"
+            data-tour="admin-info-active"
+          >
             <input
               type="checkbox"
               className="size-4 accent-[#0f5b45]"
@@ -402,7 +419,10 @@ export function InformationPostForm({
             />
             Aktif
           </label>
-          <label className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]">
+          <label
+            className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]"
+            data-tour="admin-info-featured"
+          >
             <input
               type="checkbox"
               className="size-4 accent-[#0f5b45]"
@@ -425,6 +445,7 @@ export function InformationPostForm({
               type="datetime-local"
               className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
               value={displayStartAt}
+              data-tour="admin-info-start-date"
               onChange={(event) => setDisplayStartAt(event.currentTarget.value)}
             />
           </div>
@@ -440,6 +461,7 @@ export function InformationPostForm({
               type="datetime-local"
               className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
               value={displayEndAt}
+              data-tour="admin-info-end-date"
               onChange={(event) => setDisplayEndAt(event.currentTarget.value)}
             />
           </div>
@@ -462,6 +484,7 @@ export function InformationPostForm({
           maxLength={300}
           className="min-h-24 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
           value={summary}
+          data-tour="admin-info-summary"
           onChange={(event) => setSummary(event.currentTarget.value)}
         />
         <p className="text-xs text-[#7a7166]">
@@ -483,6 +506,7 @@ export function InformationPostForm({
           onChange={(event) => setContent(event.currentTarget.value)}
           required
           data-testid="information-content"
+          data-tour="admin-info-content"
         />
       </div>
 
@@ -503,6 +527,7 @@ export function InformationPostForm({
             className="min-h-10 rounded-md border-[#e1d8ca] text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[#0f3d2e] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
             onChange={handleImageSelection}
             disabled={totalImages >= maxImages}
+            data-tour="admin-info-images"
           />
           <p className="text-xs leading-relaxed text-[#7a7166]">
             {totalImages} dari 5 gambar dipilih. Format WEBP, PNG, JPG, JPEG,
@@ -736,6 +761,7 @@ export function InformationPostForm({
           type="submit"
           disabled={isSubmitting}
           className="h-10 w-full rounded-md bg-[#0f3d2e] px-5 text-sm font-semibold text-white hover:bg-[#164b39] sm:w-auto"
+          data-tour="admin-info-save"
         >
         {isSubmitting ? "Menyimpan..." : "Simpan Informasi"}
         </Button>

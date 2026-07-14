@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ChangeEvent,
@@ -13,6 +12,7 @@ import {
 } from "react";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
 
+import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +84,11 @@ export function HomeActivityForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
+  const [storedImageMissingForId, setStoredImageMissingForId] = useState<
+    HomeActivity["id"] | null
+  >(null);
+  const storedImageMissing =
+    Boolean(initialActivity) && storedImageMissingForId === initialActivity?.id;
 
   useEffect(() => {
     pendingImageRef.current = pendingImage;
@@ -117,6 +122,8 @@ export function HomeActivityForm({
     if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
       setImageFit("contain");
     }
+
+    setStoredImageMissingForId(null);
 
     setPendingImage((current) => {
       if (current) {
@@ -225,6 +232,7 @@ export function HomeActivityForm({
           value={title}
           onChange={(event) => setTitle(event.currentTarget.value)}
           required
+          data-tour="admin-activity-title"
         />
         <p className="text-xs text-[#7a7166]">{title.length}/150 karakter</p>
       </div>
@@ -241,6 +249,7 @@ export function HomeActivityForm({
             value={eyebrow}
             onChange={(event) => setEyebrow(event.currentTarget.value)}
             placeholder="Agenda Sivitas"
+            data-tour="admin-activity-eyebrow"
           />
         </div>
         <div className="grid gap-2">
@@ -253,11 +262,15 @@ export function HomeActivityForm({
             className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
             value={sortOrder}
             onChange={(event) => setSortOrder(event.currentTarget.value)}
+            data-tour="admin-activity-order"
           />
         </div>
       </div>
 
-      <label className="inline-flex min-h-9 w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]">
+      <label
+        className="inline-flex min-h-9 w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]"
+        data-tour="admin-activity-active"
+      >
         <input
           type="checkbox"
           className="size-4 accent-[#0f5b45]"
@@ -280,6 +293,7 @@ export function HomeActivityForm({
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
           required
+          data-tour="admin-activity-description"
         />
       </div>
 
@@ -294,6 +308,7 @@ export function HomeActivityForm({
           value={imageAlt}
           onChange={(event) => setImageAlt(event.currentTarget.value)}
           placeholder="Deskripsi singkat gambar"
+          data-tour="admin-activity-alt"
         />
       </div>
 
@@ -308,6 +323,7 @@ export function HomeActivityForm({
           <SelectTrigger
             id="imageFit"
             className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
+            data-tour="admin-activity-image-fit"
           >
             <SelectValue placeholder="Pilih tampilan gambar" />
           </SelectTrigger>
@@ -339,6 +355,7 @@ export function HomeActivityForm({
           <div
             role="button"
             tabIndex={0}
+            data-tour="admin-activity-image"
             className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-8 text-center transition-colors ${
               isDragging
                 ? "border-[#0f5b45] bg-[#eef9f1] text-[#0f3d2e]"
@@ -372,13 +389,15 @@ export function HomeActivityForm({
 
         {initialActivity?.imagePath && !pendingImage ? (
           <div className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
-            <Image
+            <HomeActivityImage
               src={`/api/home/activities/images/${initialActivity.id}`}
               alt={initialActivity.imageAlt ?? initialActivity.title}
               width={640}
               height={360}
               unoptimized
               className={getImagePreviewClass(imageFit)}
+              fallbackClassName="grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
+              onMissing={() => setStoredImageMissingForId(initialActivity.id)}
             />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#303b34]">Gambar tersimpan</p>
@@ -390,19 +409,26 @@ export function HomeActivityForm({
                   {formatSize(initialActivity.imageSizeBytes)}
                 </p>
               ) : null}
+              {storedImageMissing ? (
+                <p className="mt-3 rounded-md border border-[#f0d6b6] bg-[#fff8ec] px-3 py-2 text-xs leading-relaxed text-[#8a5a1f]">
+                  File gambar saat ini tidak ditemukan di storage lokal. Unggah
+                  gambar baru untuk menggantinya.
+                </p>
+              ) : null}
             </div>
           </div>
         ) : null}
 
         {pendingImage ? (
           <div className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
-            <Image
+            <HomeActivityImage
               src={pendingImage.previewUrl}
               alt={pendingImage.file.name}
               width={640}
               height={360}
               unoptimized
               className={getImagePreviewClass(imageFit)}
+              fallbackDescription=""
             />
             <div className="flex min-w-0 flex-col justify-between gap-3">
               <div>
@@ -451,6 +477,7 @@ export function HomeActivityForm({
           type="submit"
           disabled={isSubmitting}
           className="h-10 w-full rounded-md bg-[#0f3d2e] px-5 text-sm font-semibold text-white hover:bg-[#164b39] sm:w-auto"
+          data-tour="admin-activity-save"
         >
           {isSubmitting ? "Menyimpan..." : "Simpan Kegiatan"}
         </Button>

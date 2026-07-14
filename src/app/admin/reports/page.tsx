@@ -148,8 +148,9 @@ export default async function AdminReportsPage({
         description="Laporan operasional berbasis data layanan yang sudah tersedia. Download dan grafik lanjutan disiapkan bertahap tanpa data palsu."
       />
 
-      <AdminSectionCard>
-        <div className="flex gap-5 overflow-x-auto border-b border-[#eee6d9] pb-0">
+      <div data-tour="admin-reporting-dashboard">
+        <AdminSectionCard>
+          <div className="flex gap-5 overflow-x-auto border-b border-[#eee6d9] pb-0">
           {tabs.map((tab) => (
             <Link
               key={tab.value}
@@ -271,7 +272,8 @@ export default async function AdminReportsPage({
             />
           </div>
         </form>
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
 
       {activeTab === "layanan" ? (
         <AdminSectionCard

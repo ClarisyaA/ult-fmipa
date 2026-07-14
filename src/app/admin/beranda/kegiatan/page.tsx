@@ -1,8 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { HomeActivityActions } from "@/components/home-activities/home-activity-actions";
+import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { HomeLinksSettingsForm } from "@/components/home-activities/home-links-settings-form";
+import { ServiceLinksSettingsForm } from "@/components/services/service-links-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminHomeActivitiesState } from "@/lib/home-activities";
 import { getHomeLinksState } from "@/lib/home-links";
+import { getServiceLinksState } from "@/lib/service-links";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,21 +43,29 @@ function formatDate(value: string | null) {
 export default async function AdminHomeActivitiesPage() {
   const { activities, unavailable } = await getAdminHomeActivitiesState();
   const { academicCalendar, unavailable: linksUnavailable } = await getHomeLinksState();
+  const { scholarshipTemplate, unavailable: serviceLinksUnavailable } =
+    await getServiceLinksState();
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="grid gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Kegiatan Mahasiswa
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              Kegiatan Mahasiswa
+            </h1>
+            <Button
+              asChild
+              size="sm"
+              className="h-9 rounded-md bg-[#0f5b45] px-4 text-xs font-semibold text-white hover:bg-[#0f3d2e]"
+            >
+              <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
+            </Button>
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Kelola item carousel Kegiatan Mahasiswa di homepage.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
-        </Button>
       </div>
 
       <Card>
@@ -76,7 +86,32 @@ export default async function AdminHomeActivitiesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Kegiatan Beranda</CardTitle>
+          <CardTitle>Pengaturan Link Layanan</CardTitle>
+          <CardDescription>
+            Atur link template eksternal yang dipakai pada halaman layanan mahasiswa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ServiceLinksSettingsForm
+            rolePrefix="admin"
+            initialLink={scholarshipTemplate}
+            unavailable={serviceLinksUnavailable}
+          />
+        </CardContent>
+      </Card>
+
+      <Card data-tour="admin-home-activities-list">
+        <CardHeader>
+          <div className="flex flex-wrap items-center gap-3">
+            <CardTitle>Daftar Kegiatan Beranda</CardTitle>
+            <Button
+              asChild
+              size="sm"
+              className="h-8 rounded-md bg-[#0f5b45] px-3 text-xs font-semibold text-white hover:bg-[#0f3d2e]"
+            >
+              <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
+            </Button>
+          </div>
           <CardDescription>
             Jumlah item yang tampil di homepage mengikuti item aktif.
           </CardDescription>
@@ -113,13 +148,15 @@ export default async function AdminHomeActivitiesPage() {
                     <TableRow key={activity.id}>
                     <TableCell>
                       {activity.imagePath ? (
-                        <Image
+                        <HomeActivityImage
                           src={`/api/home/activities/images/${activity.id}`}
                           alt={activity.imageAlt ?? activity.title}
                           width={128}
                           height={80}
                           unoptimized
                           className={imageClass}
+                          fallbackClassName="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-2 text-center text-muted-foreground"
+                          fallbackDescription=""
                         />
                       ) : (
                         <div className="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] text-xs text-muted-foreground">

@@ -25,7 +25,7 @@ export default async function AdminProfileLocationPage() {
         </p>
       </div>
 
-      <Card>
+      <Card data-tour="admin-profile-location-form">
         <CardHeader>
           <CardTitle>CMS Lokasi Kami</CardTitle>
           <CardDescription>

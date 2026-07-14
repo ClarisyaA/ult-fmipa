@@ -5,6 +5,7 @@ import {
   getExistingLetterAssetSource,
   letterLogoPath,
 } from "@/components/letters/pdf/letter-assets";
+import type { LetterLanguage } from "@/lib/letters/letter-types";
 
 const styles = StyleSheet.create({
   header: {
@@ -64,23 +65,34 @@ const styles = StyleSheet.create({
   },
 });
 
-export function LetterHeader() {
+export function LetterHeader({ language = "id" }: { language?: LetterLanguage }) {
   const logoSource = getExistingLetterAssetSource(letterLogoPath);
+  const isEnglish = language === "en";
 
   return (
     <View style={styles.header}>
       {logoSource ? <Image src={logoSource} style={styles.logo} /> : null}
       <View style={styles.textWrap}>
-        <Text style={styles.ministry}>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,</Text>
-        <Text style={styles.ministry}>DAN TEKNOLOGI</Text>
+        <Text style={styles.ministry}>
+          {isEnglish
+            ? "MINISTRY OF HIGHER EDUCATION, SCIENCE,"
+            : "KEMENTERIAN PENDIDIKAN TINGGI, SAINS,"}
+        </Text>
+        <Text style={styles.ministry}>
+          {isEnglish ? "AND TECHNOLOGY" : "DAN TEKNOLOGI"}
+        </Text>
         <Text style={styles.university}>UNIVERSITAS PADJADJARAN</Text>
         <Text style={styles.faculty}>
-          FAKULTAS MATEMATIKA DAN ILMU PENGETAHUAN ALAM
+          {isEnglish
+            ? "FACULTY OF MATHEMATICS AND NATURAL SCIENCES"
+            : "FAKULTAS MATEMATIKA DAN ILMU PENGETAHUAN ALAM"}
         </Text>
         <Text style={styles.address}>
           Jalan Ir. Soekarno Km. 21 Jatinangor, Sumedang 45363
         </Text>
-        <Text style={styles.address}>Telepon 081120240789 - 082115975752</Text>
+        <Text style={styles.address}>
+          {isEnglish ? "Phone" : "Telepon"} 081120240789 - 082115975752
+        </Text>
         <Text style={styles.address}>
           Website: http://www.fmipa.unpad.ac.id e-mail: fmipa@unpad.ac.id
         </Text>

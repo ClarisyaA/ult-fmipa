@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 
 type RequestDeleteButtonProps = {
   serviceSlug: string;
@@ -27,9 +28,13 @@ export function RequestDeleteButton({
 
   async function handleDelete() {
     if (
-      !window.confirm(
-        "Hapus pengajuan ini secara permanen? Tindakan ini tidak dapat dibatalkan."
-      )
+      !(await confirmToast({
+        title: "Hapus pengajuan?",
+        description:
+          "Hapus pengajuan ini secara permanen? Tindakan ini tidak dapat dibatalkan.",
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
     ) {
       return;
     }

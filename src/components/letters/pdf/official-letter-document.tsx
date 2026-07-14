@@ -4,6 +4,7 @@ import { LetterHeader } from "@/components/letters/pdf/letter-header";
 import { SignatureBlock } from "@/components/letters/pdf/signature-block";
 import type {
   BaseOfficialLetterData,
+  LetterLanguage,
   OfficialLetterTemplate,
 } from "@/lib/letters/letter-types";
 
@@ -76,7 +77,19 @@ const templateTitles = {
   "masih-kuliah": "SURAT KETERANGAN MASIH KULIAH",
   "masih-kuliah-aktif": "SURAT KETERANGAN MASIH AKTIF KULIAH",
   "kelakuan-baik": "SURAT KETERANGAN KELAKUAN BAIK",
-} satisfies Record<Exclude<OfficialLetterTemplate, "keterangan-lulus">, string>;
+} satisfies Record<
+  Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">,
+  string
+>;
+
+const englishTemplateTitles = {
+  "masih-kuliah": "CERTIFICATE FOR PARENT ALLOWANCE",
+  "masih-kuliah-aktif": "CERTIFICATE OF ACTIVE ENROLLMENT",
+  "kelakuan-baik": "CERTIFICATE OF GOOD CONDUCT",
+} satisfies Record<
+  Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">,
+  string
+>;
 
 function safe(value: string | null | undefined) {
   return value ?? "";
@@ -92,18 +105,54 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SignerIdentity({ data }: { data: BaseOfficialLetterData }) {
+function templateTitle(
+  template: Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">,
+  language: LetterLanguage,
+) {
+  return language === "en" ? englishTemplateTitles[template] : templateTitles[template];
+}
+
+function translateSignerText(value: string | null | undefined, language: LetterLanguage) {
+  const text = safe(value).trim();
+
+  if (language !== "en") {
+    return text;
+  }
+
+  const normalized = text.toLowerCase();
+  if (normalized === "dekan") return "Dean";
+  if (normalized.includes("wakil dekan") && normalized.includes("akademik")) {
+    return "Vice Dean for Academic, Student Affairs, and Research";
+  }
+
+  return text;
+}
+
+function SignerIdentity({
+  data,
+  language,
+}: {
+  data: BaseOfficialLetterData;
+  language: LetterLanguage;
+}) {
+  const isEnglish = language === "en";
+
   return (
     <>
-      <Text style={styles.paragraph}>Yang bertanda tangan dibawah ini :</Text>
+      <Text style={styles.paragraph}>
+        {isEnglish ? "The undersigned:" : "Yang bertanda tangan dibawah ini :"}
+      </Text>
       <View style={styles.table}>
-        <InfoRow label="Nama " value={safe(data.signer.name)} />
+        <InfoRow label={isEnglish ? "Name" : "Nama "} value={safe(data.signer.name)} />
         <InfoRow label="NIP " value={safe(data.signer.nip)} />
         <InfoRow
-          label="Pangkat, Golongan/Ruang"
+          label={isEnglish ? "Rank, Grade/Class" : "Pangkat, Golongan/Ruang"}
           value={safe(data.signer.rank)}
         />
-        <InfoRow label="Jabatan" value={safe(data.signer.title)} />
+        <InfoRow
+          label={isEnglish ? "Position" : "Jabatan"}
+          value={translateSignerText(data.signer.title, language)}
+        />
       </View>
     </>
   );
@@ -114,67 +163,110 @@ function StudentIdentity({
   includeSemester,
   includeAcademicYearLabel,
   includeAddress,
+  language,
 }: {
   data: BaseOfficialLetterData;
   includeSemester?: boolean;
   includeAcademicYearLabel?: "Tahun Akademik" | "Tahun Ajaran";
   includeAddress?: boolean;
+  language: LetterLanguage;
 }) {
+  const isEnglish = language === "en";
+
   return (
     <>
-      <Text style={styles.sectionLead}>dengan ini menerangkan bahwa :</Text>
+      <Text style={styles.sectionLead}>
+        {isEnglish ? "hereby certifies that:" : "dengan ini menerangkan bahwa :"}
+      </Text>
       <View style={styles.table}>
-        <InfoRow label="Nama Mahasiswa " value={data.studentName} />
-        <InfoRow label="Nomor Pokok Mahasiswa " value={data.npm} />
-        <InfoRow label="Program Studi" value={safe(data.programStudy)} />
+        <InfoRow
+          label={isEnglish ? "Student Name " : "Nama Mahasiswa "}
+          value={data.studentName}
+        />
+        <InfoRow
+          label={isEnglish ? "Student ID Number " : "Nomor Pokok Mahasiswa "}
+          value={data.npm}
+        />
+        <InfoRow
+          label={isEnglish ? "Study Program" : "Program Studi"}
+          value={safe(data.programStudy)}
+        />
         <InfoRow label="Program" value={safe(data.level)} />
         {includeSemester ? (
           <InfoRow label="Semester" value={safe(data.semester)} />
         ) : null}
         {includeAcademicYearLabel ? (
           <InfoRow
-            label={includeAcademicYearLabel}
+            label={isEnglish ? "Academic Year" : includeAcademicYearLabel}
             value={safe(data.academicYear)}
           />
         ) : null}
-        {includeAddress ? <InfoRow label="Alamat" value={safe(data.address)} /> : null}
+        {includeAddress ? (
+          <InfoRow label={isEnglish ? "Address" : "Alamat"} value={safe(data.address)} />
+        ) : null}
       </View>
     </>
   );
 }
 
-function MasihKuliahBody({ data }: { data: BaseOfficialLetterData }) {
+function MasihKuliahBody({
+  data,
+  language,
+}: {
+  data: BaseOfficialLetterData;
+  language: LetterLanguage;
+}) {
+  const isEnglish = language === "en";
+
   return (
     <>
       <StudentIdentity
         data={data}
         includeSemester
         includeAcademicYearLabel="Tahun Akademik"
+        language={language}
       />
       <Text style={styles.paragraph}>
-        adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran
+        {isEnglish
+          ? "is a student of the Faculty of Mathematics and Natural Sciences, Universitas Padjadjaran"
+          : "adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran"}
       </Text>
       <Text style={styles.paragraphTight}>
-        dan orang tua/wali dari mahasiswa tersebut adalah :
+        {isEnglish
+          ? "and the parent/guardian of the student is:"
+          : "dan orang tua/wali dari mahasiswa tersebut adalah :"}
       </Text>
       <View style={styles.table}>
-        <InfoRow label="Nama" value={safe(data.parentName)} />
+        <InfoRow label={isEnglish ? "Name" : "Nama"} value={safe(data.parentName)} />
         <InfoRow label="NIP/NRP " value={safe(data.parentNipNrp)} />
         <InfoRow
-          label="Pangkat, Golongan/Ruang"
+          label={isEnglish ? "Rank, Grade/Class" : "Pangkat, Golongan/Ruang"}
           value={safe(data.parentRank)}
         />
-        <InfoRow label="Instansi" value={safe(data.parentInstitution)} />
+        <InfoRow
+          label={isEnglish ? "Institution" : "Instansi"}
+          value={safe(data.parentInstitution)}
+        />
       </View>
       <Text style={styles.paragraph}>
-        Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana
+        {isEnglish
+          ? "This certificate is issued truthfully for parent allowance or benefit administrative purposes"
+          : "Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana"}
       </Text>
-      <Text style={styles.paragraphTight}>mestinya.</Text>
+      <Text style={styles.paragraphTight}>{isEnglish ? "as appropriate." : "mestinya."}</Text>
     </>
   );
 }
 
-function MasihKuliahAktifBody({ data }: { data: BaseOfficialLetterData }) {
+function MasihKuliahAktifBody({
+  data,
+  language,
+}: {
+  data: BaseOfficialLetterData;
+  language: LetterLanguage;
+}) {
+  const isEnglish = language === "en";
+
   return (
     <>
       <StudentIdentity
@@ -182,39 +274,64 @@ function MasihKuliahAktifBody({ data }: { data: BaseOfficialLetterData }) {
         includeSemester
         includeAcademicYearLabel="Tahun Ajaran"
         includeAddress
+        language={language}
       />
       <Text style={styles.paragraph}>
-        adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran
+        {isEnglish
+          ? "is registered as a student of the Faculty of Mathematics and Natural Sciences, Universitas Padjadjaran"
+          : "adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran"}
       </Text>
       <Text style={styles.paragraphTight}>
-        dan sampai saat ini masih aktif kuliah.
+        {isEnglish
+          ? "and is currently actively enrolled."
+          : "dan sampai saat ini masih aktif kuliah."}
       </Text>
       <Text style={styles.paragraph}>
-        Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana
+        {isEnglish
+          ? "This certificate is issued truthfully for the intended administrative purposes"
+          : "Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana"}
       </Text>
-      <Text style={styles.paragraphTight}>mestinya.</Text>
+      <Text style={styles.paragraphTight}>{isEnglish ? "as appropriate." : "mestinya."}</Text>
     </>
   );
 }
 
-function KelakuanBaikBody({ data }: { data: BaseOfficialLetterData }) {
+function KelakuanBaikBody({
+  data,
+  language,
+}: {
+  data: BaseOfficialLetterData;
+  language: LetterLanguage;
+}) {
+  const isEnglish = language === "en";
+
   return (
     <>
-      <StudentIdentity data={data} includeAddress />
+      <StudentIdentity data={data} includeAddress language={language} />
       <Text style={styles.paragraph}>
-        adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran,
+        {isEnglish
+          ? "is a student of the Faculty of Mathematics and Natural Sciences, Universitas Padjadjaran,"
+          : "adalah benar mahasiswa Fakultas Matematika dan Ilmu Pengetahuan Alam Universitas Padjadjaran,"}
       </Text>
       <Text style={styles.paragraphTight}>
-        berdasarkan catatan pada kami bahwa mahasiswa tersebut berkelakuan baik dan tidak terlibat pada
+        {isEnglish
+          ? "and based on our records, the student is of good conduct and has not been involved in"
+          : "berdasarkan catatan pada kami bahwa mahasiswa tersebut berkelakuan baik dan tidak terlibat pada"}
       </Text>
       <Text style={styles.paragraphTight}>
-        penyalahgunaan Narkotika, Alkohol, Psikotropika, dan Zat Aditif (NAPZA) yang dapat merusak moral
+        {isEnglish
+          ? "the misuse of Narcotics, Alcohol, Psychotropics, and Addictive Substances (NAPZA) that may harm moral"
+          : "penyalahgunaan Narkotika, Alkohol, Psikotropika, dan Zat Aditif (NAPZA) yang dapat merusak moral"}
       </Text>
-      <Text style={styles.paragraphTight}>dan kesehatan.</Text>
+      <Text style={styles.paragraphTight}>
+        {isEnglish ? "character and health." : "dan kesehatan."}
+      </Text>
       <Text style={styles.paragraph}>
-        Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana
+        {isEnglish
+          ? "This certificate is issued truthfully for the intended administrative purposes"
+          : "Demikian surat keterangan ini dibuat dengan sesungguhnya agar dapat dipergunakan sebagaimana"}
       </Text>
-      <Text style={styles.paragraphTight}>mestinya.</Text>
+      <Text style={styles.paragraphTight}>{isEnglish ? "as appropriate." : "mestinya."}</Text>
     </>
   );
 }
@@ -222,29 +339,39 @@ function KelakuanBaikBody({ data }: { data: BaseOfficialLetterData }) {
 export function OfficialLetterDocument({
   data,
   template,
+  language = "id",
 }: {
   data: BaseOfficialLetterData;
-  template: Exclude<OfficialLetterTemplate, "keterangan-lulus">;
+  template: Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">;
+  language?: LetterLanguage;
 }) {
+  const title = templateTitle(template, language);
+
   return (
     <Document
-      title={`${templateTitles[template]} ${data.npm}`}
+      title={`${title} ${data.npm}`}
       author="ULT FMIPA Unpad"
-      subject={templateTitles[template]}
+      subject={title}
       creator="ULT FMIPA Unpad"
       producer="ULT FMIPA Unpad"
     >
       <Page size="A4" style={styles.page}>
-        <LetterHeader />
-        <Text style={styles.title}>{templateTitles[template]}</Text>
-        <Text style={styles.number}>Nomor : {data.signer.letterNumber}</Text>
-        <SignerIdentity data={data} />
-        {template === "masih-kuliah" ? <MasihKuliahBody data={data} /> : null}
-        {template === "masih-kuliah-aktif" ? (
-          <MasihKuliahAktifBody data={data} />
+        <LetterHeader language={language} />
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.number}>
+          {language === "en" ? "Number" : "Nomor"} : {data.signer.letterNumber}
+        </Text>
+        <SignerIdentity data={data} language={language} />
+        {template === "masih-kuliah" ? (
+          <MasihKuliahBody data={data} language={language} />
         ) : null}
-        {template === "kelakuan-baik" ? <KelakuanBaikBody data={data} /> : null}
-        <SignatureBlock signer={data.signer} />
+        {template === "masih-kuliah-aktif" ? (
+          <MasihKuliahAktifBody data={data} language={language} />
+        ) : null}
+        {template === "kelakuan-baik" ? (
+          <KelakuanBaikBody data={data} language={language} />
+        ) : null}
+        <SignatureBlock signer={data.signer} language={language} />
       </Page>
     </Document>
   );

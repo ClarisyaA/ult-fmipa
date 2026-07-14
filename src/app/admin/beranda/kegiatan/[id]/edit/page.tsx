@@ -31,21 +31,21 @@ export default async function AdminEditHomeActivityPage({
   }
 
   return (
-    <div className="grid content-start gap-6">
+    <div className="grid min-w-0 content-start gap-6">
       <Button asChild variant="ghost" className="-ml-2 w-fit">
         <Link href="/admin/beranda/kegiatan">
           <ArrowLeft className="size-4" />
           Kembali
         </Link>
       </Button>
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle>Edit Kegiatan Mahasiswa</CardTitle>
           <CardDescription>
             Ubah judul, kategori, gambar, status aktif, dan urutan tampil.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <HomeActivityForm
             rolePrefix="admin"
             mode="edit"

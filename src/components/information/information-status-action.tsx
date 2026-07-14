@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 import type { InformationPost, InformationPostStatus } from "@/lib/information-posts";
 
 type InformationStatusActionProps = {
@@ -28,7 +29,13 @@ export function InformationStatusAction({
   const [error, setError] = useState("");
 
   async function handleClick() {
-    if (!window.confirm(confirmMessage)) {
+    if (
+      !(await confirmToast({
+        title: "Perbarui status informasi?",
+        description: confirmMessage,
+        confirmLabel: label,
+      }))
+    ) {
       return;
     }
 

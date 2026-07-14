@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 
 type BulkRequestItem = {
   key: string;
@@ -149,9 +150,12 @@ export function BulkRequestDeleteToolbar() {
     }
 
     if (
-      !window.confirm(
-        `Hapus ${selectedItems.length} pengajuan terpilih secara permanen? Tindakan ini tidak dapat dibatalkan.`,
-      )
+      !(await confirmToast({
+        title: "Hapus pengajuan terpilih?",
+        description: `Hapus ${selectedItems.length} pengajuan terpilih secara permanen? Tindakan ini tidak dapat dibatalkan.`,
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
     ) {
       return;
     }

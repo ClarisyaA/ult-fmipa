@@ -38,6 +38,8 @@ model alumni {
 model beasiswa {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
   PERMINTAAN_IP    String?   @db.VarChar(20)
@@ -53,11 +55,12 @@ model beasiswa {
 model bebas_pinjaman {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
   PERMINTAAN_IP    String?   @db.VarChar(20)
   KETERANGAN       String?   @db.VarChar(100)
-  EMAIL            String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
   HP_WA            String?   @db.VarChar(100)
   PROSES_TGL       DateTime? @db.Timestamp(0)
   PROSES_STAF      String?   @db.VarChar(100)
@@ -104,6 +107,8 @@ model data_users {
 model ijazah {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   TGL_LULUS        DateTime? @db.Date
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
@@ -121,6 +126,8 @@ model ijazah {
 model kelakuan_baik {
   ID                   BigInt    @id @default(autoincrement())
   NPM                  String?   @db.VarChar(15)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
   KEPERLUAN            String?   @db.VarChar(100)
   ALAMAT               String?   @db.VarChar(200)
   PERMINTAAN_TGL       DateTime? @db.Timestamp(0)
@@ -144,6 +151,8 @@ model kelakuan_baik {
 model keterangan_lulus {
   ID                  BigInt    @id @default(autoincrement())
   NPM                 String?   @db.VarChar(15)
+  EMAIL               String?   @db.VarChar(150)
+  BAHASA_SURAT        String    @default("id") @db.VarChar(10)
   TEMPAT_LAHIR        String?   @db.VarChar(100)
   TGL_LAHIR           DateTime? @db.Date
   TGL_LULUS           DateTime? @db.Date
@@ -174,7 +183,8 @@ model keterangan_lulus {
 model kks {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
-  EMAIL            String?   @db.VarChar(50)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   NO_HP            String?   @db.VarChar(20)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
@@ -191,7 +201,8 @@ model kks {
 model kpa {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
-  EMAIL            String?   @db.VarChar(50)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   NO_HP            String?   @db.VarChar(20)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
@@ -208,6 +219,8 @@ model kpa {
 model legalisir {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   NO_SURAT         String?   @db.VarChar(30)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
@@ -262,7 +275,8 @@ model masih_kuliah {
   ID                   BigInt    @id @default(autoincrement())
   NPM                  String?   @db.VarChar(15)
   SEMESTER             String?   @db.VarChar(25)
-  EMAIL                String?   @db.VarChar(50)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
   NO_HP                String?   @db.VarChar(20)
   TAHUN_AKADEMIK       String?   @db.VarChar(10)
   NAMA_ORANG_TUA       String?   @db.VarChar(100)
@@ -294,7 +308,8 @@ model masih_kuliah_aktif {
   TAHUN_AKADEMIK       String?   @db.VarChar(11)
   KEPERLUAN            String?   @db.VarChar(100)
   ALAMAT               String?   @db.VarChar(200)
-  EMAIL                String?   @db.VarChar(50)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
   NO_HP                String?   @db.VarChar(20)
   PERMINTAAN_TGL       DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY     String?   @db.VarChar(100)
@@ -317,6 +332,8 @@ model masih_kuliah_aktif {
 model permohonan_magang {
   ID                    BigInt    @id @default(autoincrement())
   NPM                   String?   @db.VarChar(15)
+  EMAIL                 String?   @db.VarChar(150)
+  BAHASA_SURAT          String    @default("id") @db.VarChar(10)
   NAMA                  String?   @db.VarChar(100)
   PRODI                 String?   @db.VarChar(150)
   JENIS_PERMOHONAN      String?   @db.VarChar(50)
@@ -338,6 +355,14 @@ model permohonan_magang {
   SELESAI_STAF          String?   @db.VarChar(100)
   DIKIRIM_TGL           DateTime? @db.Timestamp(0)
   DIKIRIM_OLEH          String?   @db.VarChar(100)
+  TTD_NO_SURAT          String?   @db.VarChar(30)
+  TTD_TANGGAL           DateTime? @db.Date
+  TTD_TEMPAT            String?   @db.VarChar(30)
+  TTD_AN                String?   @db.VarChar(50)
+  TTD_PANGKAT_GOLONGAN  String?   @db.VarChar(50)
+  TTD_JABATAN           String?   @db.VarChar(100)
+  TTD_NAMA              String?   @db.VarChar(100)
+  TTD_NIP               String?   @db.VarChar(30)
 
   @@index([NPM], map: "idx_permohonan_magang_npm")
   @@index([PERMINTAAN_TGL], map: "idx_permohonan_magang_permintaan_tgl")
@@ -347,11 +372,12 @@ model permohonan_magang {
 model plagiarisme {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
   PERMINTAAN_IP    String?   @db.VarChar(20)
   KETERANGAN       String?   @db.VarChar(100)
-  EMAIL            String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
   HP_WA            String?   @db.VarChar(100)
   PROSES_TGL       DateTime? @db.Timestamp(0)
   PROSES_STAF      String?   @db.VarChar(100)
@@ -364,11 +390,12 @@ model plagiarisme {
 model referensi {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
   PERMINTAAN_IP    String?   @db.VarChar(20)
   KETERANGAN       String?   @db.VarChar(100)
-  EMAIL            String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
   HP_WA            String?   @db.VarChar(100)
   PROSES_TGL       DateTime? @db.Timestamp(0)
   PROSES_STAF      String?   @db.VarChar(100)
@@ -396,7 +423,8 @@ model surat_izin_kegiatan {
   NAMA_HIMPUNAN            String?   @db.VarChar(150)
   NAMA_KEGIATAN            String?   @db.VarChar(200)
   TANGGAL_KEGIATAN         DateTime? @db.Date
-  EMAIL_PENGIRIMAN         String?   @db.VarChar(100)
+  EMAIL_PENGIRIMAN         String?   @db.VarChar(150)
+  BAHASA_SURAT             String    @default("id") @db.VarChar(10)
   NO_HP_WA                 String?   @db.VarChar(30)
   PERMINTAAN_TGL           DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY         String?   @db.VarChar(100)
@@ -523,6 +551,8 @@ model surat_masuk_pim_unit {
 model surat_pengantar {
   ID                  BigInt    @id @default(autoincrement())
   NPM                 String?   @db.VarChar(15)
+  EMAIL               String?   @db.VarChar(150)
+  BAHASA_SURAT        String    @default("id") @db.VarChar(10)
   PERMINTAAN_IP       String?   @db.VarChar(20)
   PENGANTAR           String?   @db.VarChar(150)
   DITUJUKAN           String?   @db.VarChar(150)
@@ -561,6 +591,8 @@ model surat_ttd {
 model transkrip {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   TGL_LULUS        DateTime? @db.Date
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
@@ -578,11 +610,12 @@ model transkrip {
 model unggah_karya_ilmiah {
   ID               BigInt    @id @default(autoincrement())
   NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
   PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
   PERMINTAAN_ENTRY String?   @db.VarChar(100)
   PERMINTAAN_IP    String?   @db.VarChar(20)
   KETERANGAN       String?   @db.VarChar(100)
-  EMAIL            String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
   HP_WA            String?   @db.VarChar(100)
   PROSES_TGL       DateTime? @db.Timestamp(0)
   PROSES_STAF      String?   @db.VarChar(100)

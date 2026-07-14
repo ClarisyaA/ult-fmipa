@@ -5,6 +5,8 @@ import {
   AdminSidebar,
 } from "@/components/layout/admin-sidebar";
 import { OpsRequestNotifier } from "@/components/requests/ops-request-notifier";
+import { AdminTutorialButton } from "@/components/tutorial/admin-tutorial-button";
+import { AdminTutorialOverlay } from "@/components/tutorial/admin-tutorial-overlay";
 import { adminNavGroups } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -21,15 +23,15 @@ export default async function AdminLayout({
   const userRole = user?.role ?? "admin";
 
   return (
-    <div className="h-dvh overflow-hidden bg-[#f4f2fb]">
-      <div className="flex h-full w-full">
+    <div className="fixed inset-0 overflow-hidden bg-[#f4f2fb]">
+      <div className="flex h-full w-full overflow-hidden">
         <AdminSidebar
           groups={adminNavGroups}
           userName={userName}
           userRole={userRole}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
             <div className="flex items-center gap-3">
               <AdminMobileMenu
@@ -54,10 +56,17 @@ export default async function AdminLayout({
               </div>
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+          <main
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
+            data-admin-scroll-container
+          >
             {children}
           </main>
           <OpsRequestNotifier role="admin" />
+          <div className="fixed right-20 top-4 z-40 md:right-24 md:top-6">
+            <AdminTutorialButton />
+          </div>
+          <AdminTutorialOverlay />
         </div>
       </div>
     </div>

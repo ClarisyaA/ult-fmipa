@@ -10,6 +10,7 @@ type NormalWorkflowMetadata = {
   deliveryColumn: "DIAMBIL_TGL" | "DIKIRIM_TGL";
   deliveryByColumn: "DIAMBIL_OLEH" | "DIKIRIM_OLEH";
   emailColumn?: "EMAIL";
+  languageColumn?: "BAHASA_SURAT";
   phoneColumn?: "NO_HP" | "HP_WA";
   keperluanColumn?: "KEPERLUAN";
   keteranganColumn?: "KETERANGAN";
@@ -33,6 +34,8 @@ type NormalWorkflowMetadata = {
 
 type VerificationWorkflowMetadata = {
   workflow: "verification";
+  emailColumn?: "EMAIL";
+  languageColumn?: "BAHASA_SURAT";
 };
 
 type SikWorkflowMetadata = {
@@ -50,6 +53,7 @@ const requestTableMetadata = {
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
@@ -58,9 +62,12 @@ const requestTableMetadata = {
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "NO_HP",
   },
   keterangan_lulus: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
@@ -70,10 +77,13 @@ const requestTableMetadata = {
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
   legalisir: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
@@ -84,12 +94,15 @@ const requestTableMetadata = {
   },
   transkrip: {
     workflow: "verification",
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
   },
   bebas_pinjaman: {
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
@@ -98,6 +111,7 @@ const requestTableMetadata = {
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
@@ -106,6 +120,7 @@ const requestTableMetadata = {
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
@@ -114,10 +129,13 @@ const requestTableMetadata = {
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "HP_WA",
     keteranganColumn: "KETERANGAN",
   },
   surat_pengantar: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
@@ -125,6 +143,8 @@ const requestTableMetadata = {
     ditujukanColumn: "DITUJUKAN",
   },
   permohonan_magang: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIKIRIM_TGL",
     deliveryByColumn: "DIKIRIM_OLEH",
@@ -143,12 +163,16 @@ const requestTableMetadata = {
     workflow: "sik",
   },
   beasiswa: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     beasiswaColumn: "BEASISWA",
   },
   kelakuan_baik: {
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
@@ -156,12 +180,15 @@ const requestTableMetadata = {
   },
   ijazah: {
     workflow: "verification",
+    emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
   },
   kks: {
     workflow: "normal",
     deliveryColumn: "DIAMBIL_TGL",
     deliveryByColumn: "DIAMBIL_OLEH",
     emailColumn: "EMAIL",
+    languageColumn: "BAHASA_SURAT",
     phoneColumn: "NO_HP",
     keperluanColumn: "KEPERLUAN",
   },
@@ -173,6 +200,7 @@ type DetailRow = {
   id: string | bigint | number;
   npm: string | null;
   email: string | null;
+  bahasaSurat: string | null;
   phone: string | null;
   requestDate: Date | string | null;
   requestEntry: string | null;
@@ -430,6 +458,7 @@ async function getNormalDetail(
     quoteIdentifier(metadata.deliveryByColumn),
   );
   const emailColumn = columnOrNull(metadata.emailColumn);
+  const languageColumn = columnOrNull(metadata.languageColumn);
   const phoneColumn = columnOrNull(metadata.phoneColumn);
 
   const rows = await prisma.$queryRaw<DetailRow[]>`
@@ -437,6 +466,7 @@ async function getNormalDetail(
       CAST(\`ID\` AS CHAR) AS id,
       \`NPM\` AS npm,
       ${emailColumn} AS email,
+      ${languageColumn} AS bahasaSurat,
       ${phoneColumn} AS phone,
       \`PERMINTAAN_TGL\` AS requestDate,
       \`PERMINTAAN_ENTRY\` AS requestEntry,
@@ -490,15 +520,19 @@ async function getNormalDetail(
 
 async function getVerificationDetail(
   sourceTable: RequestTableName,
+  metadata: VerificationWorkflowMetadata,
   id: string,
 ) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
+  const emailColumn = columnOrNull(metadata.emailColumn);
+  const languageColumn = columnOrNull(metadata.languageColumn);
 
   const rows = await prisma.$queryRaw<DetailRow[]>`
     SELECT
       CAST(\`ID\` AS CHAR) AS id,
       \`NPM\` AS npm,
-      NULL AS email,
+      ${emailColumn} AS email,
+      ${languageColumn} AS bahasaSurat,
       NULL AS phone,
       \`PERMINTAAN_TGL\` AS requestDate,
       \`PERMINTAAN_ENTRY\` AS requestEntry,
@@ -556,6 +590,7 @@ async function getSikDetail(id: string) {
       CAST(\`ID\` AS CHAR) AS id,
       \`NPM\` AS npm,
       \`EMAIL_PENGIRIMAN\` AS email,
+      \`BAHASA_SURAT\` AS bahasaSurat,
       \`NO_HP_WA\` AS phone,
       \`PERMINTAAN_TGL\` AS requestDate,
       \`PERMINTAAN_ENTRY\` AS requestEntry,
@@ -622,7 +657,7 @@ export async function getRequestDetail(
     metadata.workflow === "normal"
       ? await getNormalDetail(service.sourceTable, metadata, id)
       : metadata.workflow === "verification"
-        ? await getVerificationDetail(service.sourceTable, id)
+        ? await getVerificationDetail(service.sourceTable, metadata, id)
         : await getSikDetail(id);
 
   if (!row) {
@@ -646,6 +681,7 @@ export async function getRequestDetail(
     requesterName: requesterProfile?.name,
     requesterEmail: row.email,
     requesterPhone: row.phone,
+    bahasaSurat: row.bahasaSurat,
     requesterProgram: requesterProfile?.program,
     requesterLevel: requesterProfile?.level,
     requesterClassYear: requesterProfile?.classYear,

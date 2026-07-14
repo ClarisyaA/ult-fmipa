@@ -68,6 +68,7 @@ export async function getMasihKuliahLetterData(
     where: { ID: BigInt(id) },
     select: {
       ID: true,
+      BAHASA_SURAT: true,
       NPM: true,
       SEMESTER: true,
       TAHUN_AKADEMIK: true,
@@ -89,6 +90,7 @@ export async function getMasihKuliahLetterData(
 
   const data = await withStudent(row.NPM, {
     requestId: row.ID.toString(),
+    languagePreference: row.BAHASA_SURAT === "en" ? "en" : "id",
     semester: row.SEMESTER,
     academicYear: row.TAHUN_AKADEMIK,
     parentName: row.NAMA_ORANG_TUA,
@@ -129,6 +131,7 @@ export async function getMasihKuliahAktifLetterData(
     where: { ID: BigInt(id) },
     select: {
       ID: true,
+      BAHASA_SURAT: true,
       NPM: true,
       SEMESTER: true,
       TAHUN_AKADEMIK: true,
@@ -147,6 +150,7 @@ export async function getMasihKuliahAktifLetterData(
 
   const data = await withStudent(row.NPM, {
     requestId: row.ID.toString(),
+    languagePreference: row.BAHASA_SURAT === "en" ? "en" : "id",
     semester: row.SEMESTER,
     academicYear: row.TAHUN_AKADEMIK,
     address: row.ALAMAT,
@@ -177,6 +181,7 @@ export async function getKelakuanBaikLetterData(
     where: { ID: BigInt(id) },
     select: {
       ID: true,
+      BAHASA_SURAT: true,
       NPM: true,
       ALAMAT: true,
       TTD_NO_SURAT: true,
@@ -193,6 +198,7 @@ export async function getKelakuanBaikLetterData(
 
   const data = await withStudent(row.NPM, {
     requestId: row.ID.toString(),
+    languagePreference: row.BAHASA_SURAT === "en" ? "en" : "id",
     address: row.ALAMAT,
     signer: {
       letterNumber: row.TTD_NO_SURAT,

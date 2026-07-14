@@ -25,7 +25,7 @@ export default async function AdminProfileStructurePage() {
         </p>
       </div>
 
-      <Card>
+      <Card data-tour="admin-profile-structure-tree">
         <CardHeader>
           <CardTitle>CMS Struktur Organisasi</CardTitle>
           <CardDescription>

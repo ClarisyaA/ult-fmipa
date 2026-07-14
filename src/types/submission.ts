@@ -2,6 +2,7 @@ export type CreateServiceRequestInput = {
   npm: string;
   email?: string;
   phone?: string;
+  bahasaSurat?: "id" | "en";
   description?: string;
   scholarshipName?: string;
   semester?: string;

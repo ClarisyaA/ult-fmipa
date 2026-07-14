@@ -74,7 +74,8 @@ export default async function AdminSystemLevelsPage({
           <CsvDownloadButton filename="data-level.csv" rows={csvRows} />
         </form>
       </AdminSectionCard>
-      <AdminSectionCard title="Tabel Data Level">
+      <div data-tour="admin-system-levels">
+        <AdminSectionCard title="Tabel Data Level">
         {unavailable ? (
           <AdminUnavailableState />
         ) : rows.length === 0 ? (
@@ -107,7 +108,8 @@ export default async function AdminSystemLevelsPage({
             </Table>
           </AdminTableScroll>
         )}
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }
