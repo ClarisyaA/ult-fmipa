@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,6 +64,10 @@ const keteranganLulusApprovalServiceFields = new Set([
   "TTD_AN",
 ]);
 
+function printHref(serviceSlug: string, id: string) {
+  return `/api/requests/${serviceSlug}/${id}/pdf`;
+}
+
 function collectValues(metadata: LetterMetadataPayload): FieldValues {
   const entries = [...metadata.commonFields, ...metadata.serviceFields].map(
     (field) => [field.name, field.value],
@@ -111,6 +116,13 @@ function FieldControl({
     !field.options?.includes(value);
   const inputClassName =
     "h-8 w-full rounded-[4px] border border-[#9c9c9c] bg-white px-2 text-[15px] text-[#1f1f1f] shadow-inner outline-none transition focus:border-[#00669b] focus:ring-2 focus:ring-[#00669b]/15 disabled:bg-[#f4f4f4] md:max-w-[560px]";
+  const optionLabel = (option: string) => {
+    if (field.name === "BAHASA_SURAT") {
+      return option === "en" ? "Bahasa Inggris" : "Bahasa Indonesia";
+    }
+
+    return option;
+  };
 
   return (
     <div className="grid gap-1 md:grid-cols-[174px_minmax(0,1fr)] md:items-start">
@@ -138,7 +150,7 @@ function FieldControl({
             className={`${inputClassName} md:max-w-[320px]`}
             onChange={(event) => onChange(field.name, event.target.value)}
           >
-            <option value="">Pilih Yudisium</option>
+            <option value="">Pilih {field.label}</option>
             {hasInvalidSelectValue ? (
               <option value={value}>
                 Nilai saat ini: {value} (tidak resmi)
@@ -146,7 +158,7 @@ function FieldControl({
             ) : null}
             {field.options?.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {optionLabel(option)}
               </option>
             ))}
           </select>
@@ -618,7 +630,30 @@ export function LetterMetadataEditor({
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
                 </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  disabled={saving || readiness?.isReady === false}
+                  className="h-9 rounded-[4px] border-[#0f5b45] bg-white px-5 text-[15px] font-semibold text-[#0f5b45] hover:bg-[#eef9f1]"
+                >
+                  <Link
+                    href={printHref(serviceSlug, id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Cetak Surat
+                  </Link>
+                </Button>
               </div>
+              {readiness?.isReady === false ? (
+                <>
+                  <div className="hidden md:block" />
+                  <p className="text-sm font-medium text-[#9a3412]">
+                    Lengkapi Data Surat sebelum mencetak PDF resmi.
+                  </p>
+                </>
+              ) : null}
             </div>
           </>
         ) : null}

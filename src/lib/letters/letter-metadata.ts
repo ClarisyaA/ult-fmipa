@@ -80,6 +80,16 @@ type FieldConfig = {
   options?: readonly string[];
 };
 
+const LETTER_LANGUAGE_OPTIONS = ["id", "en"] as const;
+
+const LANGUAGE_FIELD: FieldConfig = {
+  name: "BAHASA_SURAT",
+  label: "Bahasa Surat",
+  type: "select",
+  maxLength: 10,
+  options: LETTER_LANGUAGE_OPTIONS,
+};
+
 type DuplicateCheckConfig = {
   serviceSlug: MetadataServiceSlug;
   sourceTable: ServiceMetadataConfig["sourceTable"];
@@ -163,6 +173,7 @@ const METADATA_CONFIG = {
     template: "keterangan-lulus",
     commonFields: KETERANGAN_LULUS_COMMON_FIELDS,
     serviceFields: [
+      LANGUAGE_FIELD,
       { name: "TTD_TANGGAL_BERLAKU", label: "Tanggal Berlaku Surat", type: "date" },
       { name: "TTD_AN", label: "Atas Nama", type: "text", maxLength: 50 },
       { name: "TEMPAT_LAHIR", label: "Tempat Lahir", type: "text", maxLength: 100 },
@@ -191,6 +202,7 @@ const METADATA_CONFIG = {
     template: "masih-kuliah",
     commonFields: COMMON_TTD_FIELDS,
     serviceFields: [
+      LANGUAGE_FIELD,
       { name: "SEMESTER", label: "Semester", type: "text", maxLength: 25, numeric: "loose" },
       { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 10 },
       { name: "NAMA_ORANG_TUA", label: "Nama Orang Tua/Wali", type: "text", maxLength: 100 },
@@ -209,6 +221,7 @@ const METADATA_CONFIG = {
     template: "masih-kuliah-aktif",
     commonFields: COMMON_TTD_FIELDS,
     serviceFields: [
+      LANGUAGE_FIELD,
       { name: "SEMESTER", label: "Semester", type: "text", maxLength: 11, numeric: "loose" },
       { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 11 },
       { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
@@ -220,6 +233,7 @@ const METADATA_CONFIG = {
     template: "kelakuan-baik",
     commonFields: COMMON_TTD_FIELDS,
     serviceFields: [
+      LANGUAGE_FIELD,
       { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
       { name: "KEPERLUAN", label: "Keperluan", type: "text", maxLength: 100 },
     ],
@@ -229,6 +243,7 @@ const METADATA_CONFIG = {
     template: "magang",
     commonFields: MAGANG_TTD_FIELDS,
     serviceFields: [
+      LANGUAGE_FIELD,
       { name: "NAMA", label: "Nama Mahasiswa", type: "text", maxLength: 100 },
       { name: "PRODI", label: "Program Studi", type: "text", maxLength: 150 },
       {
@@ -711,6 +726,10 @@ function parseText(value: unknown, field: FieldConfig) {
 
   if (field.name === "YUDISIUM" && !isValidYudisium(trimmed)) {
     throw new LetterMetadataError(YUDISIUM_INVALID_MESSAGE, 400);
+  }
+
+  if (field.options && !field.options.includes(trimmed)) {
+    throw new LetterMetadataError(`${field.label} tidak valid.`, 400);
   }
 
   if (field.numeric === "decimal" && !/^\d+(?:[.,]\d+)?$/.test(trimmed)) {

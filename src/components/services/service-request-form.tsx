@@ -234,6 +234,7 @@ export function ServiceRequestForm({
         npm: getFormString(formData, "npm"),
         email: getFormString(formData, "email"),
         phone: getFormString(formData, "phone"),
+        bahasaSurat: getFormString(formData, "bahasaSurat"),
         description: getFormString(formData, "description"),
         scholarshipName: getFormString(formData, "scholarshipName"),
         semester: getFormString(formData, "semester"),
@@ -535,6 +536,7 @@ export function ServiceRequestForm({
             id="email"
             name="email"
             type="email"
+            maxLength={150}
             defaultValue={defaultValues?.email ?? ""}
             required
             className={inputClass}
@@ -543,6 +545,27 @@ export function ServiceRequestForm({
             <p className="text-sm text-destructive">{fieldErrors.email}</p>
           ) : null}
         </div>
+        <div className="grid gap-2">
+          <FieldLabel htmlFor="bahasaSurat" required>Bahasa Surat</FieldLabel>
+          <select
+            id="bahasaSurat"
+            name="bahasaSurat"
+            defaultValue="id"
+            required
+            className={`${inputClass} h-10 rounded-md border bg-background px-3 py-2 text-sm outline-none`}
+          >
+            <option value="id">Bahasa Indonesia</option>
+            <option value="en">Bahasa Inggris</option>
+          </select>
+          {fieldErrors.bahasaSurat ? (
+            <p className="text-sm text-destructive">
+              {fieldErrors.bahasaSurat}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
           <FieldLabel htmlFor="phone" required>No HP/WhatsApp</FieldLabel>
           <Input

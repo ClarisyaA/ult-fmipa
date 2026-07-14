@@ -323,6 +323,18 @@ function formatAttachmentType(value?: string | null) {
   return "Lampiran";
 }
 
+function formatLanguage(value: string | null | undefined) {
+  if (value === "en") {
+    return "Bahasa Inggris";
+  }
+
+  if (value === "id") {
+    return "Bahasa Indonesia";
+  }
+
+  return value ?? null;
+}
+
 function contactValue(request: ServiceRequestListItem) {
   const values = [request.requesterEmail, request.requesterPhone].filter(Boolean);
 
@@ -622,6 +634,7 @@ function AdminRequestPreview({
     { label: "Nama", value: detail.requesterName },
     { label: "NPM", value: detail.npm },
     { label: "Email", value: detail.requesterEmail },
+    { label: "Bahasa Surat", value: formatLanguage(detail.bahasaSurat) },
     { label: "No HP", value: detail.requesterPhone },
     { label: "Program Studi", value: detail.requesterProgram },
     { label: "Jenjang", value: detail.requesterLevel },

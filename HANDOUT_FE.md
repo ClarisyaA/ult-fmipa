@@ -1140,7 +1140,7 @@ Refresh:
 
 `GET /api/requests/[serviceSlug]/[id]/email-draft` menyiapkan data Gmail compose untuk admin/staff:
 
-- `recipientEmail` jika tersedia dari field request atau alumni profile.
+- `recipientEmail` jika tersedia dari field request, email pengiriman SIK, atau alumni profile.
 - `subject` dengan format `Penyelesaian Pengajuan {serviceTitle} - ULT FMIPA Unpad`.
 - `body` default yang netral dan tidak menyebut auto-attachment.
 - `gmailComposeUrl`.
@@ -1148,6 +1148,8 @@ Refresh:
 - `attachmentInstruction` selalu berisi instruksi lampiran manual.
 
 Fitur ini menggunakan Gmail compose URL. Sistem hanya mengisi email tujuan, subjek, dan isi pesan. File hasil layanan tetap harus dilampirkan manual oleh admin/staff. Fitur ini tidak memakai `mailto:`, tidak mengirim email otomatis, tidak memakai SMTP, tidak memakai Gmail API, dan tidak mengubah generator PDF.
+
+Prioritas email tujuan adalah email yang tersimpan pada row pengajuan (`EMAIL` atau `EMAIL_PENGIRIMAN`), lalu fallback profil/alumni jika tersedia. Email manual dari form mahasiswa harus tersimpan dan dipakai oleh Gmail helper.
 
 Layanan printable (`keterangan-lulus`, `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`, `permohonan-magang-kerja-praktek-ta`) hanya menampilkan tombol bantu `Buka PDF Surat`; PDF tetap harus dibuka/diunduh lalu dilampirkan manual di Gmail.
 
@@ -1170,6 +1172,8 @@ Frontend harus menampilkan identitas ini read-only untuk semua layanan printable
 Admin/staff harus memvalidasi IPK dan Yudisium terhadap data akademik resmi sebelum mencetak. PDF `keterangan-lulus` menolak IPK di luar 0.00-4.00 dan Yudisium di luar pilihan resmi.
 
 `permohonan-magang-kerja-praktek-ta` mendukung PDF Surat Permohonan Izin Magang Kerja. Template mengikuti acuan `docs/Magang_Kerja140810230017.pdf` dan memakai snapshot `Data Surat` pada row `permohonan_magang`, termasuk tujuan surat, alamat, tanggal pelaksanaan, nomor surat, tanggal surat, dan penandatangan.
+
+Semua form pengajuan mahasiswa menyimpan `BAHASA_SURAT` dengan nilai `id` atau `en`. Editor `Data Surat` untuk layanan printable juga menampilkan field `Bahasa Surat`. Tombol `Cetak Surat` tersedia di action atas detail pengajuan dan di footer editor `Data Surat` di sebelah `Simpan`; jika readiness belum lengkap, tampilkan helper `Lengkapi Data Surat sebelum mencetak PDF resmi.`
 
 ## Belum Tersedia / Tidak Ditemukan
 

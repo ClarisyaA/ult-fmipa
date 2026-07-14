@@ -74,6 +74,7 @@ const requiredMagangFields = [
 const requiredCommonContactFields = [
   ["email", "Email wajib diisi."],
   ["phone", "No HP/WhatsApp wajib diisi."],
+  ["bahasaSurat", "Bahasa surat wajib dipilih."],
 ] as const;
 
 const requiredFieldsByService = {
@@ -172,7 +173,13 @@ export const createServiceRequestSchema = z.object({
     .regex(/^\d+$/, "NPM hanya boleh berisi angka."),
   email: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z.string().trim().email("Email tidak valid.").optional()
+    z.string().trim().email("Email tidak valid.").max(150, "Email maksimal 150 karakter.").optional()
+  ),
+  bahasaSurat: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.enum(["id", "en"], {
+      error: "Bahasa surat tidak valid.",
+    }).default("id")
   ),
   phone: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),

@@ -170,6 +170,10 @@ docker compose exec app pnpm db:support-migrate
 
 Script `db:support-migrate` akan menjalankan seluruh SQL di
 `database/migrations`, termasuk perubahan layanan terbaru.
+Runner support migration tidak menyimpan tabel riwayat applied migration, jadi
+file SQL lama diperlakukan sebagai riwayat kompatibilitas dan tidak boleh
+di-rewrite/hapus tanpa audit eksplisit. Catatan audit ada di
+[`docs/migration-audit.md`](docs/migration-audit.md).
 
 ### 8. Jalankan aplikasi
 

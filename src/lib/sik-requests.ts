@@ -24,6 +24,7 @@ export type SikFinalSubmitInput = {
   tanggalKegiatan: string;
   emailPengiriman: string;
   noHpWa: string;
+  bahasaSurat?: string;
 };
 
 export class SikRequestError extends Error {
@@ -80,6 +81,28 @@ function normalizeDate(value: string | undefined, label: string) {
   }
 
   return date;
+}
+
+function normalizeEmail(value: string | undefined, label: string) {
+  const email = normalizeRequiredText(value, label);
+
+  if (email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new SikRequestError("Email tidak valid.", 400);
+  }
+
+  return email;
+}
+
+function normalizeLanguage(value: string | undefined) {
+  if (!value || value.trim() === "") {
+    return "id";
+  }
+
+  if (value === "id" || value === "en") {
+    return value;
+  }
+
+  throw new SikRequestError("Bahasa surat tidak valid.", 400);
 }
 
 export async function getStudentProfileForSik(npm: string) {
@@ -170,6 +193,8 @@ export async function getLatestSikRequestForStudentOrNull(npm: string) {
 export async function createSikApprovalProofRequest(input: {
   npm: string;
   uploadedBy: string | null;
+  emailPengiriman?: string;
+  bahasaSurat?: string;
 }) {
   const latest = await getLatestSikRequestForStudent(input.npm);
 
@@ -204,6 +229,8 @@ export async function createSikApprovalProofRequest(input: {
           APPROVAL_VERIFIKASI_TGL: null,
           APPROVAL_VERIFIKASI_STAF: null,
           APPROVAL_REJECT_REASON: null,
+          EMAIL_PENGIRIMAN: normalizeEmail(input.emailPengiriman, "Email"),
+          BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
           PERMINTAAN_TGL: new Date(),
           PERMINTAAN_ENTRY: input.uploadedBy ?? "Website ULT",
           PERMINTAAN_IP: null,
@@ -221,6 +248,8 @@ export async function createSikApprovalProofRequest(input: {
         NAMA: profile.name,
         PRODI: profile.program,
         APPROVAL_STATUS: "pending",
+        EMAIL_PENGIRIMAN: normalizeEmail(input.emailPengiriman, "Email"),
+        BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
         PERMINTAAN_TGL: new Date(),
         PERMINTAAN_ENTRY: input.uploadedBy ?? "Website ULT",
         PERMINTAAN_IP: null,
@@ -351,11 +380,12 @@ export async function submitSikFinalForm(
           input.tanggalKegiatan,
           "Tanggal kegiatan"
         ),
-        EMAIL_PENGIRIMAN: normalizeRequiredText(
+        EMAIL_PENGIRIMAN: normalizeEmail(
           input.emailPengiriman,
           "Email pengiriman SIK"
         ),
         NO_HP_WA: normalizeRequiredText(input.noHpWa, "No HP WA contact person"),
+        BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       },
     });
   } catch (error) {

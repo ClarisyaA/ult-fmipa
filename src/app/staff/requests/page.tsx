@@ -214,6 +214,18 @@ function formatAttachmentType(value?: string | null) {
   return "Lampiran";
 }
 
+function formatLanguage(value: string | null | undefined) {
+  if (value === "en") {
+    return "Bahasa Inggris";
+  }
+
+  if (value === "id") {
+    return "Bahasa Indonesia";
+  }
+
+  return value ?? null;
+}
+
 function getPageItems(currentPage: number, totalPages: number) {
   const pages = new Set(
     [1, currentPage - 1, currentPage, currentPage + 1, totalPages].filter(
@@ -445,6 +457,7 @@ function RequestPreview({
     { label: "Nama", value: detail.requesterName },
     { label: "NPM", value: displayNpm },
     { label: "Email", value: detail.requesterEmail },
+    { label: "Bahasa Surat", value: formatLanguage(detail.bahasaSurat) },
     { label: "No HP", value: detail.requesterPhone },
     { label: "Program Studi", value: detail.requesterProgram },
     { label: "Jenjang", value: detail.requesterLevel },

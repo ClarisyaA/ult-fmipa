@@ -11,6 +11,8 @@ Fitur ini menggunakan Gmail compose URL. Sistem hanya mengisi email tujuan, subj
 - Admin/staff dapat membuka kartu `Pengiriman Email` dari halaman detail pengajuan atau preview daftar.
 - Setelah aksi status `Selesai` berhasil, modal `Pengajuan selesai. Siapkan email pengiriman melalui Gmail?` ditampilkan.
 - Draft Gmail berisi email tujuan bila tersedia, subject, dan body.
+- Email tujuan diprioritaskan dari row pengajuan (`EMAIL` atau `EMAIL_PENGIRIMAN`) sebelum fallback profil/alumni.
+- Email yang diisi manual di form mahasiswa harus tersimpan per request dan terbaca oleh endpoint draft.
 - Jika email tujuan tidak tersedia, UI menampilkan peringatan agar admin/staff mengisi alamat email manual di Gmail.
 - Semua layanan memakai instruksi lampiran manual.
 - Layanan printable hanya mendapat tombol bantu `Buka PDF Surat`.

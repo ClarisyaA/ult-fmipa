@@ -96,6 +96,7 @@ export async function PATCH(
       tanggalKegiatan: getFormString(formData, "tanggalKegiatan"),
       emailPengiriman: getFormString(formData, "emailPengiriman"),
       noHpWa: getFormString(formData, "noHpWa"),
+      bahasaSurat: getFormString(formData, "bahasaSurat"),
     });
     let attachmentCount = 0;
 

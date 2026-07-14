@@ -361,7 +361,10 @@ export function SikRequestWorkflow({
     setIsSubmitting(true);
 
     try {
+      const formData = new FormData(event.currentTarget);
       const requestBody = new FormData();
+      requestBody.append("email", getFormString(formData, "email"));
+      requestBody.append("bahasaSurat", getFormString(formData, "bahasaSurat"));
       proofFiles.forEach((file) => requestBody.append("attachments", file));
 
       const response = await fetch("/api/services/surat-izin-kegiatan/requests", {
@@ -417,6 +420,7 @@ export function SikRequestWorkflow({
       requestBody.append("tanggalKegiatan", getFormString(formData, "tanggalKegiatan"));
       requestBody.append("emailPengiriman", getFormString(formData, "emailPengiriman"));
       requestBody.append("noHpWa", getFormString(formData, "noHpWa"));
+      requestBody.append("bahasaSurat", getFormString(formData, "bahasaSurat"));
       finalFiles.forEach((file) => requestBody.append("attachments", file));
 
       const response = await fetch(
@@ -475,6 +479,25 @@ export function SikRequestWorkflow({
 
       {canUploadProof ? (
         <form className="grid gap-4" onSubmit={submitProof}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <FieldLabel htmlFor="email" required>Email</FieldLabel>
+              <Input id="email" name="email" type="email" required maxLength={150} />
+            </div>
+            <div className="grid gap-2">
+              <FieldLabel htmlFor="bahasaSurat" required>Bahasa Surat</FieldLabel>
+              <select
+                id="bahasaSurat"
+                name="bahasaSurat"
+                defaultValue="id"
+                required
+                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+              >
+                <option value="id">Bahasa Indonesia</option>
+                <option value="en">Bahasa Inggris</option>
+              </select>
+            </div>
+          </div>
           <FilePicker
             label={isRejected ? "Upload Ulang Bukti ACC" : "Upload Bukti ACC"}
             uploadRule={proofUploadRule}
@@ -525,6 +548,19 @@ export function SikRequestWorkflow({
               <FieldLabel htmlFor="noHpWa" required>No HP WA Contact Person</FieldLabel>
               <Input id="noHpWa" name="noHpWa" required maxLength={30} />
             </div>
+          </div>
+          <div className="grid gap-2">
+            <FieldLabel htmlFor="bahasaSurat" required>Bahasa Surat</FieldLabel>
+            <select
+              id="bahasaSurat"
+              name="bahasaSurat"
+              defaultValue="id"
+              required
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+            >
+              <option value="id">Bahasa Indonesia</option>
+              <option value="en">Bahasa Inggris</option>
+            </select>
           </div>
           <FilePicker
             label="Upload SPIK Final"

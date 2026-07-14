@@ -61,6 +61,15 @@ Semua form `/layanan/[slug]/ajukan` harus menampilkan indikator required/optiona
 
 Field kontak umum `Email` dan `No HP/WhatsApp` wajib untuk layanan pengajuan mahasiswa yang memakai `ServiceRequestForm`. SIK memakai indikator yang sama pada tahap upload bukti ACC dan form final.
 
+Setiap form pengajuan mahasiswa juga wajib menampilkan `Bahasa Surat *` dengan pilihan:
+
+- `Bahasa Indonesia` tersimpan sebagai `id`.
+- `Bahasa Inggris` tersimpan sebagai `en`.
+
+Backend hanya menerima nilai `id` atau `en`. Jika nilai kosong, backend memakai default `id`; nilai lain ditolak dengan error validasi.
+
+Email yang diisi mahasiswa disimpan pada row pengajuan, bukan hanya dipakai dari session. Helper Gmail memprioritaskan email dari row pengajuan sebelum fallback profil/alumni.
+
 ## Workflow Verifikasi SIK Admin/Staff
 
 Layanan `surat-izin-kegiatan` memiliki workflow bertahap sebelum masuk status normal:
@@ -78,3 +87,9 @@ Route approval:
 - `PATCH /api/staff/requests/surat-izin-kegiatan/[id]/approval`
 
 Payload approve cukup `{ "action": "approve" }`. Payload reject memakai `{ "action": "reject", "reason": "..." }`.
+
+## Data Surat Dan Cetak PDF
+
+Untuk layanan printable (`keterangan-lulus`, `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`, `permohonan-magang-kerja-praktek-ta`), editor `Data Surat` menampilkan tombol `Cetak Surat` di footer editor berdekatan dengan tombol `Simpan`.
+
+Jika readiness belum lengkap, tombol tetap terlihat dalam keadaan tidak aktif dan helper text menampilkan `Lengkapi Data Surat sebelum mencetak PDF resmi.`

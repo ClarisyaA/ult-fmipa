@@ -94,6 +94,10 @@ function normalizeOptional(value?: string) {
   return trimmed ? trimmed : null;
 }
 
+function normalizeLanguage(value?: string) {
+  return value === "en" ? "en" : "id";
+}
+
 function normalizeDate(value?: string) {
   const trimmed = value?.trim();
 
@@ -112,6 +116,8 @@ async function insertBeasiswa(input: CreateServiceRequestInput) {
   const created = await prisma.beasiswa.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       BEASISWA:
         normalizeOptional(input.scholarshipName) ??
         normalizeOptional(input.description),
@@ -135,6 +141,7 @@ async function insertSimpleRequest(
   const data = {
     NPM: input.npm,
     EMAIL: normalizeOptional(input.email),
+    BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
     HP_WA: normalizeOptional(input.phone),
     KETERANGAN: normalizeOptional(input.description),
     PERMINTAAN_TGL: new Date(),
@@ -172,6 +179,7 @@ async function insertCardRequest(
   const data = {
     NPM: input.npm,
     EMAIL: normalizeOptional(input.email),
+    BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
     NO_HP: normalizeOptional(input.phone),
     KEPERLUAN: normalizeOptional(input.description),
     PERMINTAAN_TGL: new Date(),
@@ -196,6 +204,7 @@ async function insertMasihKuliah(input: CreateServiceRequestInput) {
       NPM: input.npm,
       SEMESTER: normalizeOptional(input.semester),
       EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       NO_HP: normalizeOptional(input.phone),
       TAHUN_AKADEMIK: normalizeOptional(input.tahunAkademik),
       NAMA_ORANG_TUA: normalizeOptional(input.namaOrangTua),
@@ -219,6 +228,7 @@ async function insertMasihKuliahAktif(input: CreateServiceRequestInput) {
       TAHUN_AKADEMIK: normalizeOptional(input.tahunAkademik),
       KEPERLUAN: normalizeOptional(input.description),
       EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       NO_HP: normalizeOptional(input.phone),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
@@ -233,6 +243,8 @@ async function insertKelakuanBaik(input: CreateServiceRequestInput) {
   const created = await prisma.kelakuan_baik.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       KEPERLUAN: normalizeOptional(input.description),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
@@ -247,6 +259,8 @@ async function insertSuratPengantar(input: CreateServiceRequestInput) {
   const created = await prisma.surat_pengantar.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       PERMINTAAN_IP: null,
       PENGANTAR: normalizeOptional(input.pengantar),
       DITUJUKAN: normalizeOptional(input.ditujukan),
@@ -265,6 +279,8 @@ async function insertKeteranganLulus(input: CreateServiceRequestInput) {
   const created = await prisma.keterangan_lulus.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       TEMPAT_LAHIR: normalizeOptional(input.tempatLahir),
       TGL_LAHIR: normalizeDate(input.tanggalLahir),
       TGL_LULUS: normalizeTanggalLulus(input),
@@ -283,6 +299,8 @@ async function insertIjazah(input: CreateServiceRequestInput) {
   const created = await prisma.ijazah.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       TGL_LULUS: normalizeTanggalLulus(input),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
@@ -297,6 +315,8 @@ async function insertTranskrip(input: CreateServiceRequestInput) {
   const created = await prisma.transkrip.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       TGL_LULUS: normalizeTanggalLulus(input),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
@@ -311,6 +331,8 @@ async function insertLegalisir(input: CreateServiceRequestInput) {
   const created = await prisma.legalisir.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       PERMINTAAN_TGL: new Date(),
       PERMINTAAN_ENTRY: "Website ULT",
       PERMINTAAN_IP: null,
@@ -328,6 +350,8 @@ async function insertPermohonanMagang(input: CreateServiceRequestInput) {
   const created = await prisma.permohonan_magang.create({
     data: {
       NPM: input.npm,
+      EMAIL: normalizeOptional(input.email),
+      BAHASA_SURAT: normalizeLanguage(input.bahasaSurat),
       PRODI: normalizeOptional(input.programStudi),
       JENIS_PERMOHONAN: normalizeOptional(input.jenisPermohonan),
       KONTAK_PERSON: normalizeOptional(input.kontakPerson),

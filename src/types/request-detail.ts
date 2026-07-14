@@ -9,6 +9,7 @@ export type ServiceRequestDetail = {
   requesterName?: string | null;
   requesterEmail?: string | null;
   requesterPhone?: string | null;
+  bahasaSurat?: string | null;
   requesterProgram?: string | null;
   requesterLevel?: string | null;
   requesterClassYear?: number | null;

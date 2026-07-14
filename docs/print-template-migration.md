@@ -743,6 +743,8 @@ Phase 3B data validation update:
 - `keterangan-lulus` memakai dropdown Yudisium dengan pilihan resmi `Pujian`, `Sangat Memuaskan`, dan `Memuaskan`.
 - Admin/staff wajib memeriksa IPK dan Yudisium terhadap data akademik resmi sebelum mencetak surat. UI menampilkan notice di section `Data Surat`.
 - `Data Surat` untuk seluruh layanan printable menampilkan section read-only `Identitas Mahasiswa` berisi minimal NPM dan Nama Mahasiswa, dengan Program Studi/Email/No HP jika tersedia.
+- `Data Surat` untuk seluruh layanan printable menampilkan field `Bahasa Surat` (`id` / `en`) dan tombol `Cetak Surat` di footer editor berdekatan dengan tombol `Simpan`.
+- Jika readiness belum lengkap, tombol cetak di footer editor tetap terlihat tetapi tidak aktif dan helper menjelaskan bahwa Data Surat harus dilengkapi sebelum PDF resmi dicetak.
 - API `GET /api/requests/{SERVICE_SLUG}/{ID}/letter-metadata` menyertakan `identity` aman untuk kebutuhan display frontend.
 - Route PDF menolak data kelulusan `keterangan-lulus` yang tidak lengkap atau invalid. IPK harus angka 0.00 sampai 4.00, dan Yudisium harus salah satu pilihan resmi.
 - Jika IPK atau Yudisium belum valid, readiness menampilkan `IPK atau Yudisium belum valid. Validasi data kelulusan sebelum mencetak surat.`
