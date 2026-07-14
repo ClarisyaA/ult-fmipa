@@ -338,6 +338,14 @@ model permohonan_magang {
   SELESAI_STAF          String?   @db.VarChar(100)
   DIKIRIM_TGL           DateTime? @db.Timestamp(0)
   DIKIRIM_OLEH          String?   @db.VarChar(100)
+  TTD_NO_SURAT          String?   @db.VarChar(30)
+  TTD_TANGGAL           DateTime? @db.Date
+  TTD_TEMPAT            String?   @db.VarChar(30)
+  TTD_AN                String?   @db.VarChar(50)
+  TTD_PANGKAT_GOLONGAN  String?   @db.VarChar(50)
+  TTD_JABATAN           String?   @db.VarChar(100)
+  TTD_NAMA              String?   @db.VarChar(100)
+  TTD_NIP               String?   @db.VarChar(30)
 
   @@index([NPM], map: "idx_permohonan_magang_npm")
   @@index([PERMINTAAN_TGL], map: "idx_permohonan_magang_permintaan_tgl")

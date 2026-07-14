@@ -24,6 +24,7 @@ import {
   sikServiceSlug,
 } from "@/lib/sik-requests";
 import { getStudentRequestDetail } from "@/lib/student-request-history";
+import { getPublicServiceTemplateLinks } from "@/lib/service-links";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -60,6 +61,7 @@ export default async function SubmitServiceRequestPage({
   }
 
   const supported = isSubmissionSupported(service.slug);
+  const templateLinks = await getPublicServiceTemplateLinks(service.slug);
   const latestSikRecord =
     service.slug === sikServiceSlug && user.npm
       ? await getLatestSikRequestForStudentOrNull(user.npm)
@@ -114,6 +116,7 @@ export default async function SubmitServiceRequestPage({
               ) : supported ? (
                 <ServiceRequestForm
                   serviceSlug={service.slug}
+                  templateLinks={templateLinks}
                   defaultValues={{
                     npm: user.npm,
                     email: user.email,

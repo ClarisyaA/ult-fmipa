@@ -6,11 +6,20 @@ import {
   getKeteranganLulusPrintReadiness,
   type KeteranganLulusPrintReadiness,
 } from "@/lib/letters/keterangan-lulus-data";
+import { getMagangPrintReadiness } from "@/lib/letters/magang-letter-data";
 import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
+import {
+  IPK_INVALID_MESSAGE,
+  isValidIpk,
+  isValidYudisium,
+  YUDISIUM_INVALID_MESSAGE,
+  YUDISIUM_OPTIONS,
+} from "@/lib/letters/graduation-validation";
+import { getRequestDetail } from "@/lib/legacy-request-detail";
 import type { OfficialLetterTemplate } from "@/lib/letters/letter-types";
 import { prisma } from "@/lib/prisma";
 
-type MetadataFieldType = "text" | "date" | "textarea";
+type MetadataFieldType = "text" | "date" | "textarea" | "select";
 
 export type LetterMetadataField = {
   name: string;
@@ -18,6 +27,7 @@ export type LetterMetadataField = {
   type: MetadataFieldType;
   value: string;
   maxLength?: number;
+  options?: string[];
 };
 
 export type LetterSignerOption = {
@@ -32,6 +42,7 @@ export type LetterSignerOption = {
 export type LetterMetadataPayload = {
   serviceSlug: string;
   requestId: string;
+  identity: LetterMetadataIdentity;
   readiness: KeteranganLulusPrintReadiness | null;
   duplicateNumber: LetterNumberDuplicateInfo;
   signerPickerAvailable: boolean;
@@ -39,6 +50,14 @@ export type LetterMetadataPayload = {
   signers: LetterSignerOption[];
   commonFields: LetterMetadataField[];
   serviceFields: LetterMetadataField[];
+};
+
+export type LetterMetadataIdentity = {
+  npm: string | null;
+  name: string | null;
+  programStudy: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 export type LetterNumberDuplicateInfo = {
@@ -58,6 +77,7 @@ type FieldConfig = {
   maxLength?: number;
   required?: boolean;
   numeric?: "decimal" | "loose";
+  options?: readonly string[];
 };
 
 type DuplicateCheckConfig = {
@@ -70,7 +90,8 @@ type ServiceMetadataConfig = {
     | "keterangan_lulus"
     | "masih_kuliah"
     | "masih_kuliah_aktif"
-    | "kelakuan_baik";
+    | "kelakuan_baik"
+    | "permohonan_magang";
   template: OfficialLetterTemplate;
   commonFields: FieldConfig[];
   serviceFields: FieldConfig[];
@@ -110,6 +131,32 @@ const KETERANGAN_LULUS_COMMON_FIELDS: FieldConfig[] = [
   { name: "TTD_NIP", label: "NIP Penandatangan", type: "text", maxLength: 30 },
 ];
 
+const MAGANG_TTD_FIELDS: FieldConfig[] = [
+  { name: "TTD_NO_SURAT", label: "Nomor Surat", type: "text", maxLength: 30 },
+  { name: "TTD_TANGGAL", label: "Tanggal Surat", type: "date" },
+  { name: "TTD_TEMPAT", label: "Tempat Surat", type: "text", maxLength: 30 },
+  { name: "TTD_AN", label: "Atas Nama", type: "text", maxLength: 50 },
+  {
+    name: "TTD_PANGKAT_GOLONGAN",
+    label: "Pangkat/Golongan Penandatangan",
+    type: "text",
+    maxLength: 50,
+  },
+  {
+    name: "TTD_JABATAN",
+    label: "Jabatan Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  {
+    name: "TTD_NAMA",
+    label: "Nama Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  { name: "TTD_NIP", label: "NIP Penandatangan", type: "text", maxLength: 30 },
+];
+
 const METADATA_CONFIG = {
   "keterangan-lulus": {
     sourceTable: "keterangan_lulus",
@@ -122,7 +169,13 @@ const METADATA_CONFIG = {
       { name: "TGL_LAHIR", label: "Tanggal Lahir", type: "date" },
       { name: "TGL_LULUS", label: "Tanggal Lulus", type: "date", required: true },
       { name: "IPK", label: "IPK", type: "text", maxLength: 5, numeric: "decimal" },
-      { name: "YUDISIUM", label: "Yudisium", type: "text", maxLength: 25 },
+      {
+        name: "YUDISIUM",
+        label: "Yudisium",
+        type: "select",
+        maxLength: 25,
+        options: YUDISIUM_OPTIONS,
+      },
       { name: "DASAR_SURAT_NO", label: "Nomor Dasar Surat", type: "text", maxLength: 30 },
       {
         name: "DASAR_SURAT_PERIHAL",
@@ -169,6 +222,50 @@ const METADATA_CONFIG = {
     serviceFields: [
       { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
       { name: "KEPERLUAN", label: "Keperluan", type: "text", maxLength: 100 },
+    ],
+  },
+  "permohonan-magang-kerja-praktek-ta": {
+    sourceTable: "permohonan_magang",
+    template: "magang",
+    commonFields: MAGANG_TTD_FIELDS,
+    serviceFields: [
+      { name: "NAMA", label: "Nama Mahasiswa", type: "text", maxLength: 100 },
+      { name: "PRODI", label: "Program Studi", type: "text", maxLength: 150 },
+      {
+        name: "JENIS_PERMOHONAN",
+        label: "Jenis Permohonan",
+        type: "text",
+        maxLength: 50,
+      },
+      {
+        name: "KONTAK_PERSON",
+        label: "Kontak Person",
+        type: "text",
+        maxLength: 150,
+      },
+      {
+        name: "TEMPAT_PELAKSANAAN",
+        label: "Tempat Pelaksanaan",
+        type: "text",
+        maxLength: 200,
+      },
+      { name: "TUJUAN_SURAT", label: "Tujuan Surat", type: "text", maxLength: 200 },
+      { name: "ALAMAT_SURAT", label: "Alamat Surat", type: "textarea", maxLength: 255 },
+      {
+        name: "KECAMATAN_KABUPATEN",
+        label: "Kecamatan/Kabupaten",
+        type: "text",
+        maxLength: 150,
+      },
+      {
+        name: "KOTA_KABUPATEN",
+        label: "Kota/Kabupaten",
+        type: "text",
+        maxLength: 100,
+      },
+      { name: "PROVINSI", label: "Provinsi", type: "text", maxLength: 100 },
+      { name: "TANGGAL_MULAI", label: "Tanggal Mulai", type: "date" },
+      { name: "TANGGAL_SELESAI", label: "Tanggal Selesai", type: "date" },
     ],
   },
 } satisfies Record<string, ServiceMetadataConfig>;
@@ -260,7 +357,23 @@ function buildFields(configs: FieldConfig[], row: Record<string, unknown>) {
     type: field.type,
     value: toFieldValue(row[field.name], field.type),
     maxLength: field.maxLength,
+    options: field.options ? [...field.options] : undefined,
   }));
+}
+
+async function getIdentity(
+  serviceSlug: MetadataServiceSlug,
+  id: string,
+): Promise<LetterMetadataIdentity> {
+  const detail = await getRequestDetail(serviceSlug, id);
+
+  return {
+    npm: detail?.npm ?? null,
+    name: detail?.requesterName ?? null,
+    programStudy: detail?.requesterProgram ?? null,
+    email: detail?.requesterEmail ?? detail?.emailPengiriman ?? null,
+    phone: detail?.requesterPhone ?? detail?.noHpWa ?? null,
+  };
 }
 
 async function getReadiness(serviceSlug: MetadataServiceSlug, id: string) {
@@ -268,6 +381,10 @@ async function getReadiness(serviceSlug: MetadataServiceSlug, id: string) {
 
   if (config.template === "keterangan-lulus") {
     return getKeteranganLulusPrintReadiness(id);
+  }
+
+  if (config.template === "magang") {
+    return getMagangPrintReadiness(id);
   }
 
   return getOfficialPrintReadiness(config.template, id);
@@ -315,6 +432,16 @@ function isMissingOnlyLetterNumber(
       "TTD_PANGKAT_GOLONGAN",
     ],
     "keterangan-kelakuan-baik": ["ALAMAT", "TTD_PANGKAT_GOLONGAN"],
+    "permohonan-magang-kerja-praktek-ta": [
+      "NAMA",
+      "PRODI",
+      "JENIS_PERMOHONAN",
+      "TEMPAT_PELAKSANAAN",
+      "TUJUAN_SURAT",
+      "ALAMAT_SURAT",
+      "TANGGAL_MULAI",
+      "TANGGAL_SELESAI",
+    ],
   };
 
   return [...commonRequired, ...serviceRequired[serviceSlug]].every((field) =>
@@ -497,6 +624,7 @@ export async function getLetterMetadata(
   return {
     serviceSlug,
     requestId: id,
+    identity: await getIdentity(slug, id),
     readiness,
     duplicateNumber,
     signerPickerAvailable: signers.length > 0,
@@ -552,6 +680,14 @@ function parseText(value: unknown, field: FieldConfig) {
   const trimmed = String(value).trim();
 
   if (!trimmed) {
+    if (field.name === "IPK") {
+      throw new LetterMetadataError(IPK_INVALID_MESSAGE, 400);
+    }
+
+    if (field.name === "YUDISIUM") {
+      throw new LetterMetadataError(YUDISIUM_INVALID_MESSAGE, 400);
+    }
+
     return null;
   }
 
@@ -567,6 +703,14 @@ function parseText(value: unknown, field: FieldConfig) {
       `${field.label} maksimal ${field.maxLength} karakter.`,
       400,
     );
+  }
+
+  if (field.name === "IPK" && !isValidIpk(trimmed)) {
+    throw new LetterMetadataError(IPK_INVALID_MESSAGE, 400);
+  }
+
+  if (field.name === "YUDISIUM" && !isValidYudisium(trimmed)) {
+    throw new LetterMetadataError(YUDISIUM_INVALID_MESSAGE, 400);
   }
 
   if (field.numeric === "decimal" && !/^\d+(?:[.,]\d+)?$/.test(trimmed)) {
@@ -670,8 +814,13 @@ export async function updateLetterMetadata({
       where: { ID: BigInt(id) },
       data,
     });
-  } else {
+  } else if (config.sourceTable === "kelakuan_baik") {
     await prisma.kelakuan_baik.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  } else {
+    await prisma.permohonan_magang.update({
       where: { ID: BigInt(id) },
       data,
     });

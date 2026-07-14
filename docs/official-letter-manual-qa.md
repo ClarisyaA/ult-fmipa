@@ -12,8 +12,9 @@ Layanan supported:
 - `ket-tunjangan-orang-tua`
 - `keterangan-masih-kuliah`
 - `keterangan-kelakuan-baik`
+- `permohonan-magang-kerja-praktek-ta`
 
-Untuk empat layanan ini, halaman detail admin dan staff harus merender:
+Untuk layanan ini, halaman detail admin dan staff harus merender:
 
 - `Data Surat`
 - print readiness indicator
@@ -244,6 +245,12 @@ Untuk setiap supported service:
 11. Pastikan PDF tidak menampilkan `Invalid Date`.
 12. Pastikan nomor surat sama dengan snapshot `TTD_NO_SURAT` yang tersimpan.
 13. Pastikan PDF tidak membaca ulang data terbaru dari master `surat_ttd`.
+
+Khusus `permohonan-magang-kerja-praktek-ta`:
+
+1. Pastikan layout PDF mengikuti acuan `docs/Magang_Kerja140810230017.pdf`.
+2. Pastikan tujuan surat, alamat, jenis permohonan, tempat pelaksanaan, dan rentang tanggal tampil dari row `permohonan_magang`.
+3. Pastikan PDF tidak bisa dicetak jika nomor surat, tanggal surat, penandatangan, tujuan surat, alamat, atau tanggal pelaksanaan belum lengkap.
 
 ## 8. Nomor Surat Duplicate And Overwrite Checklist
 

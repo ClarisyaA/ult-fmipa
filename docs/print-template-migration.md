@@ -472,8 +472,11 @@ Tombol hanya muncul untuk layanan printable berikut dan membuka PDF di tab baru:
 - `ket-tunjangan-orang-tua`
 - `keterangan-masih-kuliah`
 - `keterangan-kelakuan-baik`
+- `permohonan-magang-kerja-praktek-ta`
 
-Section `Data Surat` juga dirender di admin dan staff request detail untuk empat layanan tersebut. Render memakai whitelist resmi `PRINTABLE_LETTER_SERVICES`, dengan fallback aman berdasarkan `sourceTable` agar UI tetap muncul pada detail layanan printable yang valid.
+Section `Data Surat` juga dirender di admin dan staff request detail untuk layanan tersebut. Render memakai whitelist resmi `PRINTABLE_LETTER_SERVICES`, dengan fallback aman berdasarkan `sourceTable` agar UI tetap muncul pada detail layanan printable yang valid.
+
+Template `permohonan-magang-kerja-praktek-ta` memakai acuan `docs/Magang_Kerja140810230017.pdf`. PDF membaca snapshot dari row `permohonan_magang`, termasuk data tujuan surat, alamat, rentang tanggal pelaksanaan, nomor surat, tanggal surat, dan penandatangan.
 
 Pada daftar pengajuan admin dan staff, layanan printable diberi ikon surat di nama layanan/filter layanan. Kolom `Aksi` juga menampilkan tombol `Surat` untuk layanan printable agar staff/admin bisa langsung membuka detail pengajuan, melengkapi `Data Surat`, dan mencetak PDF resmi.
 
@@ -734,6 +737,15 @@ Phase 3 manual checklist tambahan:
 9. Buka detail service unsupported dan pastikan section `Data Surat` tidak muncul.
 10. Akses API metadata sebagai student/public atau tanpa login dan pastikan ditolak aman.
 11. Stop database, coba load atau simpan `Data Surat`, dan pastikan UI menampilkan pesan aman tanpa crash.
+
+Phase 3B data validation update:
+
+- `keterangan-lulus` memakai dropdown Yudisium dengan pilihan resmi `Pujian`, `Sangat Memuaskan`, dan `Memuaskan`.
+- Admin/staff wajib memeriksa IPK dan Yudisium terhadap data akademik resmi sebelum mencetak surat. UI menampilkan notice di section `Data Surat`.
+- `Data Surat` untuk seluruh layanan printable menampilkan section read-only `Identitas Mahasiswa` berisi minimal NPM dan Nama Mahasiswa, dengan Program Studi/Email/No HP jika tersedia.
+- API `GET /api/requests/{SERVICE_SLUG}/{ID}/letter-metadata` menyertakan `identity` aman untuk kebutuhan display frontend.
+- Route PDF menolak data kelulusan `keterangan-lulus` yang tidak lengkap atau invalid. IPK harus angka 0.00 sampai 4.00, dan Yudisium harus salah satu pilihan resmi.
+- Jika IPK atau Yudisium belum valid, readiness menampilkan `IPK atau Yudisium belum valid. Validasi data kelulusan sebelum mencetak surat.`
 
 ## Keterangan Lulus Legacy Parity Notes
 

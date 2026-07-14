@@ -5,6 +5,7 @@ import type { Readable } from "node:stream";
 
 import { OfficialLetterDocument } from "@/components/letters/pdf/official-letter-document";
 import { KeteranganLulusDocument } from "@/components/letters/pdf/keterangan-lulus-document";
+import { MagangLetterDocument } from "@/components/letters/pdf/magang-letter-document";
 import { getCurrentUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit-log";
 import { jsonApiError } from "@/lib/error-utils";
@@ -17,8 +18,13 @@ import {
   officialLetterFilename,
 } from "@/lib/letters/letter-format";
 import { getKeteranganLulusLetterData } from "@/lib/letters/keterangan-lulus-data";
+import { getMagangLetterData } from "@/lib/letters/magang-letter-data";
 import { getOfficialLetterData } from "@/lib/letters/official-letter-data";
-import type { BaseOfficialLetterData, KeteranganLulusLetterData } from "@/lib/letters/letter-types";
+import type {
+  BaseOfficialLetterData,
+  KeteranganLulusLetterData,
+  MagangLetterData,
+} from "@/lib/letters/letter-types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +66,7 @@ function errorResponse(request: Request, message: string, status: number) {
 
 function getRouteResult(
   template: string,
-  data: KeteranganLulusLetterData | BaseOfficialLetterData,
+  data: KeteranganLulusLetterData | BaseOfficialLetterData | MagangLetterData,
 ) {
   if (template === "keterangan-lulus") {
     return {
@@ -105,6 +111,16 @@ function getRouteResult(
     };
   }
 
+  if (template === "magang") {
+    return {
+      document: React.createElement(MagangLetterDocument, {
+        data: data as MagangLetterData,
+      }),
+      filename: officialLetterFilename("magang", data.npm),
+      auditAction: `Mencetak surat permohonan magang #${data.requestId}`,
+    };
+  }
+
   return null;
 }
 
@@ -134,6 +150,8 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
     const letterData =
       service.template === "keterangan-lulus"
         ? await getKeteranganLulusLetterData(id)
+        : service.template === "magang"
+          ? await getMagangLetterData(id)
         : await getOfficialLetterData(service.template, id);
 
     if (!letterData) {

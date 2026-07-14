@@ -1,0 +1,62 @@
+# Service Request Rules
+
+## Rekomendasi Beasiswa Template
+
+Layanan `rekomendasi-beasiswa` memakai template eksternal dinamis, bukan file `.docx` lokal dari aplikasi.
+
+Default URL:
+
+```text
+https://docs.google.com/document/d/13D9_jd6D31Ycdyz0xwFLHzPY02eQW648tNB3wyR6cCo/edit?usp=sharing
+```
+
+Aturan:
+
+- Tombol public membuka Google Docs/Drive di tab baru dengan `target="_blank"` dan `rel="noopener noreferrer"`.
+- URL disimpan di `ult_service_links` dengan `SERVICE_SLUG = rekomendasi-beasiswa` dan `LINK_KEY = scholarship_recommendation_template`.
+- Admin/staff dapat mengubah URL dari card `Pengaturan Link Layanan`.
+- Public page memakai default URL jika database belum tersedia atau row link belum ada.
+- Sistem tidak membuat, menyimpan, atau mengunduh template `.docx` lokal untuk fitur ini.
+- Mahasiswa membuka atau menyalin template dari Google Docs, mengisi dokumen, lalu mengunggah dokumen yang sudah dilengkapi pada `Lampiran Dokumen Pendukung`.
+- Upload dokumen pendukung untuk `rekomendasi-beasiswa` tetap wajib.
+
+Validasi URL admin/staff:
+
+- URL wajib diisi.
+- URL maksimal 500 karakter.
+- URL harus absolut.
+- Hanya `http://` dan `https://` yang diterima.
+- Skema tidak aman seperti `javascript:`, `data:`, dan `file:` ditolak.
+
+## Layanan Surat Resmi Tanpa Template Mahasiswa
+
+Layanan berikut tidak memiliki template DOC/DOCX yang diunduh mahasiswa:
+
+- `ket-tunjangan-orang-tua`
+- `keterangan-masih-kuliah`
+- `keterangan-kelakuan-baik`
+- `surat-pengantar`
+- `keterangan-lulus`
+
+Surat resmi untuk layanan tersebut dibuat dan dicetak dari sisi admin/staff melalui `Data Surat` dan PDF generator. Public student page tetap menampilkan informasi layanan, persyaratan, ringkasan, tombol `Ajukan Layanan`, dan form pengajuan, tetapi tidak menampilkan kartu template atau tombol `Unduh Template`.
+
+Aturan lampiran:
+
+- `ket-tunjangan-orang-tua`: dokumen pendukung opsional.
+- `keterangan-masih-kuliah`: dokumen pendukung opsional.
+- `keterangan-kelakuan-baik`: dokumen pendukung opsional.
+- `surat-pengantar`: dokumen pendukung wajib, misalnya surat perizinan, bukti persetujuan, atau tangkapan layar persetujuan dari Kaprodi/pihak terkait.
+- `keterangan-lulus`: dokumen pendukung opsional; field data kelulusan tetap diisi di form pengajuan.
+
+Catatan: `rekomendasi-beasiswa` tetap terpisah karena memakai link template eksternal yang dapat diatur admin/staff.
+
+## Indikator Field Form Mahasiswa
+
+Semua form `/layanan/[slug]/ajukan` harus menampilkan indikator required/optional yang sesuai validasi backend:
+
+- Field wajib memakai marker merah `*`.
+- Field opsional memakai label `Opsional`.
+- Upload wajib menampilkan `*` dan teks `Wajib`.
+- Upload opsional menampilkan label `Opsional` dan helper text `Lampiran dokumen pendukung bersifat opsional.`
+
+Field kontak umum `Email` dan `No HP/WhatsApp` wajib untuk layanan pengajuan mahasiswa yang memakai `ServiceRequestForm`. SIK memakai indikator yang sama pada tahap upload bukti ACC dan form final.

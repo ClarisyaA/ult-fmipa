@@ -17,6 +17,15 @@ export const defaultUploadRule = {
 } satisfies ServiceUploadRule;
 
 const serviceUploadRules: Record<string, ServiceUploadRule> = {
+  "rekomendasi-beasiswa": {
+    maxFiles: 3,
+    minFiles: 1,
+    maxFileSizeBytes: 5 * 1024 * 1024,
+    allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+    allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+    description:
+      "Dokumen pendukung wajib diunggah. Maksimal 3 file, masing-masing 5 MB. Format PDF, JPG, atau PNG.",
+  },
   "permohonan-magang-kerja-praktek-ta": {
     maxFiles: 5,
     minFiles: 1,
@@ -26,6 +35,15 @@ const serviceUploadRules: Record<string, ServiceUploadRule> = {
     description:
       "Upload Surat Permohonan dari Program Studi. Maksimal 5 file PDF, masing-masing 10 MB.",
     attachmentType: "program_study_request_letter",
+  },
+  "surat-pengantar": {
+    maxFiles: 3,
+    minFiles: 1,
+    maxFileSizeBytes: 5 * 1024 * 1024,
+    allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+    allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+    description:
+      "Dokumen pendukung wajib diunggah, misalnya surat perizinan, bukti persetujuan, atau tangkapan layar persetujuan dari Kaprodi/pihak terkait.",
   },
   "surat-izin-kegiatan:approval-proof": {
     maxFiles: 5,

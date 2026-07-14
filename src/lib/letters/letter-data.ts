@@ -1,4 +1,9 @@
 import type { PrintableLetterService } from "@/lib/letters/letter-types";
+import {
+  GRADUATION_DATA_INVALID_MESSAGE,
+  isValidIpk,
+  isValidYudisium,
+} from "@/lib/letters/graduation-validation";
 
 export const PRINTABLE_LETTER_SERVICES = {
   "keterangan-lulus": {
@@ -16,6 +21,10 @@ export const PRINTABLE_LETTER_SERVICES = {
   "keterangan-kelakuan-baik": {
     sourceTable: "kelakuan_baik",
     template: "kelakuan-baik",
+  },
+  "permohonan-magang-kerja-praktek-ta": {
+    sourceTable: "permohonan_magang",
+    template: "magang",
   },
 } satisfies Record<string, PrintableLetterService>;
 
@@ -63,6 +72,8 @@ function hasDate(value: Date | string | null | undefined) {
 export function validateKeteranganLulusLetterData(data: {
   npm: string | null;
   studentName: string | null;
+  birthPlace: string | null;
+  birthDate: Date | string | null;
   graduationDate: Date | string | null;
   gpa: string | null;
   predicate: string | null;
@@ -76,12 +87,16 @@ export function validateKeteranganLulusLetterData(data: {
     nip: string | null;
   };
 }) {
+  if (!isValidIpk(data.gpa) || !isValidYudisium(data.predicate)) {
+    throw new LetterDataError(GRADUATION_DATA_INVALID_MESSAGE, 422);
+  }
+
   const valid =
     hasText(data.npm) &&
     hasText(data.studentName) &&
+    hasText(data.birthPlace) &&
+    hasDate(data.birthDate) &&
     hasDate(data.graduationDate) &&
-    hasText(data.gpa) &&
-    hasText(data.predicate) &&
     hasText(data.signer.letterNumber) &&
     hasDate(data.signer.letterDate) &&
     hasDate(data.signer.validUntil) &&

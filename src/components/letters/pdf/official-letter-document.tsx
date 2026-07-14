@@ -76,7 +76,10 @@ const templateTitles = {
   "masih-kuliah": "SURAT KETERANGAN MASIH KULIAH",
   "masih-kuliah-aktif": "SURAT KETERANGAN MASIH AKTIF KULIAH",
   "kelakuan-baik": "SURAT KETERANGAN KELAKUAN BAIK",
-} satisfies Record<Exclude<OfficialLetterTemplate, "keterangan-lulus">, string>;
+} satisfies Record<
+  Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">,
+  string
+>;
 
 function safe(value: string | null | undefined) {
   return value ?? "";
@@ -224,7 +227,7 @@ export function OfficialLetterDocument({
   template,
 }: {
   data: BaseOfficialLetterData;
-  template: Exclude<OfficialLetterTemplate, "keterangan-lulus">;
+  template: Exclude<OfficialLetterTemplate, "keterangan-lulus" | "magang">;
 }) {
   return (
     <Document

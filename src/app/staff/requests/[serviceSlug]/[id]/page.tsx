@@ -25,6 +25,7 @@ import {
 } from "@/lib/letters/letter-data";
 import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
 import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getMagangPrintReadiness } from "@/lib/letters/magang-letter-data";
 import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { getRequestAttachments } from "@/lib/request-attachments";
@@ -391,6 +392,10 @@ async function getPrintReadiness(
 
   if (template === "keterangan-lulus") {
     return getKeteranganLulusPrintReadiness(id);
+  }
+
+  if (template === "magang") {
+    return getMagangPrintReadiness(id);
   }
 
   return getOfficialPrintReadiness(template, id);

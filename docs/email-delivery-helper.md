@@ -59,6 +59,7 @@ Layanan printable saat ini:
 - `ket-tunjangan-orang-tua`
 - `keterangan-masih-kuliah`
 - `keterangan-kelakuan-baik`
+- `permohonan-magang-kerja-praktek-ta`
 
 Untuk layanan ini, helper menyediakan `pdfUrl`. Tombol PDF hanya membantu admin/staff membuka atau mengunduh PDF, lalu melampirkannya manual di Gmail. Jika route PDF mengembalikan `422` karena Data Surat belum lengkap, perilaku PDF route tidak diubah.
 

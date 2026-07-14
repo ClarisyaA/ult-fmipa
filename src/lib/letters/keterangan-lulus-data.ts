@@ -14,6 +14,8 @@ export type KeteranganLulusPrintReadiness = {
 const READY_MESSAGE = "Data surat siap dicetak.";
 const NOT_READY_MESSAGE =
   "Data surat belum lengkap. Lengkapi nomor surat, tanggal surat, masa berlaku, data kelulusan, dan penandatangan sebelum mencetak.";
+const GRADUATION_NOT_VALID_MESSAGE =
+  "IPK atau Yudisium belum valid. Validasi data kelulusan sebelum mencetak surat.";
 
 export async function getKeteranganLulusLetterData(
   id: string,
@@ -101,6 +103,8 @@ export async function getKeteranganLulusPrintReadiness(
     },
     select: {
       NPM: true,
+      TEMPAT_LAHIR: true,
+      TGL_LAHIR: true,
       TGL_LULUS: true,
       IPK: true,
       YUDISIUM: true,
@@ -124,6 +128,8 @@ export async function getKeteranganLulusPrintReadiness(
     validateKeteranganLulusLetterData({
       npm: row.NPM,
       studentName: student?.name ?? null,
+      birthPlace: row.TEMPAT_LAHIR,
+      birthDate: row.TGL_LAHIR,
       graduationDate: row.TGL_LULUS,
       gpa: row.IPK,
       predicate: row.YUDISIUM,
@@ -146,7 +152,10 @@ export async function getKeteranganLulusPrintReadiness(
     if (error instanceof LetterDataError) {
       return {
         isReady: false,
-        message: NOT_READY_MESSAGE,
+        message:
+          error.message === GRADUATION_NOT_VALID_MESSAGE
+            ? GRADUATION_NOT_VALID_MESSAGE
+            : NOT_READY_MESSAGE,
       };
     }
 

@@ -45,17 +45,37 @@ export type BaseOfficialLetterData = {
   signer: LetterSigner;
 };
 
+export type MagangLetterData = {
+  requestId: string;
+  npm: string;
+  studentName: string;
+  programStudy: string | null;
+  requestType: string | null;
+  contactPerson: string | null;
+  institutionName: string | null;
+  recipient: string | null;
+  address: string | null;
+  districtCity: string | null;
+  city: string | null;
+  province: string | null;
+  startDate: LetterDateValue;
+  endDate: LetterDateValue;
+  signer: LetterSigner;
+};
+
 export type OfficialLetterTemplate =
   | "keterangan-lulus"
   | "masih-kuliah"
   | "masih-kuliah-aktif"
-  | "kelakuan-baik";
+  | "kelakuan-baik"
+  | "magang";
 
 export type PrintableLetterService = {
   sourceTable:
     | "keterangan_lulus"
     | "masih_kuliah"
     | "masih_kuliah_aktif"
-    | "kelakuan_baik";
+    | "kelakuan_baik"
+    | "permohonan_magang";
   template: OfficialLetterTemplate;
 };

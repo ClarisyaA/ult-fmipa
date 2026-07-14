@@ -67,6 +67,45 @@ function StatusCard({
   );
 }
 
+function RequiredMark() {
+  return (
+    <span className="text-[#EE1C25]" aria-label="wajib diisi">
+      *
+    </span>
+  );
+}
+
+function OptionalMark() {
+  return (
+    <span className="text-xs font-normal text-[#7A6A5C]">
+      Opsional
+    </span>
+  );
+}
+
+function FieldLabel({
+  htmlFor,
+  children,
+  required = false,
+  optional = false,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+  required?: boolean;
+  optional?: boolean;
+}) {
+  return (
+    <Label
+      htmlFor={htmlFor}
+      className="inline-flex flex-wrap items-center gap-1 text-[#18130E] font-medium"
+    >
+      {children}
+      {required ? <RequiredMark /> : null}
+      {!required && optional ? <OptionalMark /> : null}
+    </Label>
+  );
+}
+
 const sikSteps = [
   "Audiensi & ACC Offline",
   "Upload Bukti ACC",
@@ -172,12 +211,14 @@ function SikStepper({ activeStep }: { activeStep: number }) {
 }
 
 function FilePicker({
+  label,
   uploadRule,
   selectedFiles,
   setSelectedFiles,
   fieldError,
   setFieldError,
 }: {
+  label: string;
   uploadRule: ServiceUploadRule;
   selectedFiles: File[];
   setSelectedFiles: (files: File[]) => void;
@@ -220,16 +261,32 @@ function FilePicker({
 
   return (
     <div className="grid gap-2">
+      <Label htmlFor="attachments" className="inline-flex items-center gap-2 text-[#18130E] font-medium">
+        {label}
+        {uploadRule.minFiles ? (
+          <>
+            <RequiredMark />
+            <span className="text-xs font-semibold text-[#EE1C25]">Wajib</span>
+          </>
+        ) : (
+          <OptionalMark />
+        )}
+      </Label>
       <Input
         id="attachments"
         name="attachments"
         type="file"
         multiple
         accept={acceptAttribute}
+        aria-required={Boolean(uploadRule.minFiles)}
         onChange={handleAttachmentChange}
         className="border-[#EE1C25]/40 focus:border-[#EE1C25] focus:ring-[#EE1C25]/20 flex items-center file:inline-flex file:items-center file:justify-center file:bg-[#EE1C25] file:text-white file:border-0 file:px-4 file:h-9 file:rounded-md file:hover:bg-[#EE1C25]/90 file:cursor-pointer file:mr-4 h-12"
       />
-      <p className="text-sm text-muted-foreground">{uploadRule.description}</p>
+      <p className="text-sm text-muted-foreground">
+        {uploadRule.minFiles
+          ? uploadRule.description
+          : "Lampiran dokumen pendukung bersifat opsional."}
+      </p>
       <div className="grid gap-2 rounded-md border border-[#EE1C25]/40 px-3 py-2">
         <p className="text-sm font-medium text-[#18130E]">
           {selectedFiles.length} dari {uploadRule.maxFiles} file dipilih
@@ -418,20 +475,16 @@ export function SikRequestWorkflow({
 
       {canUploadProof ? (
         <form className="grid gap-4" onSubmit={submitProof}>
-          <div className="grid gap-2">
-            <Label className="text-[#18130E] font-medium">
-              {isRejected ? "Upload Ulang Bukti ACC" : "Upload Bukti ACC"}
-            </Label>
-            <FilePicker
-              uploadRule={proofUploadRule}
-              selectedFiles={proofFiles}
-              setSelectedFiles={setProofFiles}
-              fieldError={fieldErrors.proofAttachments ?? fieldErrors.attachments}
-              setFieldError={(message) =>
-                setAttachmentError("proofAttachments", message)
-              }
-            />
-          </div>
+          <FilePicker
+            label={isRejected ? "Upload Ulang Bukti ACC" : "Upload Bukti ACC"}
+            uploadRule={proofUploadRule}
+            selectedFiles={proofFiles}
+            setSelectedFiles={setProofFiles}
+            fieldError={fieldErrors.proofAttachments ?? fieldErrors.attachments}
+            setFieldError={(message) =>
+              setAttachmentError("proofAttachments", message)
+            }
+          />
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -451,29 +504,30 @@ export function SikRequestWorkflow({
         <form className="grid gap-4" onSubmit={submitFinal}>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="namaHimpunan">Nama Himpunan</Label>
+              <FieldLabel htmlFor="namaHimpunan" required>Nama Himpunan</FieldLabel>
               <Input id="namaHimpunan" name="namaHimpunan" required maxLength={150} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="namaKegiatan">Nama Kegiatan</Label>
+              <FieldLabel htmlFor="namaKegiatan" required>Nama Kegiatan</FieldLabel>
               <Input id="namaKegiatan" name="namaKegiatan" required maxLength={200} />
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="tanggalKegiatan">Tanggal Kegiatan</Label>
+              <FieldLabel htmlFor="tanggalKegiatan" required>Tanggal Kegiatan</FieldLabel>
               <Input id="tanggalKegiatan" name="tanggalKegiatan" type="date" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="emailPengiriman">Email Pengiriman SIK</Label>
+              <FieldLabel htmlFor="emailPengiriman" required>Email Pengiriman SIK</FieldLabel>
               <Input id="emailPengiriman" name="emailPengiriman" type="email" required maxLength={100} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="noHpWa">No HP WA Contact Person</Label>
+              <FieldLabel htmlFor="noHpWa" required>No HP WA Contact Person</FieldLabel>
               <Input id="noHpWa" name="noHpWa" required maxLength={30} />
             </div>
           </div>
           <FilePicker
+            label="Upload SPIK Final"
             uploadRule={finalUploadRule}
             selectedFiles={finalFiles}
             setSelectedFiles={setFinalFiles}

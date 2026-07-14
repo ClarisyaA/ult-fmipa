@@ -14,11 +14,8 @@
  *    Alur lama untuk layanan eksternal SIK. Layanan Magang/KP/TA
  *    memakai form internal di halaman /ajukan, bukan stepper detail layanan.
  * 
- * 3. TEMPLATE (Surat dengan template)
- *    - Tunjangan Orang Tua
- *    - Keterangan Masih Kuliah
- *    - Keterangan Kelakuan Baik
- *    - Keterangan Lulus
+ * 3. TEMPLATE (Student-side external template)
+ *    - Rekomendasi Beasiswa
  * 
  * 4. PENGIRIMAN (Kirim dokumen ke mahasiswa)
  *    - Upload PDF
@@ -29,7 +26,7 @@
 export type ServiceFlowType =
   | "perpus" // Perpustakaan FMIPA - tampil data dari web perpus
   | "magang-sik" // Legacy SIK - 5 tahap berjenjang
-  | "template" // Surat template - Tunjangan, Kuliah, Kelakuan, Lulus
+  | "template" // Student-side external template - Rekomendasi Beasiswa
   | "pengiriman" // Kirim dokumen - upload PDF ke email mahasiswa
   | "default"; // Fallback
 
@@ -45,11 +42,8 @@ const FLOW_RULES: FlowRule[] = [
   // 2. MAGANG-SIK: hanya slug SIK legacy, bukan layanan Magang/KP/TA internal
   { test: /^sik$|-sik(-|$)/, flow: "magang-sik" },
   
-  // 3. TEMPLATE: surat-surat dengan template
-  { 
-    test: /tunjangan|orang-tua|masih-kuliah|aktif-kuliah|kelakuan|lulus/,
-    flow: "template",
-  },
+  // 3. TEMPLATE: hanya layanan yang memang punya template mahasiswa eksternal.
+  { test: /^rekomendasi-beasiswa$/, flow: "template" },
   
   // 4. PENGIRIMAN: kirim dokumen ke mahasiswa
   { test: /pengiriman|kirim-dokumen/, flow: "pengiriman" },

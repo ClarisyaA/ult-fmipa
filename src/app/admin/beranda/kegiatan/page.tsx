@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { HomeActivityActions } from "@/components/home-activities/home-activity-actions";
 import { HomeLinksSettingsForm } from "@/components/home-activities/home-links-settings-form";
+import { ServiceLinksSettingsForm } from "@/components/services/service-links-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { getAdminHomeActivitiesState } from "@/lib/home-activities";
 import { getHomeLinksState } from "@/lib/home-links";
+import { getServiceLinksState } from "@/lib/service-links";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,6 +43,8 @@ function formatDate(value: string | null) {
 export default async function AdminHomeActivitiesPage() {
   const { activities, unavailable } = await getAdminHomeActivitiesState();
   const { academicCalendar, unavailable: linksUnavailable } = await getHomeLinksState();
+  const { scholarshipTemplate, unavailable: serviceLinksUnavailable } =
+    await getServiceLinksState();
 
   return (
     <div className="grid gap-6">
@@ -70,6 +74,22 @@ export default async function AdminHomeActivitiesPage() {
             rolePrefix="admin"
             initialLink={academicCalendar}
             unavailable={linksUnavailable}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pengaturan Link Layanan</CardTitle>
+          <CardDescription>
+            Atur link template eksternal yang dipakai pada halaman layanan mahasiswa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ServiceLinksSettingsForm
+            rolePrefix="admin"
+            initialLink={scholarshipTemplate}
+            unavailable={serviceLinksUnavailable}
           />
         </CardContent>
       </Card>

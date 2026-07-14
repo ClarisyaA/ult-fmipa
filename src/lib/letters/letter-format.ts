@@ -29,6 +29,20 @@ export function formatIndonesianDate(value: LetterDateValue) {
   return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+export function formatIndonesianDateRange(
+  startValue: LetterDateValue,
+  endValue: LetterDateValue,
+) {
+  const start = formatIndonesianDate(startValue);
+  const end = formatIndonesianDate(endValue);
+
+  if (start && end) {
+    return start === end ? start : `${start} s.d. ${end}`;
+  }
+
+  return start || end;
+}
+
 export function sanitizePdfFilename(value: string | null | undefined) {
   return (value ?? "")
     .replace(/[^a-zA-Z0-9._-]/g, "")
@@ -43,7 +57,7 @@ export function keteranganLulusFilename(npm: string | null | undefined) {
 }
 
 export function officialLetterFilename(
-  prefix: "skmk" | "skmka" | "skkb",
+  prefix: "skmk" | "skmka" | "skkb" | "magang",
   npm: string | null | undefined,
 ) {
   const safeNpm = sanitizePdfFilename(npm);

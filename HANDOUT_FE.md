@@ -312,6 +312,7 @@ Public:
 | --- | --- | --- | --- |
 | `GET` | `/api/services` | Public | `/layanan` |
 | `GET` | `/api/services/[slug]` | Public | `/layanan/[slug]`, `/layanan/[slug]/ajukan` |
+| `GET` | `/api/services/[slug]/links` | Public | Link template layanan |
 | `POST` | `/api/services/[slug]/requests` | Student | Form pengajuan |
 
 Slug layanan yang tersedia:
@@ -338,6 +339,24 @@ surat-izin-kegiatan
 
 `POST /api/services/[slug]/requests` menerima JSON atau `multipart/form-data`.
 Gunakan `FormData` jika ada lampiran.
+
+Untuk `rekomendasi-beasiswa`, template Surat Rekomendasi Beasiswa memakai link eksternal dinamis dari database, bukan file `.docx` lokal. Default URL:
+
+```text
+https://docs.google.com/document/d/13D9_jd6D31Ycdyz0xwFLHzPY02eQW648tNB3wyR6cCo/edit?usp=sharing
+```
+
+Admin/staff dapat mengubah URL melalui card `Pengaturan Link Layanan`. Public page memakai fallback default jika database/link belum tersedia. Mahasiswa harus membuka atau menyalin template dari Google Docs, mengisi dokumen, lalu mengunggah dokumen yang sudah dilengkapi pada `Lampiran Dokumen Pendukung`; upload tetap wajib.
+
+Layanan `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`, `surat-pengantar`, dan `keterangan-lulus` tidak memiliki template DOC/DOCX yang diunduh mahasiswa. Surat resmi dibuat/cetak dari sisi admin/staff melalui `Data Surat` dan PDF generator. Public student page untuk layanan tersebut tidak menampilkan kartu template atau tombol `Unduh Template`.
+
+Aturan lampiran target:
+
+- `ket-tunjangan-orang-tua`: dokumen pendukung opsional.
+- `keterangan-masih-kuliah`: dokumen pendukung opsional.
+- `keterangan-kelakuan-baik`: dokumen pendukung opsional.
+- `surat-pengantar`: dokumen pendukung wajib; helper text menyebut contoh surat perizinan, bukti persetujuan, atau tangkapan layar persetujuan dari Kaprodi/pihak terkait.
+- `keterangan-lulus`: dokumen pendukung opsional; field data kelulusan, Yudisium dropdown, dan validasi IPK/Yudisium tetap berlaku.
 
 Field umum yang dibaca:
 
@@ -1068,6 +1087,11 @@ Refresh:
 | Admin Calendar Link | PATCH | `/api/admin/home/links/academic-calendar` | Admin | JSON | Admin CMS | URL validation |
 | Staff Home Links | GET | `/api/staff/home/links` | Staff | JSON | Staff CMS | Link state |
 | Staff Calendar Link | PATCH | `/api/staff/home/links/academic-calendar` | Staff | JSON | Staff CMS | URL validation |
+| Public Service Links | GET | `/api/services/[slug]/links` | Public | JSON | Layanan public | Fallback default |
+| Admin Service Links | GET | `/api/admin/service-links` | Admin | JSON | Admin CMS | Link state |
+| Admin Scholarship Template Link | PATCH | `/api/admin/service-links/rekomendasi-beasiswa/scholarship-recommendation-template` | Admin | JSON | Admin CMS | URL validation |
+| Staff Service Links | GET | `/api/staff/service-links` | Staff | JSON | Staff CMS | Link state |
+| Staff Scholarship Template Link | PATCH | `/api/staff/service-links/rekomendasi-beasiswa/scholarship-recommendation-template` | Staff | JSON | Staff CMS | URL validation |
 | Admin Information | GET/POST | `/api/admin/information` | Admin | JSON | Admin informasi | List/create |
 | Admin Information Detail | GET/PATCH/DELETE | `/api/admin/information/[id]` | Admin | JSON | Admin informasi | Detail/update/delete |
 | Admin Info Images | POST | `/api/admin/information/[id]/images` | Admin | JSON | Admin informasi | Upload images |
@@ -1115,7 +1139,27 @@ Refresh:
 
 Fitur ini menggunakan Gmail compose URL. Sistem hanya mengisi email tujuan, subjek, dan isi pesan. File hasil layanan tetap harus dilampirkan manual oleh admin/staff. Fitur ini tidak memakai `mailto:`, tidak mengirim email otomatis, tidak memakai SMTP, tidak memakai Gmail API, dan tidak mengubah generator PDF.
 
-Layanan printable (`keterangan-lulus`, `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`) hanya menampilkan tombol bantu `Buka PDF Surat`; PDF tetap harus dibuka/diunduh lalu dilampirkan manual di Gmail.
+Layanan printable (`keterangan-lulus`, `ket-tunjangan-orang-tua`, `keterangan-masih-kuliah`, `keterangan-kelakuan-baik`, `permohonan-magang-kerja-praktek-ta`) hanya menampilkan tombol bantu `Buka PDF Surat`; PDF tetap harus dibuka/diunduh lalu dilampirkan manual di Gmail.
+
+## Data Surat Printable
+
+`GET /api/requests/[serviceSlug]/[id]/letter-metadata` menyertakan `identity` aman untuk display `Data Surat`:
+
+- `npm`
+- `name`
+- `programStudy`
+- `email`
+- `phone`
+
+Frontend harus menampilkan identitas ini read-only untuk semua layanan printable. Untuk `keterangan-lulus`, field `Yudisium` memakai dropdown nilai resmi:
+
+- `Pujian`
+- `Sangat Memuaskan`
+- `Memuaskan`
+
+Admin/staff harus memvalidasi IPK dan Yudisium terhadap data akademik resmi sebelum mencetak. PDF `keterangan-lulus` menolak IPK di luar 0.00-4.00 dan Yudisium di luar pilihan resmi.
+
+`permohonan-magang-kerja-praktek-ta` mendukung PDF Surat Permohonan Izin Magang Kerja. Template mengikuti acuan `docs/Magang_Kerja140810230017.pdf` dan memakai snapshot `Data Surat` pada row `permohonan_magang`, termasuk tujuan surat, alamat, tanggal pelaksanaan, nomor surat, tanggal surat, dan penandatangan.
 
 ## Belum Tersedia / Tidak Ditemukan
 
