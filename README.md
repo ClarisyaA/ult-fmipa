@@ -181,6 +181,16 @@ Rencana dan hasil validasi clean support migrations ada di
 dan tetap bergantung pada import `database/fmipa_sbpk.sql` sebagai base legacy
 dump.
 
+## Local Setup
+
+Untuk setup lokal dari awal, gunakan panduan:
+
+[`docs/local-setup.md`](docs/local-setup.md)
+
+Catatan: `database/fmipa_sbpk.sql` adalah base legacy dump, sedangkan
+`database/migrations` berisi clean support migrations aktif. Jangan jalankan
+`database/migrations_legacy_backup`.
+
 ### 8. Jalankan aplikasi
 
 Opsi A, full Docker:
