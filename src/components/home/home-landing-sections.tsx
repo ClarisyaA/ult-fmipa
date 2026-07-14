@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PublicService } from "@/types/service";
@@ -1110,13 +1111,15 @@ export function HomeLandingSections() {
 
                     {/* Image block */}
                     <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F5F0E8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
-                      <Image
+                      <HomeActivityImage
                         src={act.image}
                         alt={act.imageAlt}
                         fill
                         unoptimized
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className={imageFitClass}
+                        fallbackClassName="absolute inset-0 grid place-items-center bg-[#F5F0E8] p-6 text-center text-[#6B5E52]"
+                        fallbackDescription="File gambar belum tersedia di storage lokal."
                       />
                       {/* Eyebrow number badge */}
                       <div

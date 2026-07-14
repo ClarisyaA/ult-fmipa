@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { HomeActivityActions } from "@/components/home-activities/home-activity-actions";
+import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { HomeLinksSettingsForm } from "@/components/home-activities/home-links-settings-form";
 import { ServiceLinksSettingsForm } from "@/components/services/service-links-settings-form";
 import { Badge } from "@/components/ui/badge";
@@ -133,13 +133,15 @@ export default async function AdminHomeActivitiesPage() {
                     <TableRow key={activity.id}>
                     <TableCell>
                       {activity.imagePath ? (
-                        <Image
+                        <HomeActivityImage
                           src={`/api/home/activities/images/${activity.id}`}
                           alt={activity.imageAlt ?? activity.title}
                           width={128}
                           height={80}
                           unoptimized
                           className={imageClass}
+                          fallbackClassName="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-2 text-center text-muted-foreground"
+                          fallbackDescription=""
                         />
                       ) : (
                         <div className="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] text-xs text-muted-foreground">

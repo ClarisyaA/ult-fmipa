@@ -216,7 +216,7 @@ pnpm.cmd build
 ## Run Website Local
 
 ```powershell
-pnpm dev
+pnpm run dev
 ```
 
 Buka:
@@ -392,3 +392,20 @@ pnpm dev
 - `.env` tidak boleh di-commit.
 - File backup `.sql` tidak boleh di-commit.
 - Jika memakai PowerShell dan `pnpm` diblokir, gunakan `pnpm.cmd`.
+
+## Catatan Storage Lokal
+
+File upload runtime tidak ikut di-commit ke repository. Pada fresh local setup,
+beberapa baris database dari dump bisa menunjuk file yang tidak ada di laptop
+lokal, sehingga gambar terlihat sebagai placeholder.
+
+Folder yang biasanya berisi file runtime:
+
+- `storage/home-activities`
+- `storage/information`
+- `storage/uploads`
+- `storage/profile`
+
+Jika gambar CMS hilang di local environment, unggah atau ganti gambar dari
+halaman admin CMS terkait. Jangan commit file upload asli hanya untuk menutup
+referensi lokal yang hilang.

@@ -117,6 +117,10 @@ function emptyForm() {
   };
 }
 
+function getRoleLabelFromPosition(positionTitle: string) {
+  return positionTitle.slice(0, 100);
+}
+
 export function ProfileOrganizationManager({
   rolePrefix,
   initialNodes,
@@ -187,7 +191,7 @@ export function ProfileOrganizationManager({
       parentId: node.parentId ?? "root",
       name: node.name,
       positionTitle: node.positionTitle,
-      roleLabel: node.roleLabel ?? "",
+      roleLabel: getRoleLabelFromPosition(node.positionTitle),
       photoAlt: node.photoAlt ?? "",
       colorVariant: node.colorVariant,
       isActive: node.isActive,
@@ -228,7 +232,7 @@ export function ProfileOrganizationManager({
       formData.append("parentId", form.parentId);
       formData.append("name", form.name);
       formData.append("positionTitle", form.positionTitle);
-      formData.append("roleLabel", form.roleLabel);
+      formData.append("roleLabel", getRoleLabelFromPosition(form.positionTitle));
       formData.append("photoAlt", form.photoAlt);
       formData.append("colorVariant", form.colorVariant);
       formData.append("isActive", String(form.isActive));
@@ -267,7 +271,7 @@ export function ProfileOrganizationManager({
     formData.append("parentId", node.parentId ?? "root");
     formData.append("name", node.name);
     formData.append("positionTitle", node.positionTitle);
-    formData.append("roleLabel", node.roleLabel ?? "");
+    formData.append("roleLabel", getRoleLabelFromPosition(node.positionTitle));
     formData.append("photoAlt", node.photoAlt ?? "");
     formData.append("colorVariant", node.colorVariant);
     formData.append("isActive", String(!node.isActive));
@@ -411,12 +415,32 @@ export function ProfileOrganizationManager({
 
         <div className="grid gap-2">
           <Label>Jabatan / Position Title</Label>
-          <Input value={form.positionTitle} onChange={(event) => setForm({ ...form, positionTitle: event.currentTarget.value })} required maxLength={150} />
+          <Input
+            value={form.positionTitle}
+            onChange={(event) => {
+              const positionTitle = event.currentTarget.value;
+              setForm({
+                ...form,
+                positionTitle,
+                roleLabel: getRoleLabelFromPosition(positionTitle),
+              });
+            }}
+            required
+            maxLength={150}
+          />
         </div>
 
         <div className="grid gap-2">
           <Label>Label Role</Label>
-          <Input value={form.roleLabel} onChange={(event) => setForm({ ...form, roleLabel: event.currentTarget.value })} maxLength={100} />
+          <Input
+            value={form.roleLabel}
+            readOnly
+            maxLength={100}
+            className="bg-muted/40 text-muted-foreground"
+          />
+          <p className="text-xs text-muted-foreground">
+            Label role otomatis mengikuti Jabatan / Position Title.
+          </p>
         </div>
 
         <div className="grid gap-2">
