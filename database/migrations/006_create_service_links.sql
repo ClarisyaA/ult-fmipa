@@ -26,4 +26,4 @@ INSERT INTO `ult_service_links` (
   'https://docs.google.com/document/d/13D9_jd6D31Ycdyz0xwFLHzPY02eQW648tNB3wyR6cCo/edit?usp=sharing',
   1
 ) ON DUPLICATE KEY UPDATE
-  `LABEL` = VALUES(`LABEL`);
+  `LINK_KEY` = `LINK_KEY`;

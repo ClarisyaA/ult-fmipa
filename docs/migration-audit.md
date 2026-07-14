@@ -4,46 +4,50 @@ Tanggal audit: 2026-07-15
 
 ## Keputusan
 
-Riwayat `database/migrations` tidak 100% aman untuk di-rewrite, dihapus, atau
-di-squash saat ini. Strategi yang dipilih adalah **Safe Forward-Compatible
-Cleanup**:
+Riwayat compatibility lama tidak dihapus permanen. Setelah disposable validation
+lulus, clean support migrations menjadi folder aktif `database/migrations`, dan
+chain compatibility lama dipreservasi di `database/migrations_legacy_backup`.
 
-- Pertahankan semua migration yang sudah ada.
-- Jangan fold migration lama ke file `CREATE TABLE` sebelumnya.
-- Jangan hapus migration additive seperti `010`, `011`, `014`, atau `016`.
+Strategi yang dipilih adalah **Clean Active Support Migrations**:
+
+- Gunakan `database/fmipa_sbpk.sql` sebagai base legacy dump.
+- Jalankan Prisma migrations.
+- Jalankan `pnpm db:support-migrate`, yang sekarang membaca clean migrations di
+  `database/migrations`.
+- Jangan jalankan `database/migrations_legacy_backup` bersama clean migrations
+  pada DB yang sama.
 - Jika ada perubahan schema berikutnya, buat migration baru yang additive dan
-  idempotent.
+  idempotent di folder aktif.
 
 Alasan:
 
-- `pnpm db:support-migrate` menjalankan seluruh file `.sql` secara urut tanpa
-  tabel pencatat migration yang sudah diterapkan.
+- Clean support migrations sudah divalidasi di disposable DB dengan latest
+  `database/fmipa_sbpk.sql`.
 - README mendokumentasikan support migrations sebagai bagian setup lokal,
   Docker, dan Kubernetes migration job.
-- Beberapa migration adalah patch kompatibilitas untuk database yang sudah
-  menjalankan versi migration lama.
-- Banyak tabel layanan legacy tidak dibuat oleh support migrations ini, sehingga
-  kolom kompatibilitas seperti `EMAIL` dan `BAHASA_SURAT` tetap perlu ditambah
-  lewat migration additive.
+- Banyak tabel layanan legacy berasal dari dump, sehingga kolom kompatibilitas
+  seperti `EMAIL` dan `BAHASA_SURAT` tetap ditambah lewat migration additive.
+- Old compatibility chain tetap tersedia untuk audit/rollback historis, tetapi
+  bukan folder aktif.
 
 ## Audit File
 
-| File | Fungsi | Dependensi/risiko | Keputusan |
+| File lama | Fungsi | Dependensi/risiko | Keputusan |
 | --- | --- | --- | --- |
-| `002_create_ult_service_surveys.sql` | Membuat `ult_service_surveys`, unique key request/NPM, index service dan tanggal. | Dipakai fitur survei layanan. | Tetap. |
-| `003_create_ult_information_posts.sql` | Membuat `ult_information_posts` dasar. | Diubah oleh `006`. | Tetap. |
-| `005_create_ult_information_post_images.sql` | Membuat `ult_information_post_images`. | `IMAGE_FIT` ditambahkan oleh `011`; kode sudah membaca `IMAGE_FIT`. | Tetap. Jangan fold `011` kecuali history benar-benar belum pernah dipakai. |
-| `006_alter_information_posts_schedule_archive.sql` | Menambah status `archived`, visibility fields, dan index. | Patch untuk tabel dari `003`. | Tetap. |
-| `007_create_magang_sik_services.sql` | Membuat `permohonan_magang`, `surat_izin_kegiatan`, dan menambah `ATTACHMENT_TYPE`. | `permohonan_magang` dipatch oleh `014` dan `016`; SIK dipatch oleh `016`. | Tetap. |
-| `008_create_ult_home_activities.sql` | Membuat `ult_home_activities`. | `IMAGE_FIT` ditambahkan oleh `010`; kode sudah membaca `IMAGE_FIT`. | Tetap. Jangan fold `010` kecuali history benar-benar belum pernah dipakai. |
-| `009_create_ult_home_links.sql` | Membuat `ult_home_links` dan seed link kalender akademik. | Berbeda kontrak dengan `ult_service_links`. | Tetap. Jangan merge dengan `015`. |
-| `010_add_image_fit_to_home_activities.sql` | Menambah dan menormalisasi `ult_home_activities.IMAGE_FIT`. | Dibutuhkan untuk DB yang sudah punya tabel dari `008` lama. | Tetap sebagai compatibility migration. |
-| `011_add_image_fit_to_information_post_images.sql` | Menambah dan menormalisasi `ult_information_post_images.IMAGE_FIT`. | Dibutuhkan untuk DB yang sudah punya tabel dari `005` lama. | Tetap sebagai compatibility migration. |
-| `012_create_profile_cms_tables.sql` | Membuat tabel profil organisasi/lokasi/jam dan seed default final. | Seed hanya saat organisasi kosong. | Tetap. |
-| `013_seed_profile_organization_defaults.sql` | Repair seed organisasi lama dengan guard bentuk data legacy tertentu. | Berguna untuk DB yang pernah menjalankan `012` versi lama; tidak menyasar data user umum. | Tetap sebagai compatibility repair. |
-| `014_add_magang_letter_metadata.sql` | Menambah field `TTD_*` untuk `permohonan_magang`. | Prisma dan PDF magang bergantung pada kolom ini. | Tetap sebagai compatibility migration. |
-| `015_create_ult_service_links.sql` | Membuat `ult_service_links` dan seed template rekomendasi beasiswa. | Kontrak berbeda dari home link. | Tetap. |
-| `016_add_email_and_language_to_requests.sql` | Menambah/memperlebar email dan bahasa surat untuk tabel request legacy, magang, dan SIK. | Banyak target table berasal dari dump legacy, bukan dibuat oleh support migrations. | Tetap sebagai compatibility migration. |
+| `002_create_ult_service_surveys.sql` | Membuat `ult_service_surveys`, unique key request/NPM, index service dan tanggal. | Dipakai fitur survei layanan. | Dipreservasi di backup lama. |
+| `003_create_ult_information_posts.sql` | Membuat `ult_information_posts` dasar. | Diubah oleh `006`. | Dipreservasi di backup lama. |
+| `005_create_ult_information_post_images.sql` | Membuat `ult_information_post_images`. | `IMAGE_FIT` ditambahkan oleh `011`; kode sudah membaca `IMAGE_FIT`. | Difold ke clean active migration. |
+| `006_alter_information_posts_schedule_archive.sql` | Menambah status `archived`, visibility fields, dan index. | Patch untuk tabel dari `003`. | Difold ke clean active migration. |
+| `007_create_magang_sik_services.sql` | Membuat `permohonan_magang`, `surat_izin_kegiatan`, dan menambah `ATTACHMENT_TYPE`. | `permohonan_magang` dipatch oleh `014` dan `016`; SIK dipatch oleh `016`. | Difold ke clean active migration. |
+| `008_create_ult_home_activities.sql` | Membuat `ult_home_activities`. | `IMAGE_FIT` ditambahkan oleh `010`; kode sudah membaca `IMAGE_FIT`. | Difold ke clean active migration. |
+| `009_create_ult_home_links.sql` | Membuat `ult_home_links` dan seed link kalender akademik. | Berbeda kontrak dengan `ult_service_links`. | Difold ke clean active migration. |
+| `010_add_image_fit_to_home_activities.sql` | Menambah dan menormalisasi `ult_home_activities.IMAGE_FIT`. | Dibutuhkan untuk old chain. | Dipreservasi di backup lama. |
+| `011_add_image_fit_to_information_post_images.sql` | Menambah dan menormalisasi `ult_information_post_images.IMAGE_FIT`. | Dibutuhkan untuk old chain. | Dipreservasi di backup lama. |
+| `012_create_profile_cms_tables.sql` | Membuat tabel profil organisasi/lokasi/jam dan seed default final. | Seed hanya saat organisasi kosong. | Difold ke clean active migration. |
+| `013_seed_profile_organization_defaults.sql` | Repair seed organisasi lama dengan guard bentuk data legacy tertentu. | Berguna untuk DB yang pernah menjalankan `012` versi lama. | Dipreservasi di backup lama. |
+| `014_add_magang_letter_metadata.sql` | Menambah field `TTD_*` untuk `permohonan_magang`. | Prisma dan PDF magang bergantung pada kolom ini. | Difold ke clean active migration. |
+| `015_create_ult_service_links.sql` | Membuat `ult_service_links` dan seed template rekomendasi beasiswa. | Kontrak berbeda dari home link. | Difold ke clean active migration. |
+| `016_add_email_and_language_to_requests.sql` | Menambah/memperlebar email dan bahasa surat untuk tabel request legacy, magang, dan SIK. | Banyak target table berasal dari dump legacy. | Dipindahkan ke clean compatibility migration. |
 
 ## Rekomendasi Cleanup
 
