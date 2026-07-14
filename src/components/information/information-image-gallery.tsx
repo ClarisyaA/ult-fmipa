@@ -20,6 +20,10 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
 
   const activeImage = images[activeIndex] ?? images[0];
   const hasMultipleImages = images.length > 1;
+  const activeImageClass =
+    activeImage.imageFit === "contain"
+      ? "aspect-video w-full bg-[#f7f3ea] object-contain object-center p-4"
+      : "aspect-video w-full object-cover object-center";
 
   function move(direction: -1 | 1) {
     setActiveIndex((current) => {
@@ -46,7 +50,7 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
           width={1200}
           height={675}
           priority
-          className="aspect-video w-full object-cover"
+          className={activeImageClass}
         />
         {hasMultipleImages ? (
           <>
@@ -79,7 +83,13 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
 
       {hasMultipleImages ? (
         <div className="grid grid-cols-5 gap-2">
-          {images.map((image, index) => (
+          {images.map((image, index) => {
+            const thumbnailClass =
+              image.imageFit === "contain"
+                ? "aspect-video w-full bg-[#f7f3ea] object-contain object-center p-1"
+                : "aspect-video w-full object-cover object-center";
+
+            return (
             <button
               key={image.id}
               type="button"
@@ -94,10 +104,11 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
                 alt={image.altText ?? image.originalName}
                 width={240}
                 height={135}
-                className="aspect-video w-full object-cover"
+                className={thumbnailClass}
               />
             </button>
-          ))}
+            );
+          })}
         </div>
       ) : null}
     </section>

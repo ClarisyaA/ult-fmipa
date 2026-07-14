@@ -515,6 +515,7 @@ isActive        // true | false
 displayStartAt  // optional datetime-local
 displayEndAt    // optional datetime-local
 images          // File[], optional
+imageFits       // "cover" | "contain"[], optional, aligned with images
 ```
 
 Rules:
@@ -523,6 +524,7 @@ Rules:
 - Max 2 MB per image.
 - Allowed: WebP, PNG, JPG/JPEG.
 - SVG not allowed.
+- `imageFit` defaults to `cover`. Use `cover` / **Penuhi Card** for normal photos and `contain` / **Tampilkan Utuh** for logos, posters, or graphics that must not be cropped.
 - `displayEndAt` must be after `displayStartAt`.
 
 Example:
@@ -539,7 +541,10 @@ formData.append("isActive", String(isActive));
 formData.append("displayStartAt", displayStartAt);
 formData.append("displayEndAt", displayEndAt);
 
-images.forEach((image) => formData.append("images", image));
+images.forEach((image, index) => {
+  formData.append("images", image);
+  formData.append("imageFits", imageFits[index] ?? "cover");
+});
 
 await apiFetch("/api/admin/information", {
   method: "POST",
@@ -560,6 +565,15 @@ await apiFetch("/api/admin/information", {
 | `PATCH` | `/api/staff/information/[id]/images/[imageId]` | Staff |
 | `DELETE` | `/api/staff/information/[id]/images/[imageId]` | Staff |
 | `POST` | `/api/staff/information/[id]/images/[imageId]/cover` | Staff |
+
+Image metadata supports `imageFit: "cover" | "contain"`. PATCH image metadata accepts:
+
+```json
+{
+  "altText": "Deskripsi gambar",
+  "imageFit": "contain"
+}
+```
 
 Render image:
 

@@ -39,6 +39,7 @@ type HomeActivitySlide = {
   description: string;
   image: string;
   imageAlt: string;
+  imageFit: "cover" | "contain";
 };
 
 type HomeActivityApiItem = {
@@ -48,6 +49,7 @@ type HomeActivityApiItem = {
   description: string;
   image: string | null;
   imageAlt: string;
+  imageFit?: "cover" | "contain" | string | null;
 };
 
 const fallbackStudentActivities: HomeActivitySlide[] = [
@@ -59,6 +61,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
       "Pendampingan langsung oleh petugas ULT dalam pengajuan surat dan dokumen akademik, mulai dari surat aktif hingga legalisasi transkrip resmi.",
     image: "/gedung-fmipa.svg",
     imageAlt: "Layanan Akademik Terpandu",
+    imageFit: "cover",
   },
   {
     id: "fallback-informasi",
@@ -68,6 +71,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
       "Kabar layanan terbaru, pengumuman resmi fakultas, dan agenda penting kampus tersaji dalam satu portal yang mudah diakses sivitas akademika.",
     image: "/gedung-fmipa.svg",
     imageAlt: "Ruang Informasi Sivitas",
+    imageFit: "cover",
   },
   {
     id: "fallback-fasilitas",
@@ -77,6 +81,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
       "Akses peminjaman gedung, ruang belajar bersama, dan fasilitas laboratorium FMIPA untuk kegiatan akademik dan kemahasiswaan secara terstruktur.",
     image: "/gedung-fmipa.svg",
     imageAlt: "Dukungan Sarana Prasarana",
+    imageFit: "cover",
   },
   {
     id: "fallback-survei",
@@ -86,6 +91,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
       "Bantu ULT terus meningkatkan mutu pelayanan akademik melalui survei kepuasan berkala yang transparan dan berbasis data nyata.",
     image: "/gedung-fmipa.svg",
     imageAlt: "Survei Kepuasan Sivitas",
+    imageFit: "cover",
   },
 ];
 
@@ -102,6 +108,8 @@ const heroTitlePart1 = "Satu portal untuk  ";
 const heroTitlePart2 = "semua kebutuhan";
 const heroTitlePart3 = "Anda.";
 const heroTitleTotalChars = heroTitlePart1.length + heroTitlePart2.length + heroTitlePart3.length;
+const defaultAcademicCalendarUrl =
+  "https://www.unpad.ac.id/pengumuman/kalender-kegiatan-akademik-universitas-padjadjaran-tahun-akademik-2026-2027/";
 
 type HomeService = Pick<PublicService, "title" | "slug" | "category" | "description">;
 
@@ -114,6 +122,7 @@ type HomeInformation = {
   publishedAt: string | null;
   image: string;
   imageAlt: string;
+  imageFit: "cover" | "contain";
 };
 
 type InformationApiItem = {
@@ -127,7 +136,18 @@ type InformationApiItem = {
     id: string;
     altText: string | null;
     originalName: string;
+    imageFit?: "cover" | "contain" | string | null;
   } | null;
+};
+
+type HomeLinksApiResponse = {
+  data?: {
+    academicCalendar?: {
+      label?: string;
+      url?: string;
+      isActive?: boolean;
+    };
+  };
 };
 
 const fallbackServices: HomeService[] = [
@@ -179,6 +199,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-28T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
   {
     id: "akademik",
@@ -189,6 +210,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-27T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
   {
     id: "kemahasiswaan",
@@ -199,6 +221,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-25T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
   {
     id: "alumni",
@@ -209,6 +232,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-24T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
   {
     id: "sarana-prasarana",
@@ -219,6 +243,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-22T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
   {
     id: "beasiswa-dan-magang",
@@ -229,6 +254,7 @@ const fallbackInformation: HomeInformation[] = [
     publishedAt: "2026-06-20T00:00:00.000Z",
     image: "/gedung-fmipa.svg",
     imageAlt: "Gedung FMIPA Unpad",
+    imageFit: "cover",
   },
 ];
 
@@ -265,6 +291,7 @@ function toHomeInformation(item: InformationApiItem): HomeInformation {
     publishedAt: item.publishedAt,
     image: item.coverImage ? `/api/information/images/${item.coverImage.id}` : "/gedung-fmipa.svg",
     imageAlt: item.coverImage?.altText ?? item.coverImage?.originalName ?? item.title,
+    imageFit: item.coverImage?.imageFit === "contain" ? "contain" : "cover",
   };
 }
 
@@ -357,6 +384,7 @@ export function HomeLandingSections() {
   const [services, setServices] = useState<HomeService[]>(fallbackServices);
   const [information, setInformation] = useState<HomeInformation[]>(fallbackInformation);
   const [activities, setActivities] = useState<HomeActivitySlide[]>(fallbackStudentActivities);
+  const [academicCalendarUrl, setAcademicCalendarUrl] = useState(defaultAcademicCalendarUrl);
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const heroUnderlineAnimatedRef = useRef(false);
   const heroCardRef = useTilt(6);
@@ -507,8 +535,36 @@ export function HomeLandingSections() {
   const sideInformation = featuredInformation
     ? filteredInformation.filter((info) => info.id !== featuredInformation.id).slice(0, 5)
     : [];
+  const featuredInformationImageClass =
+    featuredInformation?.imageFit === "contain"
+      ? "object-contain object-center p-4"
+      : "object-cover object-center transition-transform duration-700 group-hover:scale-105";
   const currentActivityIdx =
     activities.length > 0 && activeIdx < activities.length ? activeIdx : 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHomeLinks() {
+      try {
+        const response = await fetch("/api/home/links", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as HomeLinksApiResponse;
+        const nextUrl = payload.data?.academicCalendar?.url?.trim();
+
+        if (!cancelled && nextUrl) {
+          setAcademicCalendarUrl(nextUrl);
+        }
+      } catch {
+        // Keep the default academic calendar URL when the homepage links API is unavailable.
+      }
+    }
+
+    loadHomeLinks();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -518,7 +574,7 @@ export function HomeLandingSections() {
         const response = await fetch("/api/home/activities", { cache: "no-store" });
         if (!response.ok) return;
         const payload = (await response.json()) as { data?: HomeActivityApiItem[] };
-        const nextActivities =
+        const nextActivities: HomeActivitySlide[] =
           payload.data?.map((activity) => ({
             id: activity.id,
             title: activity.title,
@@ -526,6 +582,7 @@ export function HomeLandingSections() {
             description: activity.description,
             image: activity.image ?? "/gedung-fmipa.svg",
             imageAlt: activity.imageAlt ?? activity.title,
+            imageFit: activity.imageFit === "contain" ? "contain" : "cover",
           })) ?? [];
 
         if (!cancelled && nextActivities.length > 0) {
@@ -893,6 +950,22 @@ export function HomeLandingSections() {
               >
                 <Link href="/profil">Profil ULT</Link>
               </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="hero-cta group rounded-2xl border-[#D9D0BC] bg-white px-7 font-semibold text-[#18130E] transition-all duration-200 hover:bg-[#18130E] hover:text-white hover:border-[#18130E] hover:scale-[1.02]"
+              >
+                <a
+                  href={academicCalendarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  Kalender Akademik
+                  <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </a>
+              </Button>
             </div>
 
           </div>
@@ -913,10 +986,10 @@ export function HomeLandingSections() {
                   sizes="(max-width: 1024px) 90vw, 40vw"
                   className="dekanat-hero-image object-cover transition-transform duration-700 hover:scale-105"
                 />
-                <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl border border-white/30 bg-white/70 px-4 py-2.5 shadow-lg backdrop-blur-md">
+                {/* <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl border border-white/30 bg-white/70 px-4 py-2.5 shadow-lg backdrop-blur-md">
                   <span className="size-2 rounded-full bg-[#03B36B] animate-pulse" />
                   <span className="text-xs font-bold text-[#18130E]">Layanan Aktif</span>
-                </div>
+                </div> */}
               </div>
 
               <div className="mt-4 flex items-center justify-between px-2 pb-1">
@@ -1010,6 +1083,10 @@ export function HomeLandingSections() {
               const isActive = idx === currentActivityIdx;
               const isPrevious = idx === previousIdx;
               const displayNumber = String(idx + 1).padStart(2, "0");
+              const imageFitClass =
+                act.imageFit === "contain"
+                  ? "object-contain object-center p-4"
+                  : "object-cover object-center";
               const slideStateClass = isActive
                 ? "z-20 translate-x-0 scale-100 opacity-100"
                 : isPrevious
@@ -1032,14 +1109,14 @@ export function HomeLandingSections() {
                   <div className="grid items-center gap-10 md:grid-cols-2">
 
                     {/* Image block */}
-                    <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F0EAD8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
+                    <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F5F0E8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
                       <Image
                         src={act.image}
                         alt={act.imageAlt}
                         fill
                         unoptimized
                         sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover transition-transform duration-700 hover:scale-105"
+                        className={imageFitClass}
                       />
                       {/* Eyebrow number badge */}
                       <div
@@ -1270,7 +1347,7 @@ export function HomeLandingSections() {
                   alt={featuredInformation?.imageAlt ?? "Informasi Layanan"}
                   fill
                   sizes="(max-width: 1024px) 90vw, 50vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className={featuredInformationImageClass}
                 />
                 {/* Overlay badge */}
                 <div className="absolute inset-0 flex items-end p-5">
@@ -1310,6 +1387,11 @@ export function HomeLandingSections() {
             {/* Editorial strips */}
             <div className="flex flex-col gap-3.5">
               {sideInformation.map((info) => {
+                const thumbnailImageClass =
+                  info.imageFit === "contain"
+                    ? "object-contain object-center p-2"
+                    : "object-cover object-center transition-transform duration-500 group-hover:scale-110";
+
                 return (
                   <Link
                     key={info.id}
@@ -1323,7 +1405,7 @@ export function HomeLandingSections() {
                         alt={info.imageAlt}
                         fill
                         sizes="76px"
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        className={thumbnailImageClass}
                       />
                     </div>
 

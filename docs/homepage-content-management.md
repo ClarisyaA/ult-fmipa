@@ -19,6 +19,7 @@ Setiap item mendukung field berikut:
 - Eyebrow / kategori
 - Deskripsi
 - Gambar
+- Tampilan gambar
 - Alt gambar
 - Status aktif
 - Urutan tampil
@@ -41,6 +42,16 @@ Format yang didukung:
 Batas ukuran mengikuti konvensi upload informasi saat ini: maksimal 2 MB per gambar.
 Form gambar mendukung klik untuk memilih file atau drag-and-drop ke area upload.
 File upload asli disimpan di `storage/home-activities` dan tidak boleh ikut commit. Folder ini di-ignore kecuali `.gitkeep`.
+
+Field **Tampilan Gambar** mengatur cara gambar ditampilkan di carousel homepage dan preview admin/staff:
+
+- **Penuhi Card** (`cover`): default untuk item baru dan item lama. Cocok untuk foto gedung atau foto kegiatan karena gambar memenuhi area card, dengan kemungkinan crop ringan.
+- **Tampilkan Utuh** (`contain`): cocok untuk logo, SVG, poster, atau gambar portrait/square yang tidak boleh terpotong. Gambar ditampilkan utuh di tengah dengan background netral jika ada ruang kosong.
+
+Rekomendasi:
+
+- Gedung/foto kegiatan: gunakan **Penuhi Card**.
+- Logo/poster/SVG: gunakan **Tampilkan Utuh**.
 
 ## Active / Inactive
 
@@ -69,6 +80,34 @@ Admin dan staff dapat melakukan aksi yang sama untuk Kegiatan Mahasiswa:
 
 Endpoint management membutuhkan session admin atau staff. Request tanpa session mengembalikan `401`, sedangkan role lain seperti student mengembalikan `403`.
 
+## Pengaturan Link Kalender Akademik
+
+Section pertama homepage menampilkan tombol **Kalender Akademik** bersama tombol **Temukan Layanan** dan **Profil ULT**.
+
+Default URL:
+
+`https://www.unpad.ac.id/pengumuman/kalender-kegiatan-akademik-universitas-padjadjaran-tahun-akademik-2026-2027/`
+
+Admin dan staff dapat mengubah URL dari card **Pengaturan Beranda** di:
+
+- Admin: `/admin/beranda/kegiatan`
+- Staff: `/staff/beranda/kegiatan`
+
+Validasi URL:
+
+- wajib diisi
+- maksimal 500 karakter
+- harus berupa URL absolut
+- hanya protokol `https://` atau `http://`
+- protokol tidak aman seperti `javascript:`, `data:`, dan `file:` ditolak
+
+Public behavior:
+
+- Homepage mengambil konfigurasi dari `/api/home/links`.
+- Tombol membuka URL di tab baru dengan `target="_blank"` dan `rel="noopener noreferrer"`.
+- Jika database/API link tidak tersedia, tombol memakai default URL agar tetap berfungsi.
+- Label publik tetap `Kalender Akademik`.
+
 ## Public Fallback
 
 Homepage mengambil data dari `/api/home/activities`. Jika database kosong, tabel belum dimigrasikan, atau API tidak tersedia, komponen homepage tetap aman dan memakai fallback statis bawaan agar section tidak crash.
@@ -91,8 +130,10 @@ Public homepage:
 
 Admin/staff CMS:
 
-- Tambah activity dengan judul, eyebrow, deskripsi, gambar, alt text, status aktif, dan urutan.
+- Tambah activity dengan judul, eyebrow, deskripsi, gambar, tampilan gambar, alt text, status aktif, dan urutan.
 - Edit semua field tersebut dan pastikan homepage ikut berubah.
+- Pastikan foto biasa dengan **Penuhi Card** memenuhi card carousel.
+- Pastikan logo/SVG/poster dengan **Tampilkan Utuh** terlihat utuh tanpa crop.
 - Nonaktifkan item dan pastikan item hilang dari homepage.
 - Upload format invalid dan pastikan ditolak.
 - Upload file lebih dari 2 MB dan pastikan ditolak.

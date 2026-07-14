@@ -6,6 +6,7 @@ import {
   getInformationApiErrorStatus,
   saveInformationImagesForPost,
 } from "@/lib/information-api";
+import { normalizeInformationImageFit } from "@/lib/information-post-images";
 import { getInformationPostById } from "@/lib/information-posts";
 
 type ImagesRouteProps = {
@@ -16,6 +17,12 @@ function getImageFiles(formData: FormData) {
   return formData
     .getAll("images")
     .filter((value): value is File => value instanceof File && value.size > 0);
+}
+
+function getImageFits(formData: FormData) {
+  return formData.getAll("imageFits").map((value) =>
+    normalizeInformationImageFit(typeof value === "string" ? value : null)
+  );
 }
 
 export async function POST(request: Request, { params }: ImagesRouteProps) {
@@ -37,7 +44,7 @@ export async function POST(request: Request, { params }: ImagesRouteProps) {
     }
 
     const formData = await request.formData();
-    await saveInformationImagesForPost(id, getImageFiles(formData));
+    await saveInformationImagesForPost(id, getImageFiles(formData), getImageFits(formData));
 
     return NextResponse.json({ message: "Gambar berhasil ditambahkan." });
   } catch (error) {

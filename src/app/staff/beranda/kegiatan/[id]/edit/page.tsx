@@ -31,7 +31,7 @@ export default async function StaffEditHomeActivityPage({
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid content-start gap-6">
       <Button asChild variant="ghost" className="-ml-2 w-fit">
         <Link href="/staff/beranda/kegiatan">
           <ArrowLeft className="size-4" />

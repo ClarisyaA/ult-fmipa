@@ -68,7 +68,7 @@ export async function PATCH(request: Request, { params }: InformationRouteProps)
 
   try {
     const { id } = await params;
-    const { input, files } = await parseInformationPostRequest(
+    const { input, files, imageFits } = await parseInformationPostRequest(
       request,
       getActorName(user)
     );
@@ -81,7 +81,7 @@ export async function PATCH(request: Request, { params }: InformationRouteProps)
       );
     }
 
-    await saveInformationImagesForPost(post.id, files);
+    await saveInformationImagesForPost(post.id, files, imageFits);
 
     return NextResponse.json({
       data: post,

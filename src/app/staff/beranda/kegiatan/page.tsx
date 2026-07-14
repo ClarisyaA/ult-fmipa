@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { HomeActivityActions } from "@/components/home-activities/home-activity-actions";
+import { HomeLinksSettingsForm } from "@/components/home-activities/home-links-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAdminHomeActivitiesState } from "@/lib/home-activities";
+import { getHomeLinksState } from "@/lib/home-links";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,6 +40,7 @@ function formatDate(value: string | null) {
 
 export default async function StaffHomeActivitiesPage() {
   const { activities, unavailable } = await getAdminHomeActivitiesState();
+  const { academicCalendar, unavailable: linksUnavailable } = await getHomeLinksState();
 
   return (
     <div className="grid gap-6">
@@ -54,6 +57,22 @@ export default async function StaffHomeActivitiesPage() {
           <Link href="/staff/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
         </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pengaturan Beranda</CardTitle>
+          <CardDescription>
+            Atur link tombol Kalender Akademik di section pertama homepage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <HomeLinksSettingsForm
+            rolePrefix="staff"
+            initialLink={academicCalendar}
+            unavailable={linksUnavailable}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -84,8 +103,14 @@ export default async function StaffHomeActivitiesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                activities.map((activity) => (
-                  <TableRow key={activity.id}>
+                activities.map((activity) => {
+                  const imageClass =
+                    activity.imageFit === "contain"
+                      ? "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-contain object-center p-1"
+                      : "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-cover object-center";
+
+                  return (
+                    <TableRow key={activity.id}>
                     <TableCell>
                       {activity.imagePath ? (
                         <Image
@@ -94,7 +119,7 @@ export default async function StaffHomeActivitiesPage() {
                           width={128}
                           height={80}
                           unoptimized
-                          className="aspect-video w-28 rounded-md border border-[#edf0e9] object-cover"
+                          className={imageClass}
                         />
                       ) : (
                         <div className="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] text-xs text-muted-foreground">
@@ -133,7 +158,8 @@ export default async function StaffHomeActivitiesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

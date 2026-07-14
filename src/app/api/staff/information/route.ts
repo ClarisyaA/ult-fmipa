@@ -45,14 +45,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { input, files } = await parseInformationPostRequest(
+    const { input, files, imageFits } = await parseInformationPostRequest(
       request,
       getActorName(user)
     );
     const post = await createInformationPost(input);
 
     if (post) {
-      await saveInformationImagesForPost(post.id, files);
+      await saveInformationImagesForPost(post.id, files, imageFits);
     }
 
     return NextResponse.json({

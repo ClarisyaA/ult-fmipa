@@ -12,6 +12,7 @@ export type HomeActivity = {
   description: string;
   imagePath: string | null;
   imageAlt: string | null;
+  imageFit: HomeActivityImageFit;
   imageOriginalName: string | null;
   imageStoredName: string | null;
   imageMimeType: string | null;
@@ -31,14 +32,18 @@ export type PublicHomeActivity = {
   description: string;
   image: string | null;
   imageAlt: string;
+  imageFit: HomeActivityImageFit;
   sortOrder: number;
 };
+
+export type HomeActivityImageFit = "cover" | "contain";
 
 export type HomeActivityInput = {
   title: string;
   eyebrow?: string | null;
   description: string;
   imageAlt?: string | null;
+  imageFit?: HomeActivityImageFit | string | null;
   isActive?: boolean | string | null;
   sortOrder?: number | string | null;
   actor?: string | null;
@@ -55,6 +60,7 @@ type HomeActivityRecord = {
   IMAGE_MIME_TYPE: string | null;
   IMAGE_SIZE_BYTES: number | null;
   IMAGE_ALT: string | null;
+  IMAGE_FIT: string | null;
   IS_ACTIVE: boolean | number;
   SORT_ORDER: number;
   CREATED_AT: Date | string;
@@ -94,6 +100,7 @@ function toActivity(record: HomeActivityRecord): HomeActivity {
     description: record.DESCRIPTION,
     imagePath: record.IMAGE_PATH,
     imageAlt: record.IMAGE_ALT,
+    imageFit: record.IMAGE_FIT === "contain" ? "contain" : "cover",
     imageOriginalName: record.IMAGE_ORIGINAL_NAME,
     imageStoredName: record.IMAGE_STORED_NAME,
     imageMimeType: record.IMAGE_MIME_TYPE,
@@ -115,6 +122,7 @@ function toPublicActivity(activity: HomeActivity): PublicHomeActivity {
     description: activity.description,
     image: activity.imagePath ? `/api/home/activities/images/${activity.id}` : null,
     imageAlt: activity.imageAlt ?? activity.title,
+    imageFit: activity.imageFit,
     sortOrder: activity.sortOrder,
   };
 }
@@ -231,6 +239,20 @@ function normalizeSortOrder(value: number | string | null | undefined) {
   return Math.trunc(numeric);
 }
 
+function normalizeImageFit(value: HomeActivityInput["imageFit"]): HomeActivityImageFit {
+  if (value === undefined || value === null || value === "") {
+    return "cover";
+  }
+
+  const normalized = String(value).trim();
+
+  if (normalized === "cover" || normalized === "contain") {
+    return normalized;
+  }
+
+  throw new HomeActivityValidationError("Tampilan gambar tidak valid.");
+}
+
 function normalizeInput(input: HomeActivityInput) {
   const title = input.title.trim();
   const description = input.description.trim();
@@ -252,6 +274,7 @@ function normalizeInput(input: HomeActivityInput) {
     eyebrow: normalizeOptionalText(input.eyebrow, 80),
     description,
     imageAlt: normalizeOptionalText(input.imageAlt, 150),
+    imageFit: normalizeImageFit(input.imageFit),
     isActive: normalizeBoolean(input.isActive, true),
     sortOrder: normalizeSortOrder(input.sortOrder),
     actor: input.actor?.trim().slice(0, 100) || null,
@@ -286,6 +309,7 @@ export async function getPublicHomeActivities() {
         IMAGE_MIME_TYPE,
         IMAGE_SIZE_BYTES,
         IMAGE_ALT,
+        IMAGE_FIT,
         IS_ACTIVE,
         SORT_ORDER,
         CREATED_AT,
@@ -322,6 +346,7 @@ export async function getAdminHomeActivities() {
         IMAGE_MIME_TYPE,
         IMAGE_SIZE_BYTES,
         IMAGE_ALT,
+        IMAGE_FIT,
         IS_ACTIVE,
         SORT_ORDER,
         CREATED_AT,
@@ -375,6 +400,7 @@ export async function getHomeActivityById(id: string) {
         IMAGE_MIME_TYPE,
         IMAGE_SIZE_BYTES,
         IMAGE_ALT,
+        IMAGE_FIT,
         IS_ACTIVE,
         SORT_ORDER,
         CREATED_AT,
@@ -415,6 +441,7 @@ export async function createHomeActivity(
         IMAGE_MIME_TYPE,
         IMAGE_SIZE_BYTES,
         IMAGE_ALT,
+        IMAGE_FIT,
         IS_ACTIVE,
         SORT_ORDER,
         CREATED_BY
@@ -428,6 +455,7 @@ export async function createHomeActivity(
         ${image?.mimeType ?? null},
         ${image?.sizeBytes ?? null},
         ${data.imageAlt},
+        ${data.imageFit},
         ${data.isActive ? 1 : 0},
         ${data.sortOrder},
         ${data.actor}
@@ -484,6 +512,7 @@ export async function updateHomeActivity(
           IMAGE_MIME_TYPE = ${image.mimeType},
           IMAGE_SIZE_BYTES = ${image.sizeBytes},
           IMAGE_ALT = ${data.imageAlt},
+          IMAGE_FIT = ${data.imageFit},
           IS_ACTIVE = ${data.isActive ? 1 : 0},
           SORT_ORDER = ${data.sortOrder},
           UPDATED_BY = ${data.actor},
@@ -500,6 +529,7 @@ export async function updateHomeActivity(
           EYEBROW = ${data.eyebrow},
           DESCRIPTION = ${data.description},
           IMAGE_ALT = ${data.imageAlt},
+          IMAGE_FIT = ${data.imageFit},
           IS_ACTIVE = ${data.isActive ? 1 : 0},
           SORT_ORDER = ${data.sortOrder},
           UPDATED_BY = ${data.actor},

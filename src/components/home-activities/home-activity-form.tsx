@@ -16,8 +16,15 @@ import { ImageIcon, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { HomeActivity } from "@/lib/home-activities";
+import type { HomeActivity, HomeActivityImageFit } from "@/lib/home-activities";
 
 type HomeActivityFormProps = {
   rolePrefix: "admin" | "staff";
@@ -44,6 +51,15 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function getImagePreviewClass(imageFit: HomeActivityImageFit) {
+  const baseClass =
+    "aspect-video w-full rounded-md border border-[#edf0e9] object-center";
+
+  return imageFit === "contain"
+    ? `${baseClass} bg-[#f7f3ea] object-contain p-2`
+    : `${baseClass} bg-[#f7f3ea] object-cover`;
+}
+
 export function HomeActivityForm({
   rolePrefix,
   mode,
@@ -54,6 +70,9 @@ export function HomeActivityForm({
   const [eyebrow, setEyebrow] = useState(initialActivity?.eyebrow ?? "");
   const [description, setDescription] = useState(initialActivity?.description ?? "");
   const [imageAlt, setImageAlt] = useState(initialActivity?.imageAlt ?? "");
+  const [imageFit, setImageFit] = useState<HomeActivityImageFit>(
+    initialActivity?.imageFit ?? "cover"
+  );
   const [isActive, setIsActive] = useState(initialActivity?.isActive ?? true);
   const [sortOrder, setSortOrder] = useState(String(initialActivity?.sortOrder ?? 0));
   const [pendingImage, setPendingImage] = useState<{
@@ -93,6 +112,10 @@ export function HomeActivityForm({
     if (file.size > maxImageSize) {
       setError(`Gambar ${file.name} melebihi 2 MB.`);
       return;
+    }
+
+    if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+      setImageFit("contain");
     }
 
     setPendingImage((current) => {
@@ -161,6 +184,7 @@ export function HomeActivityForm({
       formData.append("eyebrow", eyebrow);
       formData.append("description", description);
       formData.append("imageAlt", imageAlt);
+      formData.append("imageFit", imageFit);
       formData.append("isActive", String(isActive));
       formData.append("sortOrder", sortOrder);
 
@@ -273,6 +297,31 @@ export function HomeActivityForm({
         />
       </div>
 
+      <div className="grid gap-2">
+        <Label htmlFor="imageFit" className="text-xs font-semibold text-[#39433c]">
+          Tampilan Gambar
+        </Label>
+        <Select
+          value={imageFit}
+          onValueChange={(value) => setImageFit(value as HomeActivityImageFit)}
+        >
+          <SelectTrigger
+            id="imageFit"
+            className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
+          >
+            <SelectValue placeholder="Pilih tampilan gambar" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cover">Penuhi Card</SelectItem>
+            <SelectItem value="contain">Tampilkan Utuh</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs leading-relaxed text-[#7a7166]">
+          Gunakan Penuhi Card untuk foto biasa. Gunakan Tampilkan Utuh untuk logo, SVG,
+          poster, atau gambar yang tidak boleh terpotong.
+        </p>
+      </div>
+
       <div className="grid gap-3">
         <div className="grid gap-2">
           <Label htmlFor="image" className="text-xs font-semibold text-[#39433c]">
@@ -329,7 +378,7 @@ export function HomeActivityForm({
               width={640}
               height={360}
               unoptimized
-              className="aspect-video w-full rounded-md border border-[#edf0e9] object-cover"
+              className={getImagePreviewClass(imageFit)}
             />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#303b34]">Gambar tersimpan</p>
@@ -353,7 +402,7 @@ export function HomeActivityForm({
               width={640}
               height={360}
               unoptimized
-              className="aspect-video w-full rounded-md border border-[#edf0e9] object-cover"
+              className={getImagePreviewClass(imageFit)}
             />
             <div className="flex min-w-0 flex-col justify-between gap-3">
               <div>
