@@ -23,6 +23,7 @@ import { getOfficialLetterData } from "@/lib/letters/official-letter-data";
 import type {
   BaseOfficialLetterData,
   KeteranganLulusLetterData,
+  LetterLanguage,
   MagangLetterData,
 } from "@/lib/letters/letter-types";
 
@@ -67,11 +68,13 @@ function errorResponse(request: Request, message: string, status: number) {
 function getRouteResult(
   template: string,
   data: KeteranganLulusLetterData | BaseOfficialLetterData | MagangLetterData,
+  language: LetterLanguage,
 ) {
   if (template === "keterangan-lulus") {
     return {
       document: React.createElement(KeteranganLulusDocument, {
         data: data as KeteranganLulusLetterData,
+        language,
       }),
       filename: keteranganLulusFilename(data.npm),
       auditAction: `Mencetak surat keterangan lulus #${data.requestId}`,
@@ -83,6 +86,7 @@ function getRouteResult(
       document: React.createElement(OfficialLetterDocument, {
         data: data as BaseOfficialLetterData,
         template,
+        language,
       }),
       filename: officialLetterFilename("skmk", data.npm),
       auditAction: `Mencetak surat masih kuliah #${data.requestId}`,
@@ -94,6 +98,7 @@ function getRouteResult(
       document: React.createElement(OfficialLetterDocument, {
         data: data as BaseOfficialLetterData,
         template,
+        language,
       }),
       filename: officialLetterFilename("skmka", data.npm),
       auditAction: `Mencetak surat masih aktif kuliah #${data.requestId}`,
@@ -105,6 +110,7 @@ function getRouteResult(
       document: React.createElement(OfficialLetterDocument, {
         data: data as BaseOfficialLetterData,
         template,
+        language,
       }),
       filename: officialLetterFilename("skkb", data.npm),
       auditAction: `Mencetak surat kelakuan baik #${data.requestId}`,
@@ -115,6 +121,7 @@ function getRouteResult(
     return {
       document: React.createElement(MagangLetterDocument, {
         data: data as MagangLetterData,
+        language,
       }),
       filename: officialLetterFilename("magang", data.npm),
       auditAction: `Mencetak surat permohonan magang #${data.requestId}`,
@@ -122,6 +129,32 @@ function getRouteResult(
   }
 
   return null;
+}
+
+function requestedLanguage(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const lang = searchParams.get("lang");
+
+  if (lang === null || lang === "") {
+    return null;
+  }
+
+  if (lang === "id" || lang === "en") {
+    return lang;
+  }
+
+  throw new LetterDataError("Bahasa surat tidak valid.", 400);
+}
+
+function resolveLanguage(
+  requested: LetterLanguage | null,
+  data: KeteranganLulusLetterData | BaseOfficialLetterData | MagangLetterData,
+): LetterLanguage {
+  if (requested) {
+    return requested;
+  }
+
+  return data.languagePreference === "en" ? "en" : "id";
 }
 
 export async function GET(request: Request, { params }: PdfRouteProps) {
@@ -137,6 +170,7 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
 
   try {
     const { serviceSlug, id } = await params;
+    const languageParam = requestedLanguage(request);
     const service = getPrintableLetterService(serviceSlug);
 
     if (!service) {
@@ -158,7 +192,8 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
       return errorResponse(request, "Pengajuan tidak ditemukan.", 404);
     }
 
-    const result = getRouteResult(service.template, letterData);
+    const language = resolveLanguage(languageParam, letterData);
+    const result = getRouteResult(service.template, letterData, language);
 
     if (!result) {
       return errorResponse(request, "Template surat tidak ditemukan.", 404);

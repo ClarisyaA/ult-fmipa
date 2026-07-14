@@ -327,17 +327,30 @@ function PrintLetterButton({
 
   return (
     <div className="grid gap-1 text-right">
-      <Button asChild variant="outline">
-        <Link
-          href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf`}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Buka PDF surat di tab baru"
-        >
-          <FileText className="size-4" />
-          Cetak Surat
-        </Link>
-      </Button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild variant="outline">
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=id`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Indonesia di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Indo
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=en`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Inggris di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Inggris
+          </Link>
+        </Button>
+      </div>
       <p className="max-w-[260px] text-xs text-muted-foreground">
         Pastikan Data Surat sudah lengkap sebelum mencetak PDF resmi.
       </p>

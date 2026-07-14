@@ -60,6 +60,7 @@ export async function getMagangLetterData(
     where: { ID: BigInt(id) },
     select: {
       ID: true,
+      BAHASA_SURAT: true,
       NPM: true,
       NAMA: true,
       PRODI: true,
@@ -89,6 +90,7 @@ export async function getMagangLetterData(
   const student = await getLetterStudentProfile(row.NPM);
   const data: MagangLetterData = {
     requestId: row.ID.toString(),
+    languagePreference: row.BAHASA_SURAT === "en" ? "en" : "id",
     npm: row.NPM ?? "",
     studentName: row.NAMA ?? student?.name ?? "",
     programStudy: row.PRODI ?? student?.programStudy ?? null,

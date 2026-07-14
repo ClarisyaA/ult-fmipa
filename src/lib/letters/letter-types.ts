@@ -1,4 +1,5 @@
 export type LetterDateValue = Date | string | null;
+export type LetterLanguage = "id" | "en";
 
 export type LetterSigner = {
   letterNumber: string | null;
@@ -14,6 +15,7 @@ export type LetterSigner = {
 
 export type KeteranganLulusLetterData = {
   requestId: string;
+  languagePreference: LetterLanguage | null;
   npm: string;
   studentName: string;
   programStudy: string | null;
@@ -31,6 +33,7 @@ export type KeteranganLulusLetterData = {
 
 export type BaseOfficialLetterData = {
   requestId: string;
+  languagePreference: LetterLanguage | null;
   npm: string;
   studentName: string;
   programStudy: string | null;
@@ -47,6 +50,7 @@ export type BaseOfficialLetterData = {
 
 export type MagangLetterData = {
   requestId: string;
+  languagePreference: LetterLanguage | null;
   npm: string;
   studentName: string;
   programStudy: string | null;

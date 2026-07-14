@@ -409,3 +409,23 @@ Folder yang biasanya berisi file runtime:
 Jika gambar CMS hilang di local environment, unggah atau ganti gambar dari
 halaman admin CMS terkait. Jangan commit file upload asli hanya untuk menutup
 referensi lokal yang hilang.
+
+## Catatan PDF Surat Bilingual
+
+Route PDF surat resmi mendukung pilihan bahasa eksplisit:
+
+- `/api/requests/{serviceSlug}/{id}/pdf?lang=id`
+- `/api/requests/{serviceSlug}/{id}/pdf?lang=en`
+
+Di Data Surat admin/staff, tombol `Cetak Surat Indo` dan `Cetak Surat Inggris`
+selalu tersedia untuk layanan printable setelah data surat lengkap.
+`BAHASA_SURAT` tetap menyimpan preferensi bahasa dari mahasiswa, tetapi
+admin/staff tetap bisa mencetak salah satu bahasa secara manual.
+
+Template Inggris tersedia untuk layanan printable:
+
+- `keterangan-lulus`
+- `ket-tunjangan-orang-tua`
+- `keterangan-masih-kuliah`
+- `keterangan-kelakuan-baik`
+- `permohonan-magang-kerja-praktek-ta`

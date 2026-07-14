@@ -30,6 +30,7 @@ export async function getKeteranganLulusLetterData(
     },
     select: {
       ID: true,
+      BAHASA_SURAT: true,
       NPM: true,
       TEMPAT_LAHIR: true,
       TGL_LAHIR: true,
@@ -57,6 +58,7 @@ export async function getKeteranganLulusLetterData(
   const student = await getLetterStudentProfile(row.NPM);
   const data: KeteranganLulusLetterData = {
     requestId: row.ID.toString(),
+    languagePreference: row.BAHASA_SURAT === "en" ? "en" : "id",
     npm: row.NPM ?? "",
     studentName: student?.name ?? "",
     programStudy: student?.programStudy ?? null,

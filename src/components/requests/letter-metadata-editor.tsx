@@ -64,8 +64,8 @@ const keteranganLulusApprovalServiceFields = new Set([
   "TTD_AN",
 ]);
 
-function printHref(serviceSlug: string, id: string) {
-  return `/api/requests/${serviceSlug}/${id}/pdf`;
+function printHref(serviceSlug: string, id: string, language: "id" | "en") {
+  return `/api/requests/${serviceSlug}/${id}/pdf?lang=${language}`;
 }
 
 function collectValues(metadata: LetterMetadataPayload): FieldValues {
@@ -638,11 +638,26 @@ export function LetterMetadataEditor({
                   className="h-9 rounded-[4px] border-[#0f5b45] bg-white px-5 text-[15px] font-semibold text-[#0f5b45] hover:bg-[#eef9f1]"
                 >
                   <Link
-                    href={printHref(serviceSlug, id)}
+                    href={printHref(serviceSlug, id, "id")}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Cetak Surat
+                    Cetak Surat Indo
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  disabled={saving || readiness?.isReady === false}
+                  className="h-9 rounded-[4px] border-[#0f5b45] bg-white px-5 text-[15px] font-semibold text-[#0f5b45] hover:bg-[#eef9f1]"
+                >
+                  <Link
+                    href={printHref(serviceSlug, id, "en")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Cetak Surat Inggris
                   </Link>
                 </Button>
               </div>

@@ -1,8 +1,8 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { LetterHeader } from "@/components/letters/pdf/letter-header";
-import { formatIndonesianDate } from "@/lib/letters/letter-format";
-import type { MagangLetterData } from "@/lib/letters/letter-types";
+import { formatEnglishDate, formatIndonesianDate } from "@/lib/letters/letter-format";
+import type { LetterLanguage, MagangLetterData } from "@/lib/letters/letter-types";
 
 const styles = StyleSheet.create({
   page: {
@@ -64,13 +64,13 @@ const styles = StyleSheet.create({
   },
   signatureWrap: {
     position: "absolute",
-    right: 58,
-    top: 590,
+    right: 36,
+    top: 552,
     width: 250,
     lineHeight: 1.18,
   },
   signatureGap: {
-    height: 54,
+    height: 50,
   },
   signerName: {
     fontFamily: "Times-Bold",
@@ -109,6 +109,10 @@ function formatPeriodDate(value: Date | string | null) {
   }).format(date);
 }
 
+function formatMagangDate(value: Date | string | null, language: LetterLanguage) {
+  return language === "en" ? formatEnglishDate(value) : formatPeriodDate(value);
+}
+
 function IdentityRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.identityRow}>
@@ -135,15 +139,82 @@ function actingFor(value: string | null | undefined) {
   return safe(value) || "a.n. Dekan";
 }
 
-function Signature({ data }: { data: MagangLetterData }) {
+function translateSignerText(value: string | null | undefined, language: LetterLanguage) {
+  const text = safe(value);
+
+  if (language !== "en") {
+    return text;
+  }
+
+  const normalized = text.toLowerCase();
+
+  if (normalized === "a.n. dekan" || normalized === "an. dekan") {
+    return "on behalf of the Dean";
+  }
+
+  if (normalized === "dekan") {
+    return "Dean";
+  }
+
+  if (normalized.includes("wakil dekan") && normalized.includes("akademik")) {
+    return "Vice Dean for Academic, Student Affairs, and Research";
+  }
+
+  return text;
+}
+
+function requestTypeText(value: string | null | undefined, language: LetterLanguage) {
+  const text = safe(value);
+
+  if (language !== "en") {
+    return text;
+  }
+
+  const normalized = text.toLowerCase();
+
+  if (normalized.includes("tugas akhir") || normalized.includes("ta")) {
+    return "Final Project";
+  }
+
+  if (normalized.includes("kerja praktek") || normalized.includes("praktik")) {
+    return "Practical Work";
+  }
+
+  return "Internship";
+}
+
+function requestSubject(value: string | null | undefined, language: LetterLanguage) {
+  if (language !== "en") {
+    return "Permohonan Izin Magang Kerja";
+  }
+
+  const type = requestTypeText(value, language);
+
+  if (type === "Final Project") return "Request for Final Project Permission";
+  if (type === "Practical Work") return "Request for Practical Work Permission";
+
+  return "Request for Internship Permission";
+}
+
+function Signature({
+  data,
+  language,
+}: {
+  data: MagangLetterData;
+  language: LetterLanguage;
+}) {
   const signer = data.signer;
-  const title = safe(signer.title);
+  const title = translateSignerText(signer.title, language);
   const titleWithComma = title.endsWith(",") ? title : `${title},`;
   const nip = safe(signer.nip);
 
   return (
     <View style={styles.signatureWrap} wrap={false}>
-      <Text>{actingFor(signer.actingFor)}</Text>
+      <Text>
+        {language === "en"
+          ? translateSignerText(actingFor(signer.actingFor), language)
+          : actingFor(signer.actingFor)}
+      </Text>
       <Text>{titleWithComma}</Text>
       <View style={styles.signatureGap} />
       <Text style={styles.signerName}>{safe(signer.name)}</Text>
@@ -152,42 +223,53 @@ function Signature({ data }: { data: MagangLetterData }) {
   );
 }
 
-export function MagangLetterDocument({ data }: { data: MagangLetterData }) {
-  const letterDate = formatIndonesianDate(data.signer.letterDate);
-  const startDate = formatPeriodDate(data.startDate);
-  const endDate = formatPeriodDate(data.endDate);
-  const requestType = safe(data.requestType);
+export function MagangLetterDocument({
+  data,
+  language = "id",
+}: {
+  data: MagangLetterData;
+  language?: LetterLanguage;
+}) {
+  const isEnglish = language === "en";
+  const letterDate =
+    language === "en"
+      ? formatEnglishDate(data.signer.letterDate)
+      : formatIndonesianDate(data.signer.letterDate);
+  const startDate = formatMagangDate(data.startDate, language);
+  const endDate = formatMagangDate(data.endDate, language);
+  const requestType = requestTypeText(data.requestType, language);
   const institutionName = safe(data.institutionName);
   const programStudy = safe(data.programStudy);
   const recipientLines = addressLines(data);
+  const subject = requestSubject(data.requestType, language);
 
   return (
     <Document
-      title={`Surat Permohonan Izin Magang Kerja ${data.npm}`}
+      title={`${subject} ${data.npm}`}
       author="ULT FMIPA Unpad"
-      subject="Permohonan Izin Magang Kerja"
+      subject={subject}
       creator="ULT FMIPA Unpad"
       producer="ULT FMIPA Unpad"
     >
       <Page size="A4" style={styles.page}>
-        <LetterHeader />
+        <LetterHeader language={language} />
 
         <View style={styles.metaWrap}>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Nomor</Text>
+            <Text style={styles.metaLabel}>{isEnglish ? "Number" : "Nomor"}</Text>
             <Text style={styles.metaColon}>:</Text>
             <Text style={styles.metaValue}>{safe(data.signer.letterNumber)}</Text>
             <Text style={styles.metaDate}>{letterDate}</Text>
           </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Hal</Text>
+            <Text style={styles.metaLabel}>{isEnglish ? "Subject" : "Hal"}</Text>
             <Text style={styles.metaColon}>:</Text>
-            <Text style={styles.metaValue}>Permohonan Izin Magang Kerja</Text>
+            <Text style={styles.metaValue}>{subject}</Text>
           </View>
         </View>
 
         <View style={styles.recipient}>
-          <Text>Yth. {safe(data.recipient)}</Text>
+          <Text>{isEnglish ? "To:" : "Yth."} {safe(data.recipient)}</Text>
           <Text>{institutionName}</Text>
           {recipientLines.map((line) => (
             <Text key={line}>{line}</Text>
@@ -195,37 +277,51 @@ export function MagangLetterDocument({ data }: { data: MagangLetterData }) {
         </View>
 
         <Text style={styles.paragraph}>
-          Berkenaan dengan keperluan dari mahasiswa Program Studi {programStudy}{" "}
-          yaitu :
+          {isEnglish
+            ? `In connection with the academic needs of a student of the ${programStudy} Study Program, namely:`
+            : `Berkenaan dengan keperluan dari mahasiswa Program Studi ${programStudy} yaitu :`}
         </Text>
 
         <View style={styles.identity}>
-          <IdentityRow label="Nama Mahasiswa" value={safe(data.studentName)} />
-          <IdentityRow label="NPM" value={safe(data.npm)} />
+          <IdentityRow
+            label={isEnglish ? "Student Name" : "Nama Mahasiswa"}
+            value={safe(data.studentName)}
+          />
+          <IdentityRow
+            label={isEnglish ? "Student ID Number" : "NPM"}
+            value={safe(data.npm)}
+          />
         </View>
 
         <Text style={styles.paragraph}>
-          yang bersangkutan bermaksud mengajukan permohonan izin untuk melakukan{" "}
-          {requestType} di {institutionName}, yang direncanakan akan dilaksanakan
-          mulai tanggal {startDate} sampai dengan {endDate}.
+          {isEnglish
+            ? `the student intends to request permission to undertake ${requestType} at ${institutionName}, which is planned to be carried out from ${startDate} to ${endDate}.`
+            : `yang bersangkutan bermaksud mengajukan permohonan izin untuk melakukan ${requestType} di ${institutionName}, yang direncanakan akan dilaksanakan mulai tanggal ${startDate} sampai dengan ${endDate}.`}
         </Text>
 
         <Text style={styles.paragraph}>
-          Sehubungan dengan hal itu, kami mohon Bapak/Ibu berkenan dapat
-          memberikan izin untuk kegiatan dimaksud.
+          {isEnglish
+            ? "In this regard, we kindly request that you grant permission for the aforementioned activity."
+            : "Sehubungan dengan hal itu, kami mohon Bapak/Ibu berkenan dapat memberikan izin untuk kegiatan dimaksud."}
         </Text>
 
         <Text style={styles.paragraph}>
-          Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih.
+          {isEnglish
+            ? "Thank you for your attention and cooperation."
+            : "Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih."}
         </Text>
 
-        <Signature data={data} />
+        <Signature data={data} language={language} />
 
         <View style={styles.copies}>
-          <Text style={styles.copiesTitle}>Tembusan :</Text>
-          <Text>Dekan FMIPA Unpad.</Text>
+          <Text style={styles.copiesTitle}>
+            {isEnglish ? "Copies to:" : "Tembusan :"}
+          </Text>
+          <Text>{isEnglish ? "Dean of FMIPA Unpad." : "Dekan FMIPA Unpad."}</Text>
           <Text>
-            Ketua Program Studi {programStudy} FMIPA Unpad.
+            {isEnglish
+              ? `Head of the ${programStudy} Study Program, FMIPA Unpad.`
+              : `Ketua Program Studi ${programStudy} FMIPA Unpad.`}
           </Text>
         </View>
       </Page>

@@ -1,4 +1,4 @@
-import type { LetterDateValue } from "@/lib/letters/letter-types";
+import type { LetterDateValue, LetterLanguage } from "@/lib/letters/letter-types";
 
 const MONTH_NAMES = [
   "Januari",
@@ -15,18 +15,53 @@ const MONTH_NAMES = [
   "Desember",
 ];
 
-export function formatIndonesianDate(value: LetterDateValue) {
+const ENGLISH_MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function toValidDate(value: LetterDateValue) {
   if (!value) {
-    return "";
+    return null;
   }
 
   const date = value instanceof Date ? value : new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatIndonesianDate(value: LetterDateValue) {
+  const date = toValidDate(value);
+
+  if (!date) {
     return "";
   }
 
   return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function formatEnglishDate(value: LetterDateValue) {
+  const date = toValidDate(value);
+
+  if (!date) {
+    return "";
+  }
+
+  return `${date.getDate()} ${ENGLISH_MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function formatLetterDate(value: LetterDateValue, language: LetterLanguage) {
+  return language === "en" ? formatEnglishDate(value) : formatIndonesianDate(value);
 }
 
 export function formatIndonesianDateRange(
