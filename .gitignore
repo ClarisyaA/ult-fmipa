@@ -50,3 +50,5 @@ uploads/
 public/uploads/
 storage/uploads/
 storage/information/
+storage/home-activities/*
+!storage/home-activities/.gitkeep

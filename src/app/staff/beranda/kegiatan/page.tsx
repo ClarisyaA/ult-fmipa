@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAdminHomeActivities } from "@/lib/home-activities";
+import { getAdminHomeActivitiesState } from "@/lib/home-activities";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,7 +37,7 @@ function formatDate(value: string | null) {
 }
 
 export default async function StaffHomeActivitiesPage() {
-  const activities = await getAdminHomeActivities();
+  const { activities, unavailable } = await getAdminHomeActivitiesState();
 
   return (
     <div className="grid gap-6">
@@ -78,7 +78,9 @@ export default async function StaffHomeActivitiesPage() {
               {activities.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-muted-foreground">
-                    Belum ada kegiatan mahasiswa yang dibuat.
+                    {unavailable
+                      ? "Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi."
+                      : "Belum ada kegiatan mahasiswa yang dibuat."}
                   </TableCell>
                 </TableRow>
               ) : (

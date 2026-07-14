@@ -10,6 +10,7 @@ import {
 import {
   assertValidHomeActivityInput,
   deleteHomeActivity,
+  ensureHomeActivitiesTableAvailable,
   getHomeActivityById,
   updateHomeActivity,
 } from "@/lib/home-activities";
@@ -88,6 +89,16 @@ export async function PATCH(request: Request, { params }: HomeActivityRouteProps
       getActorName(auth.user)
     );
     assertValidHomeActivityInput(input);
+    await ensureHomeActivitiesTableAvailable();
+    const existing = await getHomeActivityById(id);
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Kegiatan mahasiswa tidak ditemukan." },
+        { status: 404 }
+      );
+    }
+
     const image = imageFile ? await saveHomeActivityImage(imageFile) : null;
     const activity = await updateHomeActivity(id, input, image);
 

@@ -30,6 +30,11 @@ function resolveStoragePath(storedName: string | null) {
 
 export async function GET(_request: Request, { params }: ImageRouteProps) {
   const { id } = await params;
+
+  if (!/^\d+$/.test(id)) {
+    return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
+  }
+
   const activity = await getHomeActivityById(id);
 
   if (!activity?.imageStoredName || !activity.imageMimeType) {

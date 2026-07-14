@@ -10,6 +10,7 @@ import {
 import {
   assertValidHomeActivityInput,
   createHomeActivity,
+  ensureHomeActivitiesTableAvailable,
   getAdminHomeActivities,
 } from "@/lib/home-activities";
 import { saveHomeActivityImage } from "@/lib/home-activity-image-upload";
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
   try {
     const { input, imageFile } = await parseHomeActivityRequest(request, getActorName(user));
     assertValidHomeActivityInput(input);
+    await ensureHomeActivitiesTableAvailable();
     const image = imageFile ? await saveHomeActivityImage(imageFile) : null;
     const activity = await createHomeActivity(input, image);
 

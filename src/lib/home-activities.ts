@@ -262,6 +262,12 @@ export function assertValidHomeActivityInput(input: HomeActivityInput) {
   normalizeInput(input);
 }
 
+export async function ensureHomeActivitiesTableAvailable() {
+  if (!(await hasHomeActivitiesTable())) {
+    throw new HomeActivityTableUnavailableError();
+  }
+}
+
 export async function getPublicHomeActivities() {
   if (!(await hasHomeActivitiesTable())) {
     return [];
@@ -331,6 +337,22 @@ export async function getAdminHomeActivities() {
     handleReadError(error);
     return [];
   }
+}
+
+export async function getAdminHomeActivitiesState() {
+  const tableAvailable = await hasHomeActivitiesTable();
+
+  if (!tableAvailable) {
+    return {
+      activities: [],
+      unavailable: true,
+    };
+  }
+
+  return {
+    activities: await getAdminHomeActivities(),
+    unavailable: false,
+  };
 }
 
 export async function getHomeActivityById(id: string) {

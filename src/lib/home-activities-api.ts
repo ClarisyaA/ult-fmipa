@@ -24,9 +24,41 @@ function getImageFile(formData: FormData) {
   return value instanceof File && value.size > 0 ? value : null;
 }
 
+const supportedFields = new Set([
+  "title",
+  "eyebrow",
+  "description",
+  "imageAlt",
+  "isActive",
+  "sortOrder",
+  "image",
+]);
+
+function assertSupportedJsonFields(body: unknown) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new HomeActivityValidationError("Payload kegiatan tidak valid.");
+  }
+
+  for (const key of Object.keys(body)) {
+    if (!supportedFields.has(key)) {
+      throw new HomeActivityValidationError(`Field ${key} tidak didukung.`);
+    }
+  }
+}
+
+function assertSupportedFormFields(formData: FormData) {
+  for (const key of formData.keys()) {
+    if (!supportedFields.has(key)) {
+      throw new HomeActivityValidationError(`Field ${key} tidak didukung.`);
+    }
+  }
+}
+
 export async function parseHomeActivityRequest(request: Request, actor: string) {
   if (!isMultipartRequest(request)) {
     const body = (await request.json()) as HomeActivityInput;
+    assertSupportedJsonFields(body);
+
     return {
       input: {
         ...body,
@@ -37,6 +69,7 @@ export async function parseHomeActivityRequest(request: Request, actor: string) 
   }
 
   const formData = await request.formData();
+  assertSupportedFormFields(formData);
   const file = getImageFile(formData);
 
   if (file) {
