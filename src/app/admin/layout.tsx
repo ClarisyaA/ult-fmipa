@@ -56,7 +56,10 @@ export default async function AdminLayout({
               </div>
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6">
+          <main
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
+            data-admin-scroll-container
+          >
             {children}
           </main>
           <OpsRequestNotifier role="admin" />

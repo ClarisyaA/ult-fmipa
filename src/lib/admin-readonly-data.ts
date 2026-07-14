@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_LIMIT = 20;
+const MAX_PAGE_SIZE = 100;
 
 function cleanSearch(search?: string) {
   return search?.trim().slice(0, 80) || "";
@@ -12,6 +13,48 @@ function safeTake(limit?: number) {
   }
 
   return Math.min(Math.max(limit, 1), 50);
+}
+
+function safePage(value?: number) {
+  if (!value || Number.isNaN(value)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.floor(value));
+}
+
+function safePageSize(value?: number) {
+  if (!value || Number.isNaN(value)) {
+    return DEFAULT_LIMIT;
+  }
+
+  return Math.min(Math.max(Math.floor(value), 1), MAX_PAGE_SIZE);
+}
+
+function getPaginationMeta({
+  page,
+  pageSize,
+  total,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safeCurrentPage = Math.min(page, totalPages);
+  const start = total === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const end = Math.min(safeCurrentPage * pageSize, total);
+
+  return {
+    page: safeCurrentPage,
+    pageSize,
+    total,
+    totalPages,
+    start,
+    end,
+    hasPreviousPage: safeCurrentPage > 1,
+    hasNextPage: safeCurrentPage < totalPages,
+  };
 }
 
 function serializeDate(value: Date | string | null | undefined) {
@@ -68,6 +111,70 @@ export async function getMahasiswaRows({
   }));
 }
 
+export async function getMahasiswaPage({
+  search,
+  page,
+  pageSize,
+}: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = cleanSearch(search);
+  const currentPage = safePage(page);
+  const take = safePageSize(pageSize);
+  const numericQuery = Number(query);
+  const numericSearch = Number.isFinite(numericQuery) ? numericQuery : null;
+  const where = query
+    ? {
+        OR: [
+          { NPM: { contains: query } },
+          { NAMA: { contains: query } },
+          { PROGRAM_STUDI: { contains: query } },
+          { JENJANG: { contains: query } },
+          ...(numericSearch !== null ? [{ ANGKATAN: numericSearch }] : []),
+        ],
+      }
+    : undefined;
+
+  const total = await prisma.mahasiswa.count({ where });
+  const pagination = getPaginationMeta({
+    page: currentPage,
+    pageSize: take,
+    total,
+  });
+  const rows = await prisma.mahasiswa.findMany({
+      where,
+      select: {
+        NPM: true,
+        NAMA: true,
+        KD_PS: true,
+        KD_PA: true,
+        PROGRAM_STUDI: true,
+        ANGKATAN: true,
+        JENJANG: true,
+        FAK: true,
+      },
+      orderBy: { NPM: "asc" },
+      skip: (pagination.page - 1) * take,
+      take,
+  });
+
+  return {
+    rows: rows.map((row) => ({
+      npm: row.NPM,
+      nama: row.NAMA,
+      kdPs: row.KD_PS,
+      kdPa: row.KD_PA,
+      programStudi: row.PROGRAM_STUDI,
+      angkatan: row.ANGKATAN,
+      status: row.JENJANG,
+      fak: row.FAK,
+    })),
+    pagination,
+  };
+}
+
 export async function getTracerStudyRows({
   search,
   limit,
@@ -117,6 +224,77 @@ export async function getTracerStudyRows({
     jabatan: row.Jabatan,
     statusIsi: row.status_isi,
   }));
+}
+
+export async function getTracerStudyPage({
+  search,
+  page,
+  pageSize,
+}: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = cleanSearch(search);
+  const currentPage = safePage(page);
+  const take = safePageSize(pageSize);
+  const numericQuery = Number(query);
+  const numericSearch = Number.isFinite(numericQuery) ? numericQuery : null;
+  const where = query
+    ? {
+        OR: [
+          { npm: { contains: query } },
+          { nama: { contains: query } },
+          { prodi: { contains: query } },
+          { program: { contains: query } },
+          { instansi: { contains: query } },
+          { Jabatan: { contains: query } },
+          ...(numericSearch !== null ? [{ tahun_lulus: numericSearch }] : []),
+        ],
+      }
+    : undefined;
+
+  const total = await prisma.alumni.count({ where });
+  const pagination = getPaginationMeta({
+    page: currentPage,
+    pageSize: take,
+    total,
+  });
+  const rows = await prisma.alumni.findMany({
+      where,
+      select: {
+        id: true,
+        npm: true,
+        nama: true,
+        program: true,
+        prodi: true,
+        tahun_masuk: true,
+        tahun_lulus: true,
+        instansi: true,
+        Jabatan: true,
+        status_isi: true,
+      },
+      orderBy: { id: "desc" },
+      skip: (pagination.page - 1) * take,
+      take,
+  });
+
+  return {
+    rows: rows.map((row) => ({
+      id: row.id,
+      npm: row.npm,
+      nama: row.nama,
+      programStudi: [row.program, row.prodi].filter(Boolean).join(" ") || null,
+      program: row.program,
+      prodi: row.prodi,
+      tahunMasuk: row.tahun_masuk,
+      tahunLulus: row.tahun_lulus,
+      instansi: row.instansi,
+      jabatan: row.Jabatan,
+      statusIsi: row.status_isi,
+    })),
+    pagination,
+  };
 }
 
 export async function getLevelRows({

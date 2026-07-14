@@ -47,7 +47,7 @@ export function AdminPageShell({
       }}
     >
       <div
-        className={`mx-auto grid gap-4 px-4 py-5 sm:px-6 lg:px-7 ${
+        className={`mx-auto grid w-full min-w-0 gap-4 px-4 py-5 sm:px-6 lg:px-7 ${
           wide ? "max-w-[1660px]" : "max-w-[1320px]"
         }`}
       >
@@ -89,7 +89,7 @@ export function AdminSectionCard({
 }: AdminSectionCardProps) {
   return (
     <section
-      className={`overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${className}`}
+      className={`min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${className}`}
     >
       {title || description ? (
         <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">
@@ -103,14 +103,14 @@ export function AdminSectionCard({
           ) : null}
         </div>
       ) : null}
-      <div className="p-4 sm:p-5">{children}</div>
+      <div className="min-w-0 p-4 sm:p-5">{children}</div>
     </section>
   );
 }
 
 export function AdminTableScroll({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-[#edf0e9]">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border border-[#edf0e9]">
       {children}
     </div>
   );

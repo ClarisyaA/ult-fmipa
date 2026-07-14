@@ -165,13 +165,13 @@ export const adminTutorialSteps: TutorialStep[] = [
     title: "Data Mahasiswa",
     body: "Data master mahasiswa menjadi referensi validasi identitas. Cari dan cek data ini saat ada pengajuan yang perlu dikonfirmasi.",
     route: "/admin/master/mahasiswa",
-    target: "admin-master-students",
+    target: "admin-students-table",
   },
   {
     title: "Tracer Alumni",
     body: "Tracer Study Alumni dipakai untuk mengelola data alumni dan kebutuhan pelaporan terkait lulusan.",
     route: "/admin/alumni/tracer-study",
-    target: "admin-tracer-study",
+    target: "admin-tracer-table",
   },
   {
     title: "Data Level",

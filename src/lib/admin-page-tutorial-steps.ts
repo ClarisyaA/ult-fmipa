@@ -547,13 +547,23 @@ const studentSteps: TutorialStep[] = [
   },
   {
     title: "Cari Mahasiswa",
-    body: "Cari berdasarkan NPM, nama, atau program studi. Cocok untuk mengecek identitas sebelum memproses pengajuan.",
-    target: "admin-master-students",
+    body: "Cari berdasarkan NPM, nama, program studi, angkatan, atau jenjang. Saat pencarian dijalankan, halaman otomatis kembali ke halaman pertama.",
+    target: "admin-students-search",
   },
   {
-    title: "Privasi Data",
-    body: "Jangan expose data mahasiswa yang tidak diperlukan. Gunakan hanya untuk verifikasi layanan dan kebutuhan laporan internal.",
-    target: "admin-master-students",
+    title: "Tabel Mahasiswa",
+    body: "Kalau kolom tabel banyak, geser tabel ke kanan untuk melihat aksi atau data lanjutan. Data dibaca per halaman supaya tidak memuat semua baris sekaligus.",
+    target: "admin-students-table",
+  },
+  {
+    title: "Aksi Mahasiswa",
+    body: "Edit dan hapus tetap tersedia di kolom aksi. Jika kolom aksi belum terlihat, geser tabel ke kanan.",
+    target: "admin-students-actions",
+  },
+  {
+    title: "Pagination Mahasiswa",
+    body: "Gunakan tombol Berikutnya/Sebelumnya untuk melihat data lain tanpa memuat semua data sekaligus. Query pencarian tetap dipertahankan saat pindah halaman.",
+    target: "admin-students-pagination",
   },
 ];
 
@@ -563,9 +573,24 @@ const tracerSteps: TutorialStep[] = [
     body: "Tracer Study berisi data alumni untuk referensi dan pelaporan.",
   },
   {
-    title: "Baca Data Alumni",
-    body: "Gunakan pencarian/filter untuk menemukan alumni. Data ini sebaiknya dipakai sebagai referensi pelaporan, bukan disebarkan sembarangan.",
-    target: "admin-tracer-study",
+    title: "Cari Tracer",
+    body: "Cari berdasarkan NPM, nama, program studi, instansi, jabatan, atau tahun lulus. Pencarian akan mulai dari halaman pertama.",
+    target: "admin-tracer-search",
+  },
+  {
+    title: "Tabel Tracer",
+    body: "Kalau kolom tabel banyak, geser tabel ke kanan untuk melihat aksi atau data lanjutan. Kontak personal tetap tidak ditampilkan di tabel.",
+    target: "admin-tracer-table",
+  },
+  {
+    title: "Aksi Tracer",
+    body: "Edit dan hapus berada di sisi kanan tabel. Geser tabel ke kanan jika aksi belum terlihat.",
+    target: "admin-tracer-actions",
+  },
+  {
+    title: "Pagination Tracer",
+    body: "Gunakan Berikutnya/Sebelumnya untuk membuka halaman data alumni berikutnya. Search query dan jumlah baris tetap dipertahankan.",
+    target: "admin-tracer-pagination",
   },
 ];
 

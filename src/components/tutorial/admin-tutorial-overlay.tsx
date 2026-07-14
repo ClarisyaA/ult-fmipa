@@ -126,6 +126,42 @@ function getTargetRect(target?: string): HighlightRect | null {
   };
 }
 
+function getAdminScrollContainer() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return document.querySelector<HTMLElement>("[data-admin-scroll-container]");
+}
+
+function scrollTargetIntoAdminView(element: HTMLElement) {
+  const container = getAdminScrollContainer();
+
+  if (!container) {
+    element.scrollIntoView({
+      behavior: "auto",
+      block: "nearest",
+      inline: "nearest",
+    });
+    return;
+  }
+
+  const margin = 32;
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const topOverflow = elementRect.top - containerRect.top - margin;
+  const bottomOverflow = elementRect.bottom - containerRect.bottom + margin;
+
+  if (topOverflow < 0) {
+    container.scrollBy({ top: topOverflow, behavior: "auto" });
+    return;
+  }
+
+  if (bottomOverflow > 0) {
+    container.scrollBy({ top: bottomOverflow, behavior: "auto" });
+  }
+}
+
 function getCardPosition(rect: HighlightRect | null) {
   if (typeof window === "undefined") {
     return {
@@ -231,6 +267,10 @@ export function AdminTutorialOverlay() {
   const navigationRef = useRef("");
   const previewAttemptRef = useRef("");
   const scrolledTargetRef = useRef("");
+  const initialScrollRef = useRef<{
+    key: string;
+    top: number;
+  } | null>(null);
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -270,11 +310,7 @@ export function AdminTutorialOverlay() {
 
     if (scrolledTargetRef.current !== targetKey) {
       scrolledTargetRef.current = targetKey;
-      element.scrollIntoView({
-        behavior: "auto",
-        block: "center",
-        inline: "nearest",
-      });
+      scrollTargetIntoAdminView(element);
     }
 
     window.requestAnimationFrame(() => {
@@ -350,6 +386,13 @@ export function AdminTutorialOverlay() {
       window.localStorage.removeItem(activeKey);
       window.localStorage.removeItem(stepKey);
       window.localStorage.removeItem(modeKey);
+      const container = getAdminScrollContainer();
+      if (container && initialScrollRef.current) {
+        container.scrollTo({
+          top: initialScrollRef.current.top,
+          behavior: "auto",
+        });
+      }
       setIsNavigating(true);
       startTransition(() => {
         router.replace(stripTourFromCurrent(pathname, paramsSnapshot), {
@@ -401,6 +444,14 @@ export function AdminTutorialOverlay() {
   useEffect(() => {
     if (!open || !step || !mode) {
       return;
+    }
+
+    const initialScrollKey = `${mode}:${pathname}`;
+    if (initialScrollRef.current?.key !== initialScrollKey) {
+      initialScrollRef.current = {
+        key: initialScrollKey,
+        top: getAdminScrollContainer()?.scrollTop ?? 0,
+      };
     }
 
     window.localStorage.setItem(activeKey, "true");
