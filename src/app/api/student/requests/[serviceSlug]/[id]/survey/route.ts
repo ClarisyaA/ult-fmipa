@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   createOrUpdateSurvey,
   getSurveyForRequest,
@@ -24,7 +25,19 @@ async function getOwnedRequestOrResponse(
   serviceSlug: string,
   id: string
 ) {
-  const detail = await getStudentRequestDetail(npm, serviceSlug, id);
+  let detail;
+
+  try {
+    detail = await getStudentRequestDetail(npm, serviceSlug, id);
+  } catch (error) {
+    return {
+      response: jsonApiError(
+        error,
+        "api:student:request-survey:detail",
+        "Pengajuan survei gagal dimuat."
+      ),
+    };
+  }
 
   if (!detail) {
     return {
@@ -87,16 +100,24 @@ export async function GET(_request: Request, { params }: SurveyRouteProps) {
     return requestResult.response;
   }
 
-  const survey = await getSurveyForRequest(
-    requestResult.detail.serviceSlug,
-    requestResult.detail.sourceTable,
-    requestResult.detail.id,
-    sessionResult.npm
-  );
+  try {
+    const survey = await getSurveyForRequest(
+      requestResult.detail.serviceSlug,
+      requestResult.detail.sourceTable,
+      requestResult.detail.id,
+      sessionResult.npm
+    );
 
-  return NextResponse.json({
-    data: survey,
-  });
+    return NextResponse.json({
+      data: survey,
+    });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:student:request-survey:get",
+      "Survei kepuasan gagal dimuat."
+    );
+  }
 }
 
 export async function POST(request: Request, { params }: SurveyRouteProps) {
@@ -167,9 +188,10 @@ export async function POST(request: Request, { params }: SurveyRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Survei kepuasan gagal disimpan." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:student:request-survey:post",
+      "Survei kepuasan gagal disimpan."
     );
   }
 }

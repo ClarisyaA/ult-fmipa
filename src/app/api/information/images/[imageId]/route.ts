@@ -69,6 +69,11 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
         "Content-Type": image.MIME_TYPE,
         "Content-Length": String(fileStat.size),
         "Cache-Control": "private, max-age=300",
+        "Content-Security-Policy":
+          image.MIME_TYPE === "image/svg+xml"
+            ? "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox;"
+            : "default-src 'none'",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch {

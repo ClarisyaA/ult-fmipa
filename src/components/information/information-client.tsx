@@ -28,6 +28,7 @@ interface InformationImage {
   altText: string | null;
   originalName: string;
   isCover: boolean;
+  imageFit: "cover" | "contain";
 }
 
 function formatDate(value: string | null) {
@@ -130,7 +131,13 @@ export default function InformasiClient({
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPosts.map(({ post, coverImage }, index) => (
+            {filteredPosts.map(({ post, coverImage }, index) => {
+              const imageClass =
+                coverImage?.imageFit === "contain"
+                  ? "object-contain object-center p-4"
+                  : "object-cover object-center transition-transform duration-500 group-hover:scale-105";
+
+              return (
               <Link
                 key={post.id}
                 href={`/informasi/${post.slug}`}
@@ -143,8 +150,9 @@ export default function InformasiClient({
                       src={`/api/information/images/${coverImage.id}`}
                       alt={coverImage.altText ?? coverImage.originalName}
                       fill
+                      unoptimized
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      className={imageClass}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
@@ -185,7 +193,8 @@ export default function InformasiClient({
                   </div>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

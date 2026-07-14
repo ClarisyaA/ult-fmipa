@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 
@@ -6,7 +7,6 @@ import { InformationImageGallery } from "@/components/information/information-im
 import { Button } from "@/components/ui/button";
 import { getInformationPostImages } from "@/lib/information-post-images";
 import { getPublishedInformationPostBySlug } from "@/lib/information-posts";
-import { use } from "react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -64,6 +64,15 @@ export default async function InformationDetailPage({
   }
 
   const images = await getInformationPostImages(post.id);
+  const headerImage = images.find((image) => image.isCover) ?? images[0] ?? null;
+  const bodyImages = headerImage
+    ? images.filter((image) => image.id !== headerImage.id)
+    : images;
+  const hasHeaderImage = Boolean(headerImage);
+  const headerImageClass =
+    headerImage?.imageFit === "contain"
+      ? "object-contain object-center p-6 sm:p-10"
+      : "object-cover object-center";
 
   return (
     <main className="relative bg-[#FEFDF9]">
@@ -72,7 +81,7 @@ export default async function InformationDetailPage({
       {/* ============================================================
           HERO SECTION
           ============================================================ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F7F3EA] to-[#FEFDF9] px-6 sm:px-8 lg:px-12 pt-24 pb-4 lg:pt-28 lg:pb-6">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#F7F3EA] to-[#FEFDF9] px-6 pb-4 pt-24 sm:px-8 lg:px-12 lg:pb-6 lg:pt-28">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-20"
@@ -97,27 +106,68 @@ export default async function InformationDetailPage({
             </Button>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl border-2 border-[#DDD5C3] bg-gradient-to-br from-[#EE1C25]/20 via-white/20 to-[#EE1C25]/15 shadow-lg backdrop-blur-sm">
-            <div className="h-1.5 w-full bg-gradient-to-r from-[#EE1C25] to-[#C41720]" />
+          <div
+            className={`relative overflow-hidden rounded-3xl shadow-lg ${
+              hasHeaderImage
+                ? "border border-white/25 bg-[#f7f3ea]"
+                : "border-2 border-[#DDD5C3] bg-gradient-to-br from-[#EE1C25]/20 via-white/20 to-[#EE1C25]/15 backdrop-blur-sm"
+            }`}
+          >
+            {headerImage ? (
+              <>
+                <Image
+                  src={`/api/information/images/${headerImage.id}`}
+                  alt={headerImage.altText ?? headerImage.originalName}
+                  fill
+                  priority
+                  unoptimized
+                  sizes="(max-width: 1024px) 90vw, 896px"
+                  className={headerImageClass}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-[linear-gradient(90deg,rgba(24,19,14,0.38)_0%,rgba(24,19,14,0.30)_50%,rgba(24,19,14,0.22)_100%)]"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#18130E]/25 to-transparent"
+                />
+              </>
+            ) : null}
+            <div className="relative z-10 h-1.5 w-full bg-gradient-to-r from-[#EE1C25] to-[#C41720]" />
 
-            <div className="px-8 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-14">
+            <div className="relative z-10 px-8 py-10 sm:px-12 sm:py-12 lg:px-16 lg:py-14">
               <div className="relative z-10 flex flex-col items-center text-center">
                 
                 {/* Kategori dan Tanggal */}
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {post.category ? (
-                    <span className="rounded-full bg-[#EE1C25]/10 px-2.5 py-1 text-xs font-semibold text-[#EE1C25]">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        hasHeaderImage
+                          ? "bg-[#EE1C25] text-white shadow-sm"
+                          : "bg-[#EE1C25]/10 text-[#EE1C25]"
+                      }`}
+                    >
                       {post.category}
                     </span>
                   ) : null}
-                  <span className="inline-flex items-center gap-1 text-xs text-[#A0917F]">
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs ${
+                      hasHeaderImage ? "text-white/82" : "text-[#A0917F]"
+                    }`}
+                  >
                     <CalendarDays className="size-3.5" />
                     {formatDate(post.publishedAt)}
                   </span>
                 </div>
 
                 {/* Judul Utama */}
-                <h1 className="mt-4 max-w-3xl text-[1.75rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[2.2rem] lg:text-[2.5rem]">
+                <h1
+                  className={`mt-4 max-w-3xl text-[1.75rem] font-black leading-tight tracking-tight sm:text-[2.2rem] lg:text-[2.5rem] ${
+                    hasHeaderImage ? "text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.32)]" : "text-[#18130E]"
+                  }`}
+                >
                   {post.title}
                 </h1>
 
@@ -126,7 +176,11 @@ export default async function InformationDetailPage({
 
                 {/* Ringkasan / Summary */}
                 {post.summary ? (
-                  <p className="mt-5 max-w-2xl text-base leading-7 text-[#7A6A5C]">
+                  <p
+                    className={`mt-5 max-w-2xl text-base leading-7 ${
+                      hasHeaderImage ? "text-white/86" : "text-[#7A6A5C]"
+                    }`}
+                  >
                     {post.summary}
                   </p>
                 ) : null}
@@ -139,10 +193,11 @@ export default async function InformationDetailPage({
       {/* ============================================================
           KONTEN UTAMA
           ============================================================ */}
-      <section className="mx-auto max-w-4xl px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pb-20">
+      <section className="mx-auto grid max-w-4xl gap-6 px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pb-20">
+        <InformationImageGallery images={bodyImages} />
+
         <div className="rounded-3xl border border-[#F5F0E8] bg-white p-6 shadow-sm sm:p-8">
-          <InformationImageGallery images={images} />
-          <div className="mt-6 whitespace-pre-line text-sm leading-7 text-[#3F362C] sm:text-base sm:leading-8">
+          <div className="whitespace-pre-line text-sm leading-7 text-[#3F362C] sm:text-base sm:leading-8">
             {post.content}
           </div>
         </div>

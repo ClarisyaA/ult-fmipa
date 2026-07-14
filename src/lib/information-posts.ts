@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
   normalizeInformationTitle,
   slugifyInformationTitle,
@@ -130,9 +131,20 @@ function warnMissingInformationTable() {
   }
 }
 
+function warnInformationDatabaseUnavailable(error: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("Database informasi sementara tidak tersedia.", error);
+  }
+}
+
 function handleReadError(error: unknown) {
   if (isMissingInformationTableError(error)) {
     warnMissingInformationTable();
+    return;
+  }
+
+  if (isDatabaseUnavailableError(error)) {
+    warnInformationDatabaseUnavailable(error);
     return;
   }
 
@@ -140,19 +152,28 @@ function handleReadError(error: unknown) {
 }
 
 async function hasInformationTable() {
-  const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
-    SELECT COUNT(*) AS tableCount
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'ult_information_posts'
-  `;
+  try {
+    const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
+      SELECT COUNT(*) AS tableCount
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'ult_information_posts'
+    `;
 
-  if (Number(rows[0]?.tableCount ?? 0) > 0) {
-    return true;
+    if (Number(rows[0]?.tableCount ?? 0) > 0) {
+      return true;
+    }
+
+    warnMissingInformationTable();
+    return false;
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      warnInformationDatabaseUnavailable(error);
+      return false;
+    }
+
+    throw error;
   }
-
-  warnMissingInformationTable();
-  return false;
 }
 
 async function getInformationTableCapabilities(): Promise<InformationTableCapabilities> {

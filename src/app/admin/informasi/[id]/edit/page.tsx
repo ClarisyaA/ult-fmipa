@@ -41,7 +41,7 @@ export default async function AdminEditInformasiPage({
   const images = await getInformationPostImages(post.id);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid content-start gap-6">
       <Button asChild variant="ghost" className="-ml-2 w-fit">
         <Link href="/admin/informasi">
           <ArrowLeft className="size-4" />

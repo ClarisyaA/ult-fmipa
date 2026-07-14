@@ -5,8 +5,13 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import {
+  MahasiswaCreateButton,
+  MahasiswaRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getMahasiswaRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,7 +34,18 @@ type PageProps = {
 
 export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const rows = await getMahasiswaRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getMahasiswaRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getMahasiswaRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:master:mahasiswa", error);
+  }
   const csvRows = rows.map((row) => ({
     NPM: row.npm,
     Nama: row.nama,
@@ -41,7 +58,8 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
     <AdminPageShell>
       <AdminPageHeader
         title="Daftar Mahasiswa"
-        description="Read-only data mahasiswa aktif. Kolom dibatasi untuk kebutuhan operasional layanan."
+        description="Kelola data mahasiswa aktif. Kolom dibatasi sesuai struktur tabel master."
+        action={<MahasiswaCreateButton />}
       />
 
       <AdminSectionCard
@@ -65,17 +83,15 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
           </Button>
           <CsvDownloadButton filename="data-mahasiswa.csv" rows={csvRows} />
         </form>
-        <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import disembunyikan dulu karena belum ada
-          API master data yang aman untuk validasi perubahan massal.
-        </p>
       </AdminSectionCard>
 
       <AdminSectionCard
         title="Tabel Mahasiswa"
         description={`Menampilkan maksimal ${rows.length} baris pertama sesuai filter.`}
       >
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
             title="Data mahasiswa tidak ditemukan"
             description="Tidak ada baris yang cocok dengan pencarian saat ini."
@@ -90,6 +106,7 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                   <TableHead>Program Studi</TableHead>
                   <TableHead>Angkatan</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -103,6 +120,9 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                       <AdminStatusBadge tone="neutral">
                         {row.status ?? "Aktif"}
                       </AdminStatusBadge>
+                    </TableCell>
+                    <TableCell>
+                      <MahasiswaRowActions row={row} />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -24,6 +24,7 @@ export async function GET() {
               id: coverImage.id,
               altText: coverImage.altText,
               originalName: coverImage.originalName,
+              imageFit: coverImage.imageFit,
             }
           : null,
       };

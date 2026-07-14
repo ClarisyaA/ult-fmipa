@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -17,46 +18,190 @@ const missionItems = [
   "Menjamin keterbukaan informasi dan kepastian waktu layanan.",
 ];
 
-const organization = {
-  head: {
+type ProfileOrganizationNode = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  positionTitle: string;
+  roleLabel: string | null;
+  photoUrl: string | null;
+  photoAlt: string | null;
+  colorVariant: OrgColor;
+  sortOrder: number;
+  children: ProfileOrganizationNode[];
+};
+
+type ProfileLocationData = {
+  eyebrow: string | null;
+  title: string;
+  description: string;
+  directionLabel: string;
+  directionUrl: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageFit: "cover" | "contain";
+  hours: Array<{
+    id: string;
+    dayLabel: string;
+    timeLabel: string;
+    sortOrder: number;
+  }>;
+};
+
+const fallbackOrganizationTree: ProfileOrganizationNode[] = [
+  {
+    id: "fallback-head",
+    parentId: null,
     name: "Nama Lengkap",
-    role: "Kepala ULT",
-    color: "emerald",
-    photo: "",
+    positionTitle: "KEPALA ULT",
+    roleLabel: "KEPALA ULT",
+    colorVariant: "emerald",
+    photoUrl: null,
+    photoAlt: null,
+    sortOrder: 1,
+    children: [
+      {
+        id: "fallback-operasional",
+        parentId: "fallback-head",
+        name: "Nama Lengkap",
+        positionTitle: "KOORDINATOR OPERASIONAL",
+        roleLabel: "KOORDINATOR OPERASIONAL",
+        colorVariant: "emerald",
+        photoUrl: null,
+        photoAlt: null,
+        sortOrder: 1,
+        children: [
+          {
+            id: "fallback-operasional-1",
+            parentId: "fallback-operasional",
+            name: "Staff 1",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "emerald",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 1,
+            children: [],
+          },
+          {
+            id: "fallback-operasional-2",
+            parentId: "fallback-operasional",
+            name: "Staff 2",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "emerald",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 2,
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "fallback-administrasi",
+        parentId: "fallback-head",
+        name: "Nama Lengkap",
+        positionTitle: "KOORDINATOR ADMINISTRASI",
+        roleLabel: "KOORDINATOR ADMINISTRASI",
+        colorVariant: "red",
+        photoUrl: null,
+        photoAlt: null,
+        sortOrder: 2,
+        children: [
+          {
+            id: "fallback-administrasi-1",
+            parentId: "fallback-administrasi",
+            name: "Staff 1",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "red",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 1,
+            children: [],
+          },
+          {
+            id: "fallback-administrasi-2",
+            parentId: "fallback-administrasi",
+            name: "Staff 2",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "red",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 2,
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "fallback-teknik",
+        parentId: "fallback-head",
+        name: "Nama Lengkap",
+        positionTitle: "KOORDINATOR TEKNIK",
+        roleLabel: "KOORDINATOR TEKNIK",
+        colorVariant: "amber",
+        photoUrl: null,
+        photoAlt: null,
+        sortOrder: 3,
+        children: [
+          {
+            id: "fallback-teknik-1",
+            parentId: "fallback-teknik",
+            name: "Staff 1",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "amber",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 1,
+            children: [],
+          },
+          {
+            id: "fallback-teknik-2",
+            parentId: "fallback-teknik",
+            name: "Staff 2",
+            positionTitle: "Staff",
+            roleLabel: null,
+            colorVariant: "amber",
+            photoUrl: null,
+            photoAlt: null,
+            sortOrder: 2,
+            children: [],
+          },
+        ],
+      },
+    ],
   },
-  coordinators: [
+];
+
+const fallbackLocation: ProfileLocationData = {
+  eyebrow: "Location & Access",
+  title: "Lokasi Kami",
+  description:
+    "Lokasi ULT FMIPA berada di Lt. 1 Gedung Otto Sumarwoto Fakultas MIPA (Gedung Dekanat), Jl. Ir. Sukarno Km. 21, Jatinangor, Sumedang dan berada di pusat kawasan Universitas Padjadjaran Kampus Jatinangor.",
+  directionLabel: "Petunjuk Arah",
+  directionUrl: "https://www.google.com/maps/search/?api=1&query=FMIPA%20Unpad%20Jatinangor",
+  email: "ult.fmipa@unpad.ac.id",
+  imageUrl: null,
+  imageAlt: "Denah lokasi FMIPA Unpad",
+  imageFit: "cover",
+  hours: [
     {
-      name: "Nama Lengkap",
-      role: "Koordinator Operasional",
-      color: "emerald",
-      photo: "",
-      staff: [
-        { name: "Staff 1", photo: "" },
-        { name: "Staff 2", photo: "" },
-      ],
+      id: "fallback-senin-kamis",
+      dayLabel: "Senin - Kamis",
+      timeLabel: "08.00-15.00 WIB",
+      sortOrder: 0,
     },
     {
-      name: "Nama Lengkap",
-      role: "Koordinator Administrasi",
-      color: "red",
-      photo: "",
-      staff: [
-        { name: "Staff 1", photo: "" },
-        { name: "Staff 2", photo: "" },
-      ],
-    },
-    {
-      name: "Nama Lengkap",
-      role: "Koordinator Teknik",
-      color: "amber",
-      photo: "",
-      staff: [
-        { name: "Staff 1", photo: "" },
-        { name: "Staff 2", photo: "" },
-      ],
+      id: "fallback-jumat",
+      dayLabel: "Jumat (Daring)",
+      timeLabel: "08.00-16.00 WIB",
+      sortOrder: 1,
     },
   ],
-} as const;
+};
 
 const orgColorClass = {
   emerald: {
@@ -82,10 +227,6 @@ const orgColorClass = {
 const orgLineClass = "bg-[#d2b16d]";
 const baseOrgRevealClass = "opacity-0";
 const animatedOrgRevealClass = "[animation:org-reveal_650ms_ease-out_forwards]";
-const orgLineRevealClass =
-  "opacity-0";
-const animatedOrgLineRevealClass =
-  "[animation:org-line-reveal_420ms_ease-out_forwards]";
 
 type OrgColor = keyof typeof orgColorClass;
 
@@ -112,9 +253,12 @@ function OrgAvatar({
     >
       <div className="h-full w-full overflow-hidden rounded-full bg-neutral-100">
         {photo ? (
-          <img
+          <Image
             src={photo}
             alt={name}
+            fill
+            sizes="112px"
+            unoptimized
             className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
           />
         ) : (
@@ -130,9 +274,115 @@ function OrgAvatar({
   );
 }
 
+function normalizeOrganizationNode(node: ProfileOrganizationNode): ProfileOrganizationNode {
+  const colorVariant = orgColorClass[node.colorVariant] ? node.colorVariant : "emerald";
+
+  return {
+    ...node,
+    colorVariant,
+    children: (node.children ?? []).map(normalizeOrganizationNode),
+  };
+}
+
+function OrgNodeCard({
+  node,
+  size,
+  revealClass,
+  delay,
+}: {
+  node: ProfileOrganizationNode;
+  size: "sm" | "md" | "lg";
+  revealClass: string;
+  delay: number;
+}) {
+  const color = orgColorClass[node.colorVariant];
+
+  return (
+    <div
+      className={`relative z-10 text-center ${revealClass}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <OrgAvatar
+        name={node.name}
+        photo={node.photoUrl ?? undefined}
+        color={node.colorVariant}
+        size={size}
+      />
+      <h3 className="mt-3 text-xs font-black text-neutral-900 sm:text-sm">
+        {node.name}
+      </h3>
+      <span
+        className={`mt-1 inline-flex rounded-sm border px-3 py-1 text-[9px] font-black uppercase tracking-normal ${color.bg} ${color.text} ${color.border}`}
+      >
+        {node.roleLabel ?? node.positionTitle}
+      </span>
+    </div>
+  );
+}
+
+function OrganizationSubtree({
+  node,
+  revealClass,
+  linesVisible,
+  depth = 0,
+  index = 0,
+}: {
+  node: ProfileOrganizationNode;
+  revealClass: string;
+  linesVisible: boolean;
+  depth?: number;
+  index?: number;
+}) {
+  const branchDelay = 1080 + index * 180 + depth * 220;
+  const hasChildren = node.children.length > 0;
+
+  return (
+    <div className="relative flex min-w-max flex-col items-center">
+      <OrgNodeCard
+        node={node}
+        size={depth === 0 ? "md" : "sm"}
+        revealClass={revealClass}
+        delay={branchDelay + 180}
+      />
+
+      {hasChildren ? (
+        <>
+          <div
+            className={`org-parent-stem mt-4 h-7 w-px ${orgLineClass}`}
+            data-visible={linesVisible ? "true" : "false"}
+            style={{ animationDelay: `${branchDelay + 440}ms` }}
+          />
+          <ul
+            className="org-tree-children"
+            data-visible={linesVisible ? "true" : "false"}
+            style={{ "--org-line-delay": `${branchDelay + 600}ms` } as CSSProperties}
+          >
+            {node.children.map((child, childIndex) => (
+              <li key={child.id} className="org-tree-item">
+                <span aria-hidden="true" className="org-item-stem" />
+                <OrganizationSubtree
+                  node={child}
+                  revealClass={revealClass}
+                  linesVisible={linesVisible}
+                  depth={depth + 1}
+                  index={childIndex}
+                />
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ProfilPage() {
   const organizationRef = useRef<HTMLElement | null>(null);
   const [isOrganizationVisible, setIsOrganizationVisible] = useState(false);
+  const [organizationTree, setOrganizationTree] = useState<ProfileOrganizationNode[]>(
+    fallbackOrganizationTree
+  );
+  const [location, setLocation] = useState<ProfileLocationData>(fallbackLocation);
 
   useEffect(() => {
     const section = organizationRef.current;
@@ -159,12 +409,64 @@ export default function ProfilPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfileContent() {
+      try {
+        const [organizationResponse, locationResponse] = await Promise.all([
+          fetch("/api/profile/organization", { cache: "no-store" }),
+          fetch("/api/profile/location", { cache: "no-store" }),
+        ]);
+
+        if (organizationResponse.ok) {
+          const body = (await organizationResponse.json().catch(() => null)) as {
+            data?: ProfileOrganizationNode[];
+          } | null;
+
+          if (isMounted && body?.data && body.data.length > 0) {
+            setOrganizationTree(body.data.map(normalizeOrganizationNode));
+          }
+        }
+
+        if (locationResponse.ok) {
+          const body = (await locationResponse.json().catch(() => null)) as {
+            data?: ProfileLocationData | null;
+          } | null;
+
+          if (isMounted && body?.data) {
+            setLocation({
+              ...fallbackLocation,
+              ...body.data,
+              hours: body.data.hours?.length ? body.data.hours : fallbackLocation.hours,
+              imageFit: body.data.imageFit === "contain" ? "contain" : "cover",
+            });
+          }
+        }
+      } catch {
+        // Keep static fallback if public CMS APIs are unavailable.
+      }
+    }
+
+    loadProfileContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const orgRevealClass = isOrganizationVisible
     ? `${baseOrgRevealClass} ${animatedOrgRevealClass}`
     : baseOrgRevealClass;
-  const orgLineAnimatedClass = isOrganizationVisible
-    ? `${orgLineRevealClass} ${animatedOrgLineRevealClass}`
-    : orgLineRevealClass;
+  const rootOrganization = organizationTree[0] ?? fallbackOrganizationTree[0];
+  const locationImageClass =
+    location.imageFit === "contain"
+      ? "h-full w-full bg-[#f7f3ea] object-contain object-center p-4"
+      : "h-full w-full object-cover object-center";
+  const mobileLocationImageClass =
+    location.imageFit === "contain"
+      ? "h-full w-full bg-[#f7f3ea] object-contain object-center p-4"
+      : "h-full w-full object-cover object-center";
 
   return (
     <>
@@ -198,9 +500,13 @@ export default function ProfilPage() {
 
       <section className="relative flex min-h-[calc(100vh+20px)] items-center overflow-hidden bg-neutral-950">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/gedung-fmipa.svg"
             alt="Gedung FMIPA Unpad"
+            fill
+            priority
+            unoptimized
+            sizes="100vw"
             className="h-full w-full object-cover [animation:hero-image-reveal_1200ms_cubic-bezier(0.16,1,0.3,1)_forwards]"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/65 to-black/10" />
@@ -262,11 +568,16 @@ export default function ProfilPage() {
             <div className="absolute -left-4 -top-4 hidden h-24 w-24 rounded-2xl border border-red-200/70 sm:block" />
 
             <div className="group relative overflow-hidden rounded-[1.5rem] bg-white p-2 shadow-2xl shadow-black/10 transition duration-500 hover:-translate-y-1 hover:shadow-black/15">
-              <img
-                src="/sbak.svg"
-                alt="Ruang layanan administrasi"
-                className="aspect-[16/10] w-full rounded-[1rem] object-cover transition duration-700 group-hover:scale-105"
-              />
+              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[1rem]">
+                <Image
+                  src="/sbak.svg"
+                  alt="Ruang layanan administrasi"
+                  fill
+                  unoptimized
+                  sizes="(max-width: 1024px) 90vw, 580px"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
+              </div>
               <div className="absolute inset-2 rounded-[1rem] bg-gradient-to-t from-black/35 via-transparent to-transparent" />
             </div>
 
@@ -424,6 +735,95 @@ export default function ProfilPage() {
                 opacity: 1;
               }
             }
+
+            .org-chart-scroll {
+              overflow-x: auto;
+              overflow-y: visible;
+              overscroll-behavior-x: contain;
+              width: 100%;
+            }
+
+            .org-chart-canvas {
+              margin-left: auto;
+              margin-right: auto;
+              width: max-content;
+            }
+
+            .org-tree-children {
+              align-items: flex-start;
+              display: flex;
+              justify-content: center;
+              list-style: none;
+              margin: 0;
+              padding: 0;
+              width: max-content;
+            }
+
+            .org-tree-item {
+              align-items: flex-start;
+              display: flex;
+              justify-content: center;
+              min-width: 9.5rem;
+              padding: 2rem 1.35rem 0;
+              position: relative;
+            }
+
+            .org-tree-item::before,
+            .org-tree-item::after {
+              background: #d2b16d;
+              content: "";
+              height: 1px;
+              opacity: 0;
+              position: absolute;
+              top: 0;
+              width: 50%;
+            }
+
+            .org-tree-item::before {
+              right: 50%;
+            }
+
+            .org-tree-item::after {
+              left: 50%;
+            }
+
+            .org-tree-item:first-child::before,
+            .org-tree-item:last-child::after,
+            .org-tree-item:only-child::before,
+            .org-tree-item:only-child::after {
+              display: none;
+            }
+
+            .org-item-stem {
+              background: #d2b16d;
+              height: 2rem;
+              left: 50%;
+              opacity: 0;
+              position: absolute;
+              top: 0;
+              transform: translateX(-0.5px);
+              width: 1px;
+            }
+
+            .org-parent-stem {
+              opacity: 0;
+            }
+
+            .org-tree-children[data-visible="true"] > .org-tree-item::before,
+            .org-tree-children[data-visible="true"] > .org-tree-item::after,
+            .org-tree-children[data-visible="true"] > .org-tree-item > .org-item-stem,
+            .org-parent-stem[data-visible="true"] {
+              animation: org-line-reveal 420ms ease-out forwards;
+              animation-delay: var(--org-line-delay, 0ms);
+            }
+
+            @media (max-width: 640px) {
+              .org-tree-item {
+                min-width: 8.5rem;
+                padding-left: 0.85rem;
+                padding-right: 0.85rem;
+              }
+            }
           `}
         </style>
         <div className="pointer-events-none absolute left-0 top-0 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-200/45" />
@@ -446,114 +846,41 @@ export default function ProfilPage() {
             </p>
           </Reveal>
 
-          <div className="relative mx-auto mt-10 max-w-6xl lg:mt-14">
-            <div className="flex flex-col items-center">
-              <div
-                className={`relative z-10 text-center ${orgRevealClass}`}
-                style={{ animationDelay: "120ms" }}
-              >
-                <OrgAvatar
-                  name={organization.head.name}
-                  photo={organization.head.photo}
-                  color={organization.head.color}
+          <div className="org-chart-scroll relative mx-auto mt-10 max-w-6xl pb-4 lg:mt-14">
+            <div className="org-chart-canvas flex min-w-max flex-col items-center px-8 sm:px-10 md:px-12">
+                <OrgNodeCard
+                  node={rootOrganization}
                   size="lg"
+                  revealClass={orgRevealClass}
+                  delay={120}
                 />
-                <h3 className="mt-3 text-sm font-black text-neutral-900">
-                  {organization.head.name}
-                </h3>
-                <span className="mt-1 inline-flex rounded-sm border border-emerald-500 bg-emerald-50 px-4 py-1 text-[10px] font-black uppercase tracking-normal text-emerald-700">
-                  {organization.head.role}
-                </span>
-              </div>
 
-              <div
-                className={`hidden h-10 w-px md:block ${orgLineClass} ${orgLineAnimatedClass}`}
-                style={{ animationDelay: "520ms" }}
-              />
-              <div
-                className={`hidden h-px w-[72%] md:block ${orgLineClass} ${orgLineAnimatedClass}`}
-                style={{ animationDelay: "820ms" }}
-              />
-
-              <div className="mt-12 grid w-full gap-16 md:mt-0 md:grid-cols-3 md:gap-8 lg:gap-14">
-                {organization.coordinators.map((coordinator, coordinatorIndex) => {
-                  const color = orgColorClass[coordinator.color];
-                  const branchDelay = 1080 + coordinatorIndex * 180;
-
-                  return (
+                {rootOrganization.children.length > 0 ? (
+                  <>
                     <div
-                      key={coordinator.role}
-                      className="relative flex flex-col items-center"
+                      className={`org-parent-stem mt-5 h-8 w-px ${orgLineClass}`}
+                      data-visible={isOrganizationVisible ? "true" : "false"}
+                      style={{ animationDelay: "520ms" }}
+                    />
+                    <ul
+                      className="org-tree-children"
+                      data-visible={isOrganizationVisible ? "true" : "false"}
+                      style={{ "--org-line-delay": "820ms" } as CSSProperties}
                     >
-                      <div
-                        className={`hidden h-10 w-px md:block ${orgLineClass} ${orgLineAnimatedClass}`}
-                        style={{ animationDelay: `${branchDelay}ms` }}
-                      />
-
-                      <div
-                        className={`relative z-10 text-center ${orgRevealClass}`}
-                        style={{ animationDelay: `${branchDelay + 180}ms` }}
-                      >
-                        <OrgAvatar
-                          name={coordinator.name}
-                          photo={coordinator.photo}
-                          color={coordinator.color}
-                          size="md"
-                        />
-                        <h3 className="mt-3 text-xs font-black text-neutral-900 sm:text-sm">
-                          {coordinator.name}
-                        </h3>
-                        <span
-                          className={`mt-1 inline-flex rounded-sm border px-3 py-1 text-[9px] font-black uppercase tracking-normal ${color.bg} ${color.text} ${color.border}`}
-                        >
-                          {coordinator.role}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`mt-6 h-8 w-px ${orgLineClass} ${orgLineAnimatedClass}`}
-                        style={{ animationDelay: `${branchDelay + 440}ms` }}
-                      />
-                      <div
-                        className={`hidden h-px w-2/3 sm:block ${orgLineClass} ${orgLineAnimatedClass}`}
-                        style={{ animationDelay: `${branchDelay + 600}ms` }}
-                      />
-
-                      <div className="grid w-full grid-cols-2 gap-6 pt-6">
-                        {coordinator.staff.map((staff, staffIndex) => (
-                          <div
-                            key={staff.name}
-                            className={`relative text-center ${orgRevealClass}`}
-                            style={{
-                              animationDelay: `${
-                                branchDelay + 780 + staffIndex * 140
-                              }ms`,
-                            }}
-                          >
-                            <div
-                              className={`absolute left-1/2 top-[-1.5rem] hidden h-6 w-px -translate-x-1/2 sm:block ${orgLineClass} ${orgLineAnimatedClass}`}
-                              style={{
-                                animationDelay: `${
-                                  branchDelay + 680 + staffIndex * 120
-                                }ms`,
-                              }}
-                            />
-                            <OrgAvatar
-                              name={staff.name}
-                              photo={staff.photo}
-                              color={coordinator.color}
-                              size="sm"
-                            />
-                            <p className="mt-3 text-xs font-black text-neutral-900">
-                              {staff.name}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      {rootOrganization.children.map((child, childIndex) => (
+                        <li key={child.id} className="org-tree-item">
+                          <span aria-hidden="true" className="org-item-stem" />
+                          <OrganizationSubtree
+                            node={child}
+                            revealClass={orgRevealClass}
+                            linesVisible={isOrganizationVisible}
+                            index={childIndex}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
             </div>
           </div>
         </div>
@@ -562,10 +889,13 @@ export default function ProfilPage() {
       <section className="relative z-40 overflow-hidden bg-neutral-50 px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
         <div className="relative mx-auto min-h-[560px] max-w-7xl">
           <Reveal className="absolute inset-y-8 right-0 hidden w-[68%] overflow-hidden rounded-[2rem] border-4 border-white bg-neutral-200 shadow-2xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:shadow-black/25 lg:block">
-            <img
-              src="/denah-unpad.svg"
-              alt="Denah lokasi FMIPA Unpad"
-              className="h-full w-full object-cover transition duration-700 hover:scale-105"
+            <Image
+              src={location.imageUrl ?? "/denah-unpad.svg"}
+              alt={location.imageAlt ?? location.title}
+              fill
+              unoptimized
+              sizes="(max-width: 1280px) 68vw, 870px"
+              className={`${locationImageClass} transition duration-700 hover:scale-105`}
             />
             <div className="absolute inset-0 bg-black/20" />
           </Reveal>
@@ -576,64 +906,66 @@ export default function ProfilPage() {
               delay={120}
             >
               <p className="text-[10px] font-black uppercase tracking-[0.35em] text-red-600">
-                Location & Access
+                {location.eyebrow ?? "Location & Access"}
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-normal text-neutral-950 sm:text-4xl">
-                Lokasi Kami
+                {location.title}
               </h2>
               <p className="mt-7 max-w-md text-sm leading-7 text-neutral-500">
-                Lokasi ULT FMIPA berada di Lt. 1 Gedung Otto Sumarwoto Fakultas
-                MIPA (Gedung Dekanat), Jl. Ir. Sukarno Km. 21, Jatinangor,
-                Sumedang dan berada di pusat kawasan Universitas Padjadjaran
-                Kampus Jatinangor.
+                {location.description}
               </p>
 
               <div className="mt-10 space-y-5">
-                <div className="flex flex-col gap-3 rounded-2xl bg-white px-5 py-4 shadow-lg shadow-black/5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full">
-                  <span className="text-xs font-black text-neutral-900">
-                    Senin - Kamis
-                  </span>
-                  <span className="w-fit rounded-full bg-red-50 px-4 py-2 text-[10px] font-black text-red-600">
-                    08.00-15.00 WIB
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-3 rounded-2xl bg-white px-5 py-4 shadow-lg shadow-black/5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full">
-                  <span className="text-xs font-black text-neutral-900">
-                    Jumat (Daring)
-                  </span>
-                  <span className="w-fit rounded-full bg-red-50 px-4 py-2 text-[10px] font-black text-red-600">
-                    08.00-16.00 WIB
-                  </span>
-                </div>
+                {location.hours.map((hour) => (
+                  <div
+                    key={hour.id}
+                    className="flex flex-col gap-3 rounded-2xl bg-white px-5 py-4 shadow-lg shadow-black/5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full"
+                  >
+                    <span className="text-xs font-black text-neutral-900">
+                      {hour.dayLabel}
+                    </span>
+                    <span className="w-fit rounded-full bg-red-50 px-4 py-2 text-[10px] font-black text-red-600">
+                      {hour.timeLabel}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-10 overflow-hidden rounded-3xl border-4 border-white bg-neutral-200 shadow-xl shadow-black/10 lg:hidden">
-                <img
-                  src="/denah-unpad.svg"
-                  alt="Denah lokasi FMIPA Unpad"
-                  className="aspect-[4/3] w-full object-cover grayscale"
-                />
+                <div className="relative aspect-[4/3] w-full">
+                  <Image
+                    src={location.imageUrl ?? "/denah-unpad.svg"}
+                    alt={location.imageAlt ?? location.title}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 1024px) 90vw, 520px"
+                    className={`${mobileLocationImageClass} grayscale`}
+                  />
+                </div>
               </div>
 
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <a
-                  href="https://www.google.com/maps/search/?api=1&query=FMIPA%20Unpad%20Jatinangor"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-7 py-4 text-xs font-black text-white shadow-lg shadow-red-600/25 transition duration-300 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-red-600/35 sm:w-auto"
-                >
-                  <MapPin className="size-4" />
-                  Petunjuk Arah
-                </a>
+                {location.directionUrl ? (
+                  <a
+                    href={location.directionUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-7 py-4 text-xs font-black text-white shadow-lg shadow-red-600/25 transition duration-300 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-red-600/35 sm:w-auto"
+                  >
+                    <MapPin className="size-4" />
+                    {location.directionLabel}
+                  </a>
+                ) : null}
 
-                <a
-                  href="mailto:ult.fmipa@unpad.ac.id"
-                  className="inline-flex items-center gap-2 text-xs font-black text-neutral-950 transition hover:text-red-600"
-                >
-                  ult.fmipa@unpad.ac.id
-                  <Mail className="size-4" />
-                </a>
+                {location.email ? (
+                  <a
+                    href={`mailto:${location.email}`}
+                    className="inline-flex items-center gap-2 text-xs font-black text-neutral-950 transition hover:text-red-600"
+                  >
+                    {location.email}
+                    <Mail className="size-4" />
+                  </a>
+                ) : null}
               </div>
             </Reveal>
           </div>

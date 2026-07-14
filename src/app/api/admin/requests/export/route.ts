@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   getServiceRequestList,
   parseRequestStatus,
@@ -124,10 +125,10 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Failed to export admin requests", error);
-    return NextResponse.json(
-      { error: "Data pengajuan gagal diekspor." },
-      { status: 500 },
+    return jsonApiError(
+      error,
+      "api:admin:requests:export:get",
+      "Data pengajuan gagal diekspor.",
     );
   }
 }

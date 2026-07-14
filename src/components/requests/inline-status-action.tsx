@@ -18,13 +18,19 @@ type InlineStatusActionProps = {
   compact?: boolean;
 };
 
+type ForwardRequestStatusAction = Extract<
+  RequestStatusAction,
+  "process" | "complete" | "deliver"
+>;
+
 type RequestStatusActionButtonProps = InlineStatusActionProps & {
-  action: RequestStatusAction;
+  action: ForwardRequestStatusAction;
   label?: string;
+  disabledTitle?: string;
 };
 
 type ActionConfig = {
-  action: RequestStatusAction;
+  action: ForwardRequestStatusAction;
   label: string;
   activeStatuses: RequestStatus[];
   confirmation: string;
@@ -59,14 +65,14 @@ const nextStatusByAction = {
   process: "inProgress",
   complete: "completed",
   deliver: "delivered",
-} satisfies Record<RequestStatusAction, RequestStatus>;
+} satisfies Record<ForwardRequestStatusAction, RequestStatus>;
 
-function getActionConfig(action: RequestStatusAction) {
+function getActionConfig(action: ForwardRequestStatusAction) {
   return actions.find((config) => config.action === action);
 }
 
 function getDisabledTitle(
-  action: RequestStatusAction,
+  action: ForwardRequestStatusAction,
   status: RequestStatus,
   supported: boolean,
 ) {
@@ -108,7 +114,7 @@ export function InlineStatusAction({
   const [optimisticStatus, setOptimisticStatus] =
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
-    useState<RequestStatusAction | null>(null);
+    useState<ForwardRequestStatusAction | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const currentStatus = optimisticStatus ?? status;
@@ -264,12 +270,13 @@ export function RequestStatusActionButton({
   compact = false,
   action,
   label,
+  disabledTitle,
 }: RequestStatusActionButtonProps) {
   const router = useRouter();
   const [optimisticStatus, setOptimisticStatus] =
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
-    useState<RequestStatusAction | null>(null);
+    useState<ForwardRequestStatusAction | null>(null);
   const currentStatus = optimisticStatus ?? status;
   const config = getActionConfig(action);
 
@@ -280,6 +287,8 @@ export function RequestStatusActionButton({
   const enabled = supported && config.activeStatuses.includes(currentStatus);
   const title = enabled
     ? config.confirmation
+    : disabledTitle && !supported
+      ? disabledTitle
     : getDisabledTitle(config.action, currentStatus, supported);
 
   async function handleClick() {
@@ -324,10 +333,10 @@ export function RequestStatusActionButton({
       className={
         enabled
           ? compact
-            ? "h-7 rounded-md bg-[#111111] px-2.5 text-[11px] text-white hover:bg-[#252525]"
+            ? "h-7 w-full rounded-md bg-[#111111] px-1.5 text-[10px] text-white hover:bg-[#252525]"
             : "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
           : compact
-            ? "h-7 rounded-md border-[#e2dee8] bg-white px-2.5 text-[11px] text-[#b7b2bd]"
+            ? "h-7 w-full rounded-md border-[#e2dee8] bg-white px-1.5 text-[10px] text-[#b7b2bd]"
             : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
       }
       onClick={handleClick}

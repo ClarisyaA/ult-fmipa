@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { getCurrentUser } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit-log";
 import {
   RequestStatusUpdateError,
   updateRequestStatus,
 } from "@/lib/legacy-request-status";
+import { jsonApiError } from "@/lib/error-utils";
 import type { UpdateRequestStatusInput } from "@/types/request-action";
 
 export async function PATCH(
@@ -13,11 +16,17 @@ export async function PATCH(
   try {
     const { serviceSlug, id } = await params;
     const body = (await request.json()) as UpdateRequestStatusInput;
+    const user = await getCurrentUser();
     const updatedRequestDetail = await updateRequestStatus(
       serviceSlug,
       id,
       body
     );
+    await writeAuditLog({
+      actor: user,
+      request,
+      action: `Pengajuan: ${body.action} pengajuan layanan: ${serviceSlug} #${id}`,
+    });
 
     return NextResponse.json({
       data: updatedRequestDetail,
@@ -33,11 +42,10 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(
-      {
-        error: "Status pengajuan gagal diperbarui.",
-      },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:requests:status:patch",
+      "Status pengajuan gagal diperbarui."
     );
   }
 }

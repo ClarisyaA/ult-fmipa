@@ -8,8 +8,18 @@ import { ImageIcon, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { InformationPostImage } from "@/lib/information-post-images";
+import type {
+  InformationImageFit,
+  InformationPostImage,
+} from "@/lib/information-post-images";
 import type {
   InformationPost,
   InformationPostStatus,
@@ -26,15 +36,30 @@ type InformationPostFormProps = {
 type PendingImage = {
   file: File;
   previewUrl: string;
+  imageFit: InformationImageFit;
 };
 
 const maxImages = 5;
 const maxImageSize = 2 * 1024 * 1024;
-const allowedImageTypes = new Set(["image/webp", "image/png", "image/jpeg"]);
-const allowedImageExtensions = [".webp", ".png", ".jpg", ".jpeg"];
+const allowedImageTypes = new Set([
+  "image/webp",
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+]);
+const allowedImageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".svg"];
 
 function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getPreviewImageClass(imageFit: InformationImageFit) {
+  const baseClass =
+    "aspect-video w-full rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-center";
+
+  return imageFit === "contain"
+    ? `${baseClass} object-contain p-2`
+    : `${baseClass} object-cover`;
 }
 
 function toDateTimeLocal(value: string | null | undefined) {
@@ -90,6 +115,13 @@ export function InformationPostForm({
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>(() =>
     Object.fromEntries(initialImages.map((image) => [image.id, image.altText ?? ""]))
   );
+  const [imageFitDrafts, setImageFitDrafts] = useState<
+    Record<string, InformationImageFit>
+  >(() =>
+    Object.fromEntries(
+      initialImages.map((image) => [image.id, image.imageFit ?? "cover"])
+    )
+  );
   const linkPreview = slugifyInformationTitle(title);
   const totalImages = existingImages.length + pendingImages.length;
 
@@ -124,7 +156,7 @@ export function InformationPostForm({
 
     for (const file of files) {
       if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
-        setError(`Format gambar ${file.name} tidak didukung.`);
+        setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
         validImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
         return;
       }
@@ -138,6 +170,10 @@ export function InformationPostForm({
       validImages.push({
         file,
         previewUrl: URL.createObjectURL(file),
+        imageFit:
+          file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")
+            ? "contain"
+            : "cover",
       });
     }
 
@@ -154,6 +190,14 @@ export function InformationPostForm({
 
       return current.filter((_, currentIndex) => currentIndex !== index);
     });
+  }
+
+  function updatePendingImageFit(index: number, imageFit: InformationImageFit) {
+    setPendingImages((current) =>
+      current.map((image, currentIndex) =>
+        currentIndex === index ? { ...image, imageFit } : image
+      )
+    );
   }
 
   async function refreshAfterImageAction(message: string) {
@@ -221,6 +265,7 @@ export function InformationPostForm({
         },
         body: JSON.stringify({
           altText: altDrafts[imageId] ?? "",
+          imageFit: imageFitDrafts[imageId] ?? "cover",
         }),
       },
       () =>
@@ -230,6 +275,7 @@ export function InformationPostForm({
               ? {
                   ...image,
                   altText: altDrafts[imageId] ?? "",
+                  imageFit: imageFitDrafts[imageId] ?? "cover",
                 }
               : image
           )
@@ -258,7 +304,10 @@ export function InformationPostForm({
       formData.append("isActive", String(isActive));
       formData.append("displayStartAt", displayStartAt);
       formData.append("displayEndAt", displayEndAt);
-      pendingImages.forEach(({ file }) => formData.append("images", file));
+      pendingImages.forEach(({ file, imageFit }) => {
+        formData.append("images", file);
+        formData.append("imageFits", imageFit);
+      });
 
       const response = await fetch(endpoint, {
         method: mode === "edit" ? "PATCH" : "POST",
@@ -450,14 +499,14 @@ export function InformationPostForm({
             name="images"
             type="file"
             multiple
-            accept=".webp,.png,.jpg,.jpeg,image/webp,image/png,image/jpeg"
+            accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
             className="min-h-10 rounded-md border-[#e1d8ca] text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[#0f3d2e] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
             onChange={handleImageSelection}
             disabled={totalImages >= maxImages}
           />
           <p className="text-xs leading-relaxed text-[#7a7166]">
-            {totalImages} dari 5 gambar dipilih. Format WEBP, PNG, JPG, atau
-            JPEG. Maksimal 2 MB per gambar.
+            {totalImages} dari 5 gambar dipilih. Format WEBP, PNG, JPG, JPEG,
+            atau SVG. Maksimal 2 MB per gambar.
           </p>
         </div>
 
@@ -477,7 +526,8 @@ export function InformationPostForm({
                     alt={image.altText ?? image.originalName}
                     width={640}
                     height={360}
-                    className="aspect-video w-full rounded-md border border-[#edf0e9] object-cover"
+                    unoptimized
+                    className={getPreviewImageClass(imageFitDrafts[image.id] ?? "cover")}
                   />
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -514,6 +564,39 @@ export function InformationPostForm({
                         }))
                       }
                     />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor={`image-fit-${image.id}`}
+                      className="text-xs font-semibold text-[#39433c]"
+                    >
+                      Tampilan Gambar
+                    </Label>
+                    <Select
+                      value={imageFitDrafts[image.id] ?? "cover"}
+                      onValueChange={(value) =>
+                        setImageFitDrafts((current) => ({
+                          ...current,
+                          [image.id]: value as InformationImageFit,
+                        }))
+                      }
+                    >
+                      <SelectTrigger
+                        id={`image-fit-${image.id}`}
+                        className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
+                      >
+                        <SelectValue placeholder="Pilih tampilan gambar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cover">Penuhi Card</SelectItem>
+                        <SelectItem value="contain">Tampilkan Utuh</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs leading-relaxed text-[#7a7166]">
+                      Gunakan Penuhi Card untuk foto biasa. Gunakan Tampilkan Utuh
+                      untuk logo, SVG, poster, atau gambar yang tidak boleh
+                      terpotong.
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -569,8 +652,38 @@ export function InformationPostForm({
                     width={640}
                     height={360}
                     unoptimized
-                    className="aspect-video w-full rounded-md border border-[#edf0e9] object-cover"
+                    className={getPreviewImageClass(image.imageFit)}
                   />
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor={`pending-image-fit-${index}`}
+                      className="text-xs font-semibold text-[#39433c]"
+                    >
+                      Tampilan Gambar
+                    </Label>
+                    <Select
+                      value={image.imageFit}
+                      onValueChange={(value) =>
+                        updatePendingImageFit(index, value as InformationImageFit)
+                      }
+                    >
+                      <SelectTrigger
+                        id={`pending-image-fit-${index}`}
+                        className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
+                      >
+                        <SelectValue placeholder="Pilih tampilan gambar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cover">Penuhi Card</SelectItem>
+                        <SelectItem value="contain">Tampilkan Utuh</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs leading-relaxed text-[#7a7166]">
+                      Gunakan Penuhi Card untuk foto biasa. Gunakan Tampilkan Utuh
+                      untuk logo, SVG, poster, atau gambar yang tidak boleh
+                      terpotong.
+                    </p>
+                  </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[#303b34]">

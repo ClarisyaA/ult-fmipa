@@ -117,6 +117,9 @@ const validActions = new Set<RequestStatusAction>([
   "process",
   "complete",
   "deliver",
+  "cancelProcess",
+  "cancelComplete",
+  "cancelDeliver",
 ]);
 
 export class RequestStatusUpdateError extends Error {
@@ -161,11 +164,29 @@ async function updateNormalWorkflow(
   id: string
 ) {
   const table = Prisma.raw(quoteIdentifier(sourceTable));
+  const deliveryColumn = Prisma.raw(quoteIdentifier(metadata.deliveryColumn));
+  const deliveryByColumn = Prisma.raw(quoteIdentifier(metadata.deliveryByColumn));
 
   if (action === "process") {
     await prisma.$executeRaw`
       UPDATE ${table}
       SET \`PROSES_TGL\` = NOW(), \`PROSES_STAF\` = ${staffName}
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "cancelProcess") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET
+        \`PROSES_TGL\` = NULL,
+        \`PROSES_STAF\` = NULL,
+        \`SELESAI_TGL\` = NULL,
+        \`SELESAI_STAF\` = NULL,
+        ${deliveryColumn} = NULL,
+        ${deliveryByColumn} = NULL
       WHERE \`ID\` = ${id}
       LIMIT 1
     `;
@@ -182,8 +203,29 @@ async function updateNormalWorkflow(
     return;
   }
 
-  const deliveryColumn = Prisma.raw(quoteIdentifier(metadata.deliveryColumn));
-  const deliveryByColumn = Prisma.raw(quoteIdentifier(metadata.deliveryByColumn));
+  if (action === "cancelComplete") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET
+        \`SELESAI_TGL\` = NULL,
+        \`SELESAI_STAF\` = NULL,
+        ${deliveryColumn} = NULL,
+        ${deliveryByColumn} = NULL
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "cancelDeliver") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET ${deliveryColumn} = NULL, ${deliveryByColumn} = NULL
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
 
   await prisma.$executeRaw`
     UPDATE ${table}

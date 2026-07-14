@@ -18,7 +18,11 @@ import {
 } from "@/lib/legacy-services";
 import { getCurrentUser } from "@/lib/auth";
 import { isSubmissionSupported } from "@/lib/legacy-request-submit";
-import { getLatestSikRequestForStudent, sikServiceSlug } from "@/lib/sik-requests";
+import {
+  getLatestSikRequestForStudentOrNull,
+  isSikDatabaseUnavailableError,
+  sikServiceSlug,
+} from "@/lib/sik-requests";
 import { getStudentRequestDetail } from "@/lib/student-request-history";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +62,7 @@ export default async function SubmitServiceRequestPage({
   const supported = isSubmissionSupported(service.slug);
   const latestSikRecord =
     service.slug === sikServiceSlug && user.npm
-      ? await getLatestSikRequestForStudent(user.npm)
+      ? await getLatestSikRequestForStudentOrNull(user.npm)
       : null;
   const latestSikDetail =
     service.slug === sikServiceSlug && user.npm && latestSikRecord
@@ -66,7 +70,16 @@ export default async function SubmitServiceRequestPage({
           user.npm,
           service.slug,
           String(latestSikRecord.ID)
-        )
+        ).catch((error) => {
+          if (isSikDatabaseUnavailableError(error)) {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("Database layanan SIK sementara tidak tersedia.", error);
+            }
+            return null;
+          }
+
+          throw error;
+        })
       : null;
 
   return (

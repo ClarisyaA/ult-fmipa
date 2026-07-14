@@ -20,20 +20,17 @@ export function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState(0);
-  const [touchCurrentX, setTouchCurrentX] = useState(0);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
       if (sheetRef.current && sheetRef.current.contains(e.target as Node)) {
         setTouchStartX(e.touches[0].clientX);
-        setTouchCurrentX(e.touches[0].clientX);
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (touchStartX > 0) {
-        setTouchCurrentX(e.touches[0].clientX);
         const deltaX = touchStartX - e.touches[0].clientX;
         if (deltaX > 50 && isOpen) {
           setIsOpen(false);
@@ -44,7 +41,6 @@ export function Navbar() {
 
     const handleTouchEnd = () => {
       setTouchStartX(0);
-      setTouchCurrentX(0);
     };
 
     document.addEventListener('touchstart', handleTouchStart);

@@ -23,12 +23,6 @@ const roleLabels = {
   student: "Mahasiswa",
 } as const;
 
-const roleBadgeStyles = {
-  admin: "bg-[#ff2d28]/10 text-[#c71410]",
-  staff: "bg-amber-50 text-amber-700",
-  student: "bg-neutral-100 text-neutral-600",
-} as const;
-
 interface UserMenuProps {
   variant?: "desktop" | "mobile";
   onNavigate?: () => void;
@@ -71,7 +65,6 @@ export function UserMenu({ variant = "desktop", onNavigate }: UserMenuProps) {
 
   const role = (session.user.role as keyof typeof roleLabels) ?? "student";
   const roleLabel = roleLabels[role] ?? "User";
-  const badgeStyle = roleBadgeStyles[role] ?? roleBadgeStyles.student;
   const displayName = session.user.name ?? session.user.email ?? "User";
   const initial = displayName.charAt(0).toUpperCase();
   const shortcut = getShortcut(role);

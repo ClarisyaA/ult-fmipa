@@ -8,7 +8,9 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
+import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { RequestExportButton } from "@/components/admin/request-export-button";
 import {
   BulkRequestDeleteProvider,
@@ -21,6 +23,8 @@ import {
   RequestStatusActionButton,
 } from "@/components/requests/inline-status-action";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
+import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
+import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -31,6 +35,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
+import { getPrintableLetterService } from "@/lib/letters/letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import {
   getServiceRequestList,
@@ -105,6 +111,58 @@ const serviceGroups = [
 
 const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
 
+function isPrintableRequest(request: Pick<ServiceRequestListItem, "serviceSlug">) {
+  return Boolean(getPrintableLetterService(request.serviceSlug));
+}
+
+function isPrintableService(service: Pick<ServiceFilterOption, "slug">) {
+  return Boolean(getPrintableLetterService(service.slug));
+}
+
+type ForwardRequestStatusAction = Extract<
+  RequestStatusAction,
+  "process" | "complete" | "deliver"
+>;
+
+type CancelRequestStatusAction = Extract<
+  RequestStatusAction,
+  "cancelProcess" | "cancelComplete" | "cancelDeliver"
+>;
+
+function getWorkflowCancelAction(label: string): {
+  action: CancelRequestStatusAction;
+  label: string;
+  confirmation: string;
+} | null {
+  if (label === "Diproses") {
+    return {
+      action: "cancelProcess",
+      label: "Batalkan Proses",
+      confirmation:
+        "Batalkan status diproses? Status selesai dan diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Selesai") {
+    return {
+      action: "cancelComplete",
+      label: "Batalkan Selesai",
+      confirmation:
+        "Batalkan status selesai? Status diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Diambil/Dikirim") {
+    return {
+      action: "cancelDeliver",
+      label: "Batalkan Diambil/Dikirim",
+      confirmation: "Batalkan status diambil/dikirim untuk pengajuan ini?",
+    };
+  }
+
+  return null;
+}
+
 type RequestColumn = {
   key: string;
   label: string;
@@ -112,7 +170,7 @@ type RequestColumn = {
   cellClassName?: string;
   nowrap?: boolean;
   align?: "left" | "center" | "right";
-  workflowAction?: RequestStatusAction;
+  workflowAction?: ForwardRequestStatusAction;
   value: (request: ServiceRequestListItem) => string | null;
 };
 
@@ -217,9 +275,9 @@ function getCategoryServices(
   );
 }
 
-const compactText = "max-w-[175px]";
-const compactLongText = "max-w-[270px]";
-const compactDate = "w-[148px]";
+const compactText = "min-w-[150px] max-w-[190px]";
+const compactLongText = "min-w-[220px] max-w-[300px]";
+const compactDate = "min-w-[132px] max-w-[148px]";
 
 function getRequestColumns(serviceSlug?: string): RequestColumn[] {
   if (serviceSlug === "permohonan-magang-kerja-praktek-ta") {
@@ -235,7 +293,7 @@ function getRequestColumns(serviceSlug?: string): RequestColumn[] {
       { key: "permintaan", label: "Permintaan", className: compactDate, nowrap: true, value: (row) => formatFullDateTime(row.requestDate) },
       { key: "proses", label: "Proses", className: compactDate, nowrap: true, workflowAction: "process", value: (row) => formatFullDateTime(row.processDate) },
       { key: "selesai", label: "Selesai", className: compactDate, nowrap: true, workflowAction: "complete", value: (row) => formatFullDateTime(row.completedDate) },
-      { key: "dikirim", label: "Diambil/Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
+      { key: "dikirim", label: "Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
     ];
   }
 
@@ -252,7 +310,7 @@ function getRequestColumns(serviceSlug?: string): RequestColumn[] {
       { key: "permintaan", label: "Permintaan", className: compactDate, nowrap: true, value: (row) => formatFullDateTime(row.requestDate) },
       { key: "proses", label: "Proses", className: compactDate, nowrap: true, workflowAction: "process", value: (row) => formatFullDateTime(row.processDate) },
       { key: "selesai", label: "Selesai", className: compactDate, nowrap: true, workflowAction: "complete", value: (row) => formatFullDateTime(row.completedDate) },
-      { key: "dikirim", label: "Diambil/Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
+      { key: "dikirim", label: "Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
     ];
   }
 
@@ -266,18 +324,18 @@ function getRequestColumns(serviceSlug?: string): RequestColumn[] {
       { key: "permintaan", label: "Permintaan", className: compactDate, nowrap: true, value: (row) => formatFullDateTime(row.requestDate) },
       { key: "proses", label: "Proses", className: compactDate, nowrap: true, workflowAction: "process", value: (row) => formatFullDateTime(row.processDate) },
       { key: "selesai", label: "Selesai", className: compactDate, nowrap: true, workflowAction: "complete", value: (row) => formatFullDateTime(row.completedDate) },
-      { key: "delivery", label: "Diambil/Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
+      { key: "delivery", label: "Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
     ];
   }
 
   return [
-    { key: "pemohon", label: "Pemohon", className: "max-w-[170px]", value: (row) => `${dash(row.npm)}${row.requesterName ? ` - ${row.requesterName}` : ""}` },
+    { key: "pemohon", label: "Pemohon", className: "min-w-[170px] max-w-[220px]", value: (row) => `${dash(row.npm)}${row.requesterName ? ` - ${row.requesterName}` : ""}` },
     { key: "layanan", label: "Layanan", className: compactLongText, value: (row) => row.serviceTitle },
     { key: "ringkasan", label: "Ringkasan", className: "max-w-[260px]", value: (row) => row.purpose },
     { key: "tanggal", label: "Permintaan", className: compactDate, nowrap: true, value: (row) => formatFullDateTime(row.requestDate) },
     { key: "proses", label: "Proses", className: compactDate, nowrap: true, workflowAction: "process", value: (row) => formatFullDateTime(row.processDate) },
     { key: "selesai", label: "Selesai", className: compactDate, nowrap: true, workflowAction: "complete", value: (row) => formatFullDateTime(row.completedDate) },
-    { key: "delivery", label: "Diambil/Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
+    { key: "delivery", label: "Dikirim", className: compactDate, nowrap: true, workflowAction: "deliver", value: (row) => formatFullDateTime(row.deliveredDate) },
   ];
 }
 
@@ -432,6 +490,7 @@ function AdminRequestPreview({
           ? "Selesai"
           : "Belum ada timestamp",
       done: item.done,
+      cancelAction: item.done ? getWorkflowCancelAction(item.label) : null,
     })),
     detail.approvalVerificationDate
       ? {
@@ -442,6 +501,7 @@ function AdminRequestPreview({
               : ""
           }`,
           done: true,
+          cancelAction: null,
         }
       : null,
     detail.finalSubmittedDate
@@ -449,9 +509,15 @@ function AdminRequestPreview({
           label: "Final Submit SIK",
           value: formatFullDateTime(detail.finalSubmittedDate),
           done: true,
+          cancelAction: null,
         }
       : null,
-  ].filter(Boolean) as Array<{ label: string; value: string; done: boolean }>;
+  ].filter(Boolean) as Array<{
+    label: string;
+    value: string;
+    done: boolean;
+    cancelAction: ReturnType<typeof getWorkflowCancelAction>;
+  }>;
 
   return (
     <aside className="sticky top-4 max-h-[calc(100dvh-2rem)] min-h-0 overflow-hidden rounded-lg border border-[#d8e2d7] bg-[#fbfdf9] shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
@@ -525,6 +591,17 @@ function AdminRequestPreview({
                     <p className="mt-0.5 break-words text-[#6f746f]">
                       {item.value}
                     </p>
+                    {item.cancelAction ? (
+                      <RequestStatusCancelButton
+                        serviceSlug={request.serviceSlug}
+                        id={request.id}
+                        rolePrefix="admin"
+                        staffName={staffName}
+                        action={item.cancelAction.action}
+                        label={item.cancelAction.label}
+                        confirmation={item.cancelAction.confirmation}
+                      />
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -602,44 +679,111 @@ function RequestWorkflowCell({
 }) {
   const value = column.value(request);
 
-  if (!column.workflowAction) {
-    return (
-      <span
-        className="block overflow-hidden text-ellipsis whitespace-nowrap"
-        title={dash(value)}
-      >
-        {dash(value)}
-      </span>
-    );
-  }
+  if (column.workflowAction && (!value || value === "-")) {
+    const supported = supportsInlineStatus(request);
+    const disabledTitle =
+      request.sourceTable === "surat_izin_kegiatan" && !supported
+        ? "Form final SIK belum dikirim mahasiswa atau approval SIK belum selesai."
+        : undefined;
 
-  if (value && value !== "-") {
-    return (
-      <span
-        className="block overflow-hidden text-ellipsis whitespace-nowrap"
-        title={value}
-      >
-        {value}
-      </span>
-    );
-  }
+    if (!supported && request.sourceTable !== "surat_izin_kegiatan") {
+      return <span title="Aksi status belum tersedia untuk layanan ini.">-</span>;
+    }
 
-  if (!supportsInlineStatus(request)) {
-    return <span title="-">-</span>;
+    return (
+      <RequestStatusActionButton
+        rolePrefix="admin"
+        serviceSlug={request.serviceSlug}
+        id={request.id}
+        status={request.status}
+        staffName={staffName}
+        supported={supported}
+        action={column.workflowAction}
+        label={column.workflowAction === "deliver" ? "Kirim" : undefined}
+        disabledTitle={disabledTitle}
+        compact
+      />
+    );
   }
 
   return (
-    <RequestStatusActionButton
-      rolePrefix="admin"
-      serviceSlug={request.serviceSlug}
-      id={request.id}
-      status={request.status}
-      staffName={staffName}
-      supported={supportsInlineStatus(request)}
-      action={column.workflowAction}
-      label={column.workflowAction === "deliver" ? "Kirim" : undefined}
-      compact
-    />
+    <span
+      className={`block overflow-hidden text-ellipsis ${
+        column.nowrap ? "whitespace-nowrap" : "line-clamp-2"
+      }`}
+      title={dash(value)}
+    >
+      {column.key === "layanan" && isPrintableRequest(request) ? (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <FileText
+            className="size-3.5 shrink-0 text-[#0f5b45]"
+            aria-label="Layanan ini memiliki template surat"
+          />
+          <span className="truncate">{dash(value)}</span>
+        </span>
+      ) : (
+        dash(value)
+      )}
+    </span>
+  );
+}
+
+function RequestActionsCell({
+  isSelected,
+  detailHref,
+  request,
+}: {
+  request: ServiceRequestListItem;
+  isSelected: boolean;
+  detailHref: string;
+}) {
+  const hasPrintableTemplate = isPrintableRequest(request);
+
+  return (
+    <div
+      className={`grid gap-1 ${
+        hasPrintableTemplate ? "w-[156px] grid-cols-3" : "w-[104px] grid-cols-2"
+      }`}
+    >
+      <Button
+        asChild
+        variant={isSelected ? "default" : "outline"}
+        size="sm"
+        className={`h-7 rounded-md px-1.5 text-[10px] font-semibold ${
+          isSelected
+            ? "bg-[#0f3d2e] text-white hover:bg-[#164b39]"
+            : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
+        }`}
+      >
+        <Link href={detailHref} scroll={false}>
+          <span className="inline-flex items-center gap-1">
+            <Eye className="size-3" />
+            Detail
+          </span>
+        </Link>
+      </Button>
+      {hasPrintableTemplate ? (
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-1.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
+          title="Isi Data Surat dan cetak PDF resmi"
+        >
+          <Link href={`/admin/requests/${request.serviceSlug}/${request.id}`}>
+            <span className="inline-flex items-center gap-1">
+              <FileText className="size-3" />
+              Surat
+            </span>
+          </Link>
+        </Button>
+      ) : null}
+      <RequestDeleteButton
+        serviceSlug={request.serviceSlug}
+        id={request.id}
+        compact
+      />
+    </div>
   );
 }
 
@@ -649,6 +793,25 @@ function toBulkRequestItem(request: ServiceRequestListItem) {
     serviceSlug: request.serviceSlug,
     id: request.id,
     label: `${request.serviceTitle} - ${dash(request.npm)}`,
+  };
+}
+
+function toRequestCsvRow(request: ServiceRequestListItem) {
+  return {
+    Layanan: request.serviceTitle,
+    NPM: request.npm,
+    Nama: request.requesterName,
+    "Program Studi": request.requesterProgram,
+    "Email/No HP": contactValue(request),
+    Ringkasan: request.mainField ?? request.purpose,
+    "Jenis Permohonan": request.jenisPermohonan,
+    "Tempat Pelaksanaan": request.tempatPelaksanaan,
+    "Tujuan Surat": request.tujuanSurat,
+    Permintaan: formatFullDateTime(request.requestDate),
+    Proses: formatFullDateTime(request.processDate),
+    Selesai: formatFullDateTime(request.completedDate),
+    "Diambil/Dikirim": formatFullDateTime(request.deliveredDate),
+    Status: request.statusLabel,
   };
 }
 
@@ -664,32 +827,65 @@ export default async function AdminRequestsPage({
   const limit = Number(params.limit ?? 10);
   const status = parseRequestStatus(params.status);
   const sort = params.sort === "oldest" ? "oldest" : "newest";
-  const result = await getServiceRequestList({
-    service: params.service,
-    serviceSlugs: params.service
-      ? undefined
-      : activeCategory === "all"
+  let result: Awaited<ReturnType<typeof getServiceRequestList>>;
+  let unavailable = false;
+
+  try {
+    result = await getServiceRequestList({
+      service: params.service,
+      serviceSlugs: params.service
         ? undefined
-        : visibleServices.map((service) => service.slug),
-    status,
-    sort,
-    page,
-    limit,
-  });
+        : activeCategory === "all"
+          ? undefined
+          : visibleServices.map((service) => service.slug),
+      status,
+      sort,
+      page,
+      limit,
+    });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:requests:list", error);
+    result = {
+      data: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 1,
+      },
+    };
+  }
   const user = await getCurrentUser();
   const staffName = user?.name ?? "Admin ULT";
   const totalPages = Math.max(result.pagination.totalPages, 1);
   const columns = getRequestColumns(params.service);
   const bulkItems = result.data.map(toBulkRequestItem);
+  const csvRows = result.data.map(toRequestCsvRow);
   const selectedRequest = result.data.find(
     (request) =>
       request.serviceSlug === params.previewService &&
       request.id === params.previewId,
   );
-  const selectedDetail =
-    params.previewService && params.previewId
-      ? await getRequestDetail(params.previewService, params.previewId)
-      : null;
+  let selectedDetail: ServiceRequestDetail | null = null;
+
+  if (params.previewService && params.previewId && !unavailable) {
+    try {
+      selectedDetail = await getRequestDetail(
+        params.previewService,
+        params.previewId,
+      );
+    } catch (error) {
+      if (!isDatabaseUnavailableError(error)) {
+        throw error;
+      }
+      unavailable = true;
+      logServerError("admin:requests:preview", error);
+    }
+  }
   const previewRequest =
     selectedRequest ?? (selectedDetail ? toPreviewRequest(selectedDetail) : null);
   const hasPreview = Boolean(previewRequest && selectedDetail);
@@ -709,135 +905,144 @@ export default async function AdminRequestsPage({
         description="Pantau dan tindak lanjuti pengajuan layanan. Detail pengajuan dibuka di panel kanan agar tabel tetap berada di halaman ini."
       />
 
-      <AdminSectionCard
-        title="Filter"
-        description="Filter berdasarkan status dan layanan. Data pemohon ditampilkan terbatas untuk kebutuhan operasional."
-      >
-        <div className="grid gap-4">
-          <div>
-            <p className="mb-2 text-[12px] font-bold text-[#173d2d]">
-              Pilih Status Pengajuan
-            </p>
-            <div className="flex flex-wrap gap-2">
+      <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.09)]">
+        <div className="flex h-[58px] items-end gap-2 overflow-x-auto border-b border-[#e8dfd0] bg-white px-2 pt-2 sm:gap-3 sm:px-3">
+          {visibleGroups.map((group) => {
+            const isActive = activeCategory === group.value;
+
+            return (
               <Link
-                className={`inline-flex h-9 shrink-0 items-center rounded-md border px-4 text-[12px] font-bold shadow-sm ${
-                  !status
-                    ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
-                    : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
+                key={group.value}
+                className={`flex h-[46px] min-w-max shrink-0 items-center justify-center border-b-2 px-4 text-[12px] font-bold transition-colors sm:min-w-[178px] sm:px-5 ${
+                  isActive
+                    ? "rounded-t-lg border-[#c79743] bg-[#0f3d2e] text-white shadow-[0_1px_2px_rgba(15,61,46,0.18)] hover:bg-[#0f3d2e] hover:text-white"
+                    : "border-transparent bg-transparent text-[#536058] hover:text-[#0f3d2e]"
                 }`}
                 href={buildHref({
-                  category: activeCategory,
-                  service: params.service,
+                  category: group.value,
+                  status,
                   sort,
                   limit,
                 })}
               >
-                Semua
+                {group.label}
               </Link>
-              {statusOptions.map((option) => (
-                <Link
-                  key={option.value}
-                  className={`inline-flex h-9 shrink-0 items-center rounded-md border px-4 text-[12px] font-bold shadow-sm ${
-                    status === option.value
-                      ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
-                      : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                  }`}
-                  href={buildHref({
-                    category: activeCategory,
-                    service: params.service,
-                    status: option.value,
-                    sort,
-                    limit,
-                  })}
-                >
-                  {option.label}
-                </Link>
-              ))}
-            </div>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-3 bg-[#fffdf9] px-3 py-3 sm:px-4 xl:px-5">
+          <div className="md:hidden">
+            <ServiceFilterSelect
+              services={visibleServices}
+              currentService={params.service}
+            />
           </div>
 
-          <div>
-            <p className="mb-2 text-[12px] font-bold text-[#173d2d]">
-              Pilih Kelompok Layanan
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {visibleGroups.map((group) => {
-                const isActive = activeCategory === group.value;
-
-                return (
-                  <Link
-                    key={group.value}
-                    className={`inline-flex min-h-10 items-center rounded-md border px-4 text-[12px] font-bold shadow-sm ${
-                      isActive
-                        ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
-                        : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                    }`}
-                    href={buildHref({
-                      category: group.value,
-                      status,
-                      sort,
-                      limit,
-                    })}
-                  >
-                    {group.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-[12px] font-bold text-[#173d2d]">
-              Pilih Jenis Layanan
-            </p>
-            <div className="grid gap-3 rounded-md border border-[#eee6d9] bg-[#fffdf9] p-3">
-              <div className="flex flex-wrap gap-2">
+          <div className="hidden flex-wrap gap-2 md:flex">
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className={`h-8 rounded-md px-4 text-[12px] font-bold shadow-none ${
+                !params.service
+                  ? "bg-[#0f3d2e] text-white hover:bg-[#0f3d2e] hover:text-white"
+                  : "border border-[#e8dfd0] bg-white text-[#4f5a52] hover:bg-[#f6f1e8]"
+              }`}
+            >
+              <Link
+                href={buildHref({
+                  category: activeCategory,
+                  status,
+                  sort,
+                  limit,
+                })}
+              >
+                Semua Pengajuan
+              </Link>
+            </Button>
+            {visibleServices.map((service) => (
+              <Button
+                key={service.slug}
+                asChild
+                size="sm"
+                variant="ghost"
+                className={`h-8 rounded-md px-4 text-[12px] font-bold shadow-none ${
+                  params.service === service.slug
+                    ? "bg-[#0f3d2e] text-white hover:bg-[#0f3d2e] hover:text-white"
+                    : "border border-[#e8dfd0] bg-white text-[#4f5a52] hover:bg-[#f6f1e8]"
+                }`}
+              >
                 <Link
-                  className={`inline-flex min-h-9 items-center rounded-md border px-4 text-[12px] font-bold shadow-sm ${
-                    !params.service
-                      ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
-                      : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                  }`}
+                  className="inline-flex items-center gap-1.5"
                   href={buildHref({
                     category: activeCategory,
+                    service: service.slug,
                     status,
                     sort,
                     limit,
                   })}
                 >
-                  Semua layanan di kelompok ini
+                  {isPrintableService(service) ? (
+                    <FileText
+                      className="size-3.5 shrink-0"
+                      aria-label="Memiliki template surat"
+                    />
+                  ) : null}
+                  {service.title}
                 </Link>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {visibleServices.map((service) => (
-                  <Link
-                    key={service.slug}
-                    className={`inline-flex min-h-9 items-center rounded-md border px-4 text-[12px] font-bold shadow-sm ${
-                      params.service === service.slug
-                        ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
-                        : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                    }`}
-                    href={buildHref({
-                      category: activeCategory,
-                      service: service.slug,
-                      status,
-                      sort,
-                      limit,
-                    })}
-                  >
-                    {service.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
+              </Button>
+            ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-[#eee6d9] pt-3">
+          <div className="flex gap-4 overflow-x-auto border-t border-[#eee6d9] pt-3">
+            <Link
+              className={`h-8 shrink-0 border-b-2 px-0 text-[12px] font-semibold ${
+                !status
+                  ? "border-[#0f5b45] text-[#0f5b45] hover:bg-transparent"
+                  : "border-transparent text-[#606860] hover:bg-transparent hover:text-[#0f5b45]"
+              }`}
+              href={buildHref({
+                category: activeCategory,
+                service: params.service,
+                sort,
+                limit,
+              })}
+            >
+              Semua Status
+            </Link>
+            {statusOptions.map((option) => (
+              <Link
+                key={option.value}
+                className={`h-8 shrink-0 border-b-2 px-0 text-[12px] font-semibold ${
+                  status === option.value
+                    ? "border-[#0f5b45] text-[#0f5b45] hover:bg-transparent"
+                    : "border-transparent text-[#606860] hover:bg-transparent hover:text-[#0f5b45]"
+                }`}
+                href={buildHref({
+                  category: activeCategory,
+                  service: params.service,
+                  status: option.value,
+                  sort,
+                  limit,
+                })}
+              >
+                {option.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-[#eee6d9] pt-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <CsvDownloadButton
+              filename="admin-requests.csv"
+              rows={csvRows}
+              className="h-9 w-full justify-center rounded-md border-[#e1d8ca] bg-white px-3 text-[12px] font-bold text-[#173d2d] hover:bg-[#f6f1e8] sm:w-auto"
+            />
             <RequestExportButton
               href={buildExportHref({ scope: "all", sort })}
               label="Download Semua Data"
               variant="outline"
+              disabled={unavailable || result.pagination.total === 0}
             />
             <RequestExportButton
               href={buildExportHref({
@@ -848,6 +1053,7 @@ export default async function AdminRequestsPage({
                 sort,
               })}
               label="Download Sesuai Filter"
+              disabled={unavailable || result.pagination.total === 0}
             />
             <p className="basis-full text-[11px] text-[#7a7166] sm:basis-auto">
               Semua Data mengunduh seluruh pengajuan. Sesuai Filter mengunduh
@@ -855,7 +1061,7 @@ export default async function AdminRequestsPage({
             </p>
           </div>
         </div>
-      </AdminSectionCard>
+      </section>
 
       <div
         className={`grid min-w-0 gap-4 ${
@@ -868,7 +1074,9 @@ export default async function AdminRequestsPage({
           className="min-w-0"
         >
           <BulkRequestDeleteProvider items={bulkItems}>
-            {result.data.length === 0 ? (
+            {unavailable ? (
+              <AdminUnavailableState />
+            ) : result.data.length === 0 ? (
               <AdminEmptyState
                 title="Tidak ada pengajuan"
                 description="Tidak ada pengajuan yang sesuai dengan filter saat ini."
@@ -908,7 +1116,7 @@ export default async function AdminRequestsPage({
                 </div>
                 <BulkRequestDeleteToolbar />
                 <AdminTableScroll>
-                  <Table className="w-max min-w-full table-auto">
+                  <Table className="min-w-max table-auto">
                     <TableHeader className="bg-[#eef3ec]">
                       <TableRow className="border-[#dfe6dd] hover:bg-[#eef3ec]">
                         <TableHead className="h-8 w-[42px] px-2 text-center text-[10px] font-bold text-[#244934]">
@@ -926,10 +1134,10 @@ export default async function AdminRequestsPage({
                             {column.label}
                           </TableHead>
                         ))}
-                        <TableHead className="h-8 w-[102px] px-2 text-center text-[10px] font-bold text-[#244934]">
+                        <TableHead className="h-8 w-[100px] px-2 text-center text-[10px] font-bold text-[#244934]">
                           Status
                         </TableHead>
-                        <TableHead className="h-8 w-[112px] px-2 text-center text-[10px] font-bold text-[#244934]">
+                        <TableHead className="h-8 w-[164px] px-2 text-center text-[10px] font-bold text-[#244934]">
                           Aksi
                         </TableHead>
                       </TableRow>
@@ -950,13 +1158,13 @@ export default async function AdminRequestsPage({
                                 : "bg-white hover:bg-[#f8faf6]"
                             }`}
                           >
-                            <TableCell className="w-[42px] px-2 py-2 text-center">
+                            <TableCell className="w-[42px] px-2 py-1.5 text-center">
                               <BulkRequestSelectRow item={bulkItem} />
                             </TableCell>
                             {columns.map((column) => (
                               <TableCell
                                 key={column.key}
-                                className={`px-2 py-2 text-[11px] leading-snug text-[#303b34] ${
+                                className={`px-2 py-1.5 text-[11px] leading-snug text-[#303b34] ${
                                   column.nowrap ? "whitespace-nowrap" : ""
                                 } ${column.className ?? ""} ${
                                   column.cellClassName ?? ""
@@ -969,48 +1177,26 @@ export default async function AdminRequestsPage({
                                 />
                               </TableCell>
                             ))}
-                            <TableCell className="w-[102px] px-2 py-2 text-center">
+                            <TableCell className="w-[100px] px-2 py-1.5 text-center">
                               <AdminStatusBadge tone={getStatusTone(request.status)}>
                                 {request.statusLabel}
                               </AdminStatusBadge>
                             </TableCell>
-                            <TableCell className="w-[112px] px-2 py-2">
-                              <div className="grid w-[104px] grid-cols-2 gap-1">
-                                <Button
-                                  asChild
-                                  variant={isSelected ? "default" : "outline"}
-                                  size="sm"
-                                  className={`h-7 rounded-md px-1.5 text-[10px] font-semibold ${
-                                    isSelected
-                                      ? "bg-[#0f3d2e] text-white hover:bg-[#164b39]"
-                                      : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                                  }`}
-                                >
-                                  <Link
-                                    href={buildHref({
-                                      category: activeCategory,
-                                      service: params.service,
-                                      status,
-                                      sort,
-                                      page: result.pagination.page,
-                                      limit,
-                                      previewService: request.serviceSlug,
-                                      previewId: request.id,
-                                    })}
-                                    scroll={false}
-                                  >
-                                    <span className="inline-flex items-center gap-1">
-                                      <Eye className="size-3" />
-                                      Detail
-                                    </span>
-                                  </Link>
-                                </Button>
-                                <RequestDeleteButton
-                                  serviceSlug={request.serviceSlug}
-                                  id={request.id}
-                                  compact
-                                />
-                              </div>
+                            <TableCell className="w-[164px] px-2 py-1.5">
+                              <RequestActionsCell
+                                request={request}
+                                isSelected={isSelected}
+                                detailHref={buildHref({
+                                  category: activeCategory,
+                                  service: params.service,
+                                  status,
+                                  sort,
+                                  page: result.pagination.page,
+                                  limit,
+                                  previewService: request.serviceSlug,
+                                  previewId: request.id,
+                                })}
+                              />
                             </TableCell>
                           </TableRow>
                         );

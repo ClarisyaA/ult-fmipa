@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
   deleteInformationImageFile,
   type SavedInformationImageMetadata,
@@ -12,10 +13,13 @@ export type InformationPostImage = {
   mimeType: string;
   sizeBytes: number;
   altText: string | null;
+  imageFit: InformationImageFit;
   sortOrder: number;
   isCover: boolean;
   createdAt: string;
 };
+
+export type InformationImageFit = "cover" | "contain";
 
 type ImageRecord = {
   ID: bigint | number | string;
@@ -26,6 +30,7 @@ type ImageRecord = {
   SIZE_BYTES: number;
   STORAGE_PATH: string;
   ALT_TEXT: string | null;
+  IMAGE_FIT: string | null;
   SORT_ORDER: number;
   IS_COVER: boolean | number;
   CREATED_AT: Date | string;
@@ -33,6 +38,22 @@ type ImageRecord = {
 
 export class InformationPostImageError extends Error {
   statusCode = 400;
+}
+
+export function normalizeInformationImageFit(
+  value: string | null | undefined
+): InformationImageFit {
+  if (value === undefined || value === null || value === "") {
+    return "cover";
+  }
+
+  const normalized = String(value).trim();
+
+  if (normalized === "cover" || normalized === "contain") {
+    return normalized;
+  }
+
+  throw new InformationPostImageError("Tampilan gambar tidak valid.");
 }
 
 function toIso(value: Date | string) {
@@ -48,6 +69,7 @@ function toImage(record: ImageRecord): InformationPostImage {
     mimeType: record.MIME_TYPE,
     sizeBytes: record.SIZE_BYTES,
     altText: record.ALT_TEXT,
+    imageFit: record.IMAGE_FIT === "contain" ? "contain" : "cover",
     sortOrder: record.SORT_ORDER,
     isCover: Boolean(record.IS_COVER),
     createdAt: toIso(record.CREATED_AT),
@@ -73,20 +95,35 @@ function warnMissingImageTable() {
   }
 }
 
-async function hasImageTable() {
-  const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
-    SELECT COUNT(*) AS tableCount
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = 'ult_information_post_images'
-  `;
-
-  if (Number(rows[0]?.tableCount ?? 0) > 0) {
-    return true;
+function warnImageDatabaseUnavailable(error: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("Database gambar informasi sementara tidak tersedia.", error);
   }
+}
 
-  warnMissingImageTable();
-  return false;
+async function hasImageTable() {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ tableCount: bigint | number }>>`
+      SELECT COUNT(*) AS tableCount
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'ult_information_post_images'
+    `;
+
+    if (Number(rows[0]?.tableCount ?? 0) > 0) {
+      return true;
+    }
+
+    warnMissingImageTable();
+    return false;
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      warnImageDatabaseUnavailable(error);
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 function assertId(value: string, message: string) {
@@ -114,6 +151,11 @@ export async function getInformationPostImages(postId: string) {
   } catch (error) {
     if (isMissingImageTableError(error)) {
       warnMissingImageTable();
+      return [];
+    }
+
+    if (isDatabaseUnavailableError(error)) {
+      warnImageDatabaseUnavailable(error);
       return [];
     }
 
@@ -156,7 +198,8 @@ async function countImages(postId: string) {
 
 export async function addInformationPostImages(
   postId: string,
-  images: SavedInformationImageMetadata[]
+  images: SavedInformationImageMetadata[],
+  imageFits: Array<InformationImageFit | string | null | undefined> = []
 ) {
   assertId(postId, "ID informasi tidak valid.");
 
@@ -188,6 +231,7 @@ export async function addInformationPostImages(
         MIME_TYPE,
         SIZE_BYTES,
         STORAGE_PATH,
+        IMAGE_FIT,
         SORT_ORDER,
         IS_COVER
       ) VALUES (
@@ -197,6 +241,7 @@ export async function addInformationPostImages(
         ${image.mimeType},
         ${image.sizeBytes},
         ${image.storagePath},
+        ${normalizeInformationImageFit(imageFits[index])},
         ${sortOrder},
         ${isCover}
       )
@@ -207,15 +252,30 @@ export async function addInformationPostImages(
   return inserted;
 }
 
-export async function updateInformationPostImageAltText(
+export async function updateInformationPostImageMetadata(
   imageId: string,
-  altText: string | null
+  input: {
+    altText?: string | null;
+    imageFit?: InformationImageFit | string | null;
+  }
 ) {
   assertId(imageId, "ID gambar tidak valid.");
 
+  if (input.imageFit === undefined) {
+    await prisma.$executeRaw`
+      UPDATE ult_information_post_images
+      SET ALT_TEXT = ${input.altText?.trim().slice(0, 200) || null}
+      WHERE ID = ${BigInt(imageId)}
+      LIMIT 1
+    `;
+    return;
+  }
+
   await prisma.$executeRaw`
     UPDATE ult_information_post_images
-    SET ALT_TEXT = ${altText?.trim().slice(0, 200) || null}
+    SET
+      ALT_TEXT = ${input.altText?.trim().slice(0, 200) || null},
+      IMAGE_FIT = ${normalizeInformationImageFit(input.imageFit)}
     WHERE ID = ${BigInt(imageId)}
     LIMIT 1
   `;

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getSurveyRequestsForStudent } from "@/lib/service-surveys";
 
 export async function GET() {
@@ -22,9 +23,17 @@ export async function GET() {
     );
   }
 
-  const surveyRequests = await getSurveyRequestsForStudent(session.user.npm);
+  try {
+    const surveyRequests = await getSurveyRequestsForStudent(session.user.npm);
 
-  return NextResponse.json({
-    data: surveyRequests,
-  });
+    return NextResponse.json({
+      data: surveyRequests,
+    });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:student:surveys:requests:get",
+      "Daftar survei gagal dimuat."
+    );
+  }
 }

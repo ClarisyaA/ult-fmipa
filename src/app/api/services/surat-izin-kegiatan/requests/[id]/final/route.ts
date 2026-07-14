@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   FileUploadError,
   saveUploadedFile,
@@ -138,9 +139,10 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(
-      { error: "Form final SIK gagal dikirim." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:services:sik:final",
+      "Form final SIK gagal dikirim.",
     );
   }
 }

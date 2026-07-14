@@ -30,7 +30,7 @@ export default async function StaffLayout({
         />
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <header className="border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
+          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Image

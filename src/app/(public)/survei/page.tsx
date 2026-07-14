@@ -5,8 +5,6 @@ import {
   ClipboardList,
   BarChart3,
   Users,
-  ShieldCheck,
-  FileCheck,
   Star,
   CheckCircle2,
   FileSpreadsheet,

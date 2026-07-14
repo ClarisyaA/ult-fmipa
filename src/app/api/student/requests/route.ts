@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getStudentRequestHistory } from "@/lib/student-request-history";
 import type { RequestStatus } from "@/types/request";
 
@@ -43,12 +44,20 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const result = await getStudentRequestHistory({
-    npm: session.user.npm,
-    status: parseStatus(searchParams.get("status")),
-    page: Number(searchParams.get("page") ?? 1),
-    limit: Number(searchParams.get("limit") ?? 10),
-  });
+  try {
+    const result = await getStudentRequestHistory({
+      npm: session.user.npm,
+      status: parseStatus(searchParams.get("status")),
+      page: Number(searchParams.get("page") ?? 1),
+      limit: Number(searchParams.get("limit") ?? 10),
+    });
 
-  return NextResponse.json(result);
+    return NextResponse.json(result);
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:student:requests:get",
+      "Riwayat pengajuan gagal dimuat."
+    );
+  }
 }

@@ -7,6 +7,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { PerformanceRankingChart } from "@/components/admin/performance-ranking-chart";
@@ -24,6 +25,7 @@ import {
   getDashboardSummary,
   getPerformanceSummary,
 } from "@/lib/legacy-request-stats";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getPublicServices } from "@/lib/legacy-services";
 
 export const dynamic = "force-dynamic";
@@ -62,20 +64,33 @@ export default async function AdminReportsPage({
   )
     ? params.service
     : undefined;
-  const summary = await getDashboardSummary({
-    service: activeTab === "layanan" ? activeService : undefined,
-    dateFrom: params.dateFrom,
-    dateTo: params.dateTo,
-    q: activeTab === "layanan" ? params.q : undefined,
-  });
-  const performance =
-    activeTab === "layanan"
-      ? null
-      : await getPerformanceSummary({
-          dateFrom: params.dateFrom,
-          dateTo: params.dateTo,
-          q: params.q,
-        });
+  let summary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
+  let performance: Awaited<ReturnType<typeof getPerformanceSummary>> | null =
+    null;
+  let unavailable = false;
+
+  try {
+    summary = await getDashboardSummary({
+      service: activeTab === "layanan" ? activeService : undefined,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      q: activeTab === "layanan" ? params.q : undefined,
+    });
+    performance =
+      activeTab === "layanan"
+        ? null
+        : await getPerformanceSummary({
+            dateFrom: params.dateFrom,
+            dateTo: params.dateTo,
+            q: params.q,
+          });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:reports", error);
+  }
   const performanceRanking =
     activeTab === "staf"
       ? (performance?.staff ?? []).map((staff) => ({
@@ -92,19 +107,39 @@ export default async function AdminReportsPage({
         }));
   const topPerformance = performanceRanking.slice(0, 3);
   const performanceChartRows = performanceRanking;
-  const topServices = [...summary.services]
+  const topServices = [...(summary?.services ?? [])]
     .sort((left, right) => right.total - left.total)
     .slice(0, 3);
   const isAllData =
     !activeService && !params.dateFrom && !params.dateTo && !params.q?.trim();
-  const reportRows = summary.services.map((service) => ({
-    Layanan: service.title,
-    Total: service.total,
-    Menunggu: service.pending,
-    Diproses: service.inProgress,
-    Selesai: service.completed,
-    "Diambil/Dikirim": service.delivered,
-  }));
+  const reportRows =
+    activeTab === "layanan"
+      ? (summary?.services ?? []).map((service) => ({
+          Layanan: service.title,
+          Total: service.total,
+          Menunggu: service.pending,
+          Diproses: service.inProgress,
+          Selesai: service.completed,
+          "Diambil/Dikirim": service.delivered,
+        }))
+      : activeTab === "staf"
+        ? (performance?.staff ?? []).map((staff) => ({
+            Staf: staff.fullName,
+            Username: staff.userName,
+            Unit: staff.unitName,
+            "Total Aktivitas": staff.total,
+            "Proses/Verifikasi": staff.processed,
+            Selesai: staff.completed,
+            "Diambil/Dikirim": staff.delivered,
+          }))
+        : (performance?.units ?? []).map((unit) => ({
+            Unit: unit.unitName,
+            "Jumlah Staf": unit.staffCount,
+            "Total Aktivitas": unit.total,
+            "Proses/Verifikasi": unit.processed,
+            Selesai: unit.completed,
+            "Diambil/Dikirim": unit.delivered,
+          }));
 
   return (
     <AdminPageShell>
@@ -208,10 +243,10 @@ export default async function AdminReportsPage({
               />
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               type="submit"
-              className="h-9 rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39]"
+              className="h-9 w-full rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39] sm:w-auto"
             >
               Tampilkan
             </Button>
@@ -219,7 +254,7 @@ export default async function AdminReportsPage({
               asChild
               type="button"
               variant="outline"
-              className="h-9 rounded-md border-[#d8cdbd] bg-white px-4 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+              className="h-9 w-full rounded-md border-[#d8cdbd] bg-white px-4 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
             >
               <Link href={`/admin/reports?tab=${activeTab}`}>
                 Tampilkan Semua
@@ -231,7 +266,8 @@ export default async function AdminReportsPage({
                   ? "report-layanan.csv"
                   : `report-${activeTab}.csv`
               }
-              rows={activeTab === "layanan" ? reportRows : []}
+              rows={reportRows}
+              className="h-9 w-full justify-center rounded-md border-[#e1d8ca] bg-white px-3 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
             />
           </div>
         </form>
@@ -242,6 +278,10 @@ export default async function AdminReportsPage({
           title="Report Layanan"
           description="Ringkasan jumlah pengajuan per layanan dari tabel yang sudah dipetakan."
         >
+          {unavailable || !summary ? (
+            <AdminUnavailableState />
+          ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <AdminStatusBadge tone={isAllData ? "success" : "info"}>
               {isAllData ? "Menampilkan semua data" : "Filter aktif"}
@@ -364,12 +404,18 @@ export default async function AdminReportsPage({
               </TableBody>
             </Table>
           </AdminTableScroll>
+          </>
+          )}
         </AdminSectionCard>
       ) : (
         <AdminSectionCard
           title={activeTab === "staf" ? "Kinerja Staf" : "Kinerja Unit"}
           description="Agregasi aktivitas staf dan unit berdasarkan timestamp workflow pada data layanan."
         >
+          {unavailable ? (
+            <AdminUnavailableState />
+          ) : (
+          <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <AdminStatusBadge tone="info">
               {params.dateFrom || params.dateTo || params.q?.trim()
@@ -514,6 +560,8 @@ export default async function AdminReportsPage({
                 </TableBody>
               </Table>
             </AdminTableScroll>
+          )}
+          </>
           )}
         </AdminSectionCard>
       )}

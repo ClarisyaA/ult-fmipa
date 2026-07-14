@@ -4,6 +4,7 @@ import {
   AdminPageShell,
   AdminSectionCard,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUserLogRows } from "@/lib/admin-readonly-data";
+import { getAdminUserLogRows } from "@/lib/admin-user-log";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 };
 
 function formatDate(value: string | null) {
@@ -43,12 +45,41 @@ export default async function AdminSystemUserLogPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const rows = await getUserLogRows({ search: params.q });
+  let result: Awaited<ReturnType<typeof getAdminUserLogRows>> = {
+    rows: [],
+    total: 0,
+    page: 1,
+    limit: 20,
+    pageCount: 1,
+  };
+  let unavailable = false;
+
+  try {
+    result = await getAdminUserLogRows({
+      search: params.q,
+      page: Number(params.page ?? 1),
+      limit: 20,
+    });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:system:user-log", error);
+  }
+  const rows = result.rows;
   const csvRows = rows.map((row) => ({
     Waktu: formatDate(row.time),
-    User: row.userName,
-    Aktivitas: row.log,
+    Pengguna: row.userName,
+    Aksi: row.action,
+    Modul: row.module,
+    Keterangan: row.description,
   }));
+  const previousPage = Math.max(result.page - 1, 1);
+  const nextPage = Math.min(result.page + 1, result.pageCount);
+  const queryString = params.q
+    ? `&q=${encodeURIComponent(params.q)}`
+    : "";
 
   return (
     <AdminPageShell>
@@ -70,35 +101,71 @@ export default async function AdminSystemUserLogPage({
           <CsvDownloadButton filename="user-log.csv" rows={csvRows} />
         </form>
       </AdminSectionCard>
-      <AdminSectionCard title="Tabel User Log">
-        {rows.length === 0 ? (
+      <AdminSectionCard
+        title="Tabel User Log"
+        description={`Menampilkan ${rows.length} dari ${result.total} aktivitas tercatat.`}
+      >
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
-            title="Log tidak ditemukan"
+            title="Belum ada aktivitas tercatat."
             description="Tidak ada log yang cocok dengan pencarian saat ini."
           />
         ) : (
-          <AdminTableScroll>
-            <Table className="min-w-[760px]">
-              <TableHeader className="bg-[#eef3ec]">
-                <TableRow>
-                  <TableHead>Waktu</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Aktivitas</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{formatDate(row.time)}</TableCell>
-                    <TableCell className="font-semibold">
-                      {row.userName}
-                    </TableCell>
-                    <TableCell>{row.log}</TableCell>
+          <div className="grid gap-3">
+            <AdminTableScroll>
+              <Table className="min-w-[860px]">
+                <TableHeader className="bg-[#eef3ec]">
+                  <TableRow>
+                    <TableHead>Waktu</TableHead>
+                    <TableHead>Pengguna</TableHead>
+                    <TableHead>Aksi</TableHead>
+                    <TableHead>Modul</TableHead>
+                    <TableHead>Keterangan</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </AdminTableScroll>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{formatDate(row.time)}</TableCell>
+                      <TableCell className="font-semibold">
+                        {row.userName}
+                      </TableCell>
+                      <TableCell>{row.action}</TableCell>
+                      <TableCell>{row.module ?? "-"}</TableCell>
+                      <TableCell>{row.description}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AdminTableScroll>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6a6258]">
+              <span>
+                Halaman {result.page} dari {result.pageCount}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  disabled={result.page <= 1}
+                  className="h-8 rounded-md border-[#e1d8ca] bg-white text-xs"
+                >
+                  <a href={`?page=${previousPage}${queryString}`}>Sebelumnya</a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  disabled={result.page >= result.pageCount}
+                  className="h-8 rounded-md border-[#e1d8ca] bg-white text-xs"
+                >
+                  <a href={`?page=${nextPage}${queryString}`}>Berikutnya</a>
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </AdminSectionCard>
     </AdminPageShell>

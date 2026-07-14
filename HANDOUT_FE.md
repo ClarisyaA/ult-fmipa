@@ -1,207 +1,350 @@
-# Handout Frontend Developer - ULT FMIPA Unpad
+# Frontend API Handout
 
-For setup, database, migration, and troubleshooting, read `README.md`. This file
-focuses on FE fetching and UI integration: route mapping, role-based UI, API
-payloads, upload handling, response handling, and empty/error states.
+Dokumen ini adalah pegangan frontend untuk integrasi API ULT FMIPA Unpad. Fokusnya:
+route API, role akses, request/response, upload, error handling, dan pola UI. Untuk setup
+project, database, migration, dan troubleshooting umum, tetap baca `README.md` dan dokumen di
+folder `docs/`.
 
-## Base URL
-
-Local base URL:
+Base URL lokal:
 
 ```text
 http://localhost:3000
 ```
 
-For client-side fetch inside this Next.js app, use relative URLs:
+Di dalam aplikasi Next.js ini, gunakan relative URL:
 
 ```ts
 fetch("/api/services");
 ```
 
-## Authentication Notes
+## Konvensi API
 
-- App uses NextAuth session.
-- FE usually does not need to manually send token.
-- Browser cookies/session are sent automatically for same-origin requests.
-- For mutations, use `credentials: "same-origin"` if needed.
-- PAUS OAuth is paused. Use development login for now.
-
-## Role Summary for FE
-
-| Role | Navbar shortcut | Allowed pages | Forbidden pages | FE behavior |
-| --- | --- | --- | --- | --- |
-| Guest | `Masuk` | Public pages | Student/admin/staff pages | Show login CTA |
-| Student/Mahasiswa | `Riwayat Saya` | `/layanan/[slug]/ajukan`, `/mahasiswa/riwayat`, `/survei` | Admin/staff pages | Do not send NPM manually |
-| Staff | `Dashboard Staff` | Staff dashboard, requests, informasi, surveys | Admin-only delete request | No service request delete button |
-| Admin | `Dashboard Admin` | Admin dashboard, requests, informasi, surveys | Student-only pages | Can delete service requests |
-
-## Frontend Route Map
-
-### Public
-
-| Route | Usage |
-| --- | --- |
-| `/` | Beranda |
-| `/layanan` | Katalog layanan |
-| `/layanan/[slug]` | Detail layanan |
-| `/layanan/[slug]/ajukan` | Form pengajuan, student-only |
-| `/informasi` | Daftar informasi publik |
-| `/informasi/[slug]` | Detail informasi publik |
-| `/survei` | Halaman survei |
-| `/login` | Login development credentials / PAUS placeholder |
-
-### Student
-
-| Route | Usage |
-| --- | --- |
-| `/mahasiswa/riwayat` | Riwayat request milik session |
-| `/mahasiswa/riwayat/[serviceSlug]/[id]` | Detail request milik session |
-| `/survei` | Daftar request eligible survey |
-
-### Staff
-
-| Route | Usage |
-| --- | --- |
-| `/staff/dashboard` | Dashboard staff |
-| `/staff/requests` | List request dan action status |
-| `/staff/requests/[serviceSlug]/[id]` | Detail request |
-| `/staff/informasi` | List informasi |
-| `/staff/informasi/tambah` | Tambah informasi |
-| `/staff/informasi/[id]/edit` | Edit informasi |
-| `/staff/surveys` | Summary survei |
-
-### Admin
-
-| Route | Usage |
-| --- | --- |
-| `/admin/dashboard` | Dashboard admin |
-| `/admin/requests` | List request, action status, delete |
-| `/admin/requests/[serviceSlug]/[id]` | Detail request dan delete |
-| `/admin/informasi` | List informasi |
-| `/admin/informasi/tambah` | Tambah informasi |
-| `/admin/informasi/[id]/edit` | Edit informasi |
-| `/admin/surveys` | Summary survei |
-
-## General Fetch Helper
-
-```ts
-export async function apiFetch<T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    ...options,
-    headers: {
-      ...(options.body instanceof FormData
-        ? {}
-        : { "Content-Type": "application/json" }),
-      ...(options.headers ?? {}),
-    },
-  });
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(data?.error ?? "Terjadi kesalahan.");
-  }
-
-  return data as T;
-}
-```
-
-Notes:
-
-- Do not set `Content-Type` manually for `FormData`.
-- Use JSON for normal requests.
-- Use `FormData` for file uploads.
-
-## API Response Pattern
-
-Success examples vary by endpoint:
-
-```json
-{ "data": {}, "message": "Berhasil." }
-```
+Sebagian endpoint baru memakai pola:
 
 ```json
 {
-  "data": {
-    "requestId": "123",
-    "attachmentCount": 2
-  },
-  "message": "Pengajuan layanan berhasil dikirim."
+  "success": true,
+  "message": "Berhasil.",
+  "data": {}
 }
 ```
 
-Common error:
+Error standar dari helper server:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DATABASE_UNAVAILABLE",
+    "message": "Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi."
+  }
+}
+```
+
+Beberapa endpoint lama masih mengembalikan:
 
 ```json
 { "error": "Pesan error" }
 ```
 
-Always show a friendly error message and keep form values when possible.
+Jadi helper FE harus mendukung dua bentuk error tersebut.
 
-## Auth and Utility APIs
+Status yang umum:
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET/POST` | `/api/auth/[...nextauth]` | NextAuth session/login/callback |
-| `GET` | `/api/health` | Health check database/API |
+| Status | Arti FE |
+| --- | --- |
+| `200` | Berhasil |
+| `201` | Data dibuat |
+| `400` | Validasi gagal atau payload salah |
+| `401` | Belum login |
+| `403` | Role tidak sesuai |
+| `404` | Data/route tidak ditemukan |
+| `409` | Konflik, biasanya butuh konfirmasi ulang |
+| `422` | Data belum lengkap untuk diproses/cetak |
+| `500` | Error server tidak terduga |
+| `503` | Database tidak tersedia |
 
-FE usually uses NextAuth helpers/components instead of calling auth routes
-manually.
+Pesan DB down standar:
 
-## Services API
-
-### `GET /api/services`
-
-Access: Public. Purpose: get service catalog.
-
-```ts
-type ServicesResponse = { data: ServiceItem[] };
-
-const result = await apiFetch<ServicesResponse>("/api/services");
+```text
+Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi.
 ```
 
-### `GET /api/services/[slug]`
+## Auth Dan Role
 
-Access: Public. Purpose: get one service detail.
+App memakai NextAuth session. FE biasanya tidak mengirim token manual karena cookie/session
+same-origin ikut terkirim oleh browser.
+
+| Role | Akses API |
+| --- | --- |
+| Public | API publik tanpa login |
+| Student/Mahasiswa | API `/api/student/...` dan pengajuan layanan |
+| Staff | API `/api/staff/...` dan sebagian API cetak surat |
+| Admin | API `/api/admin/...`, master data, dan sebagian API cetak surat |
+
+Aturan penting:
+
+- Student identity memakai session. FE tidak perlu dan tidak boleh mengandalkan input NPM untuk identity.
+- Staff tidak boleh menghapus pengajuan layanan.
+- Admin dapat menghapus pengajuan layanan dan mengelola master/system data.
+- Endpoint PDF dan letter metadata hanya untuk admin/staff.
+- Tangani `401` dengan ajakan login, `403` dengan pesan tidak punya akses.
+
+## Helper Fetch
+
+Gunakan helper JSON yang bisa membaca dua bentuk error:
 
 ```ts
-const result = await apiFetch<{ data: ServiceItem }>(
-  `/api/services/${serviceSlug}`
-);
+export async function fetchJson<T>(
+  url: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const isFormData = init.body instanceof FormData;
+  const response = await fetch(url, {
+    cache: "no-store",
+    credentials: "same-origin",
+    ...init,
+    headers: {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const payload = contentType.includes("application/json")
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof payload.error === "object" &&
+      payload.error !== null &&
+      "message" in payload.error
+        ? String(payload.error.message)
+        : typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload
+          ? String(payload.error)
+          : "Terjadi kesalahan. Coba lagi beberapa saat lagi.";
+
+    throw new Error(message);
+  }
+
+  return payload as T;
+}
 ```
 
-### `POST /api/services/[slug]/requests`
-
-Access: Student. Purpose: create service request. Uses `multipart/form-data`.
-NPM comes from session. Attachments are optional.
+Untuk upload, jangan set `Content-Type` manual:
 
 ```ts
 const formData = new FormData();
-formData.append("description", "Keperluan administrasi");
-selectedFiles.forEach((file) => formData.append("attachments", file));
+formData.append("title", title);
+formData.append("image", file);
 
-const result = await apiFetch<{
-  data: {
-    requestId: string;
-    attachmentCount: number;
-  };
-  message: string;
-}>(`/api/services/${serviceSlug}/requests`, {
+await fetchJson("/api/admin/home/activities", {
   method: "POST",
   body: formData,
 });
 ```
 
-Common service request fields:
+Untuk PDF, CSV, attachment, dan gambar, jangan pakai `fetchJson` karena response bukan JSON.
+
+## Public Homepage API
+
+### `GET /api/home/activities`
+
+Dipakai oleh `src/components/home/home-landing-sections.tsx` untuk section Kegiatan Mahasiswa.
+Auth public. Response JSON:
+
+```ts
+type PublicHomeActivity = {
+  id: string;
+  title: string;
+  eyebrow: string | null;
+  description: string;
+  image: string | null;
+  imageAlt: string;
+  imageFit: "cover" | "contain";
+  sortOrder: number;
+};
+
+type Response = { data: PublicHomeActivity[] };
+```
+
+Behavior:
+
+- Hanya item aktif.
+- Urut `sortOrder ASC`, lalu data terbaru.
+- Jika tabel belum ada atau DB read gagal ringan, backend mengembalikan `data: []`.
+- FE homepage boleh fallback ke data statis jika fetch gagal.
+
+### `GET /api/home/activities/images/[id]`
+
+Response adalah gambar, bukan JSON. Pakai langsung sebagai `src`.
+
+```tsx
+<img
+  src={`/api/home/activities/images/${activity.id}`}
+  alt={activity.imageAlt || activity.title}
+  className={activity.imageFit === "contain" ? "object-contain" : "object-cover"}
+/>
+```
+
+Catatan:
+
+- Public hanya bisa melihat gambar activity aktif.
+- Admin/staff bisa melihat gambar activity nonaktif lewat session.
+- SVG dikirim dengan `Content-Security-Policy` dan `X-Content-Type-Options: nosniff`.
+- Storage path mentah tidak diekspos.
+
+### `GET /api/home/links`
+
+Dipakai CTA Kalender Akademik di homepage. Auth public. Response:
+
+```ts
+{
+  data: {
+    academicCalendar: {
+      id: string;
+      linkKey: "academic_calendar";
+      label: "Kalender Akademik";
+      url: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string | null;
+      updatedBy: string | null;
+    } | null;
+  };
+}
+```
+
+Default URL jika DB/tabel belum tersedia:
 
 ```text
+https://www.unpad.ac.id/pengumuman/kalender-kegiatan-akademik-universitas-padjadjaran-tahun-akademik-2026-2027/
+```
+
+Render link:
+
+```tsx
+<a href={academicCalendarUrl} target="_blank" rel="noopener noreferrer">
+  Kalender Akademik
+</a>
+```
+
+## Homepage CMS API
+
+Dipakai halaman:
+
+- `/admin/beranda/kegiatan`
+- `/admin/beranda/kegiatan/tambah`
+- `/admin/beranda/kegiatan/[id]/edit`
+- `/staff/beranda/kegiatan`
+- `/staff/beranda/kegiatan/tambah`
+- `/staff/beranda/kegiatan/[id]/edit`
+
+Routes admin dan staff memiliki behavior sama, role sesuai prefix.
+
+| Method | Endpoint | Auth | Kegunaan |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/home/activities` | Admin | List semua activity |
+| `POST` | `/api/admin/home/activities` | Admin | Buat activity |
+| `GET` | `/api/admin/home/activities/[id]` | Admin | Detail activity |
+| `PATCH` | `/api/admin/home/activities/[id]` | Admin | Update activity |
+| `DELETE` | `/api/admin/home/activities/[id]` | Admin | Hapus activity |
+| `GET` | `/api/staff/home/activities` | Staff | List semua activity |
+| `POST` | `/api/staff/home/activities` | Staff | Buat activity |
+| `GET` | `/api/staff/home/activities/[id]` | Staff | Detail activity |
+| `PATCH` | `/api/staff/home/activities/[id]` | Staff | Update activity |
+| `DELETE` | `/api/staff/home/activities/[id]` | Staff | Hapus activity |
+
+FormData/JSON fields:
+
+```text
+title
+eyebrow
 description
+imageAlt
+imageFit       // cover | contain
+isActive       // true | false
+sortOrder
+image          // File, optional multipart only
+```
+
+Upload rule:
+
+- Max 2 MB.
+- WEBP, PNG, JPG/JPEG, SVG.
+- SVG divalidasi aman: script, event handler, `javascript:`, `foreignObject`, dan remote reference ditolak.
+- Field selain daftar di atas ditolak.
+- `imageFit = cover` berarti Penuhi Card.
+- `imageFit = contain` berarti Tampilkan Utuh.
+
+Academic calendar CMS:
+
+| Method | Endpoint | Auth | Kegunaan |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/home/links` | Admin | Ambil state link beranda |
+| `PATCH` | `/api/admin/home/links/academic-calendar` | Admin | Update URL Kalender Akademik |
+| `GET` | `/api/staff/home/links` | Staff | Ambil state link beranda |
+| `PATCH` | `/api/staff/home/links/academic-calendar` | Staff | Update URL Kalender Akademik |
+
+Payload:
+
+```json
+{
+  "url": "https://example.com/kalender-akademik",
+  "isActive": true
+}
+```
+
+URL harus absolut dan hanya `http://` atau `https://`. Skema seperti `javascript:`,
+`data:`, dan `file:` ditolak.
+
+## Services Dan Pengajuan
+
+Public:
+
+| Method | Endpoint | Auth | Used by |
+| --- | --- | --- | --- |
+| `GET` | `/api/services` | Public | `/layanan` |
+| `GET` | `/api/services/[slug]` | Public | `/layanan/[slug]`, `/layanan/[slug]/ajukan` |
+| `POST` | `/api/services/[slug]/requests` | Student | Form pengajuan |
+
+Slug layanan yang tersedia:
+
+```text
+kartu-prestasi-akademik
+kartu-kemajuan-studi
+rekomendasi-beasiswa
+ket-tunjangan-orang-tua
+keterangan-masih-kuliah
+keterangan-kelakuan-baik
+surat-pengantar
+keterangan-lulus
+penerbitan-transkrip
+penerbitan-ijazah
+legalisir-ijazah-transkrip
+bebas-peminjaman
+unggah-karya-ilmiah
+cek-plagiarisme
+referensi
+permohonan-magang-kerja-praktek-ta
+surat-izin-kegiatan
+```
+
+`POST /api/services/[slug]/requests` menerima JSON atau `multipart/form-data`.
+Gunakan `FormData` jika ada lampiran.
+
+Field umum yang dibaca:
+
+```text
 email
 phone
+description
 scholarshipName
 semester
 tahunAkademik
@@ -216,194 +359,146 @@ dasarSuratPerihal
 dasarSuratTgl
 tempatLahir
 tanggalLahir
-tanggalLulus
-tglLulus
+tanggalLulus / tglLulus
 ipk
 yudisium
 jumlahTranskrip
 jumlahIjazah
 jumlahTranslet
+programStudi
+jenisPermohonan
+kontakPerson
+tempatPelaksanaan
+tujuanSurat
+alamatSurat
+kecamatanKabupaten
+kotaKabupaten
+provinsi
+tanggalMulai
+tanggalSelesai
+attachments
 ```
 
-Only send fields relevant to the selected service.
+Success umum:
 
-## Attachment Rules
-
-- FormData key: `attachments`
-- Max 3 files.
-- Max 5 MB per file.
-- Allowed: PDF, JPG/JPEG, PNG.
-- Reject invalid files client-side before submit.
-- Still expect backend validation and show backend error.
-
-Recommended selected-file pattern:
-
-- Store selected files in React state.
-- Allow user to remove one selected file.
-- Reset native file input after selection.
-- Append all files from state on submit.
-
-```ts
-const [files, setFiles] = useState<File[]>([]);
-
-function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-  const selected = Array.from(event.currentTarget.files ?? []);
-  event.currentTarget.value = "";
-
-  // validate selected files here
-  setFiles((current) => [...current, ...selected].slice(0, 3));
+```json
+{
+  "data": {
+    "id": "123",
+    "requestId": "123",
+    "serviceSlug": "kartu-prestasi-akademik",
+    "serviceTitle": "Kartu Prestasi Akademik",
+    "status": "pending",
+    "attachmentCount": 1
+  },
+  "message": "Pengajuan layanan berhasil dikirim."
 }
 ```
 
-Attachment download/view endpoint:
+Upload rule default lampiran layanan:
 
-```text
-GET /api/attachments/[id]
-```
+- Key FormData: `attachments`.
+- Max 3 file.
+- Max 5 MB per file.
+- PDF, JPG/JPEG, PNG.
 
-Access:
+Rule khusus:
 
-- Admin/staff can open operational attachments.
-- Student can open only own request attachments.
-- Never use local storage path in FE.
+| Layanan | Rule |
+| --- | --- |
+| `permohonan-magang-kerja-praktek-ta` | Minimal 1 file, max 5 file PDF, max 10 MB per file |
+| `surat-izin-kegiatan` tahap bukti ACC | Minimal 1 file, max 5 file PDF/JPG/PNG, max 10 MB |
+| `surat-izin-kegiatan` tahap final SPIK | Minimal 1 file, max 5 file PDF/JPG/PNG, max 10 MB |
 
-## Student Request APIs
-
-### `GET /api/student/requests`
-
-Access: Student. Purpose: list own requests.
-
-```ts
-const result = await apiFetch<PaginatedResponse<RequestListItem>>(
-  "/api/student/requests"
-);
-```
-
-### `GET /api/student/requests/[serviceSlug]/[id]`
-
-Access: Student. Purpose: own request detail.
+Contoh submit:
 
 ```ts
-const result = await apiFetch<{ data: unknown }>(
-  `/api/student/requests/${serviceSlug}/${id}`
-);
+const formData = new FormData();
+formData.append("description", description);
+files.forEach((file) => formData.append("attachments", file));
+
+const result = await fetchJson<{
+  data: { requestId: string; attachmentCount: number };
+  message: string;
+}>(`/api/services/${serviceSlug}/requests`, {
+  method: "POST",
+  body: formData,
+});
 ```
 
-FE notes:
+## SIK Specific Flow
 
-- Do not send NPM manually.
-- Show empty state when no request exists.
-- If response is 403/404, show a generic "pengajuan tidak ditemukan" message.
+Routes:
 
-## Admin Request APIs
+| Method | Endpoint | Auth | Kegunaan |
+| --- | --- | --- | --- |
+| `POST` | `/api/services/surat-izin-kegiatan/requests` | Student | Upload bukti ACC Manajer |
+| `PATCH` | `/api/admin/requests/surat-izin-kegiatan/[id]/approval` | Admin | Approve/reject bukti ACC |
+| `PATCH` | `/api/staff/requests/surat-izin-kegiatan/[id]/approval` | Staff | Approve/reject bukti ACC |
+| `PATCH` | `/api/services/surat-izin-kegiatan/requests/[id]/final` | Student | Submit form final + SPIK final |
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/admin/summary` | Dashboard summary |
-| `GET` | `/api/admin/requests` | Request list |
-| `GET` | `/api/admin/requests/[serviceSlug]/[id]` | Request detail |
-| `PATCH` | `/api/admin/requests/[serviceSlug]/[id]/status` | Update status |
-| `DELETE` | `/api/admin/requests/[serviceSlug]/[id]` | Delete request |
+Alur:
 
-Request list supports query params:
+1. Mahasiswa upload bukti ACC.
+2. Status bukti menjadi pending verification.
+3. Admin/staff approve atau reject.
+4. Jika approved, mahasiswa submit form final.
+5. Setelah final terkirim, pengajuan masuk workflow status normal.
 
-```text
-service=<serviceSlug>
-status=pending | inProgress | completed | delivered
-page=1
-limit=10
-```
-
-Status payload:
+Approval payload:
 
 ```json
-{ "action": "process", "staffName": "Admin ULT" }
+{ "action": "approve", "staffName": "Nama Staff" }
 ```
 
-`staffName` is required by the current API.
+Reject payload:
 
-```ts
-await apiFetch(`/api/admin/requests/${serviceSlug}/${id}/status`, {
-  method: "PATCH",
-  body: JSON.stringify({
-    action: "process",
-    staffName: "Admin ULT",
-  }),
-});
+```json
+{
+  "action": "reject",
+  "reason": "Bukti belum sesuai.",
+  "staffName": "Nama Staff"
+}
 ```
 
-Actions:
-
-- `process` = Proses
-- `complete` = Selesai
-- `deliver` = Diambil/Dikirim
-
-Admin table buttons:
+Final FormData:
 
 ```text
-Proses | Selesai | Diambil/Dikirim | Detail | Hapus
+namaHimpunan
+namaKegiatan
+tanggalKegiatan
+emailPengiriman
+noHpWa
+attachments       // SPIK final, minimal 1 file
 ```
 
-Delete example:
+Error penting:
 
-```ts
-await apiFetch(`/api/admin/requests/${serviceSlug}/${id}`, {
-  method: "DELETE",
-});
-```
+- `409` jika bukti belum verified, final sudah pernah dikirim, atau bukti pending/verified belum selesai.
+- Status update normal SIK akan ditolak jika form final belum dikirim.
 
-Always show confirmation before delete.
+## Student Request Dan Survey
 
-## Staff Request APIs
+Student routes:
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/staff/summary` | Dashboard summary |
-| `GET` | `/api/staff/requests` | Request list |
-| `GET` | `/api/staff/requests/[serviceSlug]/[id]` | Request detail |
-| `PATCH` | `/api/staff/requests/[serviceSlug]/[id]/status` | Update status |
-| `DELETE` | `/api/staff/requests/[serviceSlug]/[id]` | Always 403; do not call from FE |
+| Method | Endpoint | Auth | Used by |
+| --- | --- | --- | --- |
+| `GET` | `/api/student/requests` | Student | `/mahasiswa/riwayat` |
+| `GET` | `/api/student/requests/[serviceSlug]/[id]` | Student | Detail riwayat |
+| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Survey di detail |
+| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Submit/update survey detail |
+| `GET` | `/api/student/surveys/requests` | Student | `/survei` |
+| `GET` | `/api/student/surveys/pending` | Student | Helper pending survey |
+| `POST` | `/api/student/surveys` | Student | Submit/update survey |
 
-Staff table buttons:
+Query list request:
 
 ```text
-Proses | Selesai | Diambil/Dikirim | Detail
+page=1
+limit=10
+service={SERVICE_SLUG}
+status=pending | inProgress | completed | delivered
 ```
-
-Staff cannot delete service requests. The DELETE route exists only to return a
-clear 403 response.
-
-Request list response is also `{ data, pagination }` and supports the same
-query params as admin.
-
-## Status UI Mapping
-
-| API status | UI label | Enabled action |
-| --- | --- | --- |
-| `pending` | Menunggu | Proses |
-| `inProgress` | Diproses | Selesai |
-| `completed` | Selesai | Diambil/Dikirim |
-| `delivered` | Diambil/Dikirim | none |
-
-Do not show raw status text to users. Use Indonesian labels.
-
-Disabled action tooltip examples:
-
-- Proses after processed: `Sudah diproses`
-- Selesai before process: `Proses dulu`
-- Diambil/Dikirim before complete: `Selesaikan dulu`
-
-## Survey APIs
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/student/surveys/requests` | Student survey page data |
-| `GET` | `/api/student/surveys/pending` | Optional helper for latest pending survey |
-| `POST` | `/api/student/surveys` | Submit/update student survey |
-| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Survey data for request detail |
-| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Submit/update survey from request detail |
-| `GET` | `/api/admin/surveys/summary` | Admin summary |
-| `GET` | `/api/staff/surveys/summary` | Staff summary |
 
 Survey payload:
 
@@ -423,86 +518,245 @@ Survey payload:
 
 Rules:
 
-- `overallRating` required.
-- Ratings must be 1-5.
-- `comment` max 500 chars.
-- Student can submit only for own completed/delivered request.
+- `overallRating` wajib.
+- Rating 1 sampai 5.
+- Komentar maksimal 500 karakter.
+- Survey hanya untuk pengajuan milik mahasiswa yang sudah `completed` atau `delivered`.
 
-```ts
-await apiFetch("/api/student/surveys", {
-  method: "POST",
-  body: JSON.stringify(payload),
-});
+## Admin/Staff Request API
+
+| Method | Endpoint | Auth | Used by |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/summary` | Admin | Dashboard admin |
+| `GET` | `/api/staff/summary` | Staff | Dashboard staff |
+| `GET` | `/api/admin/notifications/requests` | Admin | Badge/notifikasi |
+| `GET` | `/api/staff/notifications/requests` | Staff | Badge/notifikasi |
+| `GET` | `/api/admin/requests` | Admin | List pengajuan |
+| `GET` | `/api/staff/requests` | Staff | List pengajuan |
+| `GET` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Detail pengajuan |
+| `GET` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Detail pengajuan |
+| `PATCH` | `/api/admin/requests/[serviceSlug]/[id]/status` | Admin | Update status |
+| `PATCH` | `/api/staff/requests/[serviceSlug]/[id]/status` | Staff | Update status |
+| `DELETE` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Hapus pengajuan |
+| `DELETE` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Route ada, selalu 403 |
+| `GET` | `/api/admin/requests/export` | Admin | CSV export |
+
+Query list/export:
+
+```text
+service={SERVICE_SLUG}
+category=mahasiswa | akademik-alumni | perpustakaan
+status=pending | inProgress | completed | delivered
+sort=newest | oldest
+page=1
+limit=10
+scope=filtered | all       // export
 ```
 
-`GET /api/student/surveys/requests` returns:
+Status payload:
 
-```ts
+```json
 {
-  data: {
-    pending: StudentSurveyRequest[];
-    submitted: StudentSurveyRequest[];
-    tableAvailable: boolean;
-  }
+  "action": "process",
+  "staffName": "Admin ULT"
 }
 ```
 
-Use `/api/student/surveys/requests` for the main `/survei` page. The
-`/api/student/surveys/pending` endpoint exists as a lightweight helper if a UI
-needs one latest pending request.
-
-## Information Public Pages and APIs
-
-Public pages:
-
-- `/informasi`
-- `/informasi/[slug]`
-
-Public visible rule:
-
-- `published`
-- active
-- not archived
-- within display schedule range
-
-Public image route:
+Action yang didukung:
 
 ```text
-GET /api/information/images/[imageId]
+process
+complete
+deliver
+cancelProcess
+cancelComplete
+cancelDeliver
 ```
 
-Never use storage path directly.
+Status UI:
 
-## Admin/Staff Information APIs
+| API status | Label |
+| --- | --- |
+| `pending` | Menunggu |
+| `inProgress` | Diproses |
+| `completed` | Selesai |
+| `delivered` | Diambil/Dikirim |
 
-Admin:
+CSV export:
 
-| Method | Endpoint | Purpose |
+```ts
+const response = await fetch("/api/admin/requests/export?scope=all", {
+  credentials: "same-origin",
+});
+const blob = await response.blob();
+const url = URL.createObjectURL(blob);
+const link = document.createElement("a");
+link.href = url;
+link.download = "pengajuan.csv";
+link.click();
+URL.revokeObjectURL(url);
+```
+
+## Attachment, PDF, Dan Surat Resmi
+
+### `GET /api/attachments/[id]`
+
+Auth admin/staff atau student pemilik pengajuan. Response file/blob, bukan JSON.
+Gunakan link/tab baru:
+
+```tsx
+<a href={`/api/attachments/${attachment.id}`} target="_blank" rel="noopener noreferrer">
+  Lihat lampiran
+</a>
+```
+
+### `GET /api/requests/[serviceSlug]/[id]/pdf`
+
+Auth admin/staff. Response `application/pdf`, inline.
+
+Supported slug:
+
+```text
+keterangan-lulus
+ket-tunjangan-orang-tua
+keterangan-masih-kuliah
+keterangan-kelakuan-baik
+```
+
+Status penting:
+
+- `404` jika template/service tidak didukung atau pengajuan tidak ada.
+- `400` jika ID tidak valid.
+- `422` jika data surat belum lengkap.
+- `503` jika DB tidak tersedia.
+
+```tsx
+<a
+  href={`/api/requests/${serviceSlug}/${id}/pdf`}
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Cetak Surat
+</a>
+```
+
+### Letter metadata
+
+| Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/api/admin/information` | List information |
-| `POST` | `/api/admin/information` | Create |
-| `GET` | `/api/admin/information/[id]` | Detail |
-| `PATCH` | `/api/admin/information/[id]` | Update |
-| `DELETE` | `/api/admin/information/[id]` | Delete |
+| `GET` | `/api/requests/[serviceSlug]/[id]/letter-metadata` | Admin/Staff |
+| `PATCH` | `/api/requests/[serviceSlug]/[id]/letter-metadata` | Admin/Staff |
 
-Staff:
+Response sukses:
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/staff/information` | List information |
-| `POST` | `/api/staff/information` | Create |
-| `GET` | `/api/staff/information/[id]` | Detail |
-| `PATCH` | `/api/staff/information/[id]` | Update |
-| `DELETE` | `/api/staff/information/[id]` | Delete |
+```ts
+{
+  success: true;
+  data: {
+    serviceSlug: string;
+    requestId: string;
+    readiness: { isReady: boolean; message: string } | null;
+    duplicateNumber: {
+      hasDuplicateNumber: boolean;
+      duplicateCount: number;
+      duplicateSamples: Array<{ serviceSlug: string; id: string; npm?: string }>;
+    };
+    signerPickerAvailable: boolean;
+    signerPickerMessage: string | null;
+    signers: Array<{ id: number; name: string; nip: string; title: string; actingFor: string; rank: string }>;
+    commonFields: LetterMetadataField[];
+    serviceFields: LetterMetadataField[];
+  };
+}
+```
 
-Notes:
+Common fields:
 
-- Staff can delete information posts.
-- Slug is auto-generated from title.
-- Do not show editable slug field in FE.
-- Title must be unique.
+```text
+TTD_NO_SURAT
+TTD_TANGGAL
+TTD_TEMPAT
+TTD_PANGKAT_GOLONGAN
+TTD_JABATAN
+TTD_NAMA
+TTD_NIP
+```
 
-## Information FormData Fields
+Service-specific fields:
+
+```text
+// keterangan-lulus
+TTD_TANGGAL_BERLAKU
+TTD_AN
+TEMPAT_LAHIR
+TGL_LAHIR
+TGL_LULUS
+IPK
+YUDISIUM
+DASAR_SURAT_NO
+DASAR_SURAT_PERIHAL
+DASAR_SURAT_TGL
+
+// ket-tunjangan-orang-tua
+SEMESTER
+TAHUN_AKADEMIK
+NAMA_ORANG_TUA
+NIP_NRP
+PANGKAT_GOLONGAN
+INSTANSI
+
+// keterangan-masih-kuliah
+SEMESTER
+TAHUN_AKADEMIK
+ALAMAT
+KEPERLUAN
+
+// keterangan-kelakuan-baik
+ALAMAT
+KEPERLUAN
+```
+
+Jika PATCH mengubah nomor surat lama, API bisa mengembalikan `409`. Ulangi dengan:
+
+```json
+{ "TTD_NO_SURAT": "123/UN6.X/PK.01/2026", "confirmNumberOverwrite": true }
+```
+
+## Informasi API
+
+Public:
+
+| Method | Endpoint | Auth | Used by |
+| --- | --- | --- | --- |
+| `GET` | `/api/information` | Public | `/informasi`, `/informasi/[slug]` data listing |
+| `GET` | `/api/information/images/[imageId]` | Public/Admin/Staff | Image src |
+
+Public visibility rule: `published`, aktif, tidak archived, dan masuk jadwal tampil.
+
+Admin/staff:
+
+| Method | Endpoint | Auth |
+| --- | --- |
+| `GET` | `/api/admin/information` | Admin |
+| `POST` | `/api/admin/information` | Admin |
+| `GET` | `/api/admin/information/[id]` | Admin |
+| `PATCH` | `/api/admin/information/[id]` | Admin |
+| `DELETE` | `/api/admin/information/[id]` | Admin |
+| `POST` | `/api/admin/information/[id]/images` | Admin |
+| `PATCH` | `/api/admin/information/[id]/images/[imageId]` | Admin |
+| `DELETE` | `/api/admin/information/[id]/images/[imageId]` | Admin |
+| `POST` | `/api/admin/information/[id]/images/[imageId]/cover` | Admin |
+| `GET` | `/api/staff/information` | Staff |
+| `POST` | `/api/staff/information` | Staff |
+| `GET` | `/api/staff/information/[id]` | Staff |
+| `PATCH` | `/api/staff/information/[id]` | Staff |
+| `DELETE` | `/api/staff/information/[id]` | Staff |
+| `POST` | `/api/staff/information/[id]/images` | Staff |
+| `PATCH` | `/api/staff/information/[id]/images/[imageId]` | Staff |
+| `DELETE` | `/api/staff/information/[id]/images/[imageId]` | Staff |
+| `POST` | `/api/staff/information/[id]/images/[imageId]/cover` | Staff |
+
+FormData fields:
 
 ```text
 title
@@ -510,149 +764,360 @@ category
 summary
 content
 status          // draft | published | archived
-featured        // true | false
-isActive        // true | false
-displayStartAt  // optional datetime-local
-displayEndAt    // optional datetime-local
-images          // File[], optional
+featured
+isActive
+displayStartAt
+displayEndAt
+images          // max 5 file
+imageFits       // cover | contain, sejajar urutan images
 ```
 
-Rules:
+Upload rule informasi:
 
-- Max 5 images.
-- Max 2 MB per image.
-- Allowed: WebP, PNG, JPG/JPEG.
-- SVG not allowed.
-- `displayEndAt` must be after `displayStartAt`.
+- Max 5 gambar per post.
+- Max 2 MB per gambar.
+- WEBP, PNG, JPG/JPEG, SVG.
+- SVG aman saja yang diterima.
+- `imageFit` default `cover`; pakai `contain` untuk logo/poster agar tidak crop.
 
-Example:
+PATCH image metadata:
+
+```json
+{
+  "altText": "Deskripsi gambar",
+  "imageFit": "contain"
+}
+```
+
+## Profile CMS API
+
+Dipakai halaman publik `/profil`. Jika API/DB tidak tersedia, public UI memakai fallback statis.
+
+Public:
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/api/profile/organization` | Public |
+| `GET` | `/api/profile/location` | Public |
+| `GET` | `/api/profile/images/[type]/[id]` | Public/Admin/Staff |
+
+`type` gambar: `organization` atau `location`.
+
+Organization node:
 
 ```ts
-const formData = new FormData();
-formData.append("title", title);
-formData.append("category", category);
-formData.append("summary", summary);
-formData.append("content", content);
-formData.append("status", status);
-formData.append("featured", String(featured));
-formData.append("isActive", String(isActive));
-formData.append("displayStartAt", displayStartAt);
-formData.append("displayEndAt", displayEndAt);
-
-images.forEach((image) => formData.append("images", image));
-
-await apiFetch("/api/admin/information", {
-  method: "POST",
-  body: formData,
-});
+type ProfileOrganizationNode = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  positionTitle: string;
+  roleLabel: string | null;
+  photoUrl: string | null;
+  photoAlt: string | null;
+  colorVariant: "emerald" | "red" | "amber";
+  isActive: boolean;
+  sortOrder: number;
+  children: ProfileOrganizationNode[];
+};
 ```
 
-## Information Image APIs
+Location:
 
-| Method | Endpoint | Role |
+```ts
+type ProfileLocationSettings = {
+  eyebrow: string | null;
+  title: string;
+  description: string;
+  directionLabel: string;
+  directionUrl: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageFit: "cover" | "contain";
+  hours: Array<{ id: string; dayLabel: string; timeLabel: string; sortOrder: number; isActive: boolean }>;
+};
+```
+
+Admin/staff organization:
+
+| Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/api/information/images/[imageId]` | Public if visible, admin/staff for draft |
-| `POST` | `/api/admin/information/[id]/images` | Admin |
-| `PATCH` | `/api/admin/information/[id]/images/[imageId]` | Admin |
-| `DELETE` | `/api/admin/information/[id]/images/[imageId]` | Admin |
-| `POST` | `/api/admin/information/[id]/images/[imageId]/cover` | Admin |
-| `POST` | `/api/staff/information/[id]/images` | Staff |
-| `PATCH` | `/api/staff/information/[id]/images/[imageId]` | Staff |
-| `DELETE` | `/api/staff/information/[id]/images/[imageId]` | Staff |
-| `POST` | `/api/staff/information/[id]/images/[imageId]/cover` | Staff |
+| `GET` | `/api/admin/profile/organization` | Admin |
+| `POST` | `/api/admin/profile/organization` | Admin |
+| `GET` | `/api/admin/profile/organization/[id]` | Admin |
+| `PATCH` | `/api/admin/profile/organization/[id]` | Admin |
+| `DELETE` | `/api/admin/profile/organization/[id]` | Admin |
+| `GET` | `/api/staff/profile/organization` | Staff |
+| `POST` | `/api/staff/profile/organization` | Staff |
+| `GET` | `/api/staff/profile/organization/[id]` | Staff |
+| `PATCH` | `/api/staff/profile/organization/[id]` | Staff |
+| `DELETE` | `/api/staff/profile/organization/[id]` | Staff |
 
-Render image:
+Organization FormData/JSON fields:
+
+```text
+parentId        // id, root, none, atau kosong
+name
+positionTitle
+roleLabel
+photoAlt
+colorVariant    // emerald | red | amber
+isActive
+sortOrder
+image
+```
+
+Delete node ditolak `409` jika masih punya bawahan.
+
+Admin/staff location:
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/api/admin/profile/location` | Admin |
+| `PATCH` | `/api/admin/profile/location` | Admin |
+| `POST` | `/api/admin/profile/location/hours` | Admin |
+| `PATCH` | `/api/admin/profile/location/hours/[id]` | Admin |
+| `DELETE` | `/api/admin/profile/location/hours/[id]` | Admin |
+| `GET` | `/api/staff/profile/location` | Staff |
+| `PATCH` | `/api/staff/profile/location` | Staff |
+| `POST` | `/api/staff/profile/location/hours` | Staff |
+| `PATCH` | `/api/staff/profile/location/hours/[id]` | Staff |
+| `DELETE` | `/api/staff/profile/location/hours/[id]` | Staff |
+
+Location FormData/JSON fields:
+
+```text
+eyebrow
+title
+description
+directionLabel
+directionUrl     // URL absolut jika diisi
+email
+imageAlt
+imageFit         // cover | contain
+isActive
+image
+```
+
+Hour JSON:
+
+```json
+{
+  "dayLabel": "Senin - Jumat",
+  "timeLabel": "08.00 - 16.00 WIB",
+  "sortOrder": 1,
+  "isActive": true
+}
+```
+
+Upload rule profile:
+
+- Max 2 MB.
+- WEBP, PNG, JPG/JPEG, SVG.
+- SVG aman saja yang diterima.
+
+## Survey Summary API
+
+| Method | Endpoint | Auth | Used by |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/surveys/summary` | Admin | `/admin/surveys` |
+| `GET` | `/api/staff/surveys/summary` | Staff | `/staff/surveys` |
+
+Gunakan untuk chart/ringkasan kepuasan. Jika data kosong, tampilkan empty state, bukan error.
+
+## Admin Master Dan System API
+
+Semua route di bagian ini auth admin.
+
+Mahasiswa:
+
+| Method | Endpoint | Body |
+| --- | --- | --- |
+| `POST` | `/api/admin/master/mahasiswa` | `npm`, `nama`, `kdPs`, `kdPa`, `programStudi`, `jenjang`, `angkatan`, `fak` |
+| `PATCH` | `/api/admin/master/mahasiswa/[npm]` | sama, tanpa `npm` |
+| `DELETE` | `/api/admin/master/mahasiswa/[npm]` | optional `{ "forceDelete": true }` |
+
+Delete mahasiswa ditahan jika masih punya pengajuan, kecuali dikirim ulang dengan `forceDelete: true`.
+
+Tracer alumni:
+
+| Method | Endpoint | Body |
+| --- | --- | --- |
+| `POST` | `/api/admin/alumni/tracer-study` | `nama`, `npm`, `program`, `prodi`, `tahunMasuk`, `tahunLulus`, `instansi`, `jabatan`, `statusIsi` |
+| `PATCH` | `/api/admin/alumni/tracer-study/[id]` | field yang sama |
+| `DELETE` | `/api/admin/alumni/tracer-study/[id]` | tidak perlu body |
+
+System data:
+
+| Method | Endpoint | Body |
+| --- | --- | --- |
+| `POST` | `/api/admin/system/levels` | `levelDataId`, `levelDataName`, `fieldName` |
+| `PATCH` | `/api/admin/system/levels/[id]` | `levelDataName`, `fieldName` |
+| `DELETE` | `/api/admin/system/levels/[id]` | tidak perlu body |
+| `POST` | `/api/admin/system/units` | `levelDataId`, `levelDataCode`, `unitName` |
+| `PATCH` | `/api/admin/system/units/[id]` | `levelDataId`, `levelDataCode`, `unitName` |
+| `DELETE` | `/api/admin/system/units/[id]` | tidak perlu body |
+| `POST` | `/api/admin/system/users` | `username`, `fullName`, `email`, `telephone`, `accessCode`, `unitId`, `confirmed`, `password`, `confirmPassword` |
+| `PATCH` | `/api/admin/system/users/[username]` | user fields, password optional |
+| `DELETE` | `/api/admin/system/users/[username]` | tidak perlu body |
+| `GET` | `/api/admin/system/user-log` | query read-only |
+
+Proteksi user management:
+
+- Password/hash tidak pernah dikirim ke FE.
+- Password minimal 8 karakter dan harus cocok dengan konfirmasi.
+- Akun yang sedang login tidak bisa dinonaktifkan, diturunkan dari admin, dipindah unit, atau dihapus.
+- Delete user diblokir jika masih punya riwayat aktivitas; nonaktifkan sebagai alternatif.
+
+## Auth Dan Utility
+
+| Method | Endpoint | Auth | Notes |
+| --- | --- | --- | --- |
+| `GET/POST` | `/api/auth/[...nextauth]` | Public/internal NextAuth | Gunakan `signIn`, `signOut`, `useSession` |
+| `GET` | `/api/health` | Public | Health check DB/API |
+
+FE biasanya tidak memanggil route NextAuth langsung. Pakai helper NextAuth.
+
+## Pola UI Frontend
+
+Loading:
+
+- Set `isLoading` saat request.
+- Disable submit button.
+- Untuk list, tampilkan skeleton atau empty placeholder.
+
+Error:
+
+```ts
+try {
+  await fetchJson("/api/admin/home/activities");
+} catch (error) {
+  const message = error instanceof Error ? error.message : "Terjadi kesalahan.";
+  setError(message);
+}
+```
+
+Khusus 503 DB down, tampilkan pesan ramah dan tombol coba lagi.
+
+Upload:
+
+- Validasi tipe dan ukuran file di FE sebelum submit.
+- Tetap tampilkan error backend karena backend adalah validasi final.
+- Jangan set `Content-Type` untuk `FormData`.
+- Untuk SVG dari API image, gunakan `unoptimized` jika memakai `next/image`.
+
+Image rendering:
 
 ```tsx
-<img src={`/api/information/images/${image.id}`} alt={image.altText ?? ""} />
+const objectClass = imageFit === "contain" ? "object-contain" : "object-cover";
 ```
 
-## Frontend UI Requirements
+Gunakan background netral pada wrapper saat `object-contain` agar ruang kosong tetap rapi.
 
-### Service form
+Refresh:
 
-- Validate required fields.
-- Validate files before submit.
-- Show selected file list.
-- Show success state.
-- Link to `/mahasiswa/riwayat` after success.
+- Setelah create/update/delete, refetch list atau `router.refresh()`.
+- Setelah save letter metadata, refetch metadata/readiness sebelum enable tombol cetak.
 
-### Request table
+## Route Inventory
 
-- Show status badge.
-- Show action buttons.
-- Disable invalid action buttons.
-- Confirmation before status mutation/delete.
-- Keep `Detail` always enabled.
+| Feature | Method | Endpoint | Auth | Response | Used by | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Health | GET | `/api/health` | Public | JSON | Infra/dev | Internal health check |
+| NextAuth | GET/POST | `/api/auth/[...nextauth]` | Public | NextAuth | Login/session | Jangan dipanggil manual kecuali perlu |
+| Services | GET | `/api/services` | Public | JSON | `/layanan` | Katalog layanan |
+| Service Detail | GET | `/api/services/[slug]` | Public | JSON | `/layanan/[slug]` | Detail layanan |
+| Service Submit | POST | `/api/services/[slug]/requests` | Student | JSON | `/layanan/[slug]/ajukan` | JSON/FormData |
+| SIK Final | PATCH | `/api/services/surat-izin-kegiatan/requests/[id]/final` | Student | JSON | Form final SIK | FormData |
+| Homepage Activities | GET | `/api/home/activities` | Public | JSON | Homepage | Active only |
+| Activity Image | GET | `/api/home/activities/images/[id]` | Public/Admin/Staff | Image | Image src | SVG CSP + nosniff |
+| Home Links | GET | `/api/home/links` | Public | JSON | Homepage CTA | Kalender Akademik |
+| Information Public | GET | `/api/information` | Public | JSON | `/informasi` | Published visible only |
+| Information Image | GET | `/api/information/images/[imageId]` | Public/Admin/Staff | Image | Image src | Storage path hidden |
+| Profile Org Public | GET | `/api/profile/organization` | Public | JSON | `/profil` | Active tree |
+| Profile Location Public | GET | `/api/profile/location` | Public | JSON | `/profil` | Active location |
+| Profile Image | GET | `/api/profile/images/[type]/[id]` | Public/Admin/Staff | Image | `/profil` | `organization`/`location` |
+| Attachment | GET | `/api/attachments/[id]` | Owner/Admin/Staff | File | Detail pengajuan | Blob/file, not JSON |
+| Student Requests | GET | `/api/student/requests` | Student | JSON | Riwayat | Own requests |
+| Student Detail | GET | `/api/student/requests/[serviceSlug]/[id]` | Student | JSON | Detail riwayat | Own request only |
+| Student Survey Detail | GET/POST | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | JSON | Detail riwayat | Completed/delivered |
+| Student Survey List | GET | `/api/student/surveys/requests` | Student | JSON | `/survei` | Pending/submitted |
+| Student Survey Pending | GET | `/api/student/surveys/pending` | Student | JSON | Optional badge/helper | Lightweight helper |
+| Student Survey Submit | POST | `/api/student/surveys` | Student | JSON | `/survei` | Rating 1-5 |
+| Admin Summary | GET | `/api/admin/summary` | Admin | JSON | Dashboard admin | Cards summary |
+| Staff Summary | GET | `/api/staff/summary` | Staff | JSON | Dashboard staff | Cards summary |
+| Admin Notifications | GET | `/api/admin/notifications/requests` | Admin | JSON | Navbar/dashboard | Pending count |
+| Staff Notifications | GET | `/api/staff/notifications/requests` | Staff | JSON | Navbar/dashboard | Pending count |
+| Admin Requests | GET | `/api/admin/requests` | Admin | JSON | Admin requests | Filter/pagination |
+| Staff Requests | GET | `/api/staff/requests` | Staff | JSON | Staff requests | Filter/pagination |
+| Admin Request Detail | GET/DELETE | `/api/admin/requests/[serviceSlug]/[id]` | Admin | JSON | Detail pengajuan | Delete admin only |
+| Staff Request Detail | GET/DELETE | `/api/staff/requests/[serviceSlug]/[id]` | Staff | JSON | Detail pengajuan | DELETE returns 403 |
+| Admin Status | PATCH | `/api/admin/requests/[serviceSlug]/[id]/status` | Admin | JSON | Detail/table | Status actions |
+| Staff Status | PATCH | `/api/staff/requests/[serviceSlug]/[id]/status` | Staff | JSON | Detail/table | Status actions |
+| Admin SIK Approval | PATCH | `/api/admin/requests/surat-izin-kegiatan/[id]/approval` | Admin | JSON | SIK verification | approve/reject |
+| Staff SIK Approval | PATCH | `/api/staff/requests/surat-izin-kegiatan/[id]/approval` | Staff | JSON | SIK verification | approve/reject |
+| Request Export | GET | `/api/admin/requests/export` | Admin | CSV | Admin export | `text/csv` |
+| Letter PDF | GET | `/api/requests/[serviceSlug]/[id]/pdf` | Admin/Staff | PDF/Text/JSON | Detail pengajuan | `application/pdf` |
+| Letter Metadata | GET/PATCH | `/api/requests/[serviceSlug]/[id]/letter-metadata` | Admin/Staff | JSON | Detail pengajuan | 409 overwrite |
+| Admin Home Activities | GET/POST | `/api/admin/home/activities` | Admin | JSON | Admin CMS | List/create |
+| Admin Home Activity Detail | GET/PATCH/DELETE | `/api/admin/home/activities/[id]` | Admin | JSON | Admin CMS | Detail/update/delete |
+| Staff Home Activities | GET/POST | `/api/staff/home/activities` | Staff | JSON | Staff CMS | List/create |
+| Staff Home Activity Detail | GET/PATCH/DELETE | `/api/staff/home/activities/[id]` | Staff | JSON | Staff CMS | Detail/update/delete |
+| Admin Home Links | GET | `/api/admin/home/links` | Admin | JSON | Admin CMS | Link state |
+| Admin Calendar Link | PATCH | `/api/admin/home/links/academic-calendar` | Admin | JSON | Admin CMS | URL validation |
+| Staff Home Links | GET | `/api/staff/home/links` | Staff | JSON | Staff CMS | Link state |
+| Staff Calendar Link | PATCH | `/api/staff/home/links/academic-calendar` | Staff | JSON | Staff CMS | URL validation |
+| Admin Information | GET/POST | `/api/admin/information` | Admin | JSON | Admin informasi | List/create |
+| Admin Information Detail | GET/PATCH/DELETE | `/api/admin/information/[id]` | Admin | JSON | Admin informasi | Detail/update/delete |
+| Admin Info Images | POST | `/api/admin/information/[id]/images` | Admin | JSON | Admin informasi | Upload images |
+| Admin Info Image | PATCH/DELETE | `/api/admin/information/[id]/images/[imageId]` | Admin | JSON | Admin informasi | Metadata/delete |
+| Admin Info Cover | POST | `/api/admin/information/[id]/images/[imageId]/cover` | Admin | JSON | Admin informasi | Set cover |
+| Staff Information | GET/POST | `/api/staff/information` | Staff | JSON | Staff informasi | List/create |
+| Staff Information Detail | GET/PATCH/DELETE | `/api/staff/information/[id]` | Staff | JSON | Staff informasi | Detail/update/delete |
+| Staff Info Images | POST | `/api/staff/information/[id]/images` | Staff | JSON | Staff informasi | Upload images |
+| Staff Info Image | PATCH/DELETE | `/api/staff/information/[id]/images/[imageId]` | Staff | JSON | Staff informasi | Metadata/delete |
+| Staff Info Cover | POST | `/api/staff/information/[id]/images/[imageId]/cover` | Staff | JSON | Staff informasi | Set cover |
+| Admin Surveys | GET | `/api/admin/surveys/summary` | Admin | JSON | Admin surveys | Summary |
+| Staff Surveys | GET | `/api/staff/surveys/summary` | Staff | JSON | Staff surveys | Summary |
+| Admin Mahasiswa | POST | `/api/admin/master/mahasiswa` | Admin | JSON | Master mahasiswa | Create |
+| Admin Mahasiswa Detail | PATCH/DELETE | `/api/admin/master/mahasiswa/[npm]` | Admin | JSON | Master mahasiswa | Update/delete |
+| Admin Tracer | POST | `/api/admin/alumni/tracer-study` | Admin | JSON | Master alumni | Create |
+| Admin Tracer Detail | PATCH/DELETE | `/api/admin/alumni/tracer-study/[id]` | Admin | JSON | Master alumni | Update/delete |
+| Admin Levels | POST | `/api/admin/system/levels` | Admin | JSON | System data | Create |
+| Admin Level Detail | PATCH/DELETE | `/api/admin/system/levels/[id]` | Admin | JSON | System data | Update/delete |
+| Admin Units | POST | `/api/admin/system/units` | Admin | JSON | System data | Create |
+| Admin Unit Detail | PATCH/DELETE | `/api/admin/system/units/[id]` | Admin | JSON | System data | Update/delete |
+| Admin Users | POST | `/api/admin/system/users` | Admin | JSON | User management | Create |
+| Admin User Detail | PATCH/DELETE | `/api/admin/system/users/[username]` | Admin | JSON | User management | Update/delete |
+| Admin User Log | GET | `/api/admin/system/user-log` | Admin | JSON | Audit log | Read-only |
+| Admin Profile Org | GET/POST | `/api/admin/profile/organization` | Admin | JSON | Profile CMS | List/create |
+| Admin Profile Org Detail | GET/PATCH/DELETE | `/api/admin/profile/organization/[id]` | Admin | JSON | Profile CMS | Detail/update/delete |
+| Admin Profile Location | GET/PATCH | `/api/admin/profile/location` | Admin | JSON | Profile CMS | Get/update |
+| Admin Profile Hours | POST | `/api/admin/profile/location/hours` | Admin | JSON | Profile CMS | Add hour |
+| Admin Profile Hour Detail | PATCH/DELETE | `/api/admin/profile/location/hours/[id]` | Admin | JSON | Profile CMS | Update/delete |
+| Staff Profile Org | GET/POST | `/api/staff/profile/organization` | Staff | JSON | Profile CMS | List/create |
+| Staff Profile Org Detail | GET/PATCH/DELETE | `/api/staff/profile/organization/[id]` | Staff | JSON | Profile CMS | Detail/update/delete |
+| Staff Profile Location | GET/PATCH | `/api/staff/profile/location` | Staff | JSON | Profile CMS | Get/update |
+| Staff Profile Hours | POST | `/api/staff/profile/location/hours` | Staff | JSON | Profile CMS | Add hour |
+| Staff Profile Hour Detail | PATCH/DELETE | `/api/staff/profile/location/hours/[id]` | Staff | JSON | Profile CMS | Update/delete |
 
-### Information form
+## Belum Tersedia / Tidak Ditemukan
 
-- No slug input.
-- Show generated public link preview if useful.
-- Show image preview.
-- Allow remove selected image.
-- Include active/featured/status/schedule fields.
-- Confirmation before delete.
+- Tidak ada route `PUT` di `src/app/api`.
+- Tidak ada bulk delete request API.
+- Tidak ada dedicated report tab API selain summary, survey summary, request list, dan CSV export.
+- List master data tertentu masih bisa berasal dari server component/helper, bukan route GET khusus.
 
-### Survey
-
-- Empty state if no completed request.
-- Submitted state after survey is sent.
-- Allow update existing survey when supported.
-
-## Permission Notes
-
-- Guest cannot call protected APIs.
-- Student cannot call admin/staff APIs.
-- Student cannot send NPM manually for protected student APIs.
-- Staff cannot delete service requests.
-- Admin can delete service requests.
-- Staff and admin can delete information posts.
-- Do not display `sourceTable` to users.
-
-## Common FE Mistakes
-
-- Setting `Content-Type: application/json` when body is `FormData`.
-- Reading only `files[0]` instead of all files.
-- Sending NPM manually.
-- Showing raw `serviceSlug` as label.
-- Not handling empty list.
-- Forgetting confirmation before delete.
-- Showing hidden/draft/archived information publicly.
-
-## Minimal TypeScript Types
-
-These are FE-facing helper types, not a full backend mirror.
+## Tipe Minimal FE
 
 ```ts
 export type Role = "admin" | "staff" | "student";
-
-export type ServiceItem = {
-  title: string;
-  slug: string;
-  category: string;
-  description: string;
-  requirements: string[];
-  processingTime: string;
-  sourceTable?: string; // internal, do not display to users
-};
 
 export type RequestStatus =
   | "pending"
   | "inProgress"
   | "completed"
   | "delivered";
-
-export type RequestListItem = {
-  id: string;
-  serviceSlug: string;
-  serviceTitle: string;
-  sourceTable?: string; // internal, do not display to users
-  maskedNpm: string;
-  requestDate: string | null;
-  status: RequestStatus;
-  statusLabel: string;
-};
 
 export type PaginatedResponse<T> = {
   data: T[];
@@ -664,41 +1129,8 @@ export type PaginatedResponse<T> = {
   };
 };
 
-export type StudentSurveyRequest = {
-  id: string;
-  serviceSlug: string;
-  sourceTable: string;
-  serviceTitle: string;
-  requestDate: string | null;
-  status: "completed" | "delivered";
-  statusLabel: string;
-  hasSurvey: boolean;
-};
-
-export type SurveyPayload = {
-  serviceSlug: string;
-  requestId: string;
-  overallRating: number;
-  ratingTangibility?: number | null;
-  ratingReliability?: number | null;
-  ratingResponsiveness?: number | null;
-  ratingAssurance?: number | null;
-  ratingEmpathy?: number | null;
-  comment?: string | null;
-};
-
-export type InformationStatus = "draft" | "published" | "archived";
-
-export type InformationPostFormInput = {
-  title: string;
-  category?: string;
-  summary?: string;
-  content: string;
-  status: InformationStatus;
-  featured: boolean;
-  isActive: boolean;
-  displayStartAt?: string;
-  displayEndAt?: string;
-  images?: File[];
-};
+export type ApiErrorPayload =
+  | { error: string; issues?: Array<{ field: string; message: string }> }
+  | { success: false; error: { code?: string; message: string } };
 ```
+

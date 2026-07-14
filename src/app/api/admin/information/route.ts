@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   getInformationApiErrorStatus,
   parseInformationPostRequest,
@@ -22,9 +23,17 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const posts = await getAdminInformationPosts();
+  try {
+    const posts = await getAdminInformationPosts();
 
-  return NextResponse.json({ data: posts });
+    return NextResponse.json({ data: posts });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:admin:information:get",
+      "Informasi gagal dimuat."
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -35,14 +44,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { input, files } = await parseInformationPostRequest(
+    const { input, files, imageFits } = await parseInformationPostRequest(
       request,
       getActorName(user)
     );
     const post = await createInformationPost(input);
 
     if (post) {
-      await saveInformationImagesForPost(post.id, files);
+      await saveInformationImagesForPost(post.id, files, imageFits);
     }
 
     return NextResponse.json({
@@ -59,9 +68,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Informasi gagal dibuat." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:post",
+      "Informasi gagal dibuat."
     );
   }
 }

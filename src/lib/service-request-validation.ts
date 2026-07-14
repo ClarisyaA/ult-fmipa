@@ -31,12 +31,29 @@ const optionalPositiveInteger = z.preprocess(
 );
 
 const magangJenisPermohonan = [
-  "Magang",
-  "Kerja Praktek",
-  "Tugas Akhir (TA)",
+  "Magang Kerja",
+  "Kerja Praktek Industri",
+  "Praktik Kerja",
+  "Magang Tugas Akhir",
+] as const;
+
+const programStudiOptions = [
+  "S-1 Matematika",
+  "S-1 Kimia",
+  "S-1 Fisika",
+  "S-1 Biologi",
+  "S-1 Statistika",
+  "S-1 Teknik Informatika",
+  "S-1 Teknik Elektro",
+  "S-1 Ilmu Aktuaria",
+  "D-IV Teknologi Industri Kimia",
+  "S-1 Geofisika",
+  "S-2 Statistika Terapan",
+  "S-2 Ilmu Kimia",
 ] as const;
 
 const requiredMagangFields = [
+  ["programStudi", "Program studi wajib dipilih."],
   ["jenisPermohonan", "Jenis permohonan wajib dipilih."],
   ["tempatPelaksanaan", "Tempat pelaksanaan wajib diisi."],
   ["tujuanSurat", "Tujuan surat wajib diisi."],
@@ -90,6 +107,7 @@ export const createServiceRequestSchema = z.object({
   jumlahTranskrip: optionalPositiveInteger,
   jumlahIjazah: optionalPositiveInteger,
   jumlahTranslet: optionalPositiveInteger,
+  programStudi: optionalText(150),
   jenisPermohonan: optionalText(50),
   kontakPerson: optionalText(150),
   tempatPelaksanaan: optionalText(200),
@@ -125,6 +143,19 @@ export const createServiceRequestSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["jenisPermohonan"],
       message: "Jenis permohonan tidak valid.",
+    });
+  }
+
+  if (
+    input.programStudi &&
+    !programStudiOptions.includes(
+      input.programStudi as (typeof programStudiOptions)[number]
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["programStudi"],
+      message: "Program studi tidak valid.",
     });
   }
 

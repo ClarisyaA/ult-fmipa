@@ -5,8 +5,13 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableScroll,
+  AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import {
+  TracerCreateButton,
+  TracerRowActions,
+} from "@/components/admin/master-actions/admin-master-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getTracerStudyRows } from "@/lib/admin-readonly-data";
+import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +36,18 @@ export default async function AdminTracerStudyPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const rows = await getTracerStudyRows({ search: params.q });
+  let rows: Awaited<ReturnType<typeof getTracerStudyRows>> = [];
+  let unavailable = false;
+
+  try {
+    rows = await getTracerStudyRows({ search: params.q });
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    unavailable = true;
+    logServerError("admin:alumni:tracer-study", error);
+  }
   const csvRows = rows.map((row) => ({
     NPM: row.npm,
     Nama: row.nama,
@@ -45,7 +62,8 @@ export default async function AdminTracerStudyPage({
     <AdminPageShell>
       <AdminPageHeader
         title="Daftar Tracer Study"
-        description="Read-only data tracer study alumni. Kontak personal tidak ditampilkan di tabel ini."
+        description="Kelola data tracer study alumni. Kontak personal tidak ditampilkan di tabel ini."
+        action={<TracerCreateButton />}
       />
 
       <AdminSectionCard
@@ -69,17 +87,15 @@ export default async function AdminTracerStudyPage({
           </Button>
           <CsvDownloadButton filename="tracer-study-alumni.csv" rows={csvRows} />
         </form>
-        <p className="mt-3 text-[11px] text-[#7a7166]">
-          Tambah, edit, hapus, dan import disembunyikan dulu sampai API tracer
-          study yang aman tersedia.
-        </p>
       </AdminSectionCard>
 
       <AdminSectionCard
         title="Tabel Tracer Study"
         description={`Menampilkan ${rows.length} baris read-only.`}
       >
-        {rows.length === 0 ? (
+        {unavailable ? (
+          <AdminUnavailableState />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
             title="Data tracer study tidak ditemukan"
             description="Tidak ada baris yang cocok dengan pencarian saat ini."
@@ -95,6 +111,7 @@ export default async function AdminTracerStudyPage({
                   <TableHead>Tahun Lulus</TableHead>
                   <TableHead>Instansi</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -113,6 +130,9 @@ export default async function AdminTracerStudyPage({
                       >
                         {row.statusIsi ? "Terisi" : "Belum terisi"}
                       </AdminStatusBadge>
+                    </TableCell>
+                    <TableCell>
+                      <TracerRowActions row={row} />
                     </TableCell>
                   </TableRow>
                 ))}

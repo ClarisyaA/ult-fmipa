@@ -6,6 +6,7 @@ import {
   ServiceRequestSubmitError,
 } from "@/lib/legacy-request-submit";
 import { authOptions } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import {
   FileUploadError,
   saveUploadedFile,
@@ -19,6 +20,7 @@ import {
   createSikApprovalProofRequest,
   sikApprovalProofAttachmentType,
   sikServiceSlug,
+  SikRequestError,
 } from "@/lib/sik-requests";
 import { getServerSession } from "next-auth";
 
@@ -105,6 +107,7 @@ export async function POST(
           jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
           jumlahIjazah: getFormString(formData, "jumlahIjazah"),
           jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+          programStudi: getFormString(formData, "programStudi"),
           jenisPermohonan: getFormString(formData, "jenisPermohonan"),
           kontakPerson: getFormString(formData, "kontakPerson"),
           tempatPelaksanaan: getFormString(formData, "tempatPelaksanaan"),
@@ -252,6 +255,15 @@ export async function POST(
       );
     }
 
+    if (error instanceof SikRequestError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+        },
+        { status: error.statusCode }
+      );
+    }
+
     if (error instanceof FileUploadError) {
       return NextResponse.json(
         {
@@ -261,11 +273,10 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
-      {
-        error: "Pengajuan layanan gagal dikirim.",
-      },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:services:requests:post",
+      "Pengajuan layanan gagal dikirim.",
     );
   }
 }

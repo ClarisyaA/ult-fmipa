@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth";
+import { jsonApiError } from "@/lib/error-utils";
 import { getInformationApiErrorStatus } from "@/lib/information-api";
 import { getInformationPostById } from "@/lib/information-posts";
 import {
   deleteInformationPostImage,
   getInformationPostImageRecord,
-  updateInformationPostImageAltText,
+  updateInformationPostImageMetadata,
 } from "@/lib/information-post-images";
 
 type ImageRouteProps = {
   params: Promise<{ id: string; imageId: string }>;
 };
+
+const supportedPatchFields = new Set(["altText", "imageFit"]);
 
 async function assertImageBelongsToPost(id: string, imageId: string) {
   const post = await getInformationPostById(id);
@@ -36,10 +39,24 @@ export async function PATCH(request: Request, { params }: ImageRouteProps) {
 
     const body = (await request.json().catch(() => ({}))) as {
       altText?: string | null;
+      imageFit?: string | null;
     };
-    await updateInformationPostImageAltText(imageId, body.altText ?? null);
 
-    return NextResponse.json({ message: "Alt text berhasil diperbarui." });
+    for (const key of Object.keys(body)) {
+      if (!supportedPatchFields.has(key)) {
+        return NextResponse.json(
+          { error: `Field ${key} tidak didukung.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    await updateInformationPostImageMetadata(imageId, {
+      altText: body.altText ?? null,
+      imageFit: body.imageFit,
+    });
+
+    return NextResponse.json({ message: "Gambar berhasil diperbarui." });
   } catch (error) {
     const apiError = getInformationApiErrorStatus(error);
 
@@ -50,9 +67,10 @@ export async function PATCH(request: Request, { params }: ImageRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Gambar gagal diperbarui." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:image:patch",
+      "Gambar gagal diperbarui."
     );
   }
 }
@@ -84,10 +102,10 @@ export async function DELETE(_request: Request, { params }: ImageRouteProps) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Gambar gagal dihapus." },
-      { status: 500 }
+    return jsonApiError(
+      error,
+      "api:admin:information:image:delete",
+      "Gambar gagal dihapus."
     );
   }
 }
-

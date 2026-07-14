@@ -1,26 +1,35 @@
 import { NextResponse } from "next/server";
 
+import { jsonApiError } from "@/lib/error-utils";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ serviceSlug: string; id: string }> }
 ) {
-  const { serviceSlug, id } = await params;
-  const requestDetail = await getRequestDetail(serviceSlug, id);
+  try {
+    const { serviceSlug, id } = await params;
+    const requestDetail = await getRequestDetail(serviceSlug, id);
 
-  if (!requestDetail) {
-    return NextResponse.json(
-      {
-        error: "Request not found",
-      },
-      { status: 404 }
+    if (!requestDetail) {
+      return NextResponse.json(
+        {
+          error: "Request not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      data: requestDetail,
+    });
+  } catch (error) {
+    return jsonApiError(
+      error,
+      "api:staff:requests:detail:get",
+      "Detail pengajuan gagal dimuat."
     );
   }
-
-  return NextResponse.json({
-    data: requestDetail,
-  });
 }
 
 export async function DELETE() {

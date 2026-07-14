@@ -55,7 +55,7 @@ function getServiceIcon(slug: string): LucideIcon {
   return match?.icon ?? Award;
 }
 
-function getServiceTheme(slug: string) {
+function getServiceTheme() {
   return {
     primary: "#EE1C25",
     primaryLight: "from-[#EE1C25] to-[#C41720]",
@@ -72,12 +72,11 @@ function getServiceTheme(slug: string) {
  * ================================================================ */
 
 interface HeroDecorationProps {
-  slug: string;
   Icon: LucideIcon;
 }
 
-function HeroDecoration({ slug, Icon }: HeroDecorationProps) {
-  const theme = getServiceTheme(slug);
+function HeroDecoration({ Icon }: HeroDecorationProps) {
+  const theme = getServiceTheme();
 
   return (
     <div className="relative hidden lg:block">
@@ -263,7 +262,7 @@ export default async function ServiceDetailPage({
                 </div>
 
                 {/* KOLOM KANAN */}
-                <HeroDecoration slug={slug} Icon={Icon} />
+                <HeroDecoration Icon={Icon} />
               </div>
             </div>
           </div>

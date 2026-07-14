@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 
 import {
   AdminPageShell,
   AdminStatusBadge,
 } from "@/components/admin/admin-ui";
+import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
+import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
 import { Button } from "@/components/ui/button";
@@ -20,8 +22,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  getPrintableLetterService,
+  PRINTABLE_LETTER_SERVICES,
+} from "@/lib/letters/letter-data";
+import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { getRequestAttachments } from "@/lib/request-attachments";
+import type { RequestStatusAction } from "@/types/request-action";
 import type { ServiceRequestDetail } from "@/types/request-detail";
 
 export const dynamic = "force-dynamic";
@@ -244,6 +254,151 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   );
 }
 
+type PrintableRequestInfo = {
+  serviceSlug: keyof typeof PRINTABLE_LETTER_SERVICES;
+  template: (typeof PRINTABLE_LETTER_SERVICES)[keyof typeof PRINTABLE_LETTER_SERVICES]["template"];
+};
+
+function getPrintableRequestInfo(
+  serviceSlug: string,
+  detail: ServiceRequestDetail,
+): PrintableRequestInfo | null {
+  const direct = getPrintableLetterService(detail.serviceSlug);
+
+  if (direct) {
+    return {
+      serviceSlug: detail.serviceSlug as keyof typeof PRINTABLE_LETTER_SERVICES,
+      template: direct.template,
+    };
+  }
+
+  const fromParam = getPrintableLetterService(serviceSlug);
+
+  if (fromParam && fromParam.sourceTable === detail.sourceTable) {
+    return {
+      serviceSlug: serviceSlug as keyof typeof PRINTABLE_LETTER_SERVICES,
+      template: fromParam.template,
+    };
+  }
+
+  const byTable = Object.entries(PRINTABLE_LETTER_SERVICES).find(
+    ([, service]) => service.sourceTable === detail.sourceTable,
+  );
+
+  if (!byTable) {
+    return null;
+  }
+
+  return {
+    serviceSlug: byTable[0] as keyof typeof PRINTABLE_LETTER_SERVICES,
+    template: byTable[1].template,
+  };
+}
+
+function PrintLetterButton({
+  detail,
+  printableInfo,
+}: {
+  detail: ServiceRequestDetail;
+  printableInfo: PrintableRequestInfo | null;
+}) {
+  if (!printableInfo) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-1 text-right">
+      <Button asChild variant="outline">
+        <Link
+          href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Buka PDF surat di tab baru"
+        >
+          <FileText className="size-4" />
+          Cetak Surat
+        </Link>
+      </Button>
+      <p className="max-w-[260px] text-xs text-muted-foreground">
+        Pastikan Data Surat sudah lengkap sebelum mencetak PDF resmi.
+      </p>
+    </div>
+  );
+}
+
+function PrintReadinessNotice({
+  readiness,
+}: {
+  readiness: KeteranganLulusPrintReadiness | null;
+}) {
+  if (!readiness) {
+    return null;
+  }
+
+  return (
+    <p
+      className={
+        readiness.isReady
+          ? "mt-1 text-sm text-[#0f5b45]"
+          : "mt-1 text-sm text-[#9a3412]"
+      }
+    >
+      {readiness.message}
+    </p>
+  );
+}
+
+function getWorkflowCancelAction(label: string): {
+  action: Extract<
+    RequestStatusAction,
+    "cancelProcess" | "cancelComplete" | "cancelDeliver"
+  >;
+  label: string;
+  confirmation: string;
+} | null {
+  if (label === "Diproses") {
+    return {
+      action: "cancelProcess",
+      label: "Batalkan Proses",
+      confirmation:
+        "Batalkan status diproses? Status selesai dan diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Selesai") {
+    return {
+      action: "cancelComplete",
+      label: "Batalkan Selesai",
+      confirmation:
+        "Batalkan status selesai? Status diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Diambil/Dikirim") {
+    return {
+      action: "cancelDeliver",
+      label: "Batalkan Diambil/Dikirim",
+      confirmation: "Batalkan status diambil/dikirim untuk pengajuan ini?",
+    };
+  }
+
+  return null;
+}
+
+async function getPrintReadiness(
+  printableInfo: PrintableRequestInfo | null,
+  id: string,
+) {
+  if (!printableInfo) return null;
+  const { template } = printableInfo;
+
+  if (template === "keterangan-lulus") {
+    return getKeteranganLulusPrintReadiness(id);
+  }
+
+  return getOfficialPrintReadiness(template, id);
+}
+
 export default async function AdminRequestDetailPage({
   params,
 }: RequestDetailPageProps) {
@@ -260,6 +415,8 @@ export default async function AdminRequestDetailPage({
     detail.sourceTable,
     detail.id
   );
+  const printableInfo = getPrintableRequestInfo(serviceSlug, detail);
+  const printReadiness = await getPrintReadiness(printableInfo, detail.id);
 
   return (
     <AdminPageShell>
@@ -281,16 +438,20 @@ export default async function AdminRequestDetailPage({
             </h1>
             <AdminStatusBadge>{detail.statusLabel}</AdminStatusBadge>
           </div>
-          <RequestDeleteButton
-            serviceSlug={detail.serviceSlug}
-            id={detail.id}
-            label="Hapus Pengajuan"
-            redirectTo="/admin/requests"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <PrintLetterButton detail={detail} printableInfo={printableInfo} />
+            <RequestDeleteButton
+              serviceSlug={detail.serviceSlug}
+              id={detail.id}
+              label="Hapus Pengajuan"
+              redirectTo="/admin/requests"
+            />
+          </div>
         </div>
         <p className="mt-2 text-sm text-[#566258]">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
+        <PrintReadinessNotice readiness={printReadiness} />
       </div>
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (
@@ -317,6 +478,14 @@ export default async function AdminRequestDetailPage({
         </div>
       )}
 
+      {printableInfo ? (
+        <LetterMetadataEditor
+          serviceSlug={printableInfo.serviceSlug}
+          id={detail.id}
+          initialReadiness={printReadiness}
+        />
+      ) : null}
+
       <OptionalDetails detail={detail} />
 
       <RequestAttachmentsList attachments={attachments} />
@@ -325,28 +494,46 @@ export default async function AdminRequestDetailPage({
         <CardHeader>
           <CardTitle>Alur Status</CardTitle>
           <CardDescription>
-            Timeline read-only berdasarkan kolom workflow tabel legacy.
+            Timeline berdasarkan kolom workflow tabel legacy. Status yang sudah
+            terisi dapat dibatalkan jika perlu koreksi.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {detail.workflow.map((item) => (
-            <div key={item.label} className="flex gap-3">
-              <div
-                className={
-                  item.done
-                    ? "mt-1 size-3 rounded-full bg-primary"
-                    : "mt-1 size-3 rounded-full border"
-                }
-              />
-              <div>
-                <p className="text-sm font-medium">{item.label}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatDate(item.date)}
-                  {item.staff ? ` - ${item.staff}` : ""}
-                </p>
+          {detail.workflow.map((item) => {
+            const cancelAction = item.done
+              ? getWorkflowCancelAction(item.label)
+              : null;
+
+            return (
+              <div key={item.label} className="flex gap-3">
+                <div
+                  className={
+                    item.done
+                      ? "mt-1 size-3 rounded-full bg-primary"
+                      : "mt-1 size-3 rounded-full border"
+                  }
+                />
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(item.date)}
+                    {item.staff ? ` - ${item.staff}` : ""}
+                  </p>
+                  {cancelAction ? (
+                    <RequestStatusCancelButton
+                      serviceSlug={detail.serviceSlug}
+                      id={detail.id}
+                      rolePrefix="admin"
+                      staffName={user?.name ?? "Admin ULT"}
+                      action={cancelAction.action}
+                      label={cancelAction.label}
+                      confirmation={cancelAction.confirmation}
+                    />
+                  ) : null}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
     </AdminPageShell>

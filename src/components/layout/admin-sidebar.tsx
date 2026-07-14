@@ -12,10 +12,15 @@ import {
   FileText,
   Globe,
   Home,
+  Images,
   Layers,
   LogOut,
+  MapPin,
   Menu,
+  Network,
   Newspaper,
+  PanelLeftClose,
+  PanelLeftOpen,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -36,6 +41,9 @@ const navIcons = {
   Dashboard: Home,
   "Pengajuan Layanan": FileText,
   Informasi: Newspaper,
+  "Kegiatan Mahasiswa": Images,
+  "Profil - Struktur": Network,
+  "Profil - Lokasi": MapPin,
   Survei: BarChart3,
   Reporting: ScrollText,
   "Data Mahasiswa": Database,
@@ -68,9 +76,11 @@ function isActivePath(pathname: string, href: string) {
 function AdminNavLink({
   item,
   onClick,
+  collapsed = false,
 }: {
   item: NavItem;
   onClick?: () => void;
+  collapsed?: boolean;
 }) {
   const pathname = usePathname();
   const Icon = navIcons[item.label as keyof typeof navIcons] ?? FileText;
@@ -80,7 +90,10 @@ function AdminNavLink({
     <Link
       href={item.href}
       onClick={onClick}
+      title={collapsed ? item.label : undefined}
       className={`group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+        collapsed ? "justify-center" : ""
+      } ${
         isActive
           ? "bg-[#ecfff4] text-[#27614d] shadow-[0_10px_22px_rgba(0,0,0,0.14)]"
           : "text-white/68 hover:bg-white/10 hover:text-white"
@@ -91,16 +104,21 @@ function AdminNavLink({
           isActive ? "text-[#3d8067]" : "text-white/58 group-hover:text-white"
         }`}
       />
-      <span className="truncate">{item.label}</span>
+      {collapsed ? null : <span className="truncate">{item.label}</span>}
     </Link>
   );
 }
 
 export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const initials = getInitials(userName) || "AU";
 
   return (
-    <aside className="relative hidden h-full min-h-0 w-[238px] shrink-0 overflow-hidden bg-[#003f2f] text-white md:flex md:flex-col lg:w-[252px]">
+    <aside
+      className={`relative hidden h-full min-h-0 shrink-0 overflow-hidden bg-[#003f2f] text-white transition-[width] duration-300 ease-out md:flex md:flex-col ${
+        isCollapsed ? "w-[78px]" : "w-[238px] lg:w-[252px]"
+      }`}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(55,139,104,0.36),transparent_36%),linear-gradient(180deg,#003b2d_0%,#004633_52%,#003827_100%)]" />
       <Image
         src="/rektorat.svg"
@@ -111,8 +129,16 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
       />
       <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#003827] via-[#003827]/82 to-transparent" />
 
-      <div className="relative z-10 flex h-full min-h-0 flex-col px-4 py-5 lg:px-5">
-        <div className="flex items-center gap-3">
+      <div
+        className={`relative z-10 flex h-full min-h-0 flex-col py-5 ${
+          isCollapsed ? "px-3" : "px-4 lg:px-5"
+        }`}
+      >
+        <div
+          className={`flex items-center gap-3 ${
+            isCollapsed ? "justify-center" : ""
+          }`}
+        >
           <Image
             src="/logo-unpad.svg"
             alt="Logo Unpad"
@@ -121,7 +147,7 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
             className="size-10 shrink-0"
             priority
           />
-          <div className="leading-tight">
+          <div className={`leading-tight ${isCollapsed ? "hidden" : ""}`}>
             <p className="text-lg font-bold tracking-wide">ULT</p>
             <p className="text-sm font-semibold tracking-wide text-white/90">
               Admin FMIPA
@@ -129,25 +155,64 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
           </div>
         </div>
 
-        <nav className="mt-8 grid min-h-0 gap-5 overflow-y-auto pr-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`mt-4 h-8 rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white ${
+            isCollapsed ? "w-full px-0" : "justify-start px-3"
+          }`}
+          aria-label={isCollapsed ? "Buka sidebar admin" : "Tutup sidebar admin"}
+          aria-expanded={!isCollapsed}
+          onClick={() => setIsCollapsed((current) => !current)}
+        >
+          {isCollapsed ? (
+            <PanelLeftOpen className="size-4" />
+          ) : (
+            <>
+              <PanelLeftClose className="size-4" />
+              <span>Ciutkan</span>
+            </>
+          )}
+        </Button>
+
+        <nav
+          className={`mt-5 grid min-h-0 overflow-y-auto ${
+            isCollapsed ? "gap-2 pr-0" : "gap-5 pr-1"
+          }`}
+        >
           {groups.map((group) => (
             <div key={group.label} className="grid gap-1.5">
-              <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
-                {group.label}
-              </p>
+              {isCollapsed ? null : (
+                <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                  {group.label}
+                </p>
+              )}
               {group.items.map((item) => (
-                <AdminNavLink key={item.href} item={item} />
+                <AdminNavLink
+                  key={item.href}
+                  item={item}
+                  collapsed={isCollapsed}
+                />
               ))}
             </div>
           ))}
         </nav>
 
-        <div className="mt-auto mb-1 rounded-xl border border-white/12 bg-white/8 p-3 shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur">
-          <div className="flex items-center gap-2.5">
+        <div
+          className={`mt-auto mb-1 rounded-xl border border-white/12 bg-white/8 shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur ${
+            isCollapsed ? "p-2" : "p-3"
+          }`}
+        >
+          <div
+            className={`flex items-center gap-2.5 ${
+              isCollapsed ? "justify-center" : ""
+            }`}
+          >
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[#dff7bd] text-xs font-bold text-[#27513f]">
               {initials}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={`min-w-0 flex-1 ${isCollapsed ? "hidden" : ""}`}>
               <p className="truncate text-xs font-bold text-white">{userName}</p>
               <p className="text-xs capitalize text-white/68">{userRole}</p>
             </div>
@@ -156,11 +221,14 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
             type="button"
             variant="ghost"
             size="sm"
-            className="mt-2 h-7 w-full justify-start rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white"
+            className={`mt-2 h-7 w-full rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white ${
+              isCollapsed ? "justify-center px-0" : "justify-start"
+            }`}
             onClick={() => signOut({ callbackUrl: "/" })}
+            title="Keluar"
           >
             <LogOut className="size-3.5" />
-            Keluar
+            {isCollapsed ? null : "Keluar"}
           </Button>
         </div>
       </div>
@@ -181,13 +249,14 @@ export function AdminMobileMenu({
       <Button
         type="button"
         variant="ghost"
-        size="icon"
-        className="size-10 rounded-lg bg-transparent text-white shadow-none hover:bg-white/10 hover:text-white"
+        size="sm"
+        className="h-10 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white shadow-none hover:bg-white/15 hover:text-white"
         aria-label={isOpen ? "Tutup menu admin" : "Buka menu admin"}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
       >
         {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        Menu
       </Button>
 
       <div
@@ -200,8 +269,8 @@ export function AdminMobileMenu({
         onClick={() => setIsOpen(false)}
       >
         <div
-          className={`ml-auto flex h-dvh w-[min(88vw,360px)] min-h-0 flex-col overflow-hidden bg-white text-[#1f2922] shadow-[-18px_0_44px_rgba(15,61,46,0.22)] transition-transform duration-300 ease-out ${
-            isOpen ? "translate-x-0" : "translate-x-full"
+          className={`mr-auto flex h-dvh w-[min(88vw,360px)] min-h-0 flex-col overflow-hidden bg-white text-[#1f2922] shadow-[18px_0_44px_rgba(15,61,46,0.22)] transition-transform duration-300 ease-out ${
+            isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
           onClick={(event) => event.stopPropagation()}
         >

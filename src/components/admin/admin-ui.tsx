@@ -63,18 +63,20 @@ export function AdminPageHeader({
   action,
 }: AdminPageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 text-[#173d2d]">
+    <div className="flex flex-wrap items-start gap-4 text-[#173d2d]">
       <div>
-        <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+            {title}
+          </h1>
+          {action}
+        </div>
         {description ? (
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[#566258]">
             {description}
           </p>
         ) : null}
       </div>
-      {action}
     </div>
   );
 }
@@ -130,6 +132,25 @@ export function AdminEmptyState({
             {description}
           </p>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function AdminUnavailableState({
+  title = "Data belum dapat dimuat",
+  description = "Koneksi database sedang tidak tersedia. Coba muat ulang halaman beberapa saat lagi.",
+}: {
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <div className="grid min-h-[140px] place-items-center rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-8 text-center">
+      <div>
+        <p className="text-sm font-semibold text-[#8a3d23]">{title}</p>
+        <p className="mt-1 text-xs leading-relaxed text-[#8a3d23]/80">
+          {description}
+        </p>
       </div>
     </div>
   );

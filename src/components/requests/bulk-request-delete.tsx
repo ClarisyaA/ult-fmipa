@@ -139,6 +139,10 @@ export function BulkRequestDeleteToolbar() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  if (selectedItems.length === 0) {
+    return null;
+  }
+
   async function handleDeleteSelected() {
     if (selectedItems.length === 0) {
       return;
@@ -190,32 +194,28 @@ export function BulkRequestDeleteToolbar() {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-[#e8dfd0] bg-[#fffdf9] px-3 py-2">
       <p className="text-[11px] font-semibold text-[#39433c]">
-        {selectedItems.length > 0
-          ? `${selectedItems.length} pengajuan dipilih`
-          : "Centang beberapa pengajuan untuk hapus sekaligus"}
+        {selectedItems.length} pengajuan dipilih
       </p>
       <Button
         type="button"
         variant="destructive"
         size="sm"
         className="h-8 rounded-md px-3 text-[11px] font-semibold"
-        disabled={selectedItems.length === 0 || isDeleting}
+        disabled={isDeleting}
         onClick={handleDeleteSelected}
       >
         {isDeleting ? "Menghapus..." : "Hapus Terpilih"}
       </Button>
-      {selectedItems.length > 0 ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
-          onClick={clear}
-          disabled={isDeleting}
-        >
-          Batal Pilih
-        </Button>
-      ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+        onClick={clear}
+        disabled={isDeleting}
+      >
+        Batal Pilih
+      </Button>
       {message ? (
         <p
           className={`text-[11px] ${

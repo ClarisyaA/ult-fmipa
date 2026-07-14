@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, type ReactNode, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,56 @@ type ApiIssue = {
 };
 
 const magangJenisPermohonan = [
-  "Magang",
-  "Kerja Praktek",
-  "Tugas Akhir (TA)",
+  "Magang Kerja",
+  "Kerja Praktek Industri",
+  "Praktik Kerja",
+  "Magang Tugas Akhir",
 ];
+
+const programStudiOptions = [
+  "S-1 Matematika",
+  "S-1 Kimia",
+  "S-1 Fisika",
+  "S-1 Biologi",
+  "S-1 Statistika",
+  "S-1 Teknik Informatika",
+  "S-1 Teknik Elektro",
+  "S-1 Ilmu Aktuaria",
+  "D-IV Teknologi Industri Kimia",
+  "S-1 Geofisika",
+  "S-2 Statistika Terapan",
+  "S-2 Ilmu Kimia",
+];
+
+function RequiredMark() {
+  return (
+    <span className="text-[#EE1C25]" aria-label="wajib diisi">
+      *
+    </span>
+  );
+}
+
+function OptionalMark() {
+  return (
+    <span className="text-xs font-normal text-[#7A6A5C]">
+      Opsional
+    </span>
+  );
+}
+
+function FieldHint({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={`text-xs leading-relaxed text-[#6B5E52] ${className}`}>
+      {children}
+    </p>
+  );
+}
 
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -176,6 +222,7 @@ export function ServiceRequestForm({
         jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
         jumlahIjazah: getFormString(formData, "jumlahIjazah"),
         jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+        programStudi: getFormString(formData, "programStudi"),
         jenisPermohonan: getFormString(formData, "jenisPermohonan"),
         kontakPerson: getFormString(formData, "kontakPerson"),
         tempatPelaksanaan: getFormString(formData, "tempatPelaksanaan"),
@@ -351,6 +398,10 @@ export function ServiceRequestForm({
                 Data pengajuan akan tersimpan langsung ke database layanan
                 Magang/Kerja Praktek/Tugas Akhir.
               </p>
+              <p className="mt-2 text-xs leading-relaxed text-[#6B5E52]">
+                Field bertanda <span className="font-semibold text-[#EE1C25]">*</span> wajib diisi.
+                Nama dan prodi mahasiswa akan dibaca dari data akademik berdasarkan NPM.
+              </p>
             </div>
           </div>
         </div>
@@ -358,7 +409,9 @@ export function ServiceRequestForm({
 
       <div id={isMagang ? "magang-form-fields" : undefined} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="npm" className="text-[#18130E] font-medium">NPM</Label>
+        <Label htmlFor="npm" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+          NPM <RequiredMark />
+        </Label>
         <Input
           id="npm"
           name="npm"
@@ -371,7 +424,38 @@ export function ServiceRequestForm({
         {fieldErrors.npm ? (
           <p className="text-sm text-destructive">{fieldErrors.npm}</p>
         ) : null}
+        {isMagang ? (
+          <FieldHint>
+            Nama mahasiswa akan mengikuti data akademik yang terhubung dengan NPM ini.
+          </FieldHint>
+        ) : null}
       </div>
+
+      {isMagang ? (
+        <div className="grid gap-2">
+          <Label htmlFor="programStudi" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+            Program Studi <RequiredMark />
+          </Label>
+          <select
+            id="programStudi"
+            name="programStudi"
+            required
+            className={`${inputClass} h-10 rounded-md border bg-background px-3 py-2 text-sm outline-none`}
+          >
+            <option value="">Pilih program studi</option>
+            {programStudiOptions.map((program) => (
+              <option key={program} value={program}>
+                {program}
+              </option>
+            ))}
+          </select>
+          {fieldErrors.programStudi ? (
+            <p className="text-sm text-destructive">
+              {fieldErrors.programStudi}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
@@ -675,8 +759,8 @@ export function ServiceRequestForm({
             Data Permohonan Magang
           </p>
           <div className="grid gap-2">
-            <Label htmlFor="jenisPermohonan" className="text-[#18130E] font-medium">
-              Jenis Permohonan
+            <Label htmlFor="jenisPermohonan" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+              Perihal <RequiredMark />
             </Label>
             <select
               id="jenisPermohonan"
@@ -699,10 +783,19 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="kontakPerson" className="text-[#18130E] font-medium">
-                Kontak Person
+              <Label htmlFor="kontakPerson" className="inline-flex flex-wrap items-center gap-2 text-[#18130E] font-medium">
+                Kontak Person <OptionalMark />
               </Label>
-              <Input id="kontakPerson" name="kontakPerson" maxLength={150} className={inputClass} />
+              <FieldHint className="sm:min-h-[2.25rem]">
+                Jika ada, tuliskan lengkap nama dan jabatannya.
+              </FieldHint>
+              <Input
+                id="kontakPerson"
+                name="kontakPerson"
+                maxLength={150}
+                placeholder="Contoh: Budi Santoso, HRD PT. Telkom Indonesia Tbk."
+                className={inputClass}
+              />
               {fieldErrors.kontakPerson ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.kontakPerson}
@@ -710,10 +803,20 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="tempatPelaksanaan" className="text-[#18130E] font-medium">
-                Tempat Pelaksanaan
+              <Label htmlFor="tempatPelaksanaan" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+                Tempat Pelaksanaan <RequiredMark />
               </Label>
-              <Input id="tempatPelaksanaan" name="tempatPelaksanaan" maxLength={200} required className={inputClass} />
+              <FieldHint className="sm:min-h-[2.25rem]">
+                Contoh: Dinas Pendapatan Daerah (DPD) atau PT. Telkom Indonesia Tbk.
+              </FieldHint>
+              <Input
+                id="tempatPelaksanaan"
+                name="tempatPelaksanaan"
+                maxLength={200}
+                required
+                placeholder="Contoh: PT. Telkom Indonesia Tbk."
+                className={inputClass}
+              />
               {fieldErrors.tempatPelaksanaan ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.tempatPelaksanaan}
@@ -722,10 +825,21 @@ export function ServiceRequestForm({
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="tujuanSurat" className="text-[#18130E] font-medium">
-              Tujuan Surat
+            <Label htmlFor="tujuanSurat" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+              Tujuan Surat <RequiredMark />
             </Label>
-            <Input id="tujuanSurat" name="tujuanSurat" maxLength={200} required className={inputClass} />
+            <FieldHint>
+              Diisi jabatan dari instansi yang dituju, misalnya Kepala Dinas Pendapatan Daerah,
+              Direktur PT. PLN Persero, atau HRD PT. ...
+            </FieldHint>
+            <Input
+              id="tujuanSurat"
+              name="tujuanSurat"
+              maxLength={200}
+              required
+              placeholder="Contoh: HRD PT. Telkom Indonesia Tbk."
+              className={inputClass}
+            />
             {fieldErrors.tujuanSurat ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.tujuanSurat}
@@ -733,10 +847,20 @@ export function ServiceRequestForm({
             ) : null}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="alamatSurat" className="text-[#18130E] font-medium">
-              Alamat Surat
+            <Label htmlFor="alamatSurat" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+              Alamat Surat <RequiredMark />
             </Label>
-            <Textarea id="alamatSurat" name="alamatSurat" maxLength={255} required className={textareaClass} />
+            <FieldHint>
+              Diisi secara singkat. Contoh: Jl. Ir. H. Djuanda No. 35
+            </FieldHint>
+            <Textarea
+              id="alamatSurat"
+              name="alamatSurat"
+              maxLength={255}
+              required
+              placeholder="Contoh: Jl. Ir. H. Djuanda No. 35"
+              className={textareaClass}
+            />
             {fieldErrors.alamatSurat ? (
               <p className="text-sm text-destructive">
                 {fieldErrors.alamatSurat}
@@ -745,10 +869,20 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="kecamatanKabupaten" className="text-[#18130E] font-medium">
-                Kecamatan dan Kabupaten
+              <Label htmlFor="kecamatanKabupaten" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+                Kecamatan dan Kabupaten <RequiredMark />
               </Label>
-              <Input id="kecamatanKabupaten" name="kecamatanKabupaten" maxLength={150} required className={inputClass} />
+              <FieldHint>
+                Contoh: Kecamatan Cibeunying Kaler
+              </FieldHint>
+              <Input
+                id="kecamatanKabupaten"
+                name="kecamatanKabupaten"
+                maxLength={150}
+                required
+                placeholder="Contoh: Kecamatan Cibeunying Kaler"
+                className={inputClass}
+              />
               {fieldErrors.kecamatanKabupaten ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.kecamatanKabupaten}
@@ -756,10 +890,20 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="kotaKabupaten" className="text-[#18130E] font-medium">
-                Kota / Kabupaten
+              <Label htmlFor="kotaKabupaten" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+                Kota / Kabupaten <RequiredMark />
               </Label>
-              <Input id="kotaKabupaten" name="kotaKabupaten" maxLength={100} required className={inputClass} />
+              <FieldHint>
+                Contoh: Kota Bandung atau Kabupaten Bandung
+              </FieldHint>
+              <Input
+                id="kotaKabupaten"
+                name="kotaKabupaten"
+                maxLength={100}
+                required
+                placeholder="Contoh: Kota Bandung"
+                className={inputClass}
+              />
               {fieldErrors.kotaKabupaten ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.kotaKabupaten}
@@ -767,10 +911,19 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="provinsi" className="text-[#18130E] font-medium">
-                Provinsi
+              <Label htmlFor="provinsi" className="inline-flex flex-wrap items-center gap-2 text-[#18130E] font-medium">
+                Provinsi <OptionalMark />
               </Label>
-              <Input id="provinsi" name="provinsi" maxLength={100} className={inputClass} />
+              <FieldHint>
+                Boleh diisi atau tidak. Contoh: Jawa Barat
+              </FieldHint>
+              <Input
+                id="provinsi"
+                name="provinsi"
+                maxLength={100}
+                placeholder="Contoh: Jawa Barat"
+                className={inputClass}
+              />
               {fieldErrors.provinsi ? (
                 <p className="text-sm text-destructive">
                   {fieldErrors.provinsi}
@@ -780,8 +933,8 @@ export function ServiceRequestForm({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="tanggalMulai" className="text-[#18130E] font-medium">
-                Tanggal Mulai
+              <Label htmlFor="tanggalMulai" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+                Tanggal Mulai Magang/Kerja/Data <RequiredMark />
               </Label>
               <Input id="tanggalMulai" name="tanggalMulai" type="date" required className={inputClass} />
               {fieldErrors.tanggalMulai ? (
@@ -791,8 +944,8 @@ export function ServiceRequestForm({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="tanggalSelesai" className="text-[#18130E] font-medium">
-                Tanggal Selesai
+              <Label htmlFor="tanggalSelesai" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+                Tanggal Selesai Magang/Kerja/Data <RequiredMark />
               </Label>
               <Input id="tanggalSelesai" name="tanggalSelesai" type="date" required className={inputClass} />
               {fieldErrors.tanggalSelesai ? (
@@ -818,7 +971,10 @@ export function ServiceRequestForm({
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="attachments" className="text-[#18130E] font-medium">Lampiran Dokumen Pendukung</Label>
+        <Label htmlFor="attachments" className="inline-flex items-center gap-1 text-[#18130E] font-medium">
+          {isMagang ? "Upload Surat Permohonan Dari Program Studi" : "Lampiran Dokumen Pendukung"}
+          {uploadRule.minFiles ? <RequiredMark /> : null}
+        </Label>
         <div className="relative">
           <Input
             id="attachments"

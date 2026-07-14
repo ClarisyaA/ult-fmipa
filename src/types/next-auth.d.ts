@@ -5,6 +5,7 @@ type AppRole = "admin" | "staff" | "student";
 declare module "next-auth" {
   interface Session {
     user: {
+      id: string;
       role: AppRole;
       npm?: string;
       nip?: string;
@@ -15,6 +16,7 @@ declare module "next-auth" {
   }
 
   interface User {
+    id: string;
     role: AppRole;
     npm?: string;
     nip?: string;
@@ -25,6 +27,7 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
+    id?: string;
     role: AppRole;
     npm?: string;
     nip?: string;

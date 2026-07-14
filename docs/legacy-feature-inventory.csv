@@ -1,0 +1,21 @@
+area,legacy_file_or_table,nextjs_mapping,status,notes
+Layanan Mahasiswa,kpa,kartu-prestasi-akademik,partially_migrated,Workflow normal sudah ada di Next.js; tidak ditemukan template cetak FPDF.
+Layanan Mahasiswa,kks,kartu-kemajuan-studi,partially_migrated,Workflow normal sudah ada di Next.js; tidak ditemukan template cetak FPDF.
+Layanan Mahasiswa,beasiswa,rekomendasi-beasiswa,partially_migrated,Workflow normal sudah ada di Next.js; tidak ditemukan template cetak FPDF.
+Layanan Mahasiswa,masih_kuliah,ket-tunjangan-orang-tua,needs_print_migration,Ada FPDF legacy `masih_kuliah_cetak.php`.
+Layanan Mahasiswa,masih_kuliah_aktif,keterangan-masih-kuliah,needs_print_migration,Ada FPDF legacy `masih_kuliah_aktif_cetak.php`.
+Layanan Mahasiswa,kelakuan_baik,keterangan-kelakuan-baik,needs_print_migration,Ada FPDF legacy `kelakuan_baik_cetak.php`.
+Layanan Mahasiswa,surat_pengantar,surat-pengantar,partially_migrated,Data TTD dan dasar surat ada; file cetak tidak ditemukan.
+Layanan Mahasiswa,surat_lain,not_public_service,legacy_only,Data mirip surat pengantar; delivery memakai DIKIRIM_TGL.
+Layanan Alumni,keterangan_lulus,keterangan-lulus,needs_print_migration,Ada FPDF legacy `keterangan_lulus_cetak.php` dengan watermark.
+Layanan Alumni,transkrip,penerbitan-transkrip,workflow_gap,Workflow verification legacy belum aktif untuk update status Next.js.
+Layanan Alumni,ijazah,penerbitan-ijazah,workflow_gap,Workflow verification legacy belum aktif untuk update status Next.js.
+Layanan Alumni,legalisir,legalisir-ijazah-transkrip,partially_migrated,Workflow normal; nomor surat manual legacy tersimpan di NO_SURAT.
+Layanan Perpustakaan,bebas_pinjaman,bebas-peminjaman,partially_migrated,Workflow digital delivery DIKIRIM_TGL.
+Layanan Perpustakaan,unggah_karya_ilmiah,unggah-karya-ilmiah,partially_migrated,Workflow digital delivery DIKIRIM_TGL.
+Layanan Perpustakaan,plagiarisme,cek-plagiarisme,partially_migrated,Workflow digital delivery DIKIRIM_TGL.
+Layanan Perpustakaan,referensi,referensi,partially_migrated,Workflow digital delivery DIKIRIM_TGL.
+Master Data,surat_ttd,prisma model surat_ttd,needs_ui,Harus jadi picker pejabat dan snapshot ke TTD_*.
+Master Data,yudisium,prisma model yudisium,needs_ui,Dipakai keterangan lulus.
+Surat Keluar,no_surat/surat_jenis/surat_keluar_list.php,not_migrated,Perlu audit lanjutan untuk penomoran otomatis dan registry surat.
+Audit Log,log_users,admin user log,partially_migrated,Next.js punya halaman log; perlu pastikan logging aktivitas modern konsisten.

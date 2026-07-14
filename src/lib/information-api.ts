@@ -12,6 +12,8 @@ import {
 import {
   addInformationPostImages,
   InformationPostImageError,
+  normalizeInformationImageFit,
+  type InformationImageFit,
 } from "@/lib/information-post-images";
 
 function isMultipartRequest(request: Request) {
@@ -40,6 +42,12 @@ function getImageFiles(formData: FormData) {
     .filter((value): value is File => value instanceof File && value.size > 0);
 }
 
+function getImageFits(formData: FormData) {
+  return formData.getAll("imageFits").map((value) =>
+    normalizeInformationImageFit(typeof value === "string" ? value : null)
+  );
+}
+
 export async function parseInformationPostRequest(
   request: Request,
   actor: string
@@ -52,6 +60,7 @@ export async function parseInformationPostRequest(
         actor,
       },
       files: [],
+      imageFits: [],
     };
   }
 
@@ -72,10 +81,15 @@ export async function parseInformationPostRequest(
       actor,
     },
     files: getImageFiles(formData),
+    imageFits: getImageFits(formData),
   };
 }
 
-export async function saveInformationImagesForPost(postId: string, files: File[]) {
+export async function saveInformationImagesForPost(
+  postId: string,
+  files: File[],
+  imageFits: InformationImageFit[] = []
+) {
   if (files.length === 0) {
     return;
   }
@@ -91,7 +105,7 @@ export async function saveInformationImagesForPost(postId: string, files: File[]
     savedImages.push(await saveInformationImage(file));
   }
 
-  await addInformationPostImages(postId, savedImages);
+  await addInformationPostImages(postId, savedImages, imageFits);
 }
 
 export function getInformationApiErrorStatus(error: unknown) {
