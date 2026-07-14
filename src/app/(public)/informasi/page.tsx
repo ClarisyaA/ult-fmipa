@@ -1,5 +1,3 @@
-import Link from "next/link";
-import Image from "next/image";
 import { 
   Megaphone, 
   Bell,           
@@ -14,15 +12,6 @@ import InformasiClient from "@/components/information/information-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function formatDate(value: string | null) {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
 
 // ============================================
 // SERVER COMPONENT 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -252,9 +253,12 @@ function OrgAvatar({
     >
       <div className="h-full w-full overflow-hidden rounded-full bg-neutral-100">
         {photo ? (
-          <img
+          <Image
             src={photo}
             alt={name}
+            fill
+            sizes="112px"
+            unoptimized
             className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
           />
         ) : (
@@ -461,8 +465,8 @@ export default function ProfilPage() {
       : "h-full w-full object-cover object-center";
   const mobileLocationImageClass =
     location.imageFit === "contain"
-      ? "aspect-[4/3] w-full bg-[#f7f3ea] object-contain object-center p-4"
-      : "aspect-[4/3] w-full object-cover object-center";
+      ? "h-full w-full bg-[#f7f3ea] object-contain object-center p-4"
+      : "h-full w-full object-cover object-center";
 
   return (
     <>
@@ -496,9 +500,13 @@ export default function ProfilPage() {
 
       <section className="relative flex min-h-[calc(100vh+20px)] items-center overflow-hidden bg-neutral-950">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/gedung-fmipa.svg"
             alt="Gedung FMIPA Unpad"
+            fill
+            priority
+            unoptimized
+            sizes="100vw"
             className="h-full w-full object-cover [animation:hero-image-reveal_1200ms_cubic-bezier(0.16,1,0.3,1)_forwards]"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/65 to-black/10" />
@@ -560,11 +568,16 @@ export default function ProfilPage() {
             <div className="absolute -left-4 -top-4 hidden h-24 w-24 rounded-2xl border border-red-200/70 sm:block" />
 
             <div className="group relative overflow-hidden rounded-[1.5rem] bg-white p-2 shadow-2xl shadow-black/10 transition duration-500 hover:-translate-y-1 hover:shadow-black/15">
-              <img
-                src="/sbak.svg"
-                alt="Ruang layanan administrasi"
-                className="aspect-[16/10] w-full rounded-[1rem] object-cover transition duration-700 group-hover:scale-105"
-              />
+              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[1rem]">
+                <Image
+                  src="/sbak.svg"
+                  alt="Ruang layanan administrasi"
+                  fill
+                  unoptimized
+                  sizes="(max-width: 1024px) 90vw, 580px"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
+              </div>
               <div className="absolute inset-2 rounded-[1rem] bg-gradient-to-t from-black/35 via-transparent to-transparent" />
             </div>
 
@@ -727,6 +740,13 @@ export default function ProfilPage() {
               overflow-x: auto;
               overflow-y: visible;
               overscroll-behavior-x: contain;
+              width: 100%;
+            }
+
+            .org-chart-canvas {
+              margin-left: auto;
+              margin-right: auto;
+              width: max-content;
             }
 
             .org-tree-children {
@@ -827,8 +847,7 @@ export default function ProfilPage() {
           </Reveal>
 
           <div className="org-chart-scroll relative mx-auto mt-10 max-w-6xl pb-4 lg:mt-14">
-            <div className="flex min-w-full justify-center">
-              <div className="inline-flex min-w-max flex-col items-center px-6">
+            <div className="org-chart-canvas flex min-w-max flex-col items-center px-8 sm:px-10 md:px-12">
                 <OrgNodeCard
                   node={rootOrganization}
                   size="lg"
@@ -862,7 +881,6 @@ export default function ProfilPage() {
                     </ul>
                   </>
                 ) : null}
-              </div>
             </div>
           </div>
         </div>
@@ -871,9 +889,12 @@ export default function ProfilPage() {
       <section className="relative z-40 overflow-hidden bg-neutral-50 px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
         <div className="relative mx-auto min-h-[560px] max-w-7xl">
           <Reveal className="absolute inset-y-8 right-0 hidden w-[68%] overflow-hidden rounded-[2rem] border-4 border-white bg-neutral-200 shadow-2xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:shadow-black/25 lg:block">
-            <img
+            <Image
               src={location.imageUrl ?? "/denah-unpad.svg"}
               alt={location.imageAlt ?? location.title}
+              fill
+              unoptimized
+              sizes="(max-width: 1280px) 68vw, 870px"
               className={`${locationImageClass} transition duration-700 hover:scale-105`}
             />
             <div className="absolute inset-0 bg-black/20" />
@@ -911,11 +932,16 @@ export default function ProfilPage() {
               </div>
 
               <div className="mt-10 overflow-hidden rounded-3xl border-4 border-white bg-neutral-200 shadow-xl shadow-black/10 lg:hidden">
-                <img
-                  src={location.imageUrl ?? "/denah-unpad.svg"}
-                  alt={location.imageAlt ?? location.title}
-                  className={`${mobileLocationImageClass} grayscale`}
-                />
+                <div className="relative aspect-[4/3] w-full">
+                  <Image
+                    src={location.imageUrl ?? "/denah-unpad.svg"}
+                    alt={location.imageAlt ?? location.title}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 1024px) 90vw, 520px"
+                    className={`${mobileLocationImageClass} grayscale`}
+                  />
+                </div>
               </div>
 
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
