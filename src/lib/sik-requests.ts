@@ -254,6 +254,31 @@ export async function updateSikApproval(id: string, input: SikApprovalActionInpu
     );
   }
 
+  if (request.APPROVAL_STATUS !== "pending") {
+    throw new SikRequestError(
+      "Bukti ACC hanya dapat diverifikasi saat menunggu verifikasi.",
+      409
+    );
+  }
+
+  let proofAttachmentCount = 0;
+  try {
+    proofAttachmentCount = await prisma.ult_request_attachments.count({
+      where: {
+        SERVICE_SLUG: sikServiceSlug,
+        SOURCE_TABLE: sikSourceTable,
+        REQUEST_ID: BigInt(id),
+        ATTACHMENT_TYPE: sikApprovalProofAttachmentType,
+      },
+    });
+  } catch (error) {
+    throwIfSikDatabaseUnavailable(error);
+  }
+
+  if (proofAttachmentCount === 0) {
+    throw new SikRequestError("Bukti ACC belum tersedia.", 409);
+  }
+
   if (input.action === "approve") {
     try {
       return await prisma.surat_izin_kegiatan.update({

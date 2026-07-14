@@ -60,3 +60,21 @@ Semua form `/layanan/[slug]/ajukan` harus menampilkan indikator required/optiona
 - Upload opsional menampilkan label `Opsional` dan helper text `Lampiran dokumen pendukung bersifat opsional.`
 
 Field kontak umum `Email` dan `No HP/WhatsApp` wajib untuk layanan pengajuan mahasiswa yang memakai `ServiceRequestForm`. SIK memakai indikator yang sama pada tahap upload bukti ACC dan form final.
+
+## Workflow Verifikasi SIK Admin/Staff
+
+Layanan `surat-izin-kegiatan` memiliki workflow bertahap sebelum masuk status normal:
+
+- Mahasiswa mengunggah bukti ACC sebagai tahap awal.
+- Admin/staff memverifikasi bukti ACC dari detail atau preview pengajuan.
+- Saat status bukti `pending`, UI menampilkan tombol `Setujui Verifikasi` dan `Tolak Verifikasi`, bukan pesan `Workflow belum tersedia`.
+- Penolakan wajib memakai alasan maksimal 500 karakter dan alasan ditampilkan kembali di detail/preview.
+- Setelah bukti disetujui, mahasiswa harus mengisi form final SIK terlebih dahulu.
+- Tombol status normal dan helper pengiriman email hanya digunakan setelah form final SIK dikirim.
+
+Route approval:
+
+- `PATCH /api/admin/requests/surat-izin-kegiatan/[id]/approval`
+- `PATCH /api/staff/requests/surat-izin-kegiatan/[id]/approval`
+
+Payload approve cukup `{ "action": "approve" }`. Payload reject memakai `{ "action": "reject", "reason": "..." }`.

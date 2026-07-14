@@ -25,6 +25,7 @@ import {
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
 import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
+import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +46,8 @@ import {
   parseRequestStatus,
 } from "@/lib/legacy-request-list";
 import { getPublicServices } from "@/lib/legacy-services";
+import { getRequestAttachments } from "@/lib/request-attachments";
+import type { RequestAttachment } from "@/types/attachment";
 import type { RequestStatus, ServiceRequestListItem } from "@/types/request";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { ServiceRequestDetail } from "@/types/request-detail";
@@ -184,9 +187,68 @@ function supportsInlineStatus(request: ServiceRequestListItem) {
     return true;
   }
 
-  return ["sikFinalSubmitted", "inProgress", "completed"].includes(
+  return ["sikFinalSubmitted", "inProgress", "completed", "delivered"].includes(
     request.status,
   );
+}
+
+function isSikRequest(request: Pick<ServiceRequestListItem, "sourceTable">) {
+  return request.sourceTable === "surat_izin_kegiatan";
+}
+
+function showSikStagePanel(request: ServiceRequestListItem) {
+  return isSikRequest(request) && !supportsInlineStatus(request);
+}
+
+function showRequestEmailHelper(request: ServiceRequestListItem) {
+  return !showSikStagePanel(request);
+}
+
+function getSikStageCopy(detail: ServiceRequestDetail) {
+  if (detail.approvalStatus === "rejected") {
+    return {
+      label: "Ditolak",
+      tone: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+      description:
+        "Bukti ACC ditolak. Mahasiswa perlu memperbaiki atau mengunggah ulang bukti persetujuan.",
+    };
+  }
+
+  if (detail.approvalStatus === "verified" && !detail.finalSubmittedDate) {
+    return {
+      label: "Terverifikasi",
+      tone: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+      description:
+        "Bukti ACC sudah disetujui. Menunggu mahasiswa melengkapi form final SIK.",
+    };
+  }
+
+  return {
+    label: "Menunggu Verifikasi",
+    tone: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+    description:
+      "Bukti persetujuan kegiatan menunggu verifikasi admin atau staff.",
+  };
+}
+
+function getSikWorkflowDisabledTitle(request: ServiceRequestListItem) {
+  if (!isSikRequest(request) || supportsInlineStatus(request)) {
+    return undefined;
+  }
+
+  if (request.status === "sikApprovalVerified") {
+    return "Menunggu mahasiswa mengisi form final SIK.";
+  }
+
+  if (request.status === "sikApprovalPending") {
+    return "Bukti ACC SIK belum diverifikasi.";
+  }
+
+  if (request.status === "sikApprovalRejected") {
+    return "Bukti ACC SIK ditolak dan perlu diperbaiki mahasiswa.";
+  }
+
+  return "Approval SIK belum selesai.";
 }
 
 function getStatusTone(status: RequestStatus) {
@@ -243,6 +305,22 @@ function dash(value: string | number | null | undefined) {
   }
 
   return String(value);
+}
+
+function formatAttachmentType(value?: string | null) {
+  if (value === "manager_approval_proof") {
+    return "Bukti ACC";
+  }
+
+  if (value === "final_spik_document") {
+    return "Dokumen Final SPIK";
+  }
+
+  if (value === "program_study_request_letter") {
+    return "Surat Permohonan Prodi";
+  }
+
+  return "Lampiran";
 }
 
 function contactValue(request: ServiceRequestListItem) {
@@ -423,14 +501,120 @@ function DetailRows({
   );
 }
 
+function AttachmentRows({ attachments }: { attachments: RequestAttachment[] }) {
+  if (attachments.length === 0) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-[#d8e2d7] bg-white px-3 py-2 text-xs text-[#4c554f]">
+        <FileText className="size-4 text-[#2d6a4f]" />
+        Belum ada lampiran.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      {attachments.map((attachment) => (
+        <div
+          key={attachment.id}
+          className="grid gap-2 rounded-md border border-[#d8e2d7] bg-white px-3 py-2 text-xs text-[#4c554f]"
+        >
+          <div className="flex min-w-0 items-start gap-2">
+            <FileText className="mt-0.5 size-4 shrink-0 text-[#2d6a4f]" />
+            <div className="min-w-0">
+              <p className="break-words font-semibold text-[#223027]">
+                {attachment.originalName}
+              </p>
+              <p className="mt-0.5 text-[#6f746f]">
+                {formatAttachmentType(attachment.attachmentType)}
+              </p>
+            </div>
+          </div>
+          <Link
+            className="w-fit font-semibold text-[#0f5b45] underline-offset-4 hover:underline"
+            href={`/api/attachments/${attachment.id}`}
+            target="_blank"
+          >
+            Buka
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SikWorkflowPreviewCard({
+  rolePrefix,
+  detail,
+  attachments,
+}: {
+  rolePrefix: "admin" | "staff";
+  detail: ServiceRequestDetail;
+  attachments: RequestAttachment[];
+}) {
+  const copy = getSikStageCopy(detail);
+  const proofAttachments = attachments.filter(
+    (attachment) => attachment.attachmentType === "manager_approval_proof",
+  );
+
+  return (
+    <div className="grid gap-3 rounded-md border border-[#d8e2d7] bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-[#173d2d]">
+            Verifikasi Surat Izin Kegiatan
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[#5f6b63]">
+            {copy.description}
+          </p>
+        </div>
+        <span
+          className={`rounded-sm border px-2 py-0.5 text-[10px] font-semibold ${copy.tone}`}
+        >
+          {copy.label}
+        </span>
+      </div>
+
+      {detail.approvalRejectReason ? (
+        <div className="rounded-md border border-[#f1c6c6] bg-[#fff7f7] px-3 py-2 text-xs text-[#7a1c1c]">
+          <span className="font-semibold">Alasan penolakan: </span>
+          {detail.approvalRejectReason}
+        </div>
+      ) : null}
+
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
+          Bukti ACC
+        </p>
+        <AttachmentRows attachments={proofAttachments} />
+      </div>
+
+      <SikApprovalActions
+        rolePrefix={rolePrefix}
+        id={detail.id}
+        approvalStatus={detail.approvalStatus}
+        finalSubmitted={Boolean(detail.finalSubmittedDate)}
+      />
+
+      {detail.approvalStatus !== "pending" ? (
+        <p className="text-xs leading-relaxed text-[#6f746f]">
+          Pengiriman email dan proses status layanan tersedia setelah form final
+          SIK dikirim mahasiswa.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function AdminRequestPreview({
   request,
   detail,
+  attachments,
   staffName,
   closeHref,
 }: {
   request: ServiceRequestListItem;
   detail: ServiceRequestDetail;
+  attachments: RequestAttachment[];
   staffName: string;
   closeHref: string;
 }) {
@@ -549,16 +733,29 @@ function AdminRequestPreview({
 
       <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto px-4 py-4">
         <div className="grid gap-4">
-          <InlineStatusAction
-            rolePrefix="admin"
-            serviceSlug={request.serviceSlug}
-            id={request.id}
-            status={request.status}
-            staffName={staffName}
-            supported={supportsInlineStatus(request)}
-          />
+          {showSikStagePanel(request) ? (
+            <SikWorkflowPreviewCard
+              rolePrefix="admin"
+              detail={detail}
+              attachments={attachments}
+            />
+          ) : (
+            <InlineStatusAction
+              rolePrefix="admin"
+              serviceSlug={request.serviceSlug}
+              id={request.id}
+              status={request.status}
+              staffName={staffName}
+              supported={supportsInlineStatus(request)}
+            />
+          )}
 
-          <RequestEmailHelper serviceSlug={request.serviceSlug} id={request.id} />
+          {showRequestEmailHelper(request) ? (
+            <RequestEmailHelper
+              serviceSlug={request.serviceSlug}
+              id={request.id}
+            />
+          ) : null}
 
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
@@ -615,10 +812,7 @@ function AdminRequestPreview({
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
               Lampiran
             </p>
-            <div className="flex items-center gap-2 rounded-md border border-[#d8e2d7] bg-white px-3 py-2 text-xs text-[#4c554f]">
-              <FileText className="size-4 text-[#2d6a4f]" />
-              Metadata lampiran mengikuti detail pengajuan.
-            </div>
+            <AttachmentRows attachments={attachments} />
           </div>
 
           <RequestDeleteButton
@@ -684,10 +878,7 @@ function RequestWorkflowCell({
 
   if (column.workflowAction && (!value || value === "-")) {
     const supported = supportsInlineStatus(request);
-    const disabledTitle =
-      request.sourceTable === "surat_izin_kegiatan" && !supported
-        ? "Form final SIK belum dikirim mahasiswa atau approval SIK belum selesai."
-        : undefined;
+    const disabledTitle = getSikWorkflowDisabledTitle(request);
 
     if (!supported && request.sourceTable !== "surat_izin_kegiatan") {
       return <span title="Aksi status belum tersedia untuk layanan ini.">-</span>;
@@ -874,6 +1065,7 @@ export default async function AdminRequestsPage({
       request.id === params.previewId,
   );
   let selectedDetail: ServiceRequestDetail | null = null;
+  let selectedAttachments: RequestAttachment[] = [];
 
   if (params.previewService && params.previewId && !unavailable) {
     try {
@@ -881,6 +1073,13 @@ export default async function AdminRequestsPage({
         params.previewService,
         params.previewId,
       );
+      if (selectedDetail) {
+        selectedAttachments = await getRequestAttachments(
+          selectedDetail.serviceSlug,
+          selectedDetail.sourceTable,
+          selectedDetail.id,
+        );
+      }
     } catch (error) {
       if (!isDatabaseUnavailableError(error)) {
         throw error;
@@ -1264,6 +1463,7 @@ export default async function AdminRequestsPage({
           <AdminRequestPreview
             request={previewRequest}
             detail={selectedDetail}
+            attachments={selectedAttachments}
             staffName={staffName}
             closeHref={closePreviewHref}
           />

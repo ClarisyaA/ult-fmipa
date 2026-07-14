@@ -57,9 +57,11 @@ export function SikApprovalActions({
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as {
-          error?: string;
+          error?: string | { message?: string };
         } | null;
-        setError(body?.error ?? "Approval SIK gagal diperbarui.");
+        const message =
+          typeof body?.error === "string" ? body.error : body?.error?.message;
+        setError(message ?? "Approval SIK gagal diperbarui.");
         return;
       }
 
@@ -72,9 +74,10 @@ export function SikApprovalActions({
   return (
     <div className="grid gap-3 rounded-lg border bg-background p-4">
       <div>
-        <p className="text-sm font-medium">Verifikasi Bukti ACC</p>
+        <p className="text-sm font-medium">Verifikasi Surat Izin Kegiatan</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Setujui untuk membuka form final SIK, atau tolak dengan alasan.
+          Setujui bukti ACC untuk membuka form final SIK, atau tolak dengan
+          alasan.
         </p>
       </div>
       <Textarea
@@ -90,7 +93,7 @@ export function SikApprovalActions({
           onClick={() => submit("approve")}
           disabled={pendingAction !== null}
         >
-          {pendingAction === "approve" ? "Menyetujui..." : "Verifikasi / Setujui"}
+          {pendingAction === "approve" ? "Menyetujui..." : "Setujui Verifikasi"}
         </Button>
         <Button
           type="button"
@@ -99,7 +102,7 @@ export function SikApprovalActions({
           onClick={() => submit("reject")}
           disabled={pendingAction !== null}
         >
-          {pendingAction === "reject" ? "Menolak..." : "Tolak"}
+          {pendingAction === "reject" ? "Menolak..." : "Tolak Verifikasi"}
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

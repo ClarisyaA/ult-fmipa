@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Eye,
-  ExternalLink,
   FileText,
   Info,
   X,
@@ -12,6 +11,7 @@ import {
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
 import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
+import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ import {
   parseRequestStatus,
 } from "@/lib/legacy-request-list";
 import { getPublicServices } from "@/lib/legacy-services";
+import { getRequestAttachments } from "@/lib/request-attachments";
+import type { RequestAttachment } from "@/types/attachment";
 import type { ServiceRequestDetail } from "@/types/request-detail";
 import type { RequestStatus, ServiceRequestListItem } from "@/types/request";
 import type { RequestStatusAction } from "@/types/request-action";
@@ -112,9 +114,48 @@ function supportsInlineStatus(request: ServiceRequestListItem) {
     return true;
   }
 
-  return ["sikFinalSubmitted", "inProgress", "completed"].includes(
+  return ["sikFinalSubmitted", "inProgress", "completed", "delivered"].includes(
     request.status
   );
+}
+
+function isSikRequest(request: Pick<ServiceRequestListItem, "sourceTable">) {
+  return request.sourceTable === "surat_izin_kegiatan";
+}
+
+function showSikStagePanel(request: ServiceRequestListItem) {
+  return isSikRequest(request) && !supportsInlineStatus(request);
+}
+
+function showRequestEmailHelper(request: ServiceRequestListItem) {
+  return !showSikStagePanel(request);
+}
+
+function getSikStageCopy(detail: ServiceRequestDetail) {
+  if (detail.approvalStatus === "rejected") {
+    return {
+      label: "Ditolak",
+      tone: "border-[#f1c6c6] bg-[#fff0f0] text-[#8f1d1d]",
+      description:
+        "Bukti ACC ditolak. Mahasiswa perlu memperbaiki atau mengunggah ulang bukti persetujuan.",
+    };
+  }
+
+  if (detail.approvalStatus === "verified" && !detail.finalSubmittedDate) {
+    return {
+      label: "Terverifikasi",
+      tone: "border-[#c9ddf0] bg-[#edf7ff] text-[#285b7c]",
+      description:
+        "Bukti ACC sudah disetujui. Menunggu mahasiswa melengkapi form final SIK.",
+    };
+  }
+
+  return {
+    label: "Menunggu Verifikasi",
+    tone: "border-[#e2d7b8] bg-[#fff8e6] text-[#745411]",
+    description:
+      "Bukti persetujuan kegiatan menunggu verifikasi admin atau staff.",
+  };
 }
 
 function formatDate(value: string | null) {
@@ -155,6 +196,22 @@ function formatTime(value: string | null) {
     minute: "2-digit",
     hour12: false,
   }).format(new Date(value));
+}
+
+function formatAttachmentType(value?: string | null) {
+  if (value === "manager_approval_proof") {
+    return "Bukti ACC";
+  }
+
+  if (value === "final_spik_document") {
+    return "Dokumen Final SPIK";
+  }
+
+  if (value === "program_study_request_letter") {
+    return "Surat Permohonan Prodi";
+  }
+
+  return "Lampiran";
 }
 
 function getPageItems(currentPage: number, totalPages: number) {
@@ -262,9 +319,114 @@ function getWorkflowCancelAction(label: string): {
   return null;
 }
 
+function AttachmentRows({ attachments }: { attachments: RequestAttachment[] }) {
+  if (attachments.length === 0) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-[#d8d4e4] bg-white px-3 py-2 text-xs text-[#4c554f]">
+        <FileText className="size-4 text-[#2d6a4f]" />
+        Belum ada lampiran.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      {attachments.map((attachment) => (
+        <div
+          key={attachment.id}
+          className="grid gap-2 rounded-md border border-[#d8d4e4] bg-white px-3 py-2 text-xs text-[#4c554f]"
+        >
+          <div className="flex min-w-0 items-start gap-2">
+            <FileText className="mt-0.5 size-4 shrink-0 text-[#2d6a4f]" />
+            <div className="min-w-0">
+              <p className="break-words font-semibold text-[#222721]">
+                {attachment.originalName}
+              </p>
+              <p className="mt-0.5 text-[#7a7885]">
+                {formatAttachmentType(attachment.attachmentType)}
+              </p>
+            </div>
+          </div>
+          <Link
+            className="w-fit font-semibold text-[#0f5b45] underline-offset-4 hover:underline"
+            href={`/api/attachments/${attachment.id}`}
+            target="_blank"
+          >
+            Buka
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SikWorkflowPreviewCard({
+  rolePrefix,
+  detail,
+  attachments,
+}: {
+  rolePrefix: "admin" | "staff";
+  detail: ServiceRequestDetail;
+  attachments: RequestAttachment[];
+}) {
+  const copy = getSikStageCopy(detail);
+  const proofAttachments = attachments.filter(
+    (attachment) => attachment.attachmentType === "manager_approval_proof",
+  );
+
+  return (
+    <div className="grid gap-3 rounded-md border border-[#d8d4e4] bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-[#213027]">
+            Verifikasi Surat Izin Kegiatan
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[#666371]">
+            {copy.description}
+          </p>
+        </div>
+        <span
+          className={`rounded-sm border px-2 py-0.5 text-[10px] font-semibold ${copy.tone}`}
+        >
+          {copy.label}
+        </span>
+      </div>
+
+      {detail.approvalRejectReason ? (
+        <div className="rounded-md border border-[#f1c6c6] bg-[#fff7f7] px-3 py-2 text-xs text-[#7a1c1c]">
+          <span className="font-semibold">Alasan penolakan: </span>
+          {detail.approvalRejectReason}
+        </div>
+      ) : null}
+
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
+          Bukti ACC
+        </p>
+        <AttachmentRows attachments={proofAttachments} />
+      </div>
+
+      <SikApprovalActions
+        rolePrefix={rolePrefix}
+        id={detail.id}
+        approvalStatus={detail.approvalStatus}
+        finalSubmitted={Boolean(detail.finalSubmittedDate)}
+      />
+
+      {detail.approvalStatus !== "pending" ? (
+        <p className="text-xs leading-relaxed text-[#6f746f]">
+          Pengiriman email dan proses status layanan tersedia setelah form final
+          SIK dikirim mahasiswa.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function RequestPreview({
   request,
   detail,
+  attachments,
   staffName,
   closeHref,
   fixedHeight = false,
@@ -272,6 +434,7 @@ function RequestPreview({
 }: {
   request: ServiceRequestListItem;
   detail: ServiceRequestDetail;
+  attachments: RequestAttachment[];
   staffName: string;
   closeHref: string;
   fixedHeight?: boolean;
@@ -315,20 +478,55 @@ function RequestPreview({
     { label: "Jumlah Ijazah", value: detail.jumlahIjazah },
     { label: "Jumlah Transkrip", value: detail.jumlahTranskrip },
     { label: "Jumlah Terjemahan", value: detail.jumlahTranslate },
+    { label: "Nama Himpunan", value: detail.namaHimpunan },
+    { label: "Nama Kegiatan", value: detail.namaKegiatan },
+    {
+      label: "Tanggal Kegiatan",
+      value: detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null,
+    },
+    { label: "Email Pengiriman", value: detail.emailPengiriman },
+    { label: "No HP/WA", value: detail.noHpWa },
   ].filter(
     (item) =>
       item.value !== null && item.value !== undefined && item.value !== "",
   );
-  const workflowRows = detail.workflow.map((item) => ({
-    label: item.label,
-    value: item.date
-      ? `${formatFullDateTime(item.date)}${item.staff ? ` - ${item.staff}` : ""}`
-      : item.done
-        ? "Selesai"
-        : "Belum ada timestamp",
-    done: item.done,
-    cancelAction: item.done ? getWorkflowCancelAction(item.label) : null,
-  }));
+  const workflowRows = [
+    ...detail.workflow.map((item) => ({
+      label: item.label,
+      value: item.date
+        ? `${formatFullDateTime(item.date)}${item.staff ? ` - ${item.staff}` : ""}`
+        : item.done
+          ? "Selesai"
+          : "Belum ada timestamp",
+      done: item.done,
+      cancelAction: item.done ? getWorkflowCancelAction(item.label) : null,
+    })),
+    detail.approvalVerificationDate
+      ? {
+          label: "Verifikasi SIK",
+          value: `${formatFullDateTime(detail.approvalVerificationDate)}${
+            detail.approvalVerificationStaff
+              ? ` - ${detail.approvalVerificationStaff}`
+              : ""
+          }`,
+          done: true,
+          cancelAction: null,
+        }
+      : null,
+    detail.finalSubmittedDate
+      ? {
+          label: "Final Submit SIK",
+          value: formatFullDateTime(detail.finalSubmittedDate),
+          done: true,
+          cancelAction: null,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    label: string;
+    value: string;
+    done: boolean;
+    cancelAction: ReturnType<typeof getWorkflowCancelAction>;
+  }>;
 
   return (
     <aside
@@ -362,16 +560,29 @@ function RequestPreview({
 
       <div className="min-h-0 overflow-y-auto px-4 py-4">
         <div className="grid gap-4">
-          <InlineStatusAction
-            rolePrefix="staff"
-            serviceSlug={request.serviceSlug}
-            id={request.id}
-            status={request.status}
-            staffName={staffName}
-            supported={supportsInlineStatus(request)}
-          />
+          {showSikStagePanel(request) ? (
+            <SikWorkflowPreviewCard
+              rolePrefix="staff"
+              detail={detail}
+              attachments={attachments}
+            />
+          ) : (
+            <InlineStatusAction
+              rolePrefix="staff"
+              serviceSlug={request.serviceSlug}
+              id={request.id}
+              status={request.status}
+              staffName={staffName}
+              supported={supportsInlineStatus(request)}
+            />
+          )}
 
-          <RequestEmailHelper serviceSlug={request.serviceSlug} id={request.id} />
+          {showRequestEmailHelper(request) ? (
+            <RequestEmailHelper
+              serviceSlug={request.serviceSlug}
+              id={request.id}
+            />
+          ) : null}
 
           {profileRows.length > 0 ? (
             <div>
@@ -462,14 +673,8 @@ function RequestPreview({
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
               Dokumen Dilampirkan
             </p>
-            <div className="mt-2 grid gap-2">
-              <div className="flex items-center justify-between rounded-md border border-[#d8d4e4] bg-white px-3 py-2 text-xs text-[#4c554f]">
-                <span className="flex min-w-0 items-center gap-2">
-                  <FileText className="size-4 text-[#2d6a4f]" />
-                  Metadata lampiran tersedia di detail
-                </span>
-                <ExternalLink className="size-3 shrink-0" />
-              </div>
+            <div className="mt-2">
+              <AttachmentRows attachments={attachments} />
             </div>
           </div>
 
@@ -623,6 +828,7 @@ export default async function StaffRequestsPage({
       request.id === params.previewId,
   );
   let selectedDetail: ServiceRequestDetail | null = null;
+  let selectedAttachments: RequestAttachment[] = [];
 
   if (params.previewService && params.previewId && !unavailable) {
     try {
@@ -630,6 +836,13 @@ export default async function StaffRequestsPage({
         params.previewService,
         params.previewId,
       );
+      if (selectedDetail) {
+        selectedAttachments = await getRequestAttachments(
+          selectedDetail.serviceSlug,
+          selectedDetail.sourceTable,
+          selectedDetail.id,
+        );
+      }
     } catch (error) {
       if (!isDatabaseUnavailableError(error)) {
         throw error;
@@ -1158,6 +1371,7 @@ export default async function StaffRequestsPage({
             <RequestPreview
               request={previewRequest}
               detail={selectedDetail}
+              attachments={selectedAttachments}
               staffName={staffName}
               closeHref={buildHref({
                 category: activeCategory,
@@ -1190,6 +1404,7 @@ export default async function StaffRequestsPage({
             <RequestPreview
               request={previewRequest}
               detail={selectedDetail}
+              attachments={selectedAttachments}
               staffName={staffName}
               closeHref={buildHref({
                 category: activeCategory,

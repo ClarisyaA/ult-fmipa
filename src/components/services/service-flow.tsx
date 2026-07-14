@@ -6,7 +6,6 @@ import {
   Clock,
   ExternalLink,
   FileText,
-  LockKeyhole,
   Mail,
   ShieldCheck,
   UploadCloud,
@@ -507,15 +506,5 @@ function PengirimanFlow() {
  * ================================================================ */
 
 function DefaultFlow() {
-  return (
-    <div className="mt-4">
-      <div className="flex items-start gap-3 rounded-xl border border-[#E8DECE] bg-[#FAF7EF] p-4 text-sm text-[#6B5E52]">
-        <LockKeyhole className="mt-0.5 size-4 shrink-0 text-[#EE1C25]" />
-        <p>
-          Form ini akan menyimpan data pengajuan minimum. 
-          Untuk layanan dengan alur khusus, silakan pilih layanan yang sesuai.
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }

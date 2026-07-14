@@ -25,9 +25,6 @@ import {
   getCanonicalServiceSlug,
   getPublicServiceBySlug,
 } from "@/lib/legacy-services";
-import { getServiceFlowType } from "@/components/services/service-flow-config";
-import { ServiceFlow } from "@/components/services/service-flow";
-import { getPublicServiceTemplateLinks } from "@/lib/service-links";
 
 /* ================================================================
  * DEKORASI DINAMIS — berdasarkan slug
@@ -67,14 +64,6 @@ function getServiceTheme() {
     accent: "#EE1C25",
   };
 }
-
-const SERVICES_WITHOUT_STUDENT_TEMPLATE_FLOW = new Set([
-  "ket-tunjangan-orang-tua",
-  "keterangan-masih-kuliah",
-  "keterangan-kelakuan-baik",
-  "surat-pengantar",
-  "keterangan-lulus",
-]);
 
 /* ================================================================
  * HERO DECORATION
@@ -216,12 +205,7 @@ export default async function ServiceDetailPage({
     notFound();
   }
 
-  const flowType = getServiceFlowType(slug);
   const Icon = getServiceIcon(slug);
-  const templateLinks = await getPublicServiceTemplateLinks(service.slug);
-  const showServiceFlowSection =
-    flowType !== "default" &&
-    !SERVICES_WITHOUT_STUDENT_TEMPLATE_FLOW.has(service.slug);
 
   return (
     <main className="relative bg-[#FEFDF9]">
@@ -316,26 +300,6 @@ export default async function ServiceDetailPage({
                   </ul>
                 </div>
               </div>
-
-              {showServiceFlowSection ? (
-                <div
-                  id="pengajuan"
-                  className="relative rounded-3xl bg-white p-6 shadow-sm sm:p-7 border border-[#F5F0E8] hover:shadow-md transition-shadow overflow-hidden scroll-mt-[100px] lg:scroll-mt-[120px]"
-                >
-                  <div className="absolute -right-6 -top-6 h-12 w-12 rounded-full bg-[#EE1C25]/5" />
-
-                  <div className="relative">
-                    <h2 className="text-lg font-black tracking-tight text-[#18130E]">
-                      Pengajuan Layanan
-                    </h2>
-                    <ServiceFlow
-                      slug={slug}
-                      flow={flowType}
-                      templateLinks={templateLinks}
-                    />
-                  </div>
-                </div>
-              ) : null}
             </div>
           </div>
 

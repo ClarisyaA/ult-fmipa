@@ -460,14 +460,23 @@ Alur:
 
 1. Mahasiswa upload bukti ACC.
 2. Status bukti menjadi pending verification.
-3. Admin/staff approve atau reject.
-4. Jika approved, mahasiswa submit form final.
-5. Setelah final terkirim, pengajuan masuk workflow status normal.
+3. Admin/staff membuka detail atau preview pengajuan dan memakai panel `Verifikasi Surat Izin Kegiatan`.
+4. Jika bukti sesuai, klik `Setujui Verifikasi`; jika tidak sesuai, isi alasan lalu klik `Tolak Verifikasi`.
+5. Jika approved, mahasiswa submit form final.
+6. Setelah final terkirim, pengajuan masuk workflow status normal.
+
+Catatan UI admin/staff:
+
+- Jangan tampilkan pesan `Workflow belum tersedia` untuk tahap SIK.
+- Saat `APPROVAL_STATUS = pending`, tampilkan tombol `Setujui Verifikasi` dan `Tolak Verifikasi`.
+- Saat `APPROVAL_STATUS = rejected`, tampilkan status `Ditolak` dan alasan penolakan.
+- Saat `APPROVAL_STATUS = verified` tetapi form final belum dikirim, tampilkan status `Terverifikasi` dan pesan `Menunggu mahasiswa melengkapi form final SIK`.
+- Tombol status normal dan email helper baru tersedia setelah form final SIK dikirim mahasiswa.
 
 Approval payload:
 
 ```json
-{ "action": "approve", "staffName": "Nama Staff" }
+{ "action": "approve" }
 ```
 
 Reject payload:
@@ -475,8 +484,7 @@ Reject payload:
 ```json
 {
   "action": "reject",
-  "reason": "Bukti belum sesuai.",
-  "staffName": "Nama Staff"
+  "reason": "Bukti belum sesuai."
 }
 ```
 
@@ -493,7 +501,9 @@ attachments       // SPIK final, minimal 1 file
 
 Error penting:
 
-- `409` jika bukti belum verified, final sudah pernah dikirim, atau bukti pending/verified belum selesai.
+- `400` jika action tidak valid atau alasan penolakan lebih dari 500 karakter.
+- `409` jika bukti belum verified, final sudah pernah dikirim, bukti pending/verified belum selesai, atau bukti ACC tidak lagi dalam status pending saat diverifikasi.
+- `503` mengembalikan `success: false` dengan `error.code = DATABASE_UNAVAILABLE`.
 - Status update normal SIK akan ditolak jika form final belum dikirim.
 
 ## Student Request Dan Survey
