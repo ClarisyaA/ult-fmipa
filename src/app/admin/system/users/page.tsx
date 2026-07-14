@@ -95,10 +95,12 @@ export default async function AdminSystemUsersPage({
           <CsvDownloadButton filename="system-users.csv" rows={csvRows} />
         </form>
         <p className="mt-3 text-[11px] text-[#7a7166]">
-          Password tidak dapat dilihat atau diubah dari halaman ini.
+          Password tidak ditampilkan. Admin dapat membuat password baru melalui
+          tombol Reset Password pada baris user.
         </p>
       </AdminSectionCard>
-      <AdminSectionCard title="Tabel User">
+      <div data-tour="admin-users-table">
+        <AdminSectionCard title="Tabel User">
         {unavailable ? (
           <AdminUnavailableState />
         ) : rows.length === 0 ? (
@@ -149,7 +151,8 @@ export default async function AdminSystemUsersPage({
             </Table>
           </AdminTableScroll>
         )}
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }

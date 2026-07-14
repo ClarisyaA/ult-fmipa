@@ -569,7 +569,10 @@ function SikWorkflowPreviewCard({
   );
 
   return (
-    <div className="grid gap-3 rounded-md border border-[#d8e2d7] bg-white p-3">
+    <div
+      className="grid gap-3 rounded-md border border-[#d8e2d7] bg-white p-3"
+      data-tour="admin-sik-verification"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[#173d2d]">
@@ -718,7 +721,10 @@ function AdminRequestPreview({
   }>;
 
   return (
-    <aside className="sticky top-4 max-h-[calc(100dvh-2rem)] min-h-0 overflow-hidden rounded-lg border border-[#d8e2d7] bg-[#fbfdf9] shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+    <aside
+      className="sticky top-4 max-h-[calc(100dvh-2rem)] min-h-0 overflow-hidden rounded-lg border border-[#d8e2d7] bg-[#fbfdf9] shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
+      data-tour="admin-requests-preview-panel"
+    >
       <div className="flex items-center justify-between border-b border-[#e3eadf] bg-white px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-[#173d2d]">
@@ -746,42 +752,52 @@ function AdminRequestPreview({
 
       <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto px-4 py-4">
         <div className="grid gap-4">
-          {showSikStagePanel(request) ? (
-            <SikWorkflowPreviewCard
-              rolePrefix="admin"
-              detail={detail}
-              attachments={attachments}
-            />
-          ) : (
-            <InlineStatusAction
-              rolePrefix="admin"
-              serviceSlug={request.serviceSlug}
-              id={request.id}
-              status={request.status}
-              staffName={staffName}
-              supported={supportsInlineStatus(request)}
-            />
-          )}
-
-          {showRequestEmailHelper(request) ? (
-            <RequestEmailHelper
-              serviceSlug={request.serviceSlug}
-              id={request.id}
-            />
-          ) : null}
-
-          <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
-              Data Pemohon
-            </p>
-            <DetailRows rows={profileRows} />
+          <div
+            data-tour="admin-request-status-actions"
+          >
+            <div data-tour="admin-preview-status-actions">
+              {showSikStagePanel(request) ? (
+                <SikWorkflowPreviewCard
+                  rolePrefix="admin"
+                  detail={detail}
+                  attachments={attachments}
+                />
+              ) : (
+                <InlineStatusAction
+                  rolePrefix="admin"
+                  serviceSlug={request.serviceSlug}
+                  id={request.id}
+                  status={request.status}
+                  staffName={staffName}
+                  supported={supportsInlineStatus(request)}
+                />
+              )}
+            </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
-              Detail Layanan
-            </p>
-            <DetailRows rows={requestRows} />
+          {showRequestEmailHelper(request) ? (
+            <div data-tour="admin-preview-email-helper">
+              <RequestEmailHelper
+                serviceSlug={request.serviceSlug}
+                id={request.id}
+              />
+            </div>
+          ) : null}
+
+          <div data-tour="admin-request-detail-data">
+            <div data-tour="admin-preview-student-data">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
+                Data Pemohon
+              </p>
+              <DetailRows rows={profileRows} />
+            </div>
+
+            <div className="mt-4" data-tour="admin-preview-request-data">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
+                Detail Layanan
+              </p>
+              <DetailRows rows={requestRows} />
+            </div>
           </div>
 
           <div>
@@ -821,18 +837,22 @@ function AdminRequestPreview({
             </div>
           </div>
 
-          <div>
+          <div data-tour="admin-request-attachments">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#718170]">
               Lampiran
             </p>
-            <AttachmentRows attachments={attachments} />
+            <div data-tour="admin-preview-attachments">
+              <AttachmentRows attachments={attachments} />
+            </div>
           </div>
 
-          <RequestDeleteButton
-            serviceSlug={request.serviceSlug}
-            id={request.id}
-            compact
-          />
+          <div data-tour="admin-preview-delete-action">
+            <RequestDeleteButton
+              serviceSlug={request.serviceSlug}
+              id={request.id}
+              compact
+            />
+          </div>
         </div>
       </div>
     </aside>
@@ -963,27 +983,34 @@ function RequestActionsCell({
         }`}
       >
         <Link href={detailHref} scroll={false}>
-          <span className="inline-flex items-center gap-1">
+          <span
+            className="inline-flex items-center gap-1"
+            data-tour="admin-requests-row-detail-button"
+            data-tutorial-service={request.serviceSlug}
+          >
             <Eye className="size-3" />
             Detail
           </span>
         </Link>
       </Button>
       {hasPrintableTemplate ? (
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-1.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
-          title="Isi Data Surat dan cetak PDF resmi"
-        >
-          <Link href={`/admin/requests/${request.serviceSlug}/${request.id}`}>
-            <span className="inline-flex items-center gap-1">
-              <FileText className="size-3" />
-              Surat
-            </span>
-          </Link>
-        </Button>
+        <span data-tour="admin-request-letter-metadata">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-1.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
+            title="Isi Data Surat dan cetak PDF resmi"
+            data-tour="admin-request-print-buttons"
+          >
+            <Link href={`/admin/requests/${request.serviceSlug}/${request.id}`}>
+              <span className="inline-flex items-center gap-1">
+                <FileText className="size-3" />
+                Surat
+              </span>
+            </Link>
+          </Button>
+        </span>
       ) : null}
       <RequestDeleteButton
         serviceSlug={request.serviceSlug}
@@ -1120,7 +1147,10 @@ export default async function AdminRequestsPage({
         description="Pantau dan tindak lanjuti pengajuan layanan. Detail pengajuan dibuka di panel kanan agar tabel tetap berada di halaman ini."
       />
 
-      <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.09)]">
+      <section
+        className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.09)]"
+        data-tour="admin-requests-filters"
+      >
         <div className="flex h-[58px] items-end gap-2 overflow-x-auto border-b border-[#e8dfd0] bg-white px-2 pt-2 sm:gap-3 sm:px-3">
           {visibleGroups.map((group) => {
             const isActive = activeCategory === group.value;
@@ -1210,7 +1240,10 @@ export default async function AdminRequestsPage({
             ))}
           </div>
 
-          <div className="flex gap-4 overflow-x-auto border-t border-[#eee6d9] pt-3">
+          <div
+            className="flex gap-4 overflow-x-auto border-t border-[#eee6d9] pt-3"
+            data-tour="admin-requests-status-tabs"
+          >
             <Link
               className={`h-8 shrink-0 border-b-2 px-0 text-[12px] font-semibold ${
                 !status
@@ -1247,7 +1280,10 @@ export default async function AdminRequestsPage({
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-[#eee6d9] pt-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div
+            className="flex flex-col gap-2 border-t border-[#eee6d9] pt-3 sm:flex-row sm:flex-wrap sm:items-center"
+            data-tour="admin-requests-download"
+          >
             <CsvDownloadButton
               filename="admin-requests.csv"
               rows={csvRows}
@@ -1283,11 +1319,12 @@ export default async function AdminRequestsPage({
           hasPreview ? "xl:grid-cols-[minmax(0,1fr)_360px]" : ""
         }`}
       >
-        <AdminSectionCard
-          title="Pengajuan"
-          description={`Total ${result.pagination.total} pengajuan aman untuk ditampilkan.`}
-          className="min-w-0"
-        >
+        <div data-tour="admin-requests-table">
+          <AdminSectionCard
+            title="Pengajuan"
+            description={`Total ${result.pagination.total} pengajuan aman untuk ditampilkan.`}
+            className="min-w-0"
+          >
           <BulkRequestDeleteProvider items={bulkItems}>
             {unavailable ? (
               <AdminUnavailableState />
@@ -1298,7 +1335,10 @@ export default async function AdminRequestsPage({
               />
             ) : (
               <div className="grid gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#e8dfd0] bg-[#fffdf9] px-3 py-2">
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#e8dfd0] bg-[#fffdf9] px-3 py-2"
+                  data-tour="admin-requests-sort"
+                >
                   <div>
                     <p className="text-[11px] font-bold text-[#173d2d]">
                       Urutkan Tabel
@@ -1470,7 +1510,8 @@ export default async function AdminRequestsPage({
               </Button>
             </div>
           </div>
-        </AdminSectionCard>
+          </AdminSectionCard>
+        </div>
 
         {previewRequest && selectedDetail ? (
           <AdminRequestPreview

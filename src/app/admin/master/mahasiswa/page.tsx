@@ -85,19 +85,20 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
         </form>
       </AdminSectionCard>
 
-      <AdminSectionCard
-        title="Tabel Mahasiswa"
-        description={`Menampilkan maksimal ${rows.length} baris pertama sesuai filter.`}
-      >
-        {unavailable ? (
-          <AdminUnavailableState />
-        ) : rows.length === 0 ? (
-          <AdminEmptyState
-            title="Data mahasiswa tidak ditemukan"
-            description="Tidak ada baris yang cocok dengan pencarian saat ini."
-          />
-        ) : (
-          <AdminTableScroll>
+      <div data-tour="admin-master-students">
+        <AdminSectionCard
+          title="Tabel Mahasiswa"
+          description={`Menampilkan maksimal ${rows.length} baris pertama sesuai filter.`}
+        >
+          {unavailable ? (
+            <AdminUnavailableState />
+          ) : rows.length === 0 ? (
+            <AdminEmptyState
+              title="Data mahasiswa tidak ditemukan"
+              description="Tidak ada baris yang cocok dengan pencarian saat ini."
+            />
+          ) : (
+            <AdminTableScroll>
             <Table className="min-w-[760px]">
               <TableHeader className="bg-[#eef3ec]">
                 <TableRow>
@@ -128,9 +129,10 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                 ))}
               </TableBody>
             </Table>
-          </AdminTableScroll>
-        )}
-      </AdminSectionCard>
+            </AdminTableScroll>
+          )}
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }

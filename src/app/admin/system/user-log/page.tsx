@@ -101,10 +101,11 @@ export default async function AdminSystemUserLogPage({
           <CsvDownloadButton filename="user-log.csv" rows={csvRows} />
         </form>
       </AdminSectionCard>
-      <AdminSectionCard
-        title="Tabel User Log"
-        description={`Menampilkan ${rows.length} dari ${result.total} aktivitas tercatat.`}
-      >
+      <div data-tour="admin-user-log">
+        <AdminSectionCard
+          title="Tabel User Log"
+          description={`Menampilkan ${rows.length} dari ${result.total} aktivitas tercatat.`}
+        >
         {unavailable ? (
           <AdminUnavailableState />
         ) : rows.length === 0 ? (
@@ -167,7 +168,8 @@ export default async function AdminSystemUserLogPage({
             </div>
           </div>
         )}
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }

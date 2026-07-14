@@ -106,7 +106,7 @@ function formatLanguage(value: string | null | undefined) {
 function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   if (detail.sourceTable === "permohonan_magang") {
     return (
-      <Card>
+      <Card data-tour="admin-request-detail-data">
         <CardHeader>
           <CardTitle>Detail Pengajuan Magang/KP/TA</CardTitle>
           <CardDescription>
@@ -148,7 +148,7 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
 
   if (detail.sourceTable === "surat_izin_kegiatan") {
     return (
-      <Card>
+      <Card data-tour="admin-request-detail-data">
         <CardHeader>
           <CardTitle>Detail Surat Izin Kegiatan</CardTitle>
           <CardDescription>
@@ -208,7 +208,7 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   }
 
   return (
-    <Card>
+    <Card data-tour="admin-request-detail-data">
       <CardHeader>
         <CardTitle>Detail Pengajuan</CardTitle>
         <CardDescription>
@@ -326,7 +326,7 @@ function PrintLetterButton({
   }
 
   return (
-    <div className="grid gap-1 text-right">
+    <div className="grid gap-1 text-right" data-tour="admin-request-print-buttons">
       <div className="flex flex-wrap justify-end gap-2">
         <Button asChild variant="outline">
           <Link
@@ -476,12 +476,14 @@ export default async function AdminRequestDetailPage({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <PrintLetterButton detail={detail} printableInfo={printableInfo} />
-            <RequestDeleteButton
-              serviceSlug={detail.serviceSlug}
-              id={detail.id}
-              label="Hapus Pengajuan"
-              redirectTo="/admin/requests"
-            />
+            <div data-tour="admin-preview-delete-action">
+              <RequestDeleteButton
+                serviceSlug={detail.serviceSlug}
+                id={detail.id}
+                label="Hapus Pengajuan"
+                redirectTo="/admin/requests"
+              />
+            </div>
           </div>
         </div>
         <p className="mt-2 text-sm text-[#566258]">
@@ -491,30 +493,40 @@ export default async function AdminRequestDetailPage({
       </div>
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (
-        <SikApprovalActions
-          rolePrefix="admin"
-          id={detail.id}
-          approvalStatus={detail.approvalStatus}
-          finalSubmitted={Boolean(detail.finalSubmittedDate)}
-        />
+        <div data-tour="admin-request-status-actions">
+          <div data-tour="admin-preview-status-actions">
+          <SikApprovalActions
+            rolePrefix="admin"
+            id={detail.id}
+            approvalStatus={detail.approvalStatus}
+            finalSubmitted={Boolean(detail.finalSubmittedDate)}
+          />
+          </div>
+        </div>
       ) : null}
 
       {detail.sourceTable !== "surat_izin_kegiatan" ||
       detail.finalSubmittedDate ? (
-        <RequestStatusActions
-          serviceSlug={detail.serviceSlug}
-          id={detail.id}
-          currentStatus={detail.status}
-          rolePrefix="admin"
-          staffName={user?.name ?? "Admin ULT"}
-        />
+        <div data-tour="admin-request-status-actions">
+          <div data-tour="admin-preview-status-actions">
+          <RequestStatusActions
+            serviceSlug={detail.serviceSlug}
+            id={detail.id}
+            currentStatus={detail.status}
+            rolePrefix="admin"
+            staffName={user?.name ?? "Admin ULT"}
+          />
+          </div>
+        </div>
       ) : (
         <div className="rounded-lg border border-[#e3d9ca] bg-[#fffdf9] p-4 text-sm text-[#6f746f]">
           Form final SIK belum dikirim oleh mahasiswa.
         </div>
       )}
 
-      <RequestEmailHelper serviceSlug={detail.serviceSlug} id={detail.id} />
+      <div data-tour="admin-preview-email-helper">
+        <RequestEmailHelper serviceSlug={detail.serviceSlug} id={detail.id} />
+      </div>
 
       {printableInfo ? (
         <LetterMetadataEditor
@@ -526,7 +538,9 @@ export default async function AdminRequestDetailPage({
 
       <OptionalDetails detail={detail} />
 
-      <RequestAttachmentsList attachments={attachments} />
+      <div data-tour="admin-request-attachments">
+        <RequestAttachmentsList attachments={attachments} />
+      </div>
 
       <Card>
         <CardHeader>

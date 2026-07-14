@@ -163,6 +163,7 @@ Folder ini berisi clean support migration set:
 005_create_magang_sik_services.sql
 006_create_service_links.sql
 007_add_legacy_request_compat_columns.sql
+008_create_service_suggestions.sql
 ```
 
 Jalankan:
@@ -193,6 +194,7 @@ docker exec -i ult-fmipa-db mariadb -u root -proot -e "USE fmipa_sbpk; SHOW COLU
 docker exec -i ult-fmipa-db mariadb -u root -proot -e "USE fmipa_sbpk; SHOW COLUMNS FROM ult_home_activities LIKE 'IMAGE_FIT';"
 docker exec -i ult-fmipa-db mariadb -u root -proot -e "USE fmipa_sbpk; SHOW COLUMNS FROM ult_information_post_images LIKE 'IMAGE_FIT';"
 docker exec -i ult-fmipa-db mariadb -u root -proot -e "USE fmipa_sbpk; SHOW COLUMNS FROM ult_request_attachments LIKE 'ATTACHMENT_TYPE';"
+docker exec -i ult-fmipa-db mariadb -u root -proot -e "USE fmipa_sbpk; SHOW TABLES LIKE 'ult_service_suggestions';"
 ```
 
 Jika setiap command mengembalikan satu row kolom, hasil migration sudah benar.

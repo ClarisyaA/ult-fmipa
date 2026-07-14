@@ -89,10 +89,11 @@ export default async function AdminTracerStudyPage({
         </form>
       </AdminSectionCard>
 
-      <AdminSectionCard
-        title="Tabel Tracer Study"
-        description={`Menampilkan ${rows.length} baris read-only.`}
-      >
+      <div data-tour="admin-tracer-study">
+        <AdminSectionCard
+          title="Tabel Tracer Study"
+          description={`Menampilkan ${rows.length} baris read-only.`}
+        >
         {unavailable ? (
           <AdminUnavailableState />
         ) : rows.length === 0 ? (
@@ -140,7 +141,8 @@ export default async function AdminTracerStudyPage({
             </Table>
           </AdminTableScroll>
         )}
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }

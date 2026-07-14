@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { RequestEmailHelper } from "@/components/requests/request-email-helper";
+import { confirmToast } from "@/lib/confirm-toast";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { RequestStatus } from "@/types/request";
 
@@ -170,7 +172,13 @@ export function InlineStatusAction({
   }
 
   async function handleClick(config: ActionConfig) {
-    if (!window.confirm(config.confirmation)) {
+    if (
+      !(await confirmToast({
+        title: "Perbarui status permohonan?",
+        description: config.confirmation,
+        confirmLabel: config.label,
+      }))
+    ) {
       return;
     }
 
@@ -304,7 +312,14 @@ export function RequestStatusActionButton({
     : getDisabledTitle(config.action, currentStatus, supported);
 
   async function handleClick() {
-    if (!config || !window.confirm(config.confirmation)) {
+    if (
+      !config ||
+      !(await confirmToast({
+        title: "Perbarui status permohonan?",
+        description: config.confirmation,
+        confirmLabel: config.label,
+      }))
+    ) {
       return;
     }
 
@@ -326,7 +341,7 @@ export function RequestStatusActionButton({
       );
 
       if (!response.ok) {
-        window.alert("Status pengajuan gagal diperbarui.");
+        toast.error("Gagal memperbarui status permohonan.");
         return;
       }
 

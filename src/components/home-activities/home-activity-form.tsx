@@ -232,6 +232,7 @@ export function HomeActivityForm({
           value={title}
           onChange={(event) => setTitle(event.currentTarget.value)}
           required
+          data-tour="admin-activity-title"
         />
         <p className="text-xs text-[#7a7166]">{title.length}/150 karakter</p>
       </div>
@@ -248,6 +249,7 @@ export function HomeActivityForm({
             value={eyebrow}
             onChange={(event) => setEyebrow(event.currentTarget.value)}
             placeholder="Agenda Sivitas"
+            data-tour="admin-activity-eyebrow"
           />
         </div>
         <div className="grid gap-2">
@@ -260,11 +262,15 @@ export function HomeActivityForm({
             className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
             value={sortOrder}
             onChange={(event) => setSortOrder(event.currentTarget.value)}
+            data-tour="admin-activity-order"
           />
         </div>
       </div>
 
-      <label className="inline-flex min-h-9 w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]">
+      <label
+        className="inline-flex min-h-9 w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 text-sm text-[#303b34]"
+        data-tour="admin-activity-active"
+      >
         <input
           type="checkbox"
           className="size-4 accent-[#0f5b45]"
@@ -287,6 +293,7 @@ export function HomeActivityForm({
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
           required
+          data-tour="admin-activity-description"
         />
       </div>
 
@@ -301,6 +308,7 @@ export function HomeActivityForm({
           value={imageAlt}
           onChange={(event) => setImageAlt(event.currentTarget.value)}
           placeholder="Deskripsi singkat gambar"
+          data-tour="admin-activity-alt"
         />
       </div>
 
@@ -315,6 +323,7 @@ export function HomeActivityForm({
           <SelectTrigger
             id="imageFit"
             className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
+            data-tour="admin-activity-image-fit"
           >
             <SelectValue placeholder="Pilih tampilan gambar" />
           </SelectTrigger>
@@ -346,6 +355,7 @@ export function HomeActivityForm({
           <div
             role="button"
             tabIndex={0}
+            data-tour="admin-activity-image"
             className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-8 text-center transition-colors ${
               isDragging
                 ? "border-[#0f5b45] bg-[#eef9f1] text-[#0f3d2e]"
@@ -467,6 +477,7 @@ export function HomeActivityForm({
           type="submit"
           disabled={isSubmitting}
           className="h-10 w-full rounded-md bg-[#0f3d2e] px-5 text-sm font-semibold text-white hover:bg-[#164b39] sm:w-auto"
+          data-tour="admin-activity-save"
         >
           {isSubmitting ? "Menyimpan..." : "Simpan Kegiatan"}
         </Button>

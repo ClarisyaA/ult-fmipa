@@ -48,18 +48,24 @@ export default async function AdminHomeActivitiesPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="grid gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Kegiatan Mahasiswa
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              Kegiatan Mahasiswa
+            </h1>
+            <Button
+              asChild
+              size="sm"
+              className="h-9 rounded-md bg-[#0f5b45] px-4 text-xs font-semibold text-white hover:bg-[#0f3d2e]"
+            >
+              <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
+            </Button>
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Kelola item carousel Kegiatan Mahasiswa di homepage.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
-        </Button>
       </div>
 
       <Card>
@@ -94,9 +100,18 @@ export default async function AdminHomeActivitiesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="admin-home-activities-list">
         <CardHeader>
-          <CardTitle>Daftar Kegiatan Beranda</CardTitle>
+          <div className="flex flex-wrap items-center gap-3">
+            <CardTitle>Daftar Kegiatan Beranda</CardTitle>
+            <Button
+              asChild
+              size="sm"
+              className="h-8 rounded-md bg-[#0f5b45] px-3 text-xs font-semibold text-white hover:bg-[#0f3d2e]"
+            >
+              <Link href="/admin/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
+            </Button>
+          </div>
           <CardDescription>
             Jumlah item yang tampil di homepage mengikuti item aktif.
           </CardDescription>

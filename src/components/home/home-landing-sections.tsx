@@ -1275,10 +1275,10 @@ export function HomeLandingSections() {
               asChild
               className="group shrink-0 rounded-2xl bg-[#03B36B] px-6 font-bold text-white shadow-lg shadow-[#03B36B]/20 transition-all duration-200 hover:bg-[#029458] hover:scale-[1.02]"
             >
-              <a href="https://forms.google.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+              <Link href="/usulkan-layanan" className="flex items-center gap-2">
                 Usulkan Layanan
                 <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </a>
+              </Link>
             </Button>
           </div>
         </div>

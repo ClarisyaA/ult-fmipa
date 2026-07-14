@@ -8,6 +8,8 @@ import { useState } from "react";
 import {
   BarChart3,
   BookOpen,
+  ChevronsLeft,
+  ChevronsRight,
   Database,
   FileText,
   Globe,
@@ -17,10 +19,9 @@ import {
   LogOut,
   MapPin,
   Menu,
+  MessageSquarePlus,
   Network,
   Newspaper,
-  PanelLeftClose,
-  PanelLeftOpen,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -40,6 +41,7 @@ type AdminSidebarProps = {
 const navIcons = {
   Dashboard: Home,
   "Pengajuan Layanan": FileText,
+  "Usulan Layanan": MessageSquarePlus,
   Informasi: Newspaper,
   "Kegiatan Mahasiswa": Images,
   "Profil - Struktur": Network,
@@ -53,6 +55,24 @@ const navIcons = {
   "User List": Users,
   "User Log": Settings,
   "Website Publik": Globe,
+};
+
+const navTourTargets: Partial<Record<keyof typeof navIcons, string>> = {
+  "Pengajuan Layanan": "admin-sidebar-requests",
+  "Usulan Layanan": "admin-sidebar-service-suggestions",
+  Informasi: "admin-sidebar-information",
+  "Kegiatan Mahasiswa": "admin-sidebar-home-activities",
+  "Profil - Struktur": "admin-sidebar-profile-structure",
+  "Profil - Lokasi": "admin-sidebar-profile-location",
+  Survei: "admin-sidebar-survey",
+  Reporting: "admin-sidebar-reporting",
+  "Data Mahasiswa": "admin-sidebar-master-data",
+  "Tracer Study Alumni": "admin-sidebar-tracer",
+  "Data Level": "admin-sidebar-levels",
+  "Unit List": "admin-sidebar-units",
+  "User List": "admin-sidebar-users",
+  "User Log": "admin-sidebar-user-log",
+  "Website Publik": "admin-sidebar-public-site",
 };
 
 function getInitials(name: string) {
@@ -91,6 +111,7 @@ function AdminNavLink({
       href={item.href}
       onClick={onClick}
       title={collapsed ? item.label : undefined}
+      data-tour={navTourTargets[item.label as keyof typeof navIcons]}
       className={`group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
         collapsed ? "justify-center" : ""
       } ${
@@ -159,19 +180,20 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
           type="button"
           variant="ghost"
           size="sm"
-          className={`mt-4 h-8 rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white ${
-            isCollapsed ? "w-full px-0" : "justify-start px-3"
+          className={`mt-5 min-h-10 rounded-lg bg-[#ecfff4] px-3 py-2 text-sm font-semibold text-[#27614d] shadow-[0_10px_22px_rgba(0,0,0,0.14)] transition-all duration-200 hover:bg-[#ecfff4] hover:text-[#27614d] ${
+            isCollapsed ? "mx-auto w-10 justify-center px-0" : "w-full justify-start gap-3"
           }`}
+          title={isCollapsed ? "Buka sidebar" : "Ciutkan sidebar"}
           aria-label={isCollapsed ? "Buka sidebar admin" : "Tutup sidebar admin"}
           aria-expanded={!isCollapsed}
           onClick={() => setIsCollapsed((current) => !current)}
         >
           {isCollapsed ? (
-            <PanelLeftOpen className="size-4" />
+            <ChevronsRight className="size-4 text-[#3d8067]" />
           ) : (
             <>
-              <PanelLeftClose className="size-4" />
-              <span>Ciutkan</span>
+              <ChevronsLeft className="size-4 shrink-0 text-[#3d8067]" />
+              <span className="truncate text-[#27614d]">Ciutkan menu</span>
             </>
           )}
         </Button>
@@ -200,6 +222,7 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
         </nav>
 
         <div
+          data-tour="admin-user-menu"
           className={`mt-auto mb-1 rounded-xl border border-white/12 bg-white/8 shadow-[0_16px_36px_rgba(0,0,0,0.16)] backdrop-blur ${
             isCollapsed ? "p-2" : "p-3"
           }`}
@@ -339,6 +362,7 @@ export function AdminMobileMenu({
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsOpen(false)}
+                        data-tour={navTourTargets[item.label as keyof typeof navIcons]}
                         className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-[#536058] transition-colors hover:bg-[#f6f1e8] hover:text-[#0f3d2e]"
                       >
                         <Icon className="size-4 shrink-0" />

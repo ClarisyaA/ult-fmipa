@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 import type { HomeActivity } from "@/lib/home-activities";
 
 type HomeActivityActionsProps = {
@@ -54,9 +55,13 @@ export function HomeActivityActions({
 
   async function deleteActivity() {
     if (
-      !window.confirm(
-        "Hapus kegiatan mahasiswa ini secara permanen? Tindakan ini tidak dapat dibatalkan."
-      )
+      !(await confirmToast({
+        title: "Hapus kegiatan mahasiswa?",
+        description:
+          "Hapus kegiatan mahasiswa ini secara permanen? Tindakan ini tidak dapat dibatalkan.",
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
     ) {
       return;
     }

@@ -79,7 +79,8 @@ export default async function AdminSystemUnitsPage({
           <CsvDownloadButton filename="system-units.csv" rows={csvRows} />
         </form>
       </AdminSectionCard>
-      <AdminSectionCard title="Tabel Unit">
+      <div data-tour="admin-system-units">
+        <AdminSectionCard title="Tabel Unit">
         {unavailable ? (
           <AdminUnavailableState />
         ) : rows.length === 0 ? (
@@ -114,7 +115,8 @@ export default async function AdminSystemUnitsPage({
             </Table>
           </AdminTableScroll>
         )}
-      </AdminSectionCard>
+        </AdminSectionCard>
+      </div>
     </AdminPageShell>
   );
 }

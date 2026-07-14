@@ -59,7 +59,7 @@ function DraftContent({ draft }: { draft: EmailDraft }) {
     : "Layanan ini belum memiliki PDF otomatis. Lampirkan file hasil layanan secara manual di Gmail sebelum mengirim email.";
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-tour="admin-request-email-helper">
       {!draft.hasRecipientEmail ? (
         <div className="flex gap-2 rounded-md border border-[#f1c9a8] bg-[#fff7ed] p-3 text-sm text-[#9a3412]">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -222,7 +222,7 @@ export function RequestEmailHelper({
   }
 
   return (
-    <Card>
+    <Card data-tour="admin-request-email-helper">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div>
           <CardTitle>Pengiriman Email</CardTitle>

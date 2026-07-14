@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 import {
   Card,
   CardContent,
@@ -456,9 +457,12 @@ export function LetterMetadataEditor({
 
       if (!response.ok) {
         if (response.status === 409 && !options?.confirmNumberOverwrite) {
-          const confirmed = window.confirm(
-            "Nomor surat pada data ini sudah terisi. Mengubah nomor akan memengaruhi PDF yang dicetak ulang dari pengajuan ini. Lanjutkan?",
-          );
+          const confirmed = await confirmToast({
+            title: "Ubah nomor surat?",
+            description:
+              "Nomor surat pada data ini sudah terisi. Mengubah nomor akan memengaruhi PDF yang dicetak ulang dari pengajuan ini. Lanjutkan?",
+            confirmLabel: "Lanjutkan",
+          });
 
           if (confirmed) {
             await save({ confirmNumberOverwrite: true });
@@ -483,8 +487,18 @@ export function LetterMetadataEditor({
   };
 
   return (
-    <Card className="overflow-hidden rounded-none border-2 border-[#0f5b45] bg-[#fffaf2] shadow-sm">
-      <CardHeader className="border-b border-[#b8b8b8] bg-[#fffaf2] px-5 py-4">
+    <Card
+      className="overflow-hidden rounded-none border-2 border-[#0f5b45] bg-[#fffaf2] shadow-sm"
+      data-tour="admin-request-letter-metadata"
+    >
+      <CardHeader
+        className="border-b border-[#b8b8b8] bg-[#fffaf2] px-5 py-4"
+        data-tour={
+          serviceSlug === "permohonan-magang-kerja-praktek-ta"
+            ? "admin-magang-letter"
+            : "admin-preview-letter-metadata"
+        }
+      >
         <CardTitle className="text-[24px] font-bold leading-tight text-[#00669b]">
           {serviceTitles[serviceSlug] ?? "Data Surat"}
         </CardTitle>
@@ -612,7 +626,10 @@ export function LetterMetadataEditor({
 
             <div className="grid gap-2 md:grid-cols-[174px_minmax(0,1fr)]">
               <div className="hidden border-t border-[#b8b8b8] md:block" />
-              <div className="flex flex-wrap gap-2 border-t border-[#b8b8b8] pt-4">
+              <div
+                className="flex flex-wrap gap-2 border-t border-[#b8b8b8] pt-4"
+                data-tour="admin-request-print-buttons"
+              >
                 <Button
                   type="button"
                   variant="outline"
@@ -630,6 +647,7 @@ export function LetterMetadataEditor({
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
                 </Button>
+                <span className="contents" data-tour="admin-preview-print-buttons">
                 <Button
                   asChild
                   type="button"
@@ -660,6 +678,7 @@ export function LetterMetadataEditor({
                     Cetak Surat Inggris
                   </Link>
                 </Button>
+                </span>
               </div>
               {readiness?.isReady === false ? (
                 <>

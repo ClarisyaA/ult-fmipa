@@ -3,9 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, KeyRound, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 import {
   Dialog,
   DialogContent,
@@ -304,8 +305,17 @@ export function LevelRowActions({ row }: { row: LevelRow }) {
         size="sm"
         className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
-        onClick={() => {
-          if (!window.confirm("Hapus data level ini?")) return;
+        onClick={async () => {
+          if (
+            !(await confirmToast({
+              title: "Hapus data level?",
+              description: "Hapus data level ini?",
+              confirmLabel: "Hapus",
+              variant: "destructive",
+            }))
+          ) {
+            return;
+          }
           action.run(
             () =>
               sendJson(
@@ -459,8 +469,17 @@ export function UnitRowActions({
         size="sm"
         className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
-        onClick={() => {
-          if (!window.confirm("Hapus unit ini?")) return;
+        onClick={async () => {
+          if (
+            !(await confirmToast({
+              title: "Hapus unit?",
+              description: "Hapus unit ini?",
+              confirmLabel: "Hapus",
+              variant: "destructive",
+            }))
+          ) {
+            return;
+          }
           action.run(
             () => sendJson(`/api/admin/system/units/${row.unitId}`, "DELETE"),
             "Unit berhasil dihapus.",
@@ -615,7 +634,16 @@ export function MahasiswaRowActions({ row }: { row: MahasiswaRow }) {
         className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
         onClick={async () => {
-          if (!window.confirm("Hapus data mahasiswa ini?")) return;
+          if (
+            !(await confirmToast({
+              title: "Hapus data mahasiswa?",
+              description: "Hapus data mahasiswa ini?",
+              confirmLabel: "Hapus",
+              variant: "destructive",
+            }))
+          ) {
+            return;
+          }
           try {
             await sendJson(url, "DELETE");
             action.run(async () => undefined, "Data mahasiswa berhasil dihapus.");
@@ -629,11 +657,14 @@ export function MahasiswaRowActions({ row }: { row: MahasiswaRow }) {
               }, "");
               return;
             }
-            if (
-              !window.confirm(
-                `${message}\n\nHapus paksa data master mahasiswa ini?`,
-              )
-            ) {
+            const forceConfirmed = await confirmToast({
+              title: "Hapus paksa data mahasiswa?",
+              description: `${message}\n\nHapus paksa data master mahasiswa ini?`,
+              confirmLabel: "Hapus paksa",
+              variant: "destructive",
+            });
+
+            if (!forceConfirmed) {
               action.run(async () => {
                 throw new Error(message);
               }, "");
@@ -800,8 +831,17 @@ export function TracerRowActions({ row }: { row: TracerRow }) {
         size="sm"
         className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
-        onClick={() => {
-          if (!window.confirm("Hapus data tracer study ini?")) return;
+        onClick={async () => {
+          if (
+            !(await confirmToast({
+              title: "Hapus data tracer study?",
+              description: "Hapus data tracer study ini?",
+              confirmLabel: "Hapus",
+              variant: "destructive",
+            }))
+          ) {
+            return;
+          }
           action.run(
             () => sendJson(url, "DELETE"),
             "Data tracer study berhasil dihapus.",
@@ -831,7 +871,9 @@ export function UserRowActions({
   currentLegacyUsername?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const action = useSaveAction();
+  const passwordAction = useSaveAction();
   const isSelf =
     currentLegacyUsername === row.USER_NAME || currentUserEmail === row.EMAIL;
   const currentUnit = useMemo(
@@ -852,7 +894,7 @@ export function UserRowActions({
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Password tidak ditampilkan. Kosongkan jika tidak ingin mengubah password.
+              Edit data akun aman. Gunakan tombol Reset Password untuk mengubah password.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -872,8 +914,6 @@ export function UserRowActions({
                       accessCode: form.get("accessCode"),
                       unitId: form.get("unitId"),
                       confirmed: form.get("confirmed") === "1",
-                      password: form.get("password"),
-                      confirmPassword: form.get("confirmPassword"),
                     },
                   ),
                 "Data user berhasil diperbarui.",
@@ -961,27 +1001,91 @@ export function UserRowActions({
                 />
                 Aktif
               </label>
-              <Field label="Password Baru">
-                <Input
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Kosongkan jika tidak diubah"
-                />
-              </Field>
-              <Field label="Konfirmasi Password Baru">
-                <Input
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Kosongkan jika tidak diubah"
-                />
-              </Field>
             </div>
             <DialogError error={action.error} />
             <Button disabled={action.isPending} className="bg-[#0f3d2e]">
               Simpan
             </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-md text-xs"
+            data-tour="admin-user-reset-password"
+            data-tutorial-action="open-user-reset-password"
+          >
+            <KeyRound className="size-3.5" />
+            Reset Password
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Buat password baru untuk {row.FULL_NAME}. Password lama tidak perlu
+              dimasukkan.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="grid gap-3"
+            data-tour="admin-user-reset-password-modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              passwordAction.run(
+                () =>
+                  sendJson(
+                    `/api/admin/system/users/${encodeURIComponent(row.USER_NAME)}/password`,
+                    "PATCH",
+                    {
+                      password: form.get("password"),
+                      confirmPassword: form.get("confirmPassword"),
+                    },
+                  ),
+                "Password user berhasil diperbarui.",
+                () => setPasswordOpen(false),
+              );
+            }}
+          >
+            <Field label="Password Baru">
+              <Input
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={6}
+                required
+                data-tour="admin-user-password"
+              />
+            </Field>
+            <Field label="Konfirmasi Password">
+              <Input
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                minLength={6}
+                required
+                data-tour="admin-user-confirm-password"
+              />
+            </Field>
+            <DialogError error={passwordAction.error} />
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={passwordAction.isPending}
+                onClick={() => setPasswordOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button disabled={passwordAction.isPending} className="bg-[#0f3d2e]">
+                {passwordAction.isPending ? "Menyimpan..." : "Simpan Password"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
@@ -996,8 +1100,17 @@ export function UserRowActions({
             ? "Akun yang sedang login tidak dapat dihapus."
             : "Hapus user"
         }
-        onClick={() => {
-          if (!window.confirm("Hapus user ini?")) return;
+        onClick={async () => {
+          if (
+            !(await confirmToast({
+              title: "Hapus user?",
+              description: "Hapus user ini?",
+              confirmLabel: "Hapus",
+              variant: "destructive",
+            }))
+          ) {
+            return;
+          }
           action.run(
             () =>
               sendJson(
@@ -1012,6 +1125,7 @@ export function UserRowActions({
         Hapus
       </Button>
       <ActionMessage message={action.message} />
+      <ActionMessage message={passwordAction.message} />
       <DialogError error={action.error} />
     </div>
   );
@@ -1031,7 +1145,12 @@ export function UserCreateButton({
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button size="sm" className="h-9 rounded-md bg-[#0f3d2e] text-xs">
+          <Button
+            size="sm"
+            className="h-9 rounded-md bg-[#0f3d2e] text-xs"
+            data-tour="admin-users-add-button"
+            data-tutorial-action="open-user-create-form"
+          >
             <Plus className="size-4" />
             Tambah User
           </Button>
@@ -1068,22 +1187,43 @@ export function UserCreateButton({
           >
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Username">
-                <Input name="username" maxLength={20} required />
+                <Input
+                  name="username"
+                  maxLength={20}
+                  required
+                  data-tour="admin-user-username"
+                />
               </Field>
               <Field label="Nama">
-                <Input name="fullName" maxLength={50} required />
+                <Input
+                  name="fullName"
+                  maxLength={50}
+                  required
+                  data-tour="admin-user-name"
+                />
               </Field>
               <Field label="Email">
-                <Input name="email" type="email" maxLength={50} required />
+                <Input
+                  name="email"
+                  type="email"
+                  maxLength={50}
+                  required
+                  data-tour="admin-user-email"
+                />
               </Field>
               <Field label="Telepon">
-                <Input name="telephone" maxLength={50} />
+                <Input
+                  name="telephone"
+                  maxLength={50}
+                  data-tour="admin-user-phone"
+                />
               </Field>
               <Field label="Akses">
                 <select
                   name="accessCode"
                   className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
                   required
+                  data-tour="admin-user-access"
                 >
                   {accessRows.map((access) => (
                     <option key={access.ACCESS_CODE} value={access.ACCESS_CODE}>
@@ -1097,6 +1237,7 @@ export function UserCreateButton({
                   name="unitId"
                   className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
                   required
+                  data-tour="admin-user-unit"
                 >
                   {units.map((unit) => (
                     <option key={unit.unitId} value={unit.unitId}>
@@ -1112,6 +1253,7 @@ export function UserCreateButton({
                   autoComplete="new-password"
                   minLength={8}
                   required
+                  data-tour="admin-user-password"
                 />
               </Field>
               <Field label="Konfirmasi Password">
@@ -1121,9 +1263,13 @@ export function UserCreateButton({
                   autoComplete="new-password"
                   minLength={8}
                   required
+                  data-tour="admin-user-confirm-password"
                 />
               </Field>
-              <label className="flex items-center gap-2 text-[11px] font-semibold text-[#5d665f]">
+              <label
+                className="flex items-center gap-2 text-[11px] font-semibold text-[#5d665f]"
+                data-tour="admin-user-active"
+              >
                 <input
                   name="confirmed"
                   type="checkbox"
@@ -1134,7 +1280,11 @@ export function UserCreateButton({
               </label>
             </div>
             <DialogError error={action.error} />
-            <Button disabled={action.isPending} className="bg-[#0f3d2e]">
+            <Button
+              disabled={action.isPending}
+              className="bg-[#0f3d2e]"
+              data-tour="admin-user-save"
+            >
               Simpan
             </Button>
           </form>

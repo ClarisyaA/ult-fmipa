@@ -72,7 +72,10 @@ export function SikApprovalActions({
   }
 
   return (
-    <div className="grid gap-3 rounded-lg border bg-background p-4">
+    <div
+      className="grid gap-3 rounded-lg border bg-background p-4"
+      data-tour="admin-sik-verification"
+    >
       <div>
         <p className="text-sm font-medium">Verifikasi Surat Izin Kegiatan</p>
         <p className="mt-1 text-sm text-muted-foreground">

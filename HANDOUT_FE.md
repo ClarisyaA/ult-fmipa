@@ -91,6 +91,7 @@ Aturan FE:
 | `/layanan` | Katalog layanan publik | `GET /api/services` |
 | `/layanan/[slug]` | Detail layanan | `GET /api/services/[slug]`, `GET /api/services/[slug]/links` |
 | `/layanan/[slug]/ajukan` | Form submit layanan, login student dibutuhkan saat submit | `GET /api/services/[slug]`, `POST /api/services/[slug]/requests` |
+| `/usulkan-layanan` | Form internal usulan layanan baru/pengembangan layanan | `POST /api/service-suggestions` |
 | `/informasi` | List informasi publik | `GET /api/information` |
 | `/informasi/[slug]` | Detail informasi publik | Server helper, tidak ada route `GET /api/information/[slug]` di repo ini |
 | `/profil` | Profil organisasi dan lokasi | `GET /api/profile/organization`, `GET /api/profile/location` |
@@ -111,6 +112,21 @@ Aturan FE:
 | `GET` | `/api/profile/organization` | JSON tree struktur aktif | Public |
 | `GET` | `/api/profile/location` | JSON lokasi dan jam layanan aktif | Public |
 | `GET` | `/api/profile/images/[type]/[id]` | Image/blob atau 404 | `type` sesuai implementasi profile image route |
+| `POST` | `/api/service-suggestions` | `{ success: true, data: { id } }` | Submit usulan layanan internal; tidak memakai Google Form |
+
+### Usulan Layanan Internal
+
+Tombol `Usulkan Layanan` di homepage mengarah ke `/usulkan-layanan`, bukan Google Form eksternal. Form menyimpan data ke tabel `ult_service_suggestions`.
+
+Field form:
+
+- `Nama *`, maksimal 200 karakter.
+- `NPM *`, maksimal 50 karakter.
+- `Layanan yang ingin diajukan *`, maksimal 200 karakter.
+- `Detail Layanan yang ingin diajukan *`, maksimal 2000 karakter.
+- `Saran peningkatan layanan yang sudah ada` opsional, maksimal 2000 karakter.
+
+Jika user login sebagai mahasiswa dan session menyediakan `session.user.npm`, NPM diprefill dan read-only. Backend tetap memakai NPM dari session mahasiswa bila tersedia.
 
 Loading state: tampilkan skeleton atau fallback content. Empty state: tampilkan pesan netral seperti "Belum ada informasi." Error state: tampilkan pesan ramah; jangan tampilkan raw DB error.
 
@@ -317,6 +333,7 @@ Pages:
 - `/staff/profil/struktur`
 - `/staff/profil/lokasi`
 - `/staff/surveys`
+- `/staff/usulan-layanan`
 
 Capabilities staff:
 
@@ -330,6 +347,7 @@ Capabilities staff:
 - Mencetak `Cetak Surat Indo` dan `Cetak Surat Inggris`.
 - Membuka Gmail compose helper.
 - Mengelola CMS staff yang routenya tersedia: kegiatan beranda, informasi, profil struktur, profil lokasi, service links/home links.
+- Melihat usulan layanan, membuka detail, menandai ditinjau, dan mengarsipkan usulan.
 
 Restrictions staff:
 
@@ -345,6 +363,9 @@ Staff APIs utama:
 - `GET /api/staff/requests/[serviceSlug]/[id]`
 - `PATCH /api/staff/requests/[serviceSlug]/[id]/status`
 - `PATCH /api/staff/requests/surat-izin-kegiatan/[id]/approval`
+- `GET /api/staff/service-suggestions`
+- `GET /api/staff/service-suggestions/[id]`
+- `PATCH /api/staff/service-suggestions/[id]` dengan status `new`, `reviewed`, atau `archived`
 - CMS staff routes di section CMS.
 
 ## 7. Admin Frontend
@@ -366,6 +387,7 @@ Pages:
 - `/admin/alumni/tracer-study`
 - `/admin/reports`
 - `/admin/surveys`
+- `/admin/usulan-layanan`
 - `/admin/system/users`
 - `/admin/system/levels`
 - `/admin/system/units`
@@ -380,7 +402,88 @@ Capabilities admin:
 - Mengelola master mahasiswa dan tracer alumni.
 - Mengelola users, levels, units, dan user log.
 - Mengelola service/home links.
+- Melihat dan memperbarui status usulan layanan.
 - Memproses semua request workflow.
+
+### Admin Tutorial Overlay
+
+Route trigger:
+
+- Global admin tour: `/admin/dashboard?tour=admin&step=0`
+- Page tutorial: `{current-admin-route}?tour=page&step=0`
+
+Setiap halaman admin memiliki tombol `Tutorial` dari layout admin. Di dashboard, tombol membuka pilihan `Tutorial Lengkap Admin` atau `Tutorial Halaman Ini`. Di halaman admin lain, tombol langsung memulai tutorial khusus halaman tersebut.
+
+Komponen utama:
+
+- `src/components/tutorial/admin-tutorial-button.tsx`
+- `src/components/tutorial/admin-dashboard-tutorial-button.tsx`
+- `src/components/tutorial/admin-tutorial-overlay.tsx`
+- `src/lib/admin-tutorial-steps.ts`
+- `src/lib/admin-page-tutorial-steps.ts`
+- `src/lib/tutorial-types.ts`
+
+Perilaku:
+
+- Tutorial tidak auto-open.
+- Global tour memakai query `tour=admin&step=N` dan boleh berpindah antar halaman admin.
+- Page tutorial memakai query `tour=page&step=N` dan tetap menjelaskan halaman yang sedang dibuka.
+- Overlay dipasang di `src/app/admin/layout.tsx`, sehingga tetap aktif saat step berpindah route admin.
+- Step menyimpan progres sementara di `localStorage` dengan key `ult-admin-tutorial-active`, `ult-admin-tutorial-step`, dan `ult-admin-tutorial-mode`.
+- Global step memiliki `route` nyata, lalu overlay menavigasi ke route tersebut dan menyorot elemen `data-tour` jika tersedia.
+- Page step diambil dari `getAdminPageTutorialSteps(pathname, searchParams)` dan tidak memaksa pindah halaman.
+- Step request yang butuh panel detail dapat memakai `onCta: "open-first-request-preview"` dan `previewService` untuk membuka contoh detail dari row yang tersedia.
+- Overlay mendukung `Lanjut`, `Sebelumnya`, `Lewati`, `Selesai`, tombol `X`, `Escape`, `ArrowRight`, dan `ArrowLeft`.
+- Overlay memakai highlight ringan tanpa blur/dim gelap berat agar admin tetap bisa membaca halaman.
+- Jika target preview/detail belum terlihat, overlay mencoba membuka contoh detail dari data row yang ada. Jika tidak ada data, tampil fallback: admin diminta klik `Detail` setelah ada pengajuan.
+- `Selesai` menyimpan `ult-admin-tutorial-completed` di `localStorage`.
+- Opsi `Jangan tampilkan lagi di browser ini` untuk global tour menyimpan `ult-admin-tutorial-dismissed`.
+- Opsi yang sama untuk page tutorial menyimpan `ult-admin-page-tutorial-dismissed` dan key tambahan per pathname.
+
+Pola target:
+
+```tsx
+data-tour="admin-sidebar-requests"
+data-tour="admin-dashboard-summary"
+data-tour="admin-requests-filters"
+data-tour="admin-request-email-helper"
+data-tour="admin-requests-row-detail-button"
+data-tour="admin-preview-student-data"
+```
+
+Target yang dipakai sekarang mencakup dashboard summary/latest, tombol tutorial, filter pengajuan, status tabs, urutan terbaru/terlama, tabel pengajuan, tombol detail row, panel detail, data pemohon, data layanan, workflow, lampiran, download data, Data Surat, cetak PDF, Gmail helper, verifikasi SIK, usulan layanan, informasi, kegiatan, profil, survei, reporting, data mahasiswa, tracer alumni, data level, unit, user, user log, shortcut website publik, lonceng notifikasi, dan area akun/logout.
+
+Target preview/detail request penting:
+
+```tsx
+data-tour="admin-requests-table"
+data-tour="admin-requests-row-detail-button"
+data-tour="admin-requests-preview-panel"
+data-tour="admin-preview-student-data"
+data-tour="admin-preview-request-data"
+data-tour="admin-preview-attachments"
+data-tour="admin-preview-status-actions"
+data-tour="admin-preview-letter-metadata"
+data-tour="admin-preview-print-buttons"
+data-tour="admin-preview-email-helper"
+data-tour="admin-preview-delete-action"
+```
+
+Aturan konten step:
+
+- Judul pendek, idealnya maksimal sekitar 6 kata.
+- Body 2-3 kalimat pendek.
+- Bahasa ramah dan jelas, tidak terlalu birokratis.
+- Untuk fitur pengajuan, tetap sebut alur penting: pilih layanan, urutkan terbaru/terlama, buka detail, isi Data Surat, cetak PDF Indo/Inggris, Gmail helper, dan verifikasi SIK.
+- Untuk CMS dinamis, jelaskan tambah/edit konten, upload gambar, image fit `cover/contain`, status publikasi, dan cek halaman publik.
+- Untuk reporting/data, jelaskan sumber data, filter sebelum download, dan pemakaian data secara bertanggung jawab.
+
+Menambah tutorial halaman baru:
+
+1. Tambahkan target `data-tour` pada elemen UI yang ingin disorot.
+2. Tambahkan step di `src/lib/admin-page-tutorial-steps.ts`.
+3. Jika step membutuhkan contoh detail request, gunakan `onCta: "open-first-request-preview"` dan isi `previewService` bila perlu.
+4. Jaga overlay tetap ringan: tidak pakai backdrop blur dan tidak pakai dim gelap.
 
 Preview URL pattern request:
 
@@ -398,7 +501,22 @@ Admin APIs utama:
 - `DELETE /api/admin/requests/[serviceSlug]/[id]`
 - `GET /api/admin/requests/export`
 - `PATCH /api/admin/requests/surat-izin-kegiatan/[id]/approval`
+- `GET /api/admin/service-suggestions`
+- `GET /api/admin/service-suggestions/[id]`
+- `PATCH /api/admin/service-suggestions/[id]` dengan status `new`, `reviewed`, atau `archived`
 - Master/system/CMS routes di section terkait.
+
+### Usulan Layanan Admin/Staff
+
+Tabel: `ult_service_suggestions`.
+
+Kolom utama:
+
+- `NAMA`, `NPM`, `LAYANAN_DIAJUKAN`, `DETAIL_LAYANAN`, `SARAN_PENINGKATAN`.
+- `STATUS`: `new`, `reviewed`, `archived`.
+- `ADMIN_NOTE`, `CREATED_AT`, `UPDATED_AT`.
+
+Viewer tersedia di `/admin/usulan-layanan` dan `/staff/usulan-layanan`. Admin/staff dapat melihat list, membuka detail, menyimpan catatan, menandai ditinjau, dan mengarsipkan usulan.
 
 ## 8. Request Workflow
 
@@ -936,6 +1054,14 @@ Admin:
 - [ ] Master mahasiswa dan tracer.
 - [ ] System users/levels/units/user-log.
 - [ ] Reports/export.
+
+Catatan user admin/staff:
+
+- Admin dapat reset password akun admin/staff dari `/admin/system/users`.
+- Reset password saat ini langsung mengisi password baru dan konfirmasi password,
+  tanpa meminta password lama.
+- Password tidak pernah ditampilkan ulang di UI; sistem hanya menyimpan hash
+  legacy yang sama dengan mekanisme login.
 
 Regression:
 

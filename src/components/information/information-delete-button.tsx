@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmToast } from "@/lib/confirm-toast";
 
 type InformationDeleteButtonProps = {
   id: string;
@@ -21,9 +22,13 @@ export function InformationDeleteButton({
 
   async function handleDelete() {
     if (
-      !window.confirm(
-        "Hapus informasi ini secara permanen? Tindakan ini tidak dapat dibatalkan."
-      )
+      !(await confirmToast({
+        title: "Hapus informasi?",
+        description:
+          "Hapus informasi ini secara permanen? Tindakan ini tidak dapat dibatalkan.",
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
     ) {
       return;
     }

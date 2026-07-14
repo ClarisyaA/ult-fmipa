@@ -5,6 +5,8 @@ import {
   AdminSidebar,
 } from "@/components/layout/admin-sidebar";
 import { OpsRequestNotifier } from "@/components/requests/ops-request-notifier";
+import { AdminTutorialButton } from "@/components/tutorial/admin-tutorial-button";
+import { AdminTutorialOverlay } from "@/components/tutorial/admin-tutorial-overlay";
 import { adminNavGroups } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -58,6 +60,10 @@ export default async function AdminLayout({
             {children}
           </main>
           <OpsRequestNotifier role="admin" />
+          <div className="fixed right-20 top-4 z-40 md:right-24 md:top-6">
+            <AdminTutorialButton />
+          </div>
+          <AdminTutorialOverlay />
         </div>
       </div>
     </div>

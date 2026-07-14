@@ -70,21 +70,23 @@ export default async function AdminInformasiPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="grid gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">
-            Kelola Informasi
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-normal">
+              Kelola Informasi
+            </h1>
+            <Button asChild size="sm" className="h-9 rounded-md bg-[#0f5b45] px-4 text-xs font-semibold text-white hover:bg-[#0f3d2e]">
+              <Link href="/admin/informasi/tambah">Tambah Informasi</Link>
+            </Button>
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Buat dan kelola pengumuman tanpa mengubah tabel layanan legacy.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/informasi/tambah">Tambah Informasi</Link>
-        </Button>
       </div>
 
-      <Card>
+      <Card data-tour="admin-information-list">
         <CardHeader>
           <CardTitle>Daftar Informasi</CardTitle>
           <CardDescription>Semua draft dan publikasi.</CardDescription>

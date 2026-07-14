@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { confirmToast } from "@/lib/confirm-toast";
 import type {
   ProfileColorVariant,
   ProfileOrganizationNode,
@@ -294,9 +295,12 @@ export function ProfileOrganizationManager({
 
   async function deleteNode(node: ProfileOrganizationNode) {
     if (
-      !window.confirm(
-        `Hapus ${node.name}? Node yang masih punya bawahan akan ditolak.`
-      )
+      !(await confirmToast({
+        title: "Hapus node struktur?",
+        description: `Hapus ${node.name}? Node yang masih punya bawahan akan ditolak.`,
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
     ) {
       return;
     }
@@ -330,7 +334,7 @@ export function ProfileOrganizationManager({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="rounded-xl border bg-white">
+      <div className="rounded-xl border bg-white" data-tour="admin-profile-structure-list">
         <div className="border-b p-4">
           <h2 className="font-semibold">Daftar Struktur</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -398,7 +402,11 @@ export function ProfileOrganizationManager({
         </div>
       </div>
 
-      <form className="grid content-start gap-4 rounded-xl border bg-white p-4" onSubmit={handleSubmit}>
+      <form
+        className="grid content-start gap-4 rounded-xl border bg-white p-4"
+        data-tour="admin-profile-structure-form"
+        onSubmit={handleSubmit}
+      >
         <div>
           <h2 className="font-semibold">
             {form.id ? "Edit Node Struktur" : "Tambah Node Struktur"}
@@ -410,7 +418,13 @@ export function ProfileOrganizationManager({
 
         <div className="grid gap-2">
           <Label>Nama Orang</Label>
-          <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.currentTarget.value })} required maxLength={150} />
+          <Input
+            value={form.name}
+            onChange={(event) => setForm({ ...form, name: event.currentTarget.value })}
+            required
+            maxLength={150}
+            data-tour="admin-profile-structure-name"
+          />
         </div>
 
         <div className="grid gap-2">
@@ -427,6 +441,7 @@ export function ProfileOrganizationManager({
             }}
             required
             maxLength={150}
+            data-tour="admin-profile-structure-position"
           />
         </div>
 
@@ -437,6 +452,7 @@ export function ProfileOrganizationManager({
             readOnly
             maxLength={100}
             className="bg-muted/40 text-muted-foreground"
+            data-tour="admin-profile-structure-role"
           />
           <p className="text-xs text-muted-foreground">
             Label role otomatis mengikuti Jabatan / Position Title.
@@ -446,7 +462,7 @@ export function ProfileOrganizationManager({
         <div className="grid gap-2">
           <Label>Parent / Atasan</Label>
           <Select value={form.parentId} onValueChange={(value) => setForm({ ...form, parentId: value })}>
-            <SelectTrigger className="w-full bg-white">
+            <SelectTrigger className="w-full bg-white" data-tour="admin-profile-structure-parent">
               <SelectValue placeholder="Pilih atasan" />
             </SelectTrigger>
             <SelectContent>
@@ -468,12 +484,17 @@ export function ProfileOrganizationManager({
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label>Urutan</Label>
-            <Input type="number" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.currentTarget.value })} />
+            <Input
+              type="number"
+              value={form.sortOrder}
+              onChange={(event) => setForm({ ...form, sortOrder: event.currentTarget.value })}
+              data-tour="admin-profile-structure-order"
+            />
           </div>
           <div className="grid gap-2">
             <Label>Warna Cabang</Label>
             <Select value={form.colorVariant} onValueChange={(value) => setForm({ ...form, colorVariant: value as ProfileColorVariant })}>
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-white" data-tour="admin-profile-structure-color">
                 <SelectValue placeholder="Pilih warna" />
               </SelectTrigger>
               <SelectContent>
@@ -487,7 +508,10 @@ export function ProfileOrganizationManager({
           </div>
         </div>
 
-        <label className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm">
+        <label
+          className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          data-tour="admin-profile-structure-active"
+        >
           <input
             type="checkbox"
             className="size-4 accent-[#0f5b45]"
@@ -499,7 +523,12 @@ export function ProfileOrganizationManager({
 
         <div className="grid gap-2">
           <Label>Alt Foto</Label>
-          <Input value={form.photoAlt} onChange={(event) => setForm({ ...form, photoAlt: event.currentTarget.value })} maxLength={150} />
+          <Input
+            value={form.photoAlt}
+            onChange={(event) => setForm({ ...form, photoAlt: event.currentTarget.value })}
+            maxLength={150}
+            data-tour="admin-profile-structure-photo-alt"
+          />
         </div>
 
         <div className="grid gap-2">
@@ -514,6 +543,7 @@ export function ProfileOrganizationManager({
           <div
             role="button"
             tabIndex={0}
+            data-tour="admin-profile-structure-photo"
             className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-6 text-center text-sm ${
               isDragging ? "border-[#0f5b45] bg-[#eef9f1]" : "border-[#d8d4c8] bg-[#fffdf9]"
             }`}
@@ -549,7 +579,11 @@ export function ProfileOrganizationManager({
         ) : null}
 
         <div className="flex flex-wrap gap-2 border-t pt-4">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            data-tour="admin-profile-structure-save"
+          >
             <Plus className="size-4" />
             {isSubmitting ? "Menyimpan..." : form.id ? "Simpan Perubahan" : "Tambah Node"}
           </Button>

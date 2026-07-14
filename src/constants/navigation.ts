@@ -19,6 +19,7 @@ export const publicNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard" },
   { label: "Pengajuan Layanan", href: "/admin/requests" },
+  { label: "Usulan Layanan", href: "/admin/usulan-layanan" },
   { label: "Informasi", href: "/admin/informasi" },
   { label: "Survei", href: "/admin/surveys" },
   { label: "Reporting", href: "/admin/reports" },
@@ -40,6 +41,7 @@ export const adminNavGroups: NavGroup[] = [
     label: "Operasional",
     items: [
       { label: "Pengajuan Layanan", href: "/admin/requests" },
+      { label: "Usulan Layanan", href: "/admin/usulan-layanan" },
       { label: "Informasi", href: "/admin/informasi" },
       { label: "Kegiatan Mahasiswa", href: "/admin/beranda/kegiatan" },
       { label: "Profil - Struktur", href: "/admin/profil/struktur" },
@@ -76,6 +78,7 @@ export const adminNavGroups: NavGroup[] = [
 export const staffNavItems: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard" },
   { label: "Pengajuan", href: "/staff/requests" },
+  { label: "Usulan Layanan", href: "/staff/usulan-layanan" },
   { label: "Informasi", href: "/staff/informasi" },
   { label: "Kegiatan Mahasiswa", href: "/staff/beranda/kegiatan" },
   { label: "Profil - Struktur", href: "/staff/profil/struktur" },
