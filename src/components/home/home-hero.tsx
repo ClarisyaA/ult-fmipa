@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { ArrowDown } from "lucide-react";
 
 const BASE_SCENE_WIDTH = 1440;
 const BASE_SCENE_HEIGHT = 810;
@@ -17,11 +18,11 @@ const personWrapperConfig = {
     height: 411,
     zoneLeft: 80,
     zoneRight: 660,
-    travelLeft: -420,
+    travelLeft: -265,
     travelRight: 110,
   },
   orang2: {
-    left: 916,
+    left: 890,
     bottom: 52,
     width: 294,
     height: 400,
@@ -54,8 +55,8 @@ const personPoseTransform: Record<ActivePerson, Record<PersonPose, string>> = {
   orang2: {
     normal: "translate(0px, 0px) scale(1)",
     line: "translate(0px, 0px) scale(1)",
-    left: "translate(0px, 0px) scale(1)",
-    right: "translate(0px, 0px) scale(1)",
+    left: "translate(0px, 0px) scale(1.02)",
+    right: "translate(0px, 0px) scale(1.02)",
   },
 };
 
@@ -94,6 +95,9 @@ const sceneElements = {
   },
   printer: {
     style: { left: 37, bottom: 230, width: 230, height: 162 } as React.CSSProperties,
+  },
+  printerHint: {
+    style: { left: 124, bottom: 390, width: 56, height: 56 } as React.CSSProperties,
   },
   printerInfo: {
     style: { left: 44, bottom: 406 } as React.CSSProperties,
@@ -671,6 +675,16 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
           onFocus={() => setShowPrinterInfo(true)}
           onBlur={() => setShowPrinterInfo(false)}
         />
+
+        {isDesktopViewport && !showPrinterInfo && (
+          <div
+            className="pointer-events-none absolute z-[36] flex animate-bounce items-center justify-center text-[#EE1C25] drop-shadow-[0_2px_3px_rgba(92,58,33,0.25)]"
+            style={scaleSceneStyle(sceneElements.printerHint.style, sceneScale)}
+            aria-hidden="true"
+          >
+            <ArrowDown className="size-7" strokeWidth={3} />
+          </div>
+        )}
 
         <div
           id="printer-info"

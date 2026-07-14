@@ -17,52 +17,58 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   title: {
-    marginTop: 24,
+    marginTop: 21,
     fontFamily: "Helvetica-Bold",
     fontSize: 14,
     textAlign: "center",
   },
   number: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 11,
     textAlign: "center",
   },
   paragraph: {
-    marginTop: 22,
+    marginTop: 18,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
   paragraphTight: {
-    marginTop: 10,
+    marginTop: 5,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
+  },
+  sectionLead: {
+    marginTop: 12,
+    marginLeft: 28,
+    fontSize: 11,
+    lineHeight: 1.2,
   },
   table: {
-    marginTop: 10,
+    marginTop: 7,
     marginLeft: 56,
-    width: 430,
+    width: 470,
   },
   tableLargeGap: {
-    marginTop: 22,
+    marginTop: 16,
   },
   row: {
     flexDirection: "row",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   label: {
-    width: 150,
+    width: 140,
     fontSize: 11,
   },
   colon: {
-    width: 15,
+    width: 12,
     fontSize: 11,
   },
   value: {
     flex: 1,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
 });
 
@@ -116,7 +122,7 @@ function StudentIdentity({
 }) {
   return (
     <>
-      <Text style={styles.paragraph}>dengan ini menerangkan bahwa :</Text>
+      <Text style={styles.sectionLead}>dengan ini menerangkan bahwa :</Text>
       <View style={styles.table}>
         <InfoRow label="Nama Mahasiswa " value={data.studentName} />
         <InfoRow label="Nomor Pokok Mahasiswa " value={data.npm} />

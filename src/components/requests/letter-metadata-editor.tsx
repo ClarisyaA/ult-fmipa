@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -31,6 +31,34 @@ type LetterMetadataEditorProps = {
 };
 
 type FieldValues = Record<string, string>;
+
+const serviceTitles: Record<string, string> = {
+  "keterangan-lulus": "Permintaan Layanan Surat Keterangan Lulus",
+  "ket-tunjangan-orang-tua":
+    "Surat Keterangan Masih Kuliah Tunjangan Orang Tua",
+  "keterangan-masih-kuliah": "Surat Keterangan Masih Aktif Kuliah",
+  "keterangan-kelakuan-baik":
+    "Perubahan Permintaan Layanan Keterangan Kelakuan Baik",
+};
+
+const keteranganLulusIdentityFields = new Set([
+  "TEMPAT_LAHIR",
+  "TGL_LAHIR",
+  "TGL_LULUS",
+  "IPK",
+  "YUDISIUM",
+]);
+
+const keteranganLulusBasisFields = new Set([
+  "DASAR_SURAT_TGL",
+  "DASAR_SURAT_NO",
+  "DASAR_SURAT_PERIHAL",
+]);
+
+const keteranganLulusApprovalServiceFields = new Set([
+  "TTD_TANGGAL_BERLAKU",
+  "TTD_AN",
+]);
 
 function collectValues(metadata: LetterMetadataPayload): FieldValues {
   const entries = [...metadata.commonFields, ...metadata.serviceFields].map(
@@ -74,35 +102,108 @@ function FieldControl({
 }) {
   const id = `letter-${field.name}`;
   const isLetterNumber = field.name === "TTD_NO_SURAT";
+  const inputClassName =
+    "h-8 w-full rounded-[4px] border border-[#9c9c9c] bg-white px-2 text-[15px] text-[#1f1f1f] shadow-inner outline-none transition focus:border-[#00669b] focus:ring-2 focus:ring-[#00669b]/15 disabled:bg-[#f4f4f4] md:max-w-[560px]";
 
   return (
-    <div className="grid gap-2">
-      <Label htmlFor={id}>{field.label}</Label>
-      {field.type === "textarea" ? (
-        <Textarea
-          id={id}
-          value={value}
-          maxLength={field.maxLength}
-          disabled={disabled}
-          onChange={(event) => onChange(field.name, event.target.value)}
-        />
+    <div className="grid gap-1 md:grid-cols-[174px_minmax(0,1fr)] md:items-start">
+      <Label
+        htmlFor={id}
+        className="pt-1 text-[15px] font-medium leading-6 text-[#1c1c1c]"
+      >
+        {field.label}
+      </Label>
+      <div className="min-w-0">
+        {field.type === "textarea" ? (
+          <Textarea
+            id={id}
+            value={value}
+            maxLength={field.maxLength}
+            disabled={disabled}
+            className="min-h-[86px] w-full rounded-[4px] border border-[#9c9c9c] bg-white px-2 py-1.5 text-[15px] leading-snug text-[#1f1f1f] shadow-inner outline-none transition focus:border-[#00669b] focus:ring-2 focus:ring-[#00669b]/15 disabled:bg-[#f4f4f4] md:max-w-[560px]"
+            onChange={(event) => onChange(field.name, event.target.value)}
+          />
+        ) : (
+          <Input
+            id={id}
+            type={field.type === "date" ? "date" : "text"}
+            value={value}
+            maxLength={field.maxLength}
+            disabled={disabled}
+            className={
+              field.type === "date"
+                ? `${inputClassName} md:max-w-[260px]`
+                : inputClassName
+            }
+            onChange={(event) => onChange(field.name, event.target.value)}
+          />
+        )}
+        {isLetterNumber ? (
+          <p className="mt-1 max-w-[560px] text-xs leading-relaxed text-[#6d6258]">
+            {value.trim()
+              ? "Nomor surat masih diisi manual sesuai format resmi fakultas. Sistem belum melakukan auto-numbering."
+              : "Nomor surat wajib diisi sebelum PDF dapat dicetak."}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function Fieldset({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <fieldset className="rounded-none border-2 border-[#a9a9a9] bg-transparent px-5 pb-5 pt-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
+      <legend className="px-1 text-[16px] font-bold leading-none text-[#101010] underline underline-offset-2">
+        {title}
+      </legend>
+      <div className="mt-3 grid gap-2.5">{children}</div>
+    </fieldset>
+  );
+}
+
+function SignerPickerRow({
+  metadata,
+  saving,
+  applySigner,
+}: {
+  metadata: LetterMetadataPayload;
+  saving: boolean;
+  applySigner: (signerId: string) => void;
+}) {
+  return (
+    <div className="grid gap-1 md:grid-cols-[174px_minmax(0,1fr)] md:items-start">
+      <Label
+        htmlFor="letter-signer-picker"
+        className="pt-1 text-[15px] font-medium leading-6 text-[#1c1c1c]"
+      >
+        Pilih Penandatangan
+      </Label>
+      {metadata.signerPickerAvailable ? (
+        <select
+          id="letter-signer-picker"
+          className="h-8 w-full rounded-[4px] border border-[#9c9c9c] bg-white px-2 text-[15px] text-[#1f1f1f] shadow-inner outline-none transition focus:border-[#00669b] focus:ring-2 focus:ring-[#00669b]/15 disabled:bg-[#f4f4f4] md:max-w-[560px]"
+          disabled={saving}
+          defaultValue=""
+          onChange={(event) => applySigner(event.target.value)}
+        >
+          <option value="">Pilih dari master penandatangan...</option>
+          {metadata.signers.map((signer) => (
+            <option key={signer.id} value={signer.id}>
+              {signerLabel(signer)}
+            </option>
+          ))}
+        </select>
       ) : (
-        <Input
-          id={id}
-          type={field.type === "date" ? "date" : "text"}
-          value={value}
-          maxLength={field.maxLength}
-          disabled={disabled}
-          onChange={(event) => onChange(field.name, event.target.value)}
-        />
-      )}
-      {isLetterNumber ? (
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {value.trim()
-            ? "Nomor surat masih diisi manual sesuai format resmi fakultas. Sistem belum melakukan auto-numbering."
-            : "Nomor surat wajib diisi sebelum PDF dapat dicetak."}
+        <p className="max-w-[560px] rounded-[4px] border border-[#d5d5d5] bg-[#fafafa] px-3 py-1.5 text-sm text-[#5f5a54]">
+          {metadata.signerPickerMessage}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -176,6 +277,38 @@ export function LetterMetadataEditor({
   );
 
   const readiness = metadata?.readiness ?? initialReadiness ?? null;
+  const groupedFields = useMemo(() => {
+    if (!metadata) {
+      return {
+        identityFields: [] as LetterMetadataField[],
+        basisFields: [] as LetterMetadataField[],
+        approvalServiceFields: [] as LetterMetadataField[],
+        approvalFields: [] as LetterMetadataField[],
+      };
+    }
+
+    if (serviceSlug !== "keterangan-lulus") {
+      return {
+        identityFields: metadata.serviceFields,
+        basisFields: [] as LetterMetadataField[],
+        approvalServiceFields: [] as LetterMetadataField[],
+        approvalFields: metadata.commonFields,
+      };
+    }
+
+    return {
+      identityFields: metadata.serviceFields.filter((field) =>
+        keteranganLulusIdentityFields.has(field.name),
+      ),
+      basisFields: metadata.serviceFields.filter((field) =>
+        keteranganLulusBasisFields.has(field.name),
+      ),
+      approvalServiceFields: metadata.serviceFields.filter((field) =>
+        keteranganLulusApprovalServiceFields.has(field.name),
+      ),
+      approvalFields: metadata.commonFields,
+    };
+  }, [metadata, serviceSlug]);
 
   const setFieldValue = (name: string, value: string) => {
     setValues((current) => ({ ...current, [name]: value }));
@@ -270,25 +403,27 @@ export function LetterMetadataEditor({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Data Surat</CardTitle>
-        <CardDescription>
+    <Card className="overflow-hidden rounded-none border-2 border-[#0f5b45] bg-[#fffaf2] shadow-sm">
+      <CardHeader className="border-b border-[#b8b8b8] bg-[#fffaf2] px-5 py-4">
+        <CardTitle className="text-[24px] font-bold leading-tight text-[#00669b]">
+          {serviceTitles[serviceSlug] ?? "Data Surat"}
+        </CardTitle>
+        <CardDescription className="max-w-3xl text-sm text-[#5f5a54]">
           Lengkapi metadata surat dan data penandatangan sebelum mencetak PDF resmi.
         </CardDescription>
         {readiness ? (
           <p
             className={
               readiness.isReady
-                ? "text-sm text-[#0f5b45]"
-                : "text-sm text-[#9a3412]"
+                ? "text-sm font-medium text-[#0f5b45]"
+                : "text-sm font-medium text-[#9a3412]"
             }
           >
             {readiness.message}
           </p>
         ) : null}
       </CardHeader>
-      <CardContent className="grid gap-5">
+      <CardContent className="grid gap-5 bg-[#fffaf2] p-5">
         {loading ? (
           <p className="text-sm text-muted-foreground">Memuat data surat...</p>
         ) : null}
@@ -316,45 +451,9 @@ export function LetterMetadataEditor({
               </Alert>
             ) : null}
 
-            <div className="grid gap-2">
-              <Label htmlFor="letter-signer-picker">Pilih Penandatangan</Label>
-              {metadata.signerPickerAvailable ? (
-                <select
-                  id="letter-signer-picker"
-                  className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  disabled={saving}
-                  defaultValue=""
-                  onChange={(event) => applySigner(event.target.value)}
-                >
-                  <option value="">Pilih dari master penandatangan...</option>
-                  {metadata.signers.map((signer) => (
-                    <option key={signer.id} value={signer.id}>
-                      {signerLabel(signer)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="rounded-lg border border-[#E7DED0] bg-[#fffdf9] px-3 py-2 text-sm text-muted-foreground">
-                  {metadata.signerPickerMessage}
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {metadata.commonFields.map((field) => (
-                <FieldControl
-                  key={field.name}
-                  field={field}
-                  value={values[field.name] ?? ""}
-                  disabled={saving}
-                  onChange={setFieldValue}
-                />
-              ))}
-            </div>
-
-            {metadata.serviceFields.length > 0 ? (
-              <div className="grid gap-4 border-t border-[#E7DED0] pt-4 sm:grid-cols-2">
-                {metadata.serviceFields.map((field) => (
+            {groupedFields.identityFields.length > 0 ? (
+              <Fieldset title="Identitas Mahasiswa">
+                {groupedFields.identityFields.map((field) => (
                   <FieldControl
                     key={field.name}
                     field={field}
@@ -363,21 +462,70 @@ export function LetterMetadataEditor({
                     onChange={setFieldValue}
                   />
                 ))}
-              </div>
+              </Fieldset>
             ) : null}
 
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={resetForm}
-              >
-                Reset
-              </Button>
-              <Button type="button" disabled={saving} onClick={() => save()}>
-                {saving ? "Menyimpan..." : "Simpan Data Surat"}
-              </Button>
+            {groupedFields.basisFields.length > 0 ? (
+              <Fieldset title="Dasar Permintaan">
+                {groupedFields.basisFields.map((field) => (
+                  <FieldControl
+                    key={field.name}
+                    field={field}
+                    value={values[field.name] ?? ""}
+                    disabled={saving}
+                    onChange={setFieldValue}
+                  />
+                ))}
+              </Fieldset>
+            ) : null}
+
+            <Fieldset title="Pengesahan Surat">
+              <SignerPickerRow
+                metadata={metadata}
+                saving={saving}
+                applySigner={applySigner}
+              />
+              {groupedFields.approvalServiceFields.map((field) => (
+                <FieldControl
+                  key={field.name}
+                  field={field}
+                  value={values[field.name] ?? ""}
+                  disabled={saving}
+                  onChange={setFieldValue}
+                />
+              ))}
+              {groupedFields.approvalFields.map((field) => (
+                <FieldControl
+                  key={field.name}
+                  field={field}
+                  value={values[field.name] ?? ""}
+                  disabled={saving}
+                  onChange={setFieldValue}
+                />
+              ))}
+            </Fieldset>
+
+            <div className="grid gap-2 md:grid-cols-[174px_minmax(0,1fr)]">
+              <div className="hidden border-t border-[#b8b8b8] md:block" />
+              <div className="flex flex-wrap gap-2 border-t border-[#b8b8b8] pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving}
+                  className="h-9 rounded-[4px] border-[#9c9c9c] bg-[#f5f5f5] px-4 text-[15px] text-[#1f1f1f] hover:bg-[#ececec]"
+                  onClick={resetForm}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  disabled={saving}
+                  className="h-9 rounded-[4px] bg-[#00669b] px-5 text-[15px] font-semibold text-white hover:bg-[#00547f]"
+                  onClick={() => save()}
+                >
+                  {saving ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </div>
             </div>
           </>
         ) : null}

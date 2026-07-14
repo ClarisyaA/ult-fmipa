@@ -18,14 +18,19 @@ type InlineStatusActionProps = {
   compact?: boolean;
 };
 
+type ForwardRequestStatusAction = Extract<
+  RequestStatusAction,
+  "process" | "complete" | "deliver"
+>;
+
 type RequestStatusActionButtonProps = InlineStatusActionProps & {
-  action: RequestStatusAction;
+  action: ForwardRequestStatusAction;
   label?: string;
   disabledTitle?: string;
 };
 
 type ActionConfig = {
-  action: RequestStatusAction;
+  action: ForwardRequestStatusAction;
   label: string;
   activeStatuses: RequestStatus[];
   confirmation: string;
@@ -60,14 +65,14 @@ const nextStatusByAction = {
   process: "inProgress",
   complete: "completed",
   deliver: "delivered",
-} satisfies Record<RequestStatusAction, RequestStatus>;
+} satisfies Record<ForwardRequestStatusAction, RequestStatus>;
 
-function getActionConfig(action: RequestStatusAction) {
+function getActionConfig(action: ForwardRequestStatusAction) {
   return actions.find((config) => config.action === action);
 }
 
 function getDisabledTitle(
-  action: RequestStatusAction,
+  action: ForwardRequestStatusAction,
   status: RequestStatus,
   supported: boolean,
 ) {
@@ -109,7 +114,7 @@ export function InlineStatusAction({
   const [optimisticStatus, setOptimisticStatus] =
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
-    useState<RequestStatusAction | null>(null);
+    useState<ForwardRequestStatusAction | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const currentStatus = optimisticStatus ?? status;
@@ -271,7 +276,7 @@ export function RequestStatusActionButton({
   const [optimisticStatus, setOptimisticStatus] =
     useState<RequestStatus | null>(null);
   const [submittingAction, setSubmittingAction] =
-    useState<RequestStatusAction | null>(null);
+    useState<ForwardRequestStatusAction | null>(null);
   const currentStatus = optimisticStatus ?? status;
   const config = getActionConfig(action);
 

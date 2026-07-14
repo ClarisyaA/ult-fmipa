@@ -315,6 +315,30 @@ Known limitation Phase 5B:
 - Belum ada integrasi `no_surat`.
 - Duplicate warning bersifat advisory karena data legacy dapat mengandung duplikasi historis.
 
+## Phase 6: Manual QA And Regression Hardening
+
+Phase 6 menyiapkan checklist manual end-to-end untuk demo dan regression test official letter flow.
+
+Dokumen QA:
+
+- `docs/official-letter-manual-qa.md`
+
+Checklist mencakup:
+
+- DB running dan DB stopped behavior.
+- Admin detail ke `Data Surat`, save metadata, lalu `Cetak Surat`.
+- Staff detail ke `Data Surat`, save metadata, lalu `Cetak Surat`.
+- Unauthorized access untuk metadata dan PDF route.
+- Per-service metadata fields.
+- Per-service PDF filename dan safety check.
+- Manual nomor surat trim, invalid character, duplicate warning, dan overwrite confirmation.
+- Signer picker snapshot behavior.
+- Missing-field `422`.
+- Unsupported service `404` dan tidak ada UI `Data Surat` / `Cetak Surat`.
+- Regression area non-surat seperti dashboard, Magang, SIK, informasi, survei, user management, dan homepage.
+
+Phase 6 tidak menambahkan auto-numbering, tidak menulis `surat_keluar`, tidak mengintegrasikan `no_surat`, tidak mengubah schema, dan tidak menambah template PDF baru.
+
 ## Proteksi Akses
 
 PDF hanya bisa diakses oleh user dengan role:
@@ -442,13 +466,16 @@ Tombol `Cetak Surat` ditambahkan di:
 - Admin request detail
 - Staff request detail
 
-Tombol hanya muncul untuk `serviceSlug === "keterangan-lulus"` dan membuka PDF di tab baru.
+Tombol hanya muncul untuk layanan printable berikut dan membuka PDF di tab baru:
 
-Setelah Phase 2, tombol juga muncul untuk:
-
+- `keterangan-lulus`
 - `ket-tunjangan-orang-tua`
 - `keterangan-masih-kuliah`
 - `keterangan-kelakuan-baik`
+
+Section `Data Surat` juga dirender di admin dan staff request detail untuk empat layanan tersebut. Render memakai whitelist resmi `PRINTABLE_LETTER_SERVICES`, dengan fallback aman berdasarkan `sourceTable` agar UI tetap muncul pada detail layanan printable yang valid.
+
+Pada daftar pengajuan admin dan staff, layanan printable diberi ikon surat di nama layanan/filter layanan. Kolom `Aksi` juga menampilkan tombol `Surat` untuk layanan printable agar staff/admin bisa langsung membuka detail pengajuan, melengkapi `Data Surat`, dan mencetak PDF resmi.
 
 Detail page juga menampilkan indikator kesiapan cetak khusus untuk `keterangan-lulus`:
 

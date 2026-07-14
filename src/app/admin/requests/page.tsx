@@ -23,6 +23,7 @@ import {
   RequestStatusActionButton,
 } from "@/components/requests/inline-status-action";
 import { RequestDeleteButton } from "@/components/requests/request-delete-button";
+import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
+import { getPrintableLetterService } from "@/lib/letters/letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import {
   getServiceRequestList,
@@ -109,6 +111,58 @@ const serviceGroups = [
 
 const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
 
+function isPrintableRequest(request: Pick<ServiceRequestListItem, "serviceSlug">) {
+  return Boolean(getPrintableLetterService(request.serviceSlug));
+}
+
+function isPrintableService(service: Pick<ServiceFilterOption, "slug">) {
+  return Boolean(getPrintableLetterService(service.slug));
+}
+
+type ForwardRequestStatusAction = Extract<
+  RequestStatusAction,
+  "process" | "complete" | "deliver"
+>;
+
+type CancelRequestStatusAction = Extract<
+  RequestStatusAction,
+  "cancelProcess" | "cancelComplete" | "cancelDeliver"
+>;
+
+function getWorkflowCancelAction(label: string): {
+  action: CancelRequestStatusAction;
+  label: string;
+  confirmation: string;
+} | null {
+  if (label === "Diproses") {
+    return {
+      action: "cancelProcess",
+      label: "Batalkan Proses",
+      confirmation:
+        "Batalkan status diproses? Status selesai dan diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Selesai") {
+    return {
+      action: "cancelComplete",
+      label: "Batalkan Selesai",
+      confirmation:
+        "Batalkan status selesai? Status diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Diambil/Dikirim") {
+    return {
+      action: "cancelDeliver",
+      label: "Batalkan Diambil/Dikirim",
+      confirmation: "Batalkan status diambil/dikirim untuk pengajuan ini?",
+    };
+  }
+
+  return null;
+}
+
 type RequestColumn = {
   key: string;
   label: string;
@@ -116,7 +170,7 @@ type RequestColumn = {
   cellClassName?: string;
   nowrap?: boolean;
   align?: "left" | "center" | "right";
-  workflowAction?: RequestStatusAction;
+  workflowAction?: ForwardRequestStatusAction;
   value: (request: ServiceRequestListItem) => string | null;
 };
 
@@ -436,6 +490,7 @@ function AdminRequestPreview({
           ? "Selesai"
           : "Belum ada timestamp",
       done: item.done,
+      cancelAction: item.done ? getWorkflowCancelAction(item.label) : null,
     })),
     detail.approvalVerificationDate
       ? {
@@ -446,6 +501,7 @@ function AdminRequestPreview({
               : ""
           }`,
           done: true,
+          cancelAction: null,
         }
       : null,
     detail.finalSubmittedDate
@@ -453,9 +509,15 @@ function AdminRequestPreview({
           label: "Final Submit SIK",
           value: formatFullDateTime(detail.finalSubmittedDate),
           done: true,
+          cancelAction: null,
         }
       : null,
-  ].filter(Boolean) as Array<{ label: string; value: string; done: boolean }>;
+  ].filter(Boolean) as Array<{
+    label: string;
+    value: string;
+    done: boolean;
+    cancelAction: ReturnType<typeof getWorkflowCancelAction>;
+  }>;
 
   return (
     <aside className="sticky top-4 max-h-[calc(100dvh-2rem)] min-h-0 overflow-hidden rounded-lg border border-[#d8e2d7] bg-[#fbfdf9] shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
@@ -529,6 +591,17 @@ function AdminRequestPreview({
                     <p className="mt-0.5 break-words text-[#6f746f]">
                       {item.value}
                     </p>
+                    {item.cancelAction ? (
+                      <RequestStatusCancelButton
+                        serviceSlug={request.serviceSlug}
+                        id={request.id}
+                        rolePrefix="admin"
+                        staffName={staffName}
+                        action={item.cancelAction.action}
+                        label={item.cancelAction.label}
+                        confirmation={item.cancelAction.confirmation}
+                      />
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -640,7 +713,17 @@ function RequestWorkflowCell({
       }`}
       title={dash(value)}
     >
-      {dash(value)}
+      {column.key === "layanan" && isPrintableRequest(request) ? (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <FileText
+            className="size-3.5 shrink-0 text-[#0f5b45]"
+            aria-label="Layanan ini memiliki template surat"
+          />
+          <span className="truncate">{dash(value)}</span>
+        </span>
+      ) : (
+        dash(value)
+      )}
     </span>
   );
 }
@@ -654,8 +737,14 @@ function RequestActionsCell({
   isSelected: boolean;
   detailHref: string;
 }) {
+  const hasPrintableTemplate = isPrintableRequest(request);
+
   return (
-    <div className="grid w-[104px] grid-cols-2 gap-1">
+    <div
+      className={`grid gap-1 ${
+        hasPrintableTemplate ? "w-[156px] grid-cols-3" : "w-[104px] grid-cols-2"
+      }`}
+    >
       <Button
         asChild
         variant={isSelected ? "default" : "outline"}
@@ -673,6 +762,22 @@ function RequestActionsCell({
           </span>
         </Link>
       </Button>
+      {hasPrintableTemplate ? (
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-1.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
+          title="Isi Data Surat dan cetak PDF resmi"
+        >
+          <Link href={`/admin/requests/${request.serviceSlug}/${request.id}`}>
+            <span className="inline-flex items-center gap-1">
+              <FileText className="size-3" />
+              Surat
+            </span>
+          </Link>
+        </Button>
+      ) : null}
       <RequestDeleteButton
         serviceSlug={request.serviceSlug}
         id={request.id}
@@ -869,6 +974,7 @@ export default async function AdminRequestsPage({
                 }`}
               >
                 <Link
+                  className="inline-flex items-center gap-1.5"
                   href={buildHref({
                     category: activeCategory,
                     service: service.slug,
@@ -877,6 +983,12 @@ export default async function AdminRequestsPage({
                     limit,
                   })}
                 >
+                  {isPrintableService(service) ? (
+                    <FileText
+                      className="size-3.5 shrink-0"
+                      aria-label="Memiliki template surat"
+                    />
+                  ) : null}
                   {service.title}
                 </Link>
               </Button>
@@ -1025,7 +1137,7 @@ export default async function AdminRequestsPage({
                         <TableHead className="h-8 w-[100px] px-2 text-center text-[10px] font-bold text-[#244934]">
                           Status
                         </TableHead>
-                        <TableHead className="h-8 w-[112px] px-2 text-center text-[10px] font-bold text-[#244934]">
+                        <TableHead className="h-8 w-[164px] px-2 text-center text-[10px] font-bold text-[#244934]">
                           Aksi
                         </TableHead>
                       </TableRow>
@@ -1070,7 +1182,7 @@ export default async function AdminRequestsPage({
                                 {request.statusLabel}
                               </AdminStatusBadge>
                             </TableCell>
-                            <TableCell className="w-[112px] px-2 py-1.5">
+                            <TableCell className="w-[164px] px-2 py-1.5">
                               <RequestActionsCell
                                 request={request}
                                 isSelected={isSelected}

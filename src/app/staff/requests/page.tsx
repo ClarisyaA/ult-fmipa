@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  CheckCircle2,
   ChevronRight,
   Eye,
   ExternalLink,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { InlineStatusAction } from "@/components/requests/inline-status-action";
+import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { ServiceFilterSelect } from "@/components/requests/service-filter-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
+import { getPrintableLetterService } from "@/lib/letters/letter-data";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import {
   getServiceRequestList,
@@ -31,6 +34,7 @@ import {
 import { getPublicServices } from "@/lib/legacy-services";
 import type { ServiceRequestDetail } from "@/types/request-detail";
 import type { RequestStatus, ServiceRequestListItem } from "@/types/request";
+import type { RequestStatusAction } from "@/types/request-action";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -94,6 +98,14 @@ const statusStyles = {
   sikFinalSubmitted: "border-[#d8d4e4] bg-[#fbfaff] text-[#4f4a5f]",
 } satisfies Record<RequestStatus, string>;
 
+function isPrintableRequest(request: Pick<ServiceRequestListItem, "serviceSlug">) {
+  return Boolean(getPrintableLetterService(request.serviceSlug));
+}
+
+function isPrintableService(service: Pick<ServiceFilterOption, "slug">) {
+  return Boolean(getPrintableLetterService(service.slug));
+}
+
 function supportsInlineStatus(request: ServiceRequestListItem) {
   if (request.sourceTable !== "surat_izin_kegiatan") {
     return true;
@@ -114,6 +126,22 @@ function formatDate(value: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatFullDateTime(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return `${new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value))} WIB`;
 }
 
 function formatTime(value: string | null) {
@@ -194,6 +222,45 @@ function getVisibleServiceGroups() {
   });
 }
 
+type CancelRequestStatusAction = Extract<
+  RequestStatusAction,
+  "cancelProcess" | "cancelComplete" | "cancelDeliver"
+>;
+
+function getWorkflowCancelAction(label: string): {
+  action: CancelRequestStatusAction;
+  label: string;
+  confirmation: string;
+} | null {
+  if (label === "Diproses") {
+    return {
+      action: "cancelProcess",
+      label: "Batalkan Proses",
+      confirmation:
+        "Batalkan status diproses? Status selesai dan diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Selesai") {
+    return {
+      action: "cancelComplete",
+      label: "Batalkan Selesai",
+      confirmation:
+        "Batalkan status selesai? Status diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Diambil/Dikirim") {
+    return {
+      action: "cancelDeliver",
+      label: "Batalkan Diambil/Dikirim",
+      confirmation: "Batalkan status diambil/dikirim untuk pengajuan ini?",
+    };
+  }
+
+  return null;
+}
+
 function RequestPreview({
   request,
   detail,
@@ -251,6 +318,16 @@ function RequestPreview({
     (item) =>
       item.value !== null && item.value !== undefined && item.value !== "",
   );
+  const workflowRows = detail.workflow.map((item) => ({
+    label: item.label,
+    value: item.date
+      ? `${formatFullDateTime(item.date)}${item.staff ? ` - ${item.staff}` : ""}`
+      : item.done
+        ? "Selesai"
+        : "Belum ada timestamp",
+    done: item.done,
+    cancelAction: item.done ? getWorkflowCancelAction(item.label) : null,
+  }));
 
   return (
     <aside
@@ -343,6 +420,43 @@ function RequestPreview({
 
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
+              Timestamp Workflow
+            </p>
+            <div className="mt-2 grid gap-2 rounded-md border border-[#d8d4e4] bg-white p-3">
+              {workflowRows.map((item) => (
+                <div
+                  key={`${item.label}-${item.value}`}
+                  className="grid grid-cols-[18px_minmax(0,1fr)] gap-2 text-xs"
+                >
+                  <CheckCircle2
+                    className={`mt-0.5 size-4 ${
+                      item.done ? "text-[#2d6a4f]" : "text-[#b7afa3]"
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#223027]">{item.label}</p>
+                    <p className="mt-0.5 break-words text-[#6f746f]">
+                      {item.value}
+                    </p>
+                    {item.cancelAction ? (
+                      <RequestStatusCancelButton
+                        serviceSlug={request.serviceSlug}
+                        id={request.id}
+                        rolePrefix="staff"
+                        staffName={staffName}
+                        action={item.cancelAction.action}
+                        label={item.cancelAction.label}
+                        confirmation={item.cancelAction.confirmation}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a8796]">
               Dokumen Dilampirkan
             </p>
             <div className="mt-2 grid gap-2">
@@ -384,6 +498,7 @@ function RequestCard({
   detailHref: string;
 }) {
   const time = formatTime(request.requestDate);
+  const hasPrintableTemplate = isPrintableRequest(request);
 
   return (
     <article
@@ -399,7 +514,15 @@ function RequestCard({
             {request.maskedNpm}
           </p>
           <h3 className="mt-1 text-sm font-semibold leading-snug text-[#202923]">
-            {request.serviceTitle}
+            <span className="inline-flex items-center gap-1.5">
+              {hasPrintableTemplate ? (
+                <FileText
+                  className="size-3.5 shrink-0 text-[#0f5b45]"
+                  aria-label="Layanan ini memiliki template surat"
+                />
+              ) : null}
+              <span>{request.serviceTitle}</span>
+            </span>
           </h3>
         </div>
         <Badge
@@ -421,18 +544,29 @@ function RequestCard({
           </p>
           {time ? <p className="mt-0.5">{time} WIB</p> : null}
         </div>
-        <Link
-          scroll={false}
-          className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
-            isSelected
-              ? "border-[#0b3f30] bg-[#0b3f30] text-white"
-              : "border-[#d8e2d7] bg-[#f8faf6] text-[#0f5b45]"
-          }`}
-          href={detailHref}
-        >
-          <Eye className="size-3.5" />
-          Lihat detail
-        </Link>
+        <div className="flex flex-wrap justify-end gap-2">
+          {hasPrintableTemplate ? (
+            <Link
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[#b8d8c9] bg-[#f3fbf6] px-3 text-[11px] font-bold text-[#0f5b45]"
+              href={`/staff/requests/${request.serviceSlug}/${request.id}`}
+            >
+              <FileText className="size-3.5" />
+              Surat
+            </Link>
+          ) : null}
+          <Link
+            scroll={false}
+            className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
+              isSelected
+                ? "border-[#0b3f30] bg-[#0b3f30] text-white"
+                : "border-[#d8e2d7] bg-[#f8faf6] text-[#0f5b45]"
+            }`}
+            href={detailHref}
+          >
+            <Eye className="size-3.5" />
+            Lihat detail
+          </Link>
+        </div>
       </div>
     </article>
   );
@@ -676,6 +810,7 @@ export default async function StaffRequestsPage({
                     }`}
                   >
                     <Link
+                      className="inline-flex items-center gap-1.5"
                       href={buildHref({
                         category: activeCategory,
                         service: service.slug,
@@ -683,6 +818,12 @@ export default async function StaffRequestsPage({
                         limit,
                       })}
                     >
+                      {isPrintableService(service) ? (
+                        <FileText
+                          className="size-3.5 shrink-0"
+                          aria-label="Memiliki template surat"
+                        />
+                      ) : null}
                       {service.title}
                     </Link>
                   </Button>
@@ -794,7 +935,7 @@ export default async function StaffRequestsPage({
                   <col className="w-[28%]" />
                   <col className="w-[14%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[10%]" />
+                  <col className="w-[13%]" />
                 </colgroup>
                 <TableHeader className="bg-[#eef3ec]">
                   <TableRow className="border-[#dfe6dd] hover:bg-[#eef3ec]">
@@ -850,8 +991,14 @@ export default async function StaffRequestsPage({
                             {request.maskedNpm}
                           </TableCell>
                           <TableCell className="px-4 py-3 text-left">
-                            <p className="truncate text-[11px] font-semibold text-[#202923]">
-                              {request.serviceTitle}
+                            <p className="flex min-w-0 items-center gap-1.5 truncate text-[11px] font-semibold text-[#202923]">
+                              {isPrintableRequest(request) ? (
+                                <FileText
+                                  className="size-3.5 shrink-0 text-[#0f5b45]"
+                                  aria-label="Layanan ini memiliki template surat"
+                                />
+                              ) : null}
+                              <span className="truncate">{request.serviceTitle}</span>
                             </p>
                           </TableCell>
                           <TableCell className="px-4 py-3 pr-8 text-left">
@@ -876,24 +1023,36 @@ export default async function StaffRequestsPage({
                             </Badge>
                           </TableCell>
                           <TableCell className="px-4 py-3 text-center">
-                            <Link
-                              scroll={false}
-                              className={`inline-flex items-center gap-1.5 text-[10px] font-bold underline-offset-3 hover:underline ${
-                                isSelected ? "text-[#0b3f30]" : "text-[#0f5b45]"
-                              }`}
-                              href={buildHref({
-                                category: activeCategory,
-                                service: params.service,
-                                status,
-                                page: result.pagination.page,
-                                limit,
-                                previewService: request.serviceSlug,
-                                previewId: request.id,
-                              })}
-                            >
-                              <Eye className="size-3.5" />
-                              Lihat detail
-                            </Link>
+                            <div className="flex flex-wrap justify-center gap-2">
+                              {isPrintableRequest(request) ? (
+                                <Link
+                                  className="inline-flex items-center gap-1 rounded-md border border-[#b8d8c9] bg-[#f3fbf6] px-2 py-1 text-[10px] font-bold text-[#0f5b45] hover:bg-[#e5f5eb]"
+                                  href={`/staff/requests/${request.serviceSlug}/${request.id}`}
+                                  title="Isi Data Surat dan cetak PDF resmi"
+                                >
+                                  <FileText className="size-3.5" />
+                                  Surat
+                                </Link>
+                              ) : null}
+                              <Link
+                                scroll={false}
+                                className={`inline-flex items-center gap-1.5 text-[10px] font-bold underline-offset-3 hover:underline ${
+                                  isSelected ? "text-[#0b3f30]" : "text-[#0f5b45]"
+                                }`}
+                                href={buildHref({
+                                  category: activeCategory,
+                                  service: params.service,
+                                  status,
+                                  page: result.pagination.page,
+                                  limit,
+                                  previewService: request.serviceSlug,
+                                  previewId: request.id,
+                                })}
+                              >
+                                <Eye className="size-3.5" />
+                                Detail
+                              </Link>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

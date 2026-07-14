@@ -328,6 +328,7 @@ async function insertPermohonanMagang(input: CreateServiceRequestInput) {
   const created = await prisma.permohonan_magang.create({
     data: {
       NPM: input.npm,
+      PRODI: normalizeOptional(input.programStudi),
       JENIS_PERMOHONAN: normalizeOptional(input.jenisPermohonan),
       KONTAK_PERSON: normalizeOptional(input.kontakPerson),
       TEMPAT_PELAKSANAAN: normalizeOptional(input.tempatPelaksanaan),

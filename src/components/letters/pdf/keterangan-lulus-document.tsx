@@ -9,7 +9,7 @@ import {
 /* eslint-disable jsx-a11y/alt-text */
 
 import {
-  getExistingLetterAsset,
+  getExistingLetterAssetSource,
   letterWatermarkPath,
 } from "@/components/letters/pdf/letter-assets";
 import { LetterHeader } from "@/components/letters/pdf/letter-header";
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   title: {
-    marginTop: 34,
+    marginTop: 28,
     fontFamily: "Helvetica-Bold",
     fontSize: 18,
     textAlign: "center",
@@ -49,25 +49,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   paragraph: {
-    marginTop: 28,
+    marginTop: 22,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
   shortParagraph: {
-    marginTop: 16,
+    marginTop: 10,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
   identityTable: {
-    marginTop: 26,
+    marginTop: 20,
     marginLeft: 70,
     width: 390,
   },
   row: {
     flexDirection: "row",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   label: {
     width: 130,
@@ -82,22 +82,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   passStatement: {
-    marginTop: 24,
+    marginTop: 20,
     fontFamily: "Helvetica-Bold",
     fontSize: 16,
     textAlign: "center",
   },
   validity: {
-    marginTop: 22,
+    marginTop: 18,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
   validityFollowup: {
-    marginTop: 10,
+    marginTop: 5,
     marginLeft: 28,
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
 });
 
@@ -116,7 +116,7 @@ export function KeteranganLulusDocument({
 }: {
   data: KeteranganLulusLetterData;
 }) {
-  const watermarkPath = getExistingLetterAsset(letterWatermarkPath);
+  const watermarkSource = getExistingLetterAssetSource(letterWatermarkPath);
   const level = data.level?.toUpperCase() || "-";
   const birthDate = formatIndonesianDate(data.birthDate);
   const graduationDate = formatIndonesianDate(data.graduationDate);
@@ -131,8 +131,8 @@ export function KeteranganLulusDocument({
       producer="ULT FMIPA Unpad"
     >
       <Page size="A4" style={styles.page}>
-        {watermarkPath ? (
-          <Image src={watermarkPath} style={styles.watermark} fixed />
+        {watermarkSource ? (
+          <Image src={watermarkSource} style={styles.watermark} fixed />
         ) : null}
         <View style={styles.content}>
           <LetterHeader />

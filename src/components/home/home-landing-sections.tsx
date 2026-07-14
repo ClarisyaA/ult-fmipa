@@ -32,34 +32,60 @@ function useReducedMotion() {
 
 // ─── Data ───────────────────────────────────────────────────────────────────
 
-const studentActivities = [
+type HomeActivitySlide = {
+  id: string;
+  title: string;
+  eyebrow: string | null;
+  description: string;
+  image: string;
+  imageAlt: string;
+};
+
+type HomeActivityApiItem = {
+  id: string;
+  title: string;
+  eyebrow: string | null;
+  description: string;
+  image: string | null;
+  imageAlt: string;
+};
+
+const fallbackStudentActivities: HomeActivitySlide[] = [
   {
+    id: "fallback-akademik",
     title: "Layanan Akademik Terpandu",
-    eyebrow: "01",
+    eyebrow: "Agenda Sivitas",
     description:
       "Pendampingan langsung oleh petugas ULT dalam pengajuan surat dan dokumen akademik, mulai dari surat aktif hingga legalisasi transkrip resmi.",
-    images: ["/gedung-fmipa.svg", "/gedung-fmipa.svg", "/gedung-fmipa.svg"],
+    image: "/gedung-fmipa.svg",
+    imageAlt: "Layanan Akademik Terpandu",
   },
   {
+    id: "fallback-informasi",
     title: "Ruang Informasi Sivitas",
-    eyebrow: "02",
+    eyebrow: "Agenda Sivitas",
     description:
       "Kabar layanan terbaru, pengumuman resmi fakultas, dan agenda penting kampus tersaji dalam satu portal yang mudah diakses sivitas akademika.",
-    images: ["/gedung-fmipa.svg", "/gedung-fmipa.svg"],
+    image: "/gedung-fmipa.svg",
+    imageAlt: "Ruang Informasi Sivitas",
   },
   {
+    id: "fallback-fasilitas",
     title: "Dukungan Sarana Prasarana",
-    eyebrow: "03",
+    eyebrow: "Agenda Sivitas",
     description:
       "Akses peminjaman gedung, ruang belajar bersama, dan fasilitas laboratorium FMIPA untuk kegiatan akademik dan kemahasiswaan secara terstruktur.",
-    images: ["/gedung-fmipa.svg", "/gedung-fmipa.svg", "/gedung-fmipa.svg"],
+    image: "/gedung-fmipa.svg",
+    imageAlt: "Dukungan Sarana Prasarana",
   },
   {
+    id: "fallback-survei",
     title: "Survei Kepuasan Sivitas",
-    eyebrow: "04",
+    eyebrow: "Agenda Sivitas",
     description:
       "Bantu ULT terus meningkatkan mutu pelayanan akademik melalui survei kepuasan berkala yang transparan dan berbasis data nyata.",
-    images: ["/gedung-fmipa.svg", "/gedung-fmipa.svg"],
+    image: "/gedung-fmipa.svg",
+    imageAlt: "Survei Kepuasan Sivitas",
   },
 ];
 
@@ -71,6 +97,11 @@ const marqueeItems = [
   "BEASISWA",
   "ULT FMIPA UNPAD",
 ];
+
+const heroTitlePart1 = "Satu portal untuk  ";
+const heroTitlePart2 = "semua kebutuhan";
+const heroTitlePart3 = "Anda.";
+const heroTitleTotalChars = heroTitlePart1.length + heroTitlePart2.length + heroTitlePart3.length;
 
 type HomeService = Pick<PublicService, "title" | "slug" | "category" | "description">;
 
@@ -321,12 +352,13 @@ export function HomeLandingSections() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [previousIdx, setPreviousIdx] = useState<number | null>(null);
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
-  const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [typingProgress, setTypingProgress] = useState(0);
   const [startTyping, setStartTyping] = useState(false);
   const [services, setServices] = useState<HomeService[]>(fallbackServices);
   const [information, setInformation] = useState<HomeInformation[]>(fallbackInformation);
+  const [activities, setActivities] = useState<HomeActivitySlide[]>(fallbackStudentActivities);
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const heroUnderlineAnimatedRef = useRef(false);
   const heroCardRef = useTilt(6);
   const infoFeaturedRef = useTilt(4);
 
@@ -340,7 +372,7 @@ export function HomeLandingSections() {
       return () => clearTimeout(timer);
     }
     if (!startTyping) return;
-    const totalChars = 50;
+    const totalChars = heroTitleTotalChars;
     let current = 0;
     const interval = setInterval(() => {
       current += 1;
@@ -352,24 +384,56 @@ export function HomeLandingSections() {
     return () => clearInterval(interval);
   }, [startTyping, reducedMotion]);
 
+  useEffect(() => {
+    if (reducedMotion || heroUnderlineAnimatedRef.current || typingProgress < heroTitleTotalChars) return;
+
+    const path = document.querySelector<SVGPathElement>(".hero-anda-underline path");
+    if (!path) return;
+
+    const length = path.getTotalLength();
+    heroUnderlineAnimatedRef.current = true;
+    gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+    gsap.to(path, {
+      strokeDashoffset: 0,
+      duration: 1.1,
+      ease: "power2.out",
+    });
+  }, [typingProgress, reducedMotion]);
+
   const renderTypedTitle = () => {
-    const part1 = "Satu portal untuk seluruh ";
-    const part2 = "kebutuhan akademik";
-    const part3 = " Anda.";
+    const andaUnderline = (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 220 18"
+        className="editorial-underline hero-anda-underline absolute bottom-0 left-0 h-4 w-full text-[#EE1C25]"
+        fill="none"
+      >
+        <path
+          d="M4 12 C48 2, 88 17, 132 8 S196 5, 216 11"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+      </svg>
+    );
 
     if (reducedMotion) {
       return (
         <>
-          {part1}
+          {heroTitlePart1}
           <span className="relative inline-block">
-            {part2}
+            {heroTitlePart2}
             <span
               aria-hidden="true"
               className="absolute bottom-1 left-0 -z-10 h-3 w-full rounded-sm opacity-20"
               style={{ background: "#EE1C25" }}
             />
           </span>
-          {part3}
+          {" "}
+          <span className="relative inline-block pb-4 sm:pb-5">
+            {heroTitlePart3}
+            {andaUnderline}
+          </span>
         </>
       );
     }
@@ -378,15 +442,15 @@ export function HomeLandingSections() {
     let p2 = "";
     let p3 = "";
 
-    if (typingProgress <= part1.length) {
-      p1 = part1.slice(0, typingProgress);
-    } else if (typingProgress <= part1.length + part2.length) {
-      p1 = part1;
-      p2 = part2.slice(0, typingProgress - part1.length);
+    if (typingProgress <= heroTitlePart1.length) {
+      p1 = heroTitlePart1.slice(0, typingProgress);
+    } else if (typingProgress <= heroTitlePart1.length + heroTitlePart2.length) {
+      p1 = heroTitlePart1;
+      p2 = heroTitlePart2.slice(0, typingProgress - heroTitlePart1.length);
     } else {
-      p1 = part1;
-      p2 = part2;
-      p3 = part3.slice(0, typingProgress - part1.length - part2.length);
+      p1 = heroTitlePart1;
+      p2 = heroTitlePart2;
+      p3 = heroTitlePart3.slice(0, typingProgress - heroTitlePart1.length - heroTitlePart2.length);
     }
 
     return (
@@ -395,7 +459,7 @@ export function HomeLandingSections() {
         {p2 && (
           <span className="relative inline-block">
             {p2}
-            {typingProgress >= part1.length + part2.length && (
+            {typingProgress >= heroTitlePart1.length + heroTitlePart2.length && (
               <span
                 aria-hidden="true"
                 className="absolute bottom-1 left-0 -z-10 h-3 w-full rounded-sm opacity-20"
@@ -404,7 +468,15 @@ export function HomeLandingSections() {
             )}
           </span>
         )}
-        {p3}
+        {p3 && (
+          <>
+            {" "}
+            <span className="relative inline-block pb-4 sm:pb-5">
+              {p3}
+              {typingProgress >= heroTitleTotalChars && andaUnderline}
+            </span>
+          </>
+        )}
       </>
     );
   };
@@ -435,6 +507,40 @@ export function HomeLandingSections() {
   const sideInformation = featuredInformation
     ? filteredInformation.filter((info) => info.id !== featuredInformation.id).slice(0, 5)
     : [];
+  const currentActivityIdx =
+    activities.length > 0 && activeIdx < activities.length ? activeIdx : 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadActivities() {
+      try {
+        const response = await fetch("/api/home/activities", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { data?: HomeActivityApiItem[] };
+        const nextActivities =
+          payload.data?.map((activity) => ({
+            id: activity.id,
+            title: activity.title,
+            eyebrow: activity.eyebrow,
+            description: activity.description,
+            image: activity.image ?? "/gedung-fmipa.svg",
+            imageAlt: activity.imageAlt ?? activity.title,
+          })) ?? [];
+
+        if (!cancelled && nextActivities.length > 0) {
+          setActivities(nextActivities);
+        }
+      } catch {
+        // Keep fallback activities when the homepage content API is unavailable.
+      }
+    }
+
+    loadActivities();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -502,17 +608,13 @@ export function HomeLandingSections() {
 
   // Activity autoplay
   useEffect(() => {
+    if (activities.length <= 1) return;
+
     const t = setInterval(() => {
-      goToActivity((activeIdx + 1) % studentActivities.length, 1);
+      goToActivity((currentActivityIdx + 1) % activities.length, 1);
     }, 5500);
     return () => clearInterval(t);
-  }, [activeIdx, goToActivity]);
-
-  // Image autoplay
-  useEffect(() => {
-    const t = setInterval(() => setActiveImgIdx((p) => p + 1), 2400);
-    return () => clearInterval(t);
-  }, []);
+  }, [activities.length, currentActivityIdx, goToActivity]);
 
   // (reducedMotion logic moved up)
 
@@ -523,9 +625,15 @@ export function HomeLandingSections() {
       gsap.to(".orb-red", { x: 30, y: -20, duration: 7, repeat: -1, yoyo: true, ease: "sine.inOut" });
       gsap.to(".orb-green", { x: -25, y: 25, duration: 9, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1 });
       gsap.to(".orb-yellow", { x: 20, y: 30, duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 2 });
-
-      gsap.to(".floating-globe", { y: -14, x: 6, rotation: 8, duration: 4.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
-      gsap.to(".floating-map", { y: 12, x: -8, rotation: -5, duration: 5.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.8 });
+      gsap.to(".turah-hero-mascot", {
+        y: -12,
+        x: 6,
+        rotation: 2.5,
+        duration: 4.8,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
 
       gsap.to(".dekanat-card", {
         y: -24,
@@ -719,10 +827,10 @@ export function HomeLandingSections() {
           <div className="orb-yellow absolute right-1/3 top-1/3 size-[300px] rounded-full bg-[#FCB71B] opacity-[0.04] blur-3xl" />
         </div>
 
-        <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div className="relative mx-auto grid w-full max-w-6xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-16">
 
           {/* ── Text Column ── */}
-          <div>
+          <div className="lg:-translate-y-5">
             {/* Eyebrow
             <div className="hero-eyebrow flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EE1C25]/20 bg-[#EE1C25]/6 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#EE1C25]">
@@ -734,13 +842,24 @@ export function HomeLandingSections() {
               </span>
             </div> */}
 
+            <Image
+              src="/Beranda-Section1/LogoTeks.svg"
+              alt=""
+              width={900}
+              height={360}
+              priority
+              sizes="(max-width: 640px) 150px, (max-width: 1024px) 180px, 200px"
+              className="hero-eyebrow pointer-events-none mb-0 h-auto w-36 translate-y-3 object-contain drop-shadow-[0_12px_20px_rgba(92,58,30,0.10)] sm:mb-1 sm:w-44 lg:mb-0 lg:w-48"
+              aria-hidden="true"
+            />
+
             {/* Headline */}
-            <h2 className="hero-title mt-7 text-[2.6rem] font-black leading-[1.1] tracking-tight text-[#18130E] sm:text-[3.6rem] lg:text-[4rem] relative">
+            <h2 className="hero-title mt-0 text-[2.6rem] font-black leading-[1.1] tracking-tight text-[#18130E] sm:text-[3.6rem] lg:text-[4rem] relative">
               {/* Invisible layout placeholder to prevent layout shifts */}
               <span className="invisible select-none" aria-hidden="true">
-                Satu portal untuk seluruh{" "}
+                Satu portal untuk{" "}
                 <span className="relative inline-block">
-                  kebutuhan akademik
+                  semua kebutuhan
                 </span>{" "}
                 Anda.
               </span>
@@ -749,10 +868,8 @@ export function HomeLandingSections() {
                 {renderTypedTitle()}
               </span>
             </h2>
-            <SectionUnderline />
-
             {/* Description */}
-            <p className="hero-desc mt-6 max-w-[520px] text-[1.0625rem] leading-[1.85] text-[#6B5E52]">
+            <p className="hero-desc mt-7 max-w-[520px] text-[1.0625rem] leading-[1.85] text-[#6B5E52] sm:mt-8">
               Unit Layanan Terpadu (ULT) FMIPA Universitas Padjadjaran memfasilitasi kebutuhan administrasi akademik, kemahasiswaan, sarana prasarana, dan alumni secara cepat, transparan, dan terarah.
             </p>
 
@@ -781,13 +898,12 @@ export function HomeLandingSections() {
           </div>
 
           {/* ── Visual Card Column ── */}
-          <div className="relative">
+          <div className="relative min-h-[360px] sm:mt-4 sm:min-h-[430px] lg:mt-14 lg:min-h-[500px]">
             <div
               ref={heroCardRef}
-              className="dekanat-card relative -rotate-[1.5deg] overflow-hidden rounded-[2.8rem] border border-[#E8DECE] bg-white p-5 shadow-2xl shadow-[#5C3A1E]/10 transition-transform duration-300 hover:rotate-0"
+              className="dekanat-card relative mx-auto -rotate-[1.5deg] overflow-hidden rounded-[2.8rem] border border-[#E8DECE] bg-white p-4 shadow-2xl shadow-[#5C3A1E]/10 transition-transform duration-300 hover:rotate-0 sm:p-5"
               style={{ willChange: "transform" }}
             >
-              {/* Image */}
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2.2rem] bg-[#F5EEE4]">
                 <Image
                   src="/gedung-fmipa.svg"
@@ -797,48 +913,30 @@ export function HomeLandingSections() {
                   sizes="(max-width: 1024px) 90vw, 40vw"
                   className="dekanat-hero-image object-cover transition-transform duration-700 hover:scale-105"
                 />
-                {/* Glassmorphism overlay badge */}
                 <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl border border-white/30 bg-white/70 px-4 py-2.5 shadow-lg backdrop-blur-md">
                   <span className="size-2 rounded-full bg-[#03B36B] animate-pulse" />
                   <span className="text-xs font-bold text-[#18130E]">Layanan Aktif</span>
                 </div>
               </div>
 
-              {/* Card footer */}
               <div className="mt-4 flex items-center justify-between px-2 pb-1">
                 <div>
                   <h3 className="text-base font-black text-[#18130E]">Gedung Dekanat FMIPA</h3>
-                  <p className="mt-0.5 text-xs text-[#8A7A6E]">Pusat Layanan Terpadu, Jatinangor.</p>
                 </div>
-                <div className="flex size-9 items-center justify-center rounded-xl bg-[#EE1C25]/8 text-[#EE1C25]">
-                  <ArrowUpRight className="size-4" />
-                </div>
+                
               </div>
             </div>
 
-            {/* Floating globe badge */}
-           <div className="floating-globe dekanat-parallax-fast absolute -left-8 -top-8 hidden overflow-hidden rounded-2xl border border-[#E8DECE] bg-white p-2 shadow-xl transition-transform duration-300 hover:rotate-6 sm:block">
             <Image
-              src="/beranda/Logo.svg"
+              src="/Beranda-Section1/Turah1.svg"
               alt=""
-              width={130}
-              height={130}
-              className="h-auto w-[100px] scale-110 object-contain"
+              width={900}
+              height={900}
+              priority
+              sizes="(max-width: 640px) 112px, (max-width: 1024px) 140px, 168px"
+              className="turah-hero-mascot pointer-events-none absolute bottom-6 right-0 z-10 h-auto w-[112px] object-contain drop-shadow-[0_14px_22px_rgba(92,58,30,0.14)] sm:bottom-8 sm:-right-5 sm:w-[140px] lg:bottom-10 lg:-right-10 lg:w-[168px]"
               aria-hidden="true"
             />
-          </div>
-
-            {/* Floating map badge */}
-            <div className="floating-map dekanat-parallax-fast absolute -bottom-7 -right-7 hidden aspect-square w-28 overflow-hidden rounded-3xl border border-[#E8DECE] bg-white shadow-xl transition-transform duration-300 hover:-rotate-3 sm:block">
-              <Image
-                src="/beranda/background.svg"
-                alt=""
-                fill
-                sizes="100px"
-                className="object-cover"
-                aria-hidden="true"
-              />
-            </div>
           </div>
         </div>
       </section>
@@ -879,11 +977,12 @@ export function HomeLandingSections() {
             </div>
 
             {/* Manual prev/next controls */}
+            {activities.length > 1 ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={() =>
                   goToActivity(
-                    (activeIdx - 1 + studentActivities.length) % studentActivities.length,
+                    (activeIdx - 1 + activities.length) % activities.length,
                     -1
                   )
                 }
@@ -894,7 +993,7 @@ export function HomeLandingSections() {
               </button>
               <button
                 onClick={() =>
-                  goToActivity((activeIdx + 1) % studentActivities.length, 1)
+                  goToActivity((currentActivityIdx + 1) % activities.length, 1)
                 }
                 className="flex size-11 items-center justify-center rounded-2xl border border-[#D9D0BC] bg-white text-[#18130E] shadow-sm transition-all duration-200 hover:bg-[#EE1C25] hover:text-white hover:border-[#EE1C25] hover:shadow-md"
                 aria-label="Slide berikutnya"
@@ -902,14 +1001,15 @@ export function HomeLandingSections() {
                 <ChevronRight className="size-5" />
               </button>
             </div>
+            ) : null}
           </div>
 
           {/* Slide container */}
           <div className="kegiatan-container relative mt-8 min-h-[650px] overflow-hidden md:min-h-[430px]">
-            {studentActivities.map((act, idx) => {
-              const isActive = idx === activeIdx;
+            {activities.map((act, idx) => {
+              const isActive = idx === currentActivityIdx;
               const isPrevious = idx === previousIdx;
-              const imgIdx = activeImgIdx % act.images.length;
+              const displayNumber = String(idx + 1).padStart(2, "0");
               const slideStateClass = isActive
                 ? "z-20 translate-x-0 scale-100 opacity-100"
                 : isPrevious
@@ -922,7 +1022,7 @@ export function HomeLandingSections() {
 
               return (
                 <div
-                  key={act.title}
+                  key={act.id}
                   role="tabpanel"
                   aria-hidden={!isActive}
                   className={`absolute inset-0 grid w-full items-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${slideStateClass} ${
@@ -933,60 +1033,34 @@ export function HomeLandingSections() {
 
                     {/* Image block */}
                     <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F0EAD8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
-                      {act.images.map((src, i) => (
-                        <Image
-                          key={`${act.title}-${i}`}
-                          src={src}
-                          alt={i === 0 ? act.title : `${act.title} ${i + 1}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          className={`object-cover transition-all duration-700 ${i === imgIdx ? "opacity-100 scale-100" : "opacity-0 scale-105"}`}
-                        />
-                      ))}
-                      {/* Dot indicators */}
-                      {act.images.length > 1 && (
-                        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/25 px-3 py-2 backdrop-blur-sm">
-                          {act.images.map((_, i) => (
-                            <span
-                              key={i}
-                              className={`h-1.5 rounded-full transition-all duration-300 ${i === imgIdx ? "w-5 bg-white" : "w-1.5 bg-white/55"}`}
-                            />
-                          ))}
-                        </div>
-                      )}
+                      <Image
+                        src={act.image}
+                        alt={act.imageAlt}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover transition-transform duration-700 hover:scale-105"
+                      />
                       {/* Eyebrow number badge */}
                       <div
                         className="absolute left-4 top-4 flex size-10 items-center justify-center rounded-xl bg-[#18130E] text-sm font-black text-white"
                       >
-                        {act.eyebrow}
+                        {displayNumber}
                       </div>
                     </div>
 
                     {/* Text block */}
                     <div className={`relative flex flex-col justify-center ${idx % 2 === 0 ? "md:order-2" : "md:order-1"}`}>
                       <span className="activity-bg-number pointer-events-none absolute -top-12 left-0 text-[7rem] font-black leading-none text-[#18130E]/5 sm:text-[9rem]">
-                        {act.eyebrow}
+                        {displayNumber}
                       </span>
                       <span className="relative text-[11px] font-bold uppercase tracking-[0.28em] text-[#6B5E52]">
-                        Agenda Sivitas
+                        {act.eyebrow ?? "Agenda Sivitas"}
                       </span>
                       <h3 className="relative mt-3 text-[1.75rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[2.1rem]">
                         {act.title}
                       </h3>
                       <p className="relative mt-4 text-[0.9375rem] leading-[1.8] text-[#6B5E52]">{act.description}</p>
-
-                      <div className="mt-7">
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="group rounded-2xl border-[#D9D0BC] bg-white font-semibold text-[#18130E] shadow-sm transition-all duration-200 hover:border-[#18130E] hover:bg-[#18130E] hover:text-white hover:scale-[1.02]"
-                        >
-                          <Link href="/layanan" className="flex items-center gap-2 px-2">
-                            Pelajari Selengkapnya
-                            <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                          </Link>
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -995,10 +1069,14 @@ export function HomeLandingSections() {
           </div>
 
           {/* Progress bars */}
-          <div className="mt-10 grid grid-cols-4 gap-2">
-            {studentActivities.map((_, idx) => (
+          {activities.length > 1 ? (
+          <div
+            className="mt-10 grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${activities.length}, minmax(0, 1fr))` }}
+          >
+            {activities.map((activity, idx) => (
               <button
-                key={idx}
+                key={activity.id}
                 onClick={() =>
                   goToActivity(idx, idx > activeIdx ? 1 : -1)
                 }
@@ -1006,9 +1084,9 @@ export function HomeLandingSections() {
                 className="h-1 overflow-hidden rounded-full bg-[#C4B89A]/60"
               >
                 <span
-                  key={`${activeIdx}-${idx}`}
+                  key={`${currentActivityIdx}-${idx}`}
                   className={`block h-full origin-left rounded-full bg-[#18130E] ${
-                    activeIdx === idx
+                    currentActivityIdx === idx
                       ? reducedMotion
                         ? "scale-x-100"
                         : "activity-progress-fill"
@@ -1018,6 +1096,7 @@ export function HomeLandingSections() {
               </button>
             ))}
           </div>
+          ) : null}
         </div>
       </section>
 

@@ -107,6 +107,7 @@ export async function POST(
           jumlahTranskrip: getFormString(formData, "jumlahTranskrip"),
           jumlahIjazah: getFormString(formData, "jumlahIjazah"),
           jumlahTranslet: getFormString(formData, "jumlahTranslet"),
+          programStudi: getFormString(formData, "programStudi"),
           jenisPermohonan: getFormString(formData, "jenisPermohonan"),
           kontakPerson: getFormString(formData, "kontakPerson"),
           tempatPelaksanaan: getFormString(formData, "tempatPelaksanaan"),

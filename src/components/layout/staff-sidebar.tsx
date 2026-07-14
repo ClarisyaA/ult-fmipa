@@ -11,6 +11,7 @@ import {
   FileText,
   Globe,
   Home,
+  Images,
   LogOut,
   Menu,
   Newspaper,
@@ -32,6 +33,7 @@ const navIcons = {
   Dashboard: Home,
   Pengajuan: FileText,
   Informasi: Newspaper,
+  "Kegiatan Mahasiswa": Images,
   Survei: BarChart3,
   "Website Publik": Globe,
 };

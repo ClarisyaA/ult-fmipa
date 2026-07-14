@@ -7,23 +7,23 @@ const styles = StyleSheet.create({
   wrap: {
     width: 250,
     marginLeft: "auto",
-    marginTop: 56,
+    marginTop: 34,
   },
   line: {
     fontFamily: "Helvetica",
     fontSize: 11,
-    lineHeight: 1.35,
+    lineHeight: 1.2,
   },
   actingFor: {
-    marginTop: 22,
+    marginTop: 12,
   },
   title: {
-    marginTop: 14,
+    marginTop: 4,
   },
   signerName: {
     fontFamily: "Helvetica",
     fontSize: 11,
-    marginTop: 64,
+    marginTop: 52,
   },
   nip: {
     fontFamily: "Helvetica",
@@ -36,7 +36,7 @@ export function SignatureBlock({ signer }: { signer: LetterSigner }) {
   const date = formatIndonesianDate(signer.letterDate);
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} wrap={false}>
       <Text style={styles.line}>
         {signer.place}
         {date ? `, ${date}` : ""}

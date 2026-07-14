@@ -128,16 +128,17 @@ export default async function AdminDashboardPage({
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="overflow-x-auto pb-1">
+        <div className="grid min-w-[1120px] grid-cols-5 gap-3">
         {isUnavailable ? (
-          <div className="xl:col-span-5">
+          <div className="col-span-5">
             <AdminUnavailableState />
           </div>
         ) : (
         metrics.map((metric) => (
           <div
             key={metric.label}
-            className="rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
+            className="min-h-[126px] rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
           >
             <div className="flex items-start justify-between gap-2">
               <p className="text-[11px] font-semibold text-[#7a7166]">
@@ -155,6 +156,7 @@ export default async function AdminDashboardPage({
             </p>
           </div>
         )))}
+        </div>
       </div>
 
       <AdminSectionCard

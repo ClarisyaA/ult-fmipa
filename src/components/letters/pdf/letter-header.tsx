@@ -2,26 +2,28 @@ import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
 /* eslint-disable jsx-a11y/alt-text */
 
 import {
-  getExistingLetterAsset,
+  getExistingLetterAssetSource,
   letterLogoPath,
 } from "@/components/letters/pdf/letter-assets";
 
 const styles = StyleSheet.create({
   header: {
     position: "relative",
-    paddingTop: 2,
-    paddingBottom: 10,
+    height: 113,
   },
   logo: {
     position: "absolute",
-    left: 0,
+    left: 6,
     top: 0,
     width: 79,
     height: 79,
     objectFit: "contain",
   },
   textWrap: {
-    marginLeft: 76,
+    position: "absolute",
+    left: 76,
+    right: 0,
+    top: -8,
     textAlign: "center",
   },
   ministry: {
@@ -45,23 +47,29 @@ const styles = StyleSheet.create({
     lineHeight: 1.18,
   },
   thickLine: {
-    marginTop: 8,
+    position: "absolute",
+    left: 0,
+    right: -6,
+    top: 107,
     height: 2.8,
     backgroundColor: "#111111",
   },
   thinLine: {
-    marginTop: 1.5,
+    position: "absolute",
+    left: 0,
+    right: -6,
+    top: 111,
     height: 0.8,
     backgroundColor: "#111111",
   },
 });
 
 export function LetterHeader() {
-  const logoPath = getExistingLetterAsset(letterLogoPath);
+  const logoSource = getExistingLetterAssetSource(letterLogoPath);
 
   return (
     <View style={styles.header}>
-      {logoPath ? <Image src={logoPath} style={styles.logo} /> : null}
+      {logoSource ? <Image src={logoSource} style={styles.logo} /> : null}
       <View style={styles.textWrap}>
         <Text style={styles.ministry}>KEMENTERIAN PENDIDIKAN TINGGI, SAINS,</Text>
         <Text style={styles.ministry}>DAN TEKNOLOGI</Text>

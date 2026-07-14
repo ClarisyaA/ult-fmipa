@@ -41,6 +41,7 @@ export const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Pengajuan Layanan", href: "/admin/requests" },
       { label: "Informasi", href: "/admin/informasi" },
+      { label: "Kegiatan Mahasiswa", href: "/admin/beranda/kegiatan" },
       { label: "Survei", href: "/admin/surveys" },
     ],
   },
@@ -74,6 +75,7 @@ export const staffNavItems: NavItem[] = [
   { label: "Dashboard", href: "/staff/dashboard" },
   { label: "Pengajuan", href: "/staff/requests" },
   { label: "Informasi", href: "/staff/informasi" },
+  { label: "Kegiatan Mahasiswa", href: "/staff/beranda/kegiatan" },
   { label: "Survei", href: "/staff/surveys" },
   { label: "Website Publik", href: "/" },
 ];

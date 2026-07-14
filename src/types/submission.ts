@@ -24,6 +24,7 @@ export type CreateServiceRequestInput = {
   jumlahTranskrip?: number;
   jumlahIjazah?: number;
   jumlahTranslet?: number;
+  programStudi?: string;
   jenisPermohonan?: string;
   kontakPerson?: string;
   tempatPelaksanaan?: string;
