@@ -333,15 +333,15 @@ export function ProfileOrganizationManager({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="rounded-xl border bg-white" data-tour="admin-profile-structure-list">
+    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,380px)]">
+      <div className="min-w-0 rounded-xl border bg-white" data-tour="admin-profile-structure-list">
         <div className="border-b p-4">
           <h2 className="font-semibold">Daftar Struktur</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Atur atasan, cabang, urutan, dan status aktif.
           </p>
         </div>
-        <div className="grid gap-3 p-4">
+        <div className="grid min-w-0 gap-3 p-4">
           {nodes.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               {unavailable
@@ -352,8 +352,8 @@ export function ProfileOrganizationManager({
             flatNodes.map(({ node, depth }) => (
               <div
                 key={node.id}
-                className="grid gap-3 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-3 md:grid-cols-[auto_1fr_auto]"
-                style={{ marginLeft: `${Math.min(depth, 4) * 18}px` }}
+                className="grid min-w-0 gap-3 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-3 md:grid-cols-[auto_1fr_auto]"
+                style={{ marginLeft: `${Math.min(depth, 4) * 12}px` }}
               >
                 <div className="grid size-14 place-items-center overflow-hidden rounded-full border bg-white">
                   {node.photoUrl ? (
@@ -370,20 +370,20 @@ export function ProfileOrganizationManager({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold">{node.name}</p>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <p className="break-words font-semibold">{node.name}</p>
                     <Badge variant={node.isActive ? "secondary" : "outline"}>
                       {node.isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 break-words text-sm text-muted-foreground">
                     {node.positionTitle}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 break-words text-xs text-muted-foreground">
                     Parent: {node.parentId ?? "Root"} | Urutan: {node.sortOrder}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 md:justify-end">
+                <div className="flex min-w-0 flex-wrap gap-2 md:justify-end">
                   <Button type="button" size="sm" variant="outline" onClick={() => startEdit(node)}>
                     <Edit className="size-4" />
                     Edit
@@ -403,7 +403,7 @@ export function ProfileOrganizationManager({
       </div>
 
       <form
-        className="grid content-start gap-4 rounded-xl border bg-white p-4"
+        className="grid min-w-0 content-start gap-4 rounded-xl border bg-white p-4"
         data-tour="admin-profile-structure-form"
         onSubmit={handleSubmit}
       >

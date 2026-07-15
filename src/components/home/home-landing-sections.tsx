@@ -8,6 +8,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
+import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PublicService } from "@/types/service";
@@ -1345,13 +1346,15 @@ export function HomeLandingSections() {
               style={{ willChange: "transform" }}
             >
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] bg-[#F0EAD8]">
-                <Image
+                <InformationImage
                   src={featuredInformation?.image ?? "/gedung-fmipa.svg"}
                   alt={featuredInformation?.imageAlt ?? "Informasi Layanan"}
                   fill
                   unoptimized
                   sizes="(max-width: 1024px) 90vw, 50vw"
                   className={featuredInformationImageClass}
+                  fallbackTitle="Gambar tidak tersedia"
+                  fallbackClassName="flex h-full w-full items-center justify-center bg-[#F0EAD8] p-4 text-center text-[#7A6A5C]"
                 />
                 {/* Overlay badge */}
                 <div className="absolute inset-0 flex items-end p-5">
@@ -1404,13 +1407,15 @@ export function HomeLandingSections() {
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-square w-full overflow-hidden rounded-[1.1rem] bg-[#F0EAD8]">
-                      <Image
+                      <InformationImage
                         src={info.image}
                         alt={info.imageAlt}
                         fill
                         unoptimized
                         sizes="76px"
                         className={thumbnailImageClass}
+                        fallbackTitle="Gambar tidak tersedia"
+                        fallbackClassName="flex h-full w-full items-center justify-center bg-[#F0EAD8] p-2 text-center text-[#7A6A5C]"
                       />
                     </div>
 

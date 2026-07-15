@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImageIcon, Star, Trash2, Upload } from "lucide-react";
 
+import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -546,13 +547,16 @@ export function InformationPostForm({
                   key={image.id}
                   className="grid gap-3 rounded-md border border-[#e3d9ca] bg-white p-3"
                 >
-                  <Image
+                  <InformationImage
                     src={`/api/information/images/${image.id}`}
                     alt={image.altText ?? image.originalName}
                     width={640}
                     height={360}
                     unoptimized
                     className={getPreviewImageClass(imageFitDrafts[image.id] ?? "cover")}
+                    fallbackTitle="File hilang"
+                    fallbackDescription="File gambar saat ini tidak ditemukan di storage lokal. Unggah gambar baru untuk menggantinya."
+                    fallbackClassName="grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
                   />
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

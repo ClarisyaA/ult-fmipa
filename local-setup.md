@@ -286,6 +286,25 @@ CMS:
 - Profile Struktur Organisasi/Lokasi berjalan.
 - Survey berjalan.
 
+## Catatan Storage Runtime CMS
+
+File upload CMS adalah file runtime lokal dan tidak di-commit ke git. Database
+dump bisa berisi row gambar yang menunjuk file upload lama, sementara file-nya
+tidak ada di laptop fresh setup.
+
+Folder runtime yang relevan:
+
+- `storage/information`
+- `storage/home-activities`
+- `storage/uploads`
+- `storage/profile`
+
+Jika halaman `/informasi` atau `/informasi/[slug]` memanggil
+`/api/information/images/[imageId]` dan file tidak ada, API akan mengembalikan
+404 aman tanpa membocorkan path filesystem. UI publik dan admin menampilkan
+placeholder. Untuk memperbaiki konten, buka admin `Informasi`, edit post, lalu
+unggah ulang gambar pengganti. Jangan commit file upload asli ke repository.
+
 ## Troubleshooting
 
 ### Docker DB Belum Jalan

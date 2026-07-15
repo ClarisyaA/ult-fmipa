@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   BookOpen,
@@ -264,19 +264,93 @@ export function AdminMobileMenu({
   userName,
   userRole,
 }: AdminSidebarProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [openPathname, setOpenPathname] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const menuId = "admin-mobile-navigation";
+  const isOpen = openPathname === pathname;
   const initials = getInitials(userName) || "AU";
+
+  const restoreTriggerFocus = useCallback(() => {
+    triggerRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const closeMenu = useCallback(
+    ({ restoreFocus = true }: { restoreFocus?: boolean } = {}) => {
+      if (restoreFocus) {
+        restoreTriggerFocus();
+      }
+
+      setOpenPathname(null);
+    },
+    [restoreTriggerFocus],
+  );
+
+  function handleTriggerClick() {
+    if (isOpen) {
+      closeMenu();
+      return;
+    }
+
+    setOpenPathname(pathname);
+  }
+
+  function handleNavigationClick(href: string) {
+    restoreTriggerFocus();
+
+    if (isActivePath(pathname, href)) {
+      setOpenPathname(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    closeButtonRef.current?.focus({ preventScroll: true });
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMenu();
+      }
+    }
+
+    function handleResize() {
+      if (window.matchMedia("(min-width: 768px)").matches) {
+        closeMenu();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [closeMenu, isOpen]);
 
   return (
     <div className="relative md:hidden">
       <Button
+        ref={triggerRef}
         type="button"
         variant="ghost"
         size="sm"
         className="h-10 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white shadow-none hover:bg-white/15 hover:text-white"
         aria-label={isOpen ? "Tutup menu admin" : "Buka menu admin"}
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((current) => !current)}
+        aria-controls={menuId}
+        onClick={handleTriggerClick}
       >
         {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         Menu
@@ -288,10 +362,15 @@ export function AdminMobileMenu({
             ? "pointer-events-auto bg-[#10251d]/38 opacity-100"
             : "pointer-events-none bg-[#10251d]/0 opacity-0"
         }`}
-        aria-hidden={!isOpen}
-        onClick={() => setIsOpen(false)}
+        aria-hidden={isOpen ? undefined : true}
+        inert={isOpen ? undefined : true}
+        onClick={() => closeMenu()}
       >
         <div
+          id={menuId}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu navigasi admin"
           className={`mr-auto flex h-dvh w-[min(88vw,360px)] min-h-0 flex-col overflow-hidden bg-white text-[#1f2922] shadow-[18px_0_44px_rgba(15,61,46,0.22)] transition-transform duration-300 ease-out ${
             isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
@@ -318,12 +397,13 @@ export function AdminMobileMenu({
                 </div>
               </div>
               <Button
+                ref={closeButtonRef}
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="size-9 shrink-0 rounded-full bg-white/12 text-white hover:bg-white/20 hover:text-white"
                 aria-label="Tutup menu admin"
-                onClick={() => setIsOpen(false)}
+                onClick={() => closeMenu()}
               >
                 <X className="size-4" />
               </Button>
@@ -361,7 +441,7 @@ export function AdminMobileMenu({
                       <Link
                         key={item.href}
                         href={item.href}
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => handleNavigationClick(item.href)}
                         data-tour={navTourTargets[item.label as keyof typeof navIcons]}
                         className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-[#536058] transition-colors hover:bg-[#f6f1e8] hover:text-[#0f3d2e]"
                       >

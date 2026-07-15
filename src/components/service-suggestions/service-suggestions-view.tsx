@@ -210,16 +210,16 @@ export function ServiceSuggestionsView({
   }
 
   return (
-    <div className="grid gap-6">
-      <header className="rounded-2xl border border-[#e8dfd0] bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+    <div className="grid min-w-0 gap-6">
+      <header className="min-w-0 rounded-2xl border border-[#e8dfd0] bg-white p-5 shadow-sm">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+          <div className="min-w-0">
             <h1 className="text-2xl font-black text-[#1f261f]">{title}</h1>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#6f766f]">
               {description}
             </p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-right">
+          <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left sm:w-auto sm:min-w-32 sm:text-right">
             <p className="text-2xl font-black text-amber-700">{newCount}</p>
             <p className="text-xs font-semibold text-amber-700">Usulan baru</p>
           </div>
@@ -230,7 +230,57 @@ export function ServiceSuggestionsView({
         className="overflow-hidden rounded-2xl border border-[#e8dfd0] bg-white shadow-sm"
         data-tour="admin-service-suggestions-list"
       >
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-4 md:hidden">
+          {items.map((item) => (
+            <article
+              key={item.id}
+              className="grid gap-3 rounded-xl border border-[#efe7da] bg-[#fffdf9] p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-bold text-[#1f261f]">
+                    {item.layananDiajukan}
+                  </p>
+                  <p className="mt-1 text-xs text-[#6f766f]">
+                    {formatDate(item.createdAt)}
+                  </p>
+                </div>
+                <StatusBadge status={item.status} />
+              </div>
+              <div className="grid gap-1 text-sm">
+                <p className="font-semibold text-[#1f261f]">{item.nama}</p>
+                <p className="text-[#6f766f]">NPM: {item.npm}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openDetail(item)}
+                >
+                  Detail
+                </Button>
+                {canDelete ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={isUpdating}
+                    onClick={() => deleteSuggestion(item)}
+                  >
+                    Hapus
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+          ))}
+          {items.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#efe7da] px-4 py-10 text-center text-sm text-[#7a746b]">
+              Belum ada usulan layanan.
+            </div>
+          ) : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="bg-[#f3f8f4] text-xs uppercase tracking-[0.08em] text-[#536058]">
               <tr>
@@ -300,7 +350,7 @@ export function ServiceSuggestionsView({
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelectedId(null)}>
         <DialogContent
-          className="max-h-[86vh] overflow-y-auto sm:max-w-3xl"
+          className="max-h-[86vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-3xl"
           data-tour="admin-service-suggestions-detail"
         >
           {selected ? (

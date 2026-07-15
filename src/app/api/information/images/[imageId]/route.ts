@@ -77,6 +77,9 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
       },
     });
   } catch {
-    return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
+    return NextResponse.json(
+      { error: "File gambar tidak tersedia di storage lokal." },
+      { status: 404 },
+    );
   }
 }

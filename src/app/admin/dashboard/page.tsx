@@ -34,6 +34,20 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("id-ID").format(value);
 }
 
+function formatDashboardDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 type AdminDashboardPageProps = {
   searchParams: Promise<{
     dateFrom?: string;
@@ -120,20 +134,20 @@ export default async function AdminDashboardPage({
         action={<AdminDashboardTutorialButton />}
       />
 
-      <div className="overflow-x-auto pb-1">
+      <div className="-mx-4 min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain px-4 pb-2 [-webkit-overflow-scrolling:touch] sm:-mx-6 sm:px-6 xl:mx-0 xl:overflow-visible xl:px-0 xl:pb-1">
         <div
-          className="grid min-w-[1120px] grid-cols-5 gap-3"
+          className="flex w-max min-w-full flex-nowrap gap-3 xl:grid xl:w-full xl:grid-cols-5"
           data-tour="admin-dashboard-summary"
         >
         {isUnavailable ? (
-          <div className="col-span-5">
+          <div className="min-w-[min(82vw,260px)] shrink-0 xl:col-span-5 xl:min-w-0">
             <AdminUnavailableState />
           </div>
         ) : (
         metrics.map((metric) => (
           <div
             key={metric.label}
-            className="min-h-[126px] rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
+            className="min-h-[126px] w-[min(82vw,260px)] shrink-0 rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_2px_10px_rgba(47,38,20,0.08)] xl:w-auto xl:shrink"
           >
             <div className="flex items-start justify-between gap-2">
               <p className="text-[11px] font-semibold text-[#7a7166]">
@@ -158,8 +172,11 @@ export default async function AdminDashboardPage({
         title="Filter Prioritas"
         description="Saring antrean prioritas berdasarkan tanggal pengajuan agar request lama yang sudah kadaluarsa tidak ikut mendominasi daftar."
       >
-        <form className="flex flex-wrap items-end gap-3" method="get">
-          <div className="grid gap-1.5">
+        <form
+          className="flex min-w-0 flex-col gap-3 md:flex-row md:flex-wrap md:items-end"
+          method="get"
+        >
+          <div className="grid min-w-0 flex-1 gap-1.5 md:max-w-[180px]">
             <label
               htmlFor="admin-priority-date-from"
               className="text-[11px] font-semibold text-[#5d665f]"
@@ -171,10 +188,10 @@ export default async function AdminDashboardPage({
               name="dateFrom"
               type="date"
               defaultValue={params.dateFrom}
-              className="h-9 w-[180px] rounded-md border-[#ddd4c6] bg-white"
+              className="h-9 w-full rounded-md border-[#ddd4c6] bg-white"
             />
           </div>
-          <div className="grid gap-1.5">
+          <div className="grid min-w-0 flex-1 gap-1.5 md:max-w-[180px]">
             <label
               htmlFor="admin-priority-date-to"
               className="text-[11px] font-semibold text-[#5d665f]"
@@ -186,7 +203,7 @@ export default async function AdminDashboardPage({
               name="dateTo"
               type="date"
               defaultValue={params.dateTo}
-              className="h-9 w-[180px] rounded-md border-[#ddd4c6] bg-white"
+              className="h-9 w-full rounded-md border-[#ddd4c6] bg-white"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -207,7 +224,7 @@ export default async function AdminDashboardPage({
               <Link href="/admin/dashboard">Reset</Link>
             </Button>
           </div>
-          <div className="ml-auto flex items-center">
+          <div className="flex items-center md:ml-auto">
             <AdminStatusBadge tone={isPriorityFilterActive ? "warning" : "info"}>
               {isPriorityFilterActive ? "Filter tanggal aktif" : "Semua tanggal"}
             </AdminStatusBadge>
@@ -227,63 +244,112 @@ export default async function AdminDashboardPage({
           {isUnavailable || !summary ? (
             <AdminUnavailableState />
           ) : (
-          <div className="overflow-x-auto rounded-md border border-[#edf0e9]">
-          <Table className="min-w-[900px]">
-            <TableHeader className="bg-[#eef3ec]">
-              <TableRow>
-                <TableHead>Layanan</TableHead>
-                <TableHead>Pemohon</TableHead>
-                <TableHead>Program Studi</TableHead>
-                <TableHead>Tanggal Pengajuan</TableHead>
-                <TableHead className="text-center">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {latestRows.length > 0 ? (
-                latestRows.map((row) => (
-                  <TableRow key={`${row.serviceSlug}-${row.id}`}>
-                    <TableCell className="font-medium">{row.serviceTitle}</TableCell>
-                    <TableCell>{row.requesterName}</TableCell>
-                    <TableCell>{row.programStudy}</TableCell>
-                    <TableCell>
-                      {row.requestDate
-                        ? new Intl.DateTimeFormat("id-ID", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }).format(new Date(row.requestDate))
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        asChild
-                        size="sm"
-                        className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
-                      >
-                        <Link
-                          href={`/admin/requests?service=${row.serviceSlug}&previewService=${row.serviceSlug}&previewId=${row.id}`}
+            <>
+              <div className="grid min-w-0 gap-3 xl:hidden">
+                {latestRows.length > 0 ? (
+                  latestRows.map((row) => (
+                    <article
+                      key={`${row.serviceSlug}-${row.id}`}
+                      className="min-w-0 rounded-md border border-[#edf0e9] bg-[#fbfdf9] p-3"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-semibold text-[#173d2d]">
+                            {row.serviceTitle}
+                          </p>
+                          <p className="mt-1 break-words text-xs text-[#4f5b52]">
+                            {row.requesterName}
+                          </p>
+                        </div>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="h-8 shrink-0 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
                         >
-                          Proses
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-8 text-center text-sm text-[#6f746f]"
-                  >
+                          <Link
+                            href={`/admin/requests?service=${row.serviceSlug}&previewService=${row.serviceSlug}&previewId=${row.id}`}
+                          >
+                            Proses
+                          </Link>
+                        </Button>
+                      </div>
+                      <dl className="mt-3 grid gap-2 text-xs text-[#6f746f]">
+                        <div className="min-w-0">
+                          <dt className="font-semibold text-[#39433c]">
+                            Program Studi
+                          </dt>
+                          <dd className="break-words">{row.programStudy}</dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="font-semibold text-[#39433c]">
+                            Tanggal Pengajuan
+                          </dt>
+                          <dd>{formatDashboardDate(row.requestDate)}</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))
+                ) : (
+                  <div className="rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-8 text-center text-sm text-[#6f746f]">
                     Belum ada pengajuan baru yang menunggu proses.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden xl:block">
+                <AdminTableScroll>
+                  <Table className="min-w-[780px] table-auto">
+                    <TableHeader className="bg-[#eef3ec]">
+                      <TableRow>
+                        <TableHead>Layanan</TableHead>
+                        <TableHead>Pemohon</TableHead>
+                        <TableHead>Program Studi</TableHead>
+                        <TableHead>Tanggal Pengajuan</TableHead>
+                        <TableHead className="text-center">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {latestRows.length > 0 ? (
+                        latestRows.map((row) => (
+                          <TableRow key={`${row.serviceSlug}-${row.id}`}>
+                            <TableCell className="font-medium">
+                              {row.serviceTitle}
+                            </TableCell>
+                            <TableCell>{row.requesterName}</TableCell>
+                            <TableCell>{row.programStudy}</TableCell>
+                            <TableCell>
+                              {formatDashboardDate(row.requestDate)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                asChild
+                                size="sm"
+                                className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                              >
+                                <Link
+                                  href={`/admin/requests?service=${row.serviceSlug}&previewService=${row.serviceSlug}&previewId=${row.id}`}
+                                >
+                                  Proses
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="py-8 text-center text-sm text-[#6f746f]"
+                          >
+                            Belum ada pengajuan baru yang menunggu proses.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </AdminTableScroll>
+              </div>
+            </>
           )}
         </AdminSectionCard>
       </div>
@@ -295,42 +361,87 @@ export default async function AdminDashboardPage({
         {isUnavailable ? (
           <AdminUnavailableState />
         ) : (
-        <AdminTableScroll>
-          <Table className="min-w-[900px]">
-            <TableHeader className="bg-[#eef3ec]">
-              <TableRow>
-                <TableHead>Layanan</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Menunggu</TableHead>
-                <TableHead className="text-right">Diproses</TableHead>
-                <TableHead className="text-right">Selesai</TableHead>
-                <TableHead className="text-right">Diambil/Dikirim</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            <div className="grid min-w-0 gap-3 xl:hidden">
               {summary!.services.map((service) => (
-                <TableRow key={service.slug}>
-                  <TableCell className="font-medium">{service.title}</TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.total)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.pending)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.inProgress)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.completed)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(service.delivered)}
-                  </TableCell>
-                </TableRow>
+                <article
+                  key={service.slug}
+                  className="min-w-0 rounded-md border border-[#edf0e9] bg-[#fbfdf9] p-3"
+                >
+                  <p className="break-words text-sm font-semibold text-[#173d2d]">
+                    {service.title}
+                  </p>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#6f746f]">
+                    <div>
+                      <dt className="font-semibold text-[#39433c]">Total</dt>
+                      <dd>{formatNumber(service.total)}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-[#39433c]">Menunggu</dt>
+                      <dd>{formatNumber(service.pending)}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-[#39433c]">Diproses</dt>
+                      <dd>{formatNumber(service.inProgress)}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-[#39433c]">Selesai</dt>
+                      <dd>{formatNumber(service.completed)}</dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="font-semibold text-[#39433c]">
+                        Diambil/Dikirim
+                      </dt>
+                      <dd>{formatNumber(service.delivered)}</dd>
+                    </div>
+                  </dl>
+                </article>
               ))}
-            </TableBody>
-          </Table>
-        </AdminTableScroll>
+            </div>
+
+            <div className="hidden xl:block">
+              <AdminTableScroll>
+                <Table className="min-w-[820px] table-auto">
+                  <TableHeader className="bg-[#eef3ec]">
+                    <TableRow>
+                      <TableHead>Layanan</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Menunggu</TableHead>
+                      <TableHead className="text-right">Diproses</TableHead>
+                      <TableHead className="text-right">Selesai</TableHead>
+                      <TableHead className="text-right">
+                        Diambil/Dikirim
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {summary!.services.map((service) => (
+                      <TableRow key={service.slug}>
+                        <TableCell className="font-medium">
+                          {service.title}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(service.total)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(service.pending)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(service.inProgress)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(service.completed)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(service.delivered)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </AdminTableScroll>
+            </div>
+          </>
         )}
       </AdminSectionCard>
 

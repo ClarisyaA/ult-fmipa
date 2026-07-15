@@ -136,6 +136,9 @@ Catatan storage lokal:
 - DB dump lokal bisa menunjuk file yang tidak ada di laptop.
 - Folder yang relevan: `storage/uploads`, `storage/information`, `storage/home-activities`, `storage/profile`.
 - Missing file boleh membuat API image return 404; UI harus menampilkan placeholder/fallback.
+- Khusus Informasi CMS, jika gambar lama hilang di local setup, buka admin
+  Informasi edit page lalu unggah ulang gambar pengganti. Jangan commit file
+  upload runtime asli.
 
 ## 5. Student Frontend
 
