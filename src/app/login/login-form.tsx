@@ -159,6 +159,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                   alt="Ilustrasi pengguna layanan"
                   width={360}
                   height={245}
+                  loading="eager"
                   className="h-44 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03] sm:h-40"
                 />
               </div>
@@ -190,6 +191,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                   alt="Ilustrasi sivitas akademika"
                   width={360}
                   height={245}
+                  loading="eager"
                   className="h-44 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03] sm:h-40"
                 />
               </div>

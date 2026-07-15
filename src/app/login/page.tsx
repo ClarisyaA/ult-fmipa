@@ -15,7 +15,6 @@ export default function LoginPage() {
           src="/gedung-fmipa.svg"
           alt="Gedung FMIPA Universitas Padjadjaran"
           fill
-          priority
           className="object-cover"
         />
         <div className="absolute inset-0 bg-slate-950/55" />
