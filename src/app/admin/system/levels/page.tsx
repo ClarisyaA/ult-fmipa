@@ -61,12 +61,12 @@ export default async function AdminSystemLevelsPage({
         action={<LevelCreateButton />}
       />
       <AdminSectionCard title="Pencarian">
-        <form className="flex flex-col gap-2 md:flex-row md:items-end">
+        <form className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-end">
           <Input
             name="q"
             defaultValue={params.q ?? ""}
             placeholder="Cari level..."
-            className="h-9 border-[#e1d8ca] bg-white md:max-w-sm"
+            className="h-9 min-w-0 border-[#e1d8ca] bg-white md:max-w-sm"
           />
           <Button className="h-9 rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39]">
             Tampilkan
@@ -81,6 +81,31 @@ export default async function AdminSystemLevelsPage({
         ) : rows.length === 0 ? (
           <AdminEmptyState title="Data level tidak ditemukan" />
         ) : (
+          <>
+          <div className="grid gap-3 md:hidden">
+            {rows.map((row) => (
+              <article
+                key={row.LEVEL_DATA_ID}
+                className="grid gap-2 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[#6f746f]">
+                      ID {row.LEVEL_DATA_ID}
+                    </p>
+                    <p className="break-words text-sm font-bold text-[#1f2922]">
+                      {row.LEVEL_DATA_NAME}
+                    </p>
+                    <p className="mt-1 break-words text-xs text-[#6f746f]">
+                      Field: {row.FIELD_NAME}
+                    </p>
+                  </div>
+                </div>
+                <LevelRowActions row={row} />
+              </article>
+            ))}
+          </div>
+          <div className="hidden md:block">
           <AdminTableScroll>
             <Table className="min-w-[720px]">
               <TableHeader className="bg-[#eef3ec]">
@@ -107,6 +132,8 @@ export default async function AdminSystemLevelsPage({
               </TableBody>
             </Table>
           </AdminTableScroll>
+          </div>
+          </>
         )}
         </AdminSectionCard>
       </div>

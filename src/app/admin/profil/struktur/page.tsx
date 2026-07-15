@@ -1,4 +1,5 @@
 import { ProfileOrganizationManager } from "@/components/profile/profile-organization-manager";
+import { AdminPageHeader, AdminPageShell } from "@/components/admin/admin-ui";
 import {
   Card,
   CardContent,
@@ -15,17 +16,13 @@ export default async function AdminProfileStructurePage() {
   const { nodes, unavailable } = await getAdminProfileOrganizationState();
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Profil - Struktur Organisasi
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Kelola node organisasi, foto, atasan, cabang, urutan, dan status aktif.
-        </p>
-      </div>
+    <AdminPageShell wide>
+      <AdminPageHeader
+        title="Profil - Struktur Organisasi"
+        description="Kelola node organisasi, foto, atasan, cabang, urutan, dan status aktif."
+      />
 
-      <Card data-tour="admin-profile-structure-tree">
+      <Card className="min-w-0 overflow-hidden" data-tour="admin-profile-structure-tree">
         <CardHeader>
           <CardTitle>CMS Struktur Organisasi</CardTitle>
           <CardDescription>
@@ -40,6 +37,6 @@ export default async function AdminProfileStructurePage() {
           />
         </CardContent>
       </Card>
-    </div>
+    </AdminPageShell>
   );
 }

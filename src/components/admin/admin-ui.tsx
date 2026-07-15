@@ -31,7 +31,7 @@ export function AdminPageShell({
 }) {
   return (
     <div
-      className="-m-4 min-h-[calc(100%+2rem)] bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
+      className="-m-4 min-h-[calc(100%+2rem)] min-w-0 overflow-x-hidden bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
       style={{
         backgroundImage: [
           "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
@@ -47,7 +47,7 @@ export function AdminPageShell({
       }}
     >
       <div
-        className={`mx-auto grid w-full min-w-0 gap-4 px-4 py-5 sm:px-6 lg:px-7 ${
+        className={`mx-auto grid w-full min-w-0 gap-4 px-4 py-5 pb-8 sm:px-6 lg:px-7 ${
           wide ? "max-w-[1660px]" : "max-w-[1320px]"
         }`}
       >
@@ -110,7 +110,7 @@ export function AdminSectionCard({
 
 export function AdminTableScroll({ children }: { children: ReactNode }) {
   return (
-    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border border-[#edf0e9]">
+    <div className="block w-full min-w-0 max-w-full touch-pan-x overflow-x-auto overscroll-x-contain rounded-md border border-[#edf0e9] [-webkit-overflow-scrolling:touch] [&_[data-slot=table-container]]:w-max [&_[data-slot=table-container]]:min-w-full [&_[data-slot=table-container]]:overflow-visible [&_[data-slot=table]]:w-max [&_[data-slot=table]]:min-w-full">
       {children}
     </div>
   );

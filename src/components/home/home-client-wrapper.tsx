@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { HomeHero } from "./home-hero";
 import { HomeLandingSections } from "./home-landing-sections";
@@ -15,16 +16,30 @@ export function HomeClientWrapper() {
           isHeroLoaded ? "invisible opacity-0 pointer-events-none" : "visible opacity-100"
         }`}
       >
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative flex h-14 w-14 items-center justify-center">
-            {/* Pulsing ring */}
-            <div className="absolute inset-0 animate-ping rounded-full bg-[#EE1C25]/20 opacity-75" />
-            {/* Spinning indicator */}
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#EE1C25]/20 border-t-[#EE1C25]" />
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative flex h-28 w-28 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-[#EE1C25]/10 bg-white/50 shadow-[0_20px_46px_rgba(238,28,37,0.12)]" />
+            <div className="absolute inset-1 animate-spin rounded-full border-[3px] border-[#EE1C25]/12 border-t-[#EE1C25] border-r-[#FCB71B]" />
+            <div className="absolute inset-4 animate-ping rounded-full bg-[#EE1C25]/8 opacity-70" />
+            <div className="relative grid h-20 w-20 place-items-center rounded-full bg-white shadow-[0_14px_34px_rgba(24,19,14,0.10)]">
+              <Image
+                src="/Beranda-Section1/Turah1.svg"
+                alt="Logo ULT FMIPA"
+                width={68}
+                height={68}
+                priority
+                className="h-16 w-16 object-contain"
+              />
+            </div>
           </div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-[#8A7A6E]">
-            Memuat Halaman
-          </p>
+          <div className="grid gap-1 text-center">
+            <p className="text-sm font-semibold text-[#5f5146]">
+              Memuat halaman
+            </p>
+            <p className="text-xs text-[#8A7A6E]">
+              Unit Layanan Terpadu FMIPA Unpad
+            </p>
+          </div>
         </div>
       </div>
 

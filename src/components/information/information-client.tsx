@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   CalendarDays,
@@ -11,6 +10,7 @@ import {
   Search,
   ChevronDown,
 } from "lucide-react";
+import { InformationImage } from "@/components/information/information-image";
 import { Input } from "@/components/ui/input";
 
 interface InformationPost {
@@ -146,13 +146,15 @@ export default function InformasiClient({
               >
                 <div className="relative aspect-video w-full overflow-hidden bg-[#F7F3EA]">
                   {coverImage ? (
-                    <Image
+                    <InformationImage
                       src={`/api/information/images/${coverImage.id}`}
                       alt={coverImage.altText ?? coverImage.originalName}
                       fill
                       unoptimized
                       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       className={imageClass}
+                      fallbackTitle="Gambar tidak tersedia"
+                      fallbackClassName="flex h-full w-full items-center justify-center bg-[#F7F3EA] p-4 text-center text-[#7A6A5C]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">

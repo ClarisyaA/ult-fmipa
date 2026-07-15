@@ -19,6 +19,10 @@ import { Input } from "@/components/ui/input";
 
 const DB_UNAVAILABLE_MESSAGE =
   "Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi.";
+const dialogScrollClassName =
+  "max-h-[90vh] w-[calc(100vw-2rem)] overflow-y-auto";
+const dialogFormClassName = `${dialogScrollClassName} sm:max-w-xl`;
+const dialogSmallFormClassName = `${dialogScrollClassName} sm:max-w-md`;
 
 type LevelRow = {
   LEVEL_DATA_ID: number;
@@ -200,7 +204,7 @@ export function LevelCreateButton() {
             Tambah Level
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className={dialogSmallFormClassName}>
           <DialogHeader>
             <DialogTitle>Tambah Data Level</DialogTitle>
             <DialogDescription>
@@ -258,7 +262,7 @@ export function LevelRowActions({ row }: { row: LevelRow }) {
             Edit
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className={dialogSmallFormClassName}>
           <DialogHeader>
             <DialogTitle>Edit Data Level</DialogTitle>
           </DialogHeader>
@@ -381,7 +385,7 @@ export function UnitCreateButton({ levels }: { levels: LevelOption[] }) {
             Tambah Unit
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className={dialogSmallFormClassName}>
           <DialogHeader>
             <DialogTitle>Tambah Unit</DialogTitle>
           </DialogHeader>
@@ -434,7 +438,7 @@ export function UnitRowActions({
             Edit
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className={dialogSmallFormClassName}>
           <DialogHeader>
             <DialogTitle>Edit Unit</DialogTitle>
           </DialogHeader>
@@ -554,7 +558,7 @@ export function MahasiswaCreateButton() {
             Tambah Mahasiswa
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Tambah Mahasiswa</DialogTitle>
           </DialogHeader>
@@ -602,7 +606,7 @@ export function MahasiswaRowActions({ row }: { row: MahasiswaRow }) {
             Edit
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Edit Mahasiswa</DialogTitle>
             <DialogDescription>NPM tidak diubah dari form ini.</DialogDescription>
@@ -753,7 +757,7 @@ export function TracerCreateButton() {
             Tambah Tracer
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Tambah Tracer Study</DialogTitle>
           </DialogHeader>
@@ -801,7 +805,7 @@ export function TracerRowActions({ row }: { row: TracerRow }) {
             Edit
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Edit Tracer Study</DialogTitle>
           </DialogHeader>
@@ -890,7 +894,7 @@ export function UserRowActions({
             Edit Aman
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
@@ -1023,7 +1027,7 @@ export function UserRowActions({
             Reset Password
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={dialogSmallFormClassName}>
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
@@ -1155,7 +1159,7 @@ export function UserCreateButton({
             Tambah User
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className={dialogFormClassName}>
           <DialogHeader>
             <DialogTitle>Tambah User</DialogTitle>
             <DialogDescription>

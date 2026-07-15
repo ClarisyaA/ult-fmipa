@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 
+import { InformationImage } from "@/components/information/information-image";
 import { InformationImageGallery } from "@/components/information/information-image-gallery";
 import { Button } from "@/components/ui/button";
 import { getInformationPostImages } from "@/lib/information-post-images";
@@ -115,7 +115,7 @@ export default async function InformationDetailPage({
           >
             {headerImage ? (
               <>
-                <Image
+                <InformationImage
                   src={`/api/information/images/${headerImage.id}`}
                   alt={headerImage.altText ?? headerImage.originalName}
                   fill
@@ -123,6 +123,8 @@ export default async function InformationDetailPage({
                   unoptimized
                   sizes="(max-width: 1024px) 90vw, 896px"
                   className={headerImageClass}
+                  fallbackTitle="Gambar informasi tidak tersedia di storage lokal."
+                  fallbackClassName="flex h-full w-full items-center justify-center bg-[#f7f3ea] p-6 text-center text-[#7a6a5c]"
                 />
                 <div
                   aria-hidden="true"

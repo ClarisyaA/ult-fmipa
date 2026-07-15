@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
 import type { InformationPostImage } from "@/lib/information-post-images";
 
@@ -125,13 +125,15 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
                   key={`${image.id}-${index}`}
                   className="relative h-full w-full flex-none"
                 >
-                  <Image
+                  <InformationImage
                     src={`/api/information/images/${image.id}`}
                     alt={image.altText ?? image.originalName}
                     fill
                     unoptimized
                     sizes="(max-width: 1024px) 90vw, 896px"
                     className={imageClass}
+                    fallbackTitle="Gambar informasi tidak tersedia di storage lokal."
+                    fallbackClassName="flex h-full w-full items-center justify-center bg-[#f7f3ea] p-4 text-center text-[#7a6a5c]"
                   />
                 </div>
               );

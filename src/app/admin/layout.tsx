@@ -32,24 +32,26 @@ export default async function AdminLayout({
         />
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
-            <div className="flex items-center gap-3">
+          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-3 pr-32 text-white sm:px-6 md:hidden">
+            <div className="flex min-w-0 items-center gap-2.5">
               <AdminMobileMenu
                 groups={adminNavGroups}
                 userName={userName}
                 userRole={userRole}
               />
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2">
                 <Image
                   src="/logo-unpad.svg"
                   alt="Logo Unpad"
                   width={36}
                   height={36}
-                  className="size-9"
+                  className="size-8 shrink-0"
                 />
-                <div>
-                  <p className="font-semibold">Admin ULT FMIPA</p>
-                  <p className="text-xs capitalize text-white/70">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold leading-tight">
+                    Admin ULT FMIPA
+                  </p>
+                  <p className="truncate text-[11px] capitalize leading-tight text-white/70">
                     {userName} - {userRole}
                   </p>
                 </div>
