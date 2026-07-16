@@ -367,8 +367,20 @@ Services:
 | MariaDB from host | `localhost:13306` |
 | MariaDB from containers | `db:3306` |
 
-The app container stores uploaded service attachments and information images in
-the `ult_fmipa_storage` Docker volume mounted at `/app/storage`.
+The app container reads and writes runtime uploads through the project storage
+bind mount:
+
+```yaml
+./storage:/app/storage
+```
+
+This keeps files such as service attachments, homepage activity images,
+information images, and profile images in the host repository's ignored
+`storage/` directory while the container reads them from `/app/storage`.
+Rebuilding or recreating the app container preserves those files. Do not use
+`docker compose down -v` for environments where uploaded files must be kept.
+For production, mount a persistent host directory or persistent volume to
+`/app/storage`.
 
 ## Kubernetes Deployment
 

@@ -1,32 +1,14 @@
 import { readFile, stat } from "fs/promises";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
 import { getHomeActivityById } from "@/lib/home-activities";
+import { resolveStoredFilePath } from "@/lib/storage-paths";
 
 type ImageRouteProps = {
   params: Promise<{ id: string }>;
 };
-
-function resolveStoragePath(storedName: string | null) {
-  if (!storedName || path.basename(storedName) !== storedName) {
-    return null;
-  }
-
-  const storageRoot = path.resolve(process.cwd(), "storage", "home-activities");
-  const absolutePath = path.join(storageRoot, storedName);
-
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
-    return null;
-  }
-
-  return absolutePath;
-}
 
 export async function GET(_request: Request, { params }: ImageRouteProps) {
   const { id } = await params;
@@ -49,7 +31,10 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
     }
   }
 
-  const absolutePath = resolveStoragePath(activity.imageStoredName);
+  const absolutePath = resolveStoredFilePath(
+    "homeActivities",
+    activity.imageStoredName
+  );
 
   if (!absolutePath) {
     return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });

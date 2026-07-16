@@ -3,6 +3,11 @@ import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
+import {
+  getStorageDirectory,
+  getStorageReference,
+  resolveStoredFilePath,
+} from "@/lib/storage-paths";
 
 export type SavedHomeActivityImageMetadata = {
   originalName: string;
@@ -12,7 +17,7 @@ export type SavedHomeActivityImageMetadata = {
   storagePath: string;
 };
 
-const activityImageDir = path.join(process.cwd(), "storage", "home-activities");
+const activityImageDir = getStorageDirectory("homeActivities");
 const maxImageSizeBytes = 2 * 1024 * 1024;
 const allowedMimeTypes = new Set([
   "image/webp",
@@ -84,7 +89,7 @@ export async function saveHomeActivityImage(
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: path.join("storage", "home-activities", storedName),
+    storagePath: getStorageReference("homeActivities", storedName),
   };
 }
 
@@ -93,19 +98,15 @@ export async function deleteHomeActivityImageFile(storagePath: string | null) {
     return;
   }
 
-  const storageRoot = path.resolve(process.cwd(), "storage", "home-activities");
   const storedName = path.basename(storagePath);
 
   if (!storedName) {
     return;
   }
 
-  const absolutePath = path.join(storageRoot, storedName);
+  const absolutePath = resolveStoredFilePath("homeActivities", storedName);
 
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
+  if (!absolutePath) {
     return;
   }
 

@@ -36,11 +36,13 @@ export function HomeActivityImage({
           "grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
         }
       >
-        <div className="grid justify-items-center gap-1">
+        <div className="flex min-w-0 max-w-full flex-col items-center justify-center gap-1 overflow-hidden px-1 text-center">
           <ImageIcon className="size-5 text-[#8a8176]" aria-hidden="true" />
-          <p className="text-xs font-semibold text-[#39433c]">{fallbackTitle}</p>
+          <p className="max-w-full whitespace-normal break-words text-xs font-semibold leading-tight text-[#39433c]">
+            {fallbackTitle}
+          </p>
           {fallbackDescription ? (
-            <p className="max-w-64 text-[11px] leading-relaxed text-[#7a7166]">
+            <p className="max-w-full whitespace-normal break-words text-[11px] leading-relaxed text-[#7a7166]">
               {fallbackDescription}
             </p>
           ) : null}

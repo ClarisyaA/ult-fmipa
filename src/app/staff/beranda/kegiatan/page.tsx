@@ -105,7 +105,7 @@ export default async function StaffHomeActivitiesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Gambar</TableHead>
+                <TableHead className="w-32">Gambar</TableHead>
                 <TableHead>Judul</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Urutan</TableHead>
@@ -131,7 +131,7 @@ export default async function StaffHomeActivitiesPage() {
 
                   return (
                     <TableRow key={activity.id}>
-                    <TableCell>
+                    <TableCell className="w-32 max-w-32">
                       {activity.imagePath ? (
                         <HomeActivityImage
                           src={`/api/home/activities/images/${activity.id}`}
@@ -140,11 +140,11 @@ export default async function StaffHomeActivitiesPage() {
                           height={80}
                           unoptimized
                           className={imageClass}
-                          fallbackClassName="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-2 text-center text-muted-foreground"
+                          fallbackClassName="grid aspect-video w-28 max-w-28 place-items-center overflow-hidden rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-2 text-center text-muted-foreground"
                           fallbackDescription=""
                         />
                       ) : (
-                        <div className="grid aspect-video w-28 place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] text-xs text-muted-foreground">
+                        <div className="grid aspect-video w-28 max-w-28 place-items-center overflow-hidden rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] px-2 text-center text-xs leading-tight text-muted-foreground">
                           Tanpa gambar
                         </div>
                       )}

@@ -1,33 +1,18 @@
 import { readFile, stat } from "fs/promises";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
 import { isProfileImageType } from "@/lib/profile-cms-api";
 import { getProfileImageRecord } from "@/lib/profile-cms";
+import {
+  getStorageAreaForProfileType,
+  resolveStoredFilePath,
+} from "@/lib/storage-paths";
 
 type ImageRouteProps = {
   params: Promise<{ type: string; id: string }>;
 };
-
-function resolveStoragePath(type: "organization" | "location", storedName: string | null) {
-  if (!storedName || path.basename(storedName) !== storedName) {
-    return null;
-  }
-
-  const storageRoot = path.resolve(process.cwd(), "storage", "profile", type);
-  const absolutePath = path.join(storageRoot, storedName);
-
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
-    return null;
-  }
-
-  return absolutePath;
-}
 
 export async function GET(_request: Request, { params }: ImageRouteProps) {
   const { type, id } = await params;
@@ -50,7 +35,10 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
     }
   }
 
-  const absolutePath = resolveStoragePath(type, image.storedName);
+  const absolutePath = resolveStoredFilePath(
+    getStorageAreaForProfileType(type),
+    image.storedName
+  );
 
   if (!absolutePath) {
     return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });

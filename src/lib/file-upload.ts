@@ -3,9 +3,14 @@ import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
 import { defaultUploadRule, getServiceUploadRule } from "@/lib/service-upload-config";
+import {
+  getStorageDirectory,
+  getStorageReference,
+  resolveStoredFilePath,
+} from "@/lib/storage-paths";
 import type { SavedUploadMetadata } from "@/types/attachment";
 
-const uploadDir = path.join(process.cwd(), "storage", "uploads");
+const uploadDir = getStorageDirectory("uploads");
 
 const extensionByMimeType: Record<string, string> = {
   "application/pdf": ".pdf",
@@ -69,24 +74,20 @@ export async function saveUploadedFile(
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: path.join("storage", "uploads", storedName),
+    storagePath: getStorageReference("uploads", storedName),
   };
 }
 
 export async function deleteUploadedFile(storagePath: string) {
-  const storageRoot = path.resolve(process.cwd(), "storage", "uploads");
   const storedName = path.basename(storagePath);
 
   if (!storedName) {
     return;
   }
 
-  const absolutePath = path.join(storageRoot, storedName);
+  const absolutePath = resolveStoredFilePath("uploads", storedName);
 
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
+  if (!absolutePath) {
     return;
   }
 

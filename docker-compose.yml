@@ -35,10 +35,11 @@ services:
       PAUS_LEGACY_LOGIN_URL: ${PAUS_LEGACY_LOGIN_URL:-}
       PAUS_BRIDGE_SECRET: ${PAUS_BRIDGE_SECRET:-change-me}
       PAUS_BRIDGE_TOKEN_TTL_SECONDS: ${PAUS_BRIDGE_TOKEN_TTL_SECONDS:-120}
+      STORAGE_ROOT: /app/storage
     ports:
       - "3000:3000"
     volumes:
-      - ult_fmipa_storage:/app/storage
+      - ./storage:/app/storage
     depends_on:
       - db
 
@@ -67,4 +68,3 @@ services:
 
 volumes:
   ult_fmipa_db_data:
-  ult_fmipa_storage:

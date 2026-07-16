@@ -1,5 +1,4 @@
 import { readFile, stat } from "fs/promises";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -9,28 +8,11 @@ import {
   isInformationPostCurrentlyVisible,
 } from "@/lib/information-posts";
 import { getInformationPostImageRecord } from "@/lib/information-post-images";
+import { resolveStoredFilePath } from "@/lib/storage-paths";
 
 type ImageRouteProps = {
   params: Promise<{ imageId: string }>;
 };
-
-function resolveStoragePath(storedName: string) {
-  if (path.basename(storedName) !== storedName) {
-    return null;
-  }
-
-  const storageRoot = path.resolve(process.cwd(), "storage", "information");
-  const absolutePath = path.join(storageRoot, storedName);
-
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
-    return null;
-  }
-
-  return absolutePath;
-}
 
 export async function GET(_request: Request, { params }: ImageRouteProps) {
   const { imageId } = await params;
@@ -54,7 +36,7 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
     }
   }
 
-  const absolutePath = resolveStoragePath(image.STORED_NAME);
+  const absolutePath = resolveStoredFilePath("information", image.STORED_NAME);
 
   if (!absolutePath) {
     return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });

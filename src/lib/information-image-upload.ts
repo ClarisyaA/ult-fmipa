@@ -3,6 +3,11 @@ import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
+import {
+  getStorageDirectory,
+  getStorageReference,
+  resolveStoredFilePath,
+} from "@/lib/storage-paths";
 
 export type SavedInformationImageMetadata = {
   originalName: string;
@@ -12,7 +17,7 @@ export type SavedInformationImageMetadata = {
   storagePath: string;
 };
 
-const informationImageDir = path.join(process.cwd(), "storage", "information");
+const informationImageDir = getStorageDirectory("information");
 const maxImageSizeBytes = 2 * 1024 * 1024;
 const allowedMimeTypes = new Set([
   "image/webp",
@@ -84,24 +89,20 @@ export async function saveInformationImage(
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: path.join("storage", "information", storedName),
+    storagePath: getStorageReference("information", storedName),
   };
 }
 
 export async function deleteInformationImageFile(storagePath: string) {
-  const storageRoot = path.resolve(process.cwd(), "storage", "information");
   const storedName = path.basename(storagePath);
 
   if (!storedName) {
     return;
   }
 
-  const absolutePath = path.join(storageRoot, storedName);
+  const absolutePath = resolveStoredFilePath("information", storedName);
 
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
+  if (!absolutePath) {
     return;
   }
 

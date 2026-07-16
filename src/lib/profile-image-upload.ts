@@ -3,6 +3,12 @@ import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
+import {
+  getStorageAreaForProfileType,
+  getStorageDirectory,
+  getStorageReference,
+  resolveStoredFilePath,
+} from "@/lib/storage-paths";
 
 export type ProfileImageType = "organization" | "location";
 
@@ -34,7 +40,7 @@ export class ProfileImageUploadError extends Error {
 }
 
 function getImageDir(type: ProfileImageType) {
-  return path.join(process.cwd(), "storage", "profile", type);
+  return getStorageDirectory(getStorageAreaForProfileType(type));
 }
 
 function sanitizeFilename(value: string) {
@@ -94,7 +100,7 @@ export async function saveProfileImage(
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: path.join("storage", "profile", type, storedName),
+    storagePath: getStorageReference(getStorageAreaForProfileType(type), storedName),
   };
 }
 
@@ -106,19 +112,18 @@ export async function deleteProfileImageFile(
     return;
   }
 
-  const storageRoot = path.resolve(process.cwd(), "storage", "profile", type);
   const storedName = path.basename(storagePath);
 
   if (!storedName) {
     return;
   }
 
-  const absolutePath = path.join(storageRoot, storedName);
+  const absolutePath = resolveStoredFilePath(
+    getStorageAreaForProfileType(type),
+    storedName
+  );
 
-  if (
-    absolutePath === storageRoot ||
-    !absolutePath.startsWith(`${storageRoot}${path.sep}`)
-  ) {
+  if (!absolutePath) {
     return;
   }
 
