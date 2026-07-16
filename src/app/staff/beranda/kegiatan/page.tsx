@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
 import {
   Table,
   TableBody,
@@ -134,7 +135,7 @@ export default async function StaffHomeActivitiesPage() {
                     <TableCell className="w-32 max-w-32">
                       {activity.imagePath ? (
                         <HomeActivityImage
-                          src={`/api/home/activities/images/${activity.id}`}
+                          src={getHomeActivityImageSrc(activity)}
                           alt={activity.imageAlt ?? activity.title}
                           width={128}
                           height={80}

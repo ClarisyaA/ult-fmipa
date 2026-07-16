@@ -7,6 +7,7 @@ import { getInformationPostById } from "@/lib/information-posts";
 import {
   deleteInformationPostImage,
   getInformationPostImageRecord,
+  replaceInformationPostImage,
   updateInformationPostImageMetadata,
 } from "@/lib/information-post-images";
 
@@ -38,6 +39,37 @@ export async function PATCH(request: Request, { params }: ImageRouteProps) {
         { error: "Gambar tidak ditemukan." },
         { status: 404 }
       );
+    }
+
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const imageFile = formData.get("image");
+
+      if (!(imageFile instanceof File)) {
+        return NextResponse.json(
+          { error: "Gambar pengganti tidak ditemukan." },
+          { status: 400 }
+        );
+      }
+
+      const image = await replaceInformationPostImage(id, imageId, imageFile, {
+        altText:
+          typeof formData.get("altText") === "string"
+            ? String(formData.get("altText"))
+            : null,
+        imageFit:
+          typeof formData.get("imageFit") === "string"
+            ? String(formData.get("imageFit"))
+            : null,
+      });
+
+      return NextResponse.json({
+        data: { image },
+        image,
+        message: "Gambar berhasil diganti.",
+      });
     }
 
     const body = (await request.json().catch(() => ({}))) as {

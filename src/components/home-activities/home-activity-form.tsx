@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
 import type { HomeActivity, HomeActivityImageFit } from "@/lib/home-activities";
 
 type HomeActivityFormProps = {
@@ -390,7 +391,7 @@ export function HomeActivityForm({
         {initialActivity?.imagePath && !pendingImage ? (
           <div className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
             <HomeActivityImage
-              src={`/api/home/activities/images/${initialActivity.id}`}
+              src={getHomeActivityImageSrc(initialActivity)}
               alt={initialActivity.imageAlt ?? initialActivity.title}
               width={640}
               height={360}
@@ -415,6 +416,16 @@ export function HomeActivityForm({
                   gambar baru untuk menggantinya.
                 </p>
               ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3 w-fit border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="size-4" />
+                Ganti Gambar
+              </Button>
             </div>
           </div>
         ) : null}

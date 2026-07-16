@@ -22,6 +22,7 @@ export async function GET() {
         coverImage: coverImage
           ? {
               id: coverImage.id,
+              storedName: coverImage.storedName,
               altText: coverImage.altText,
               originalName: coverImage.originalName,
               imageFit: coverImage.imageFit,
