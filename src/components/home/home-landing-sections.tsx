@@ -11,6 +11,7 @@ import { HomeActivityImage } from "@/components/home-activities/home-activity-im
 import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getInformationImageSrc } from "@/lib/information-image-url";
 import type { PublicService } from "@/types/service";
 
 if (typeof window !== "undefined") {
@@ -136,6 +137,7 @@ type InformationApiItem = {
   publishedAt: string | null;
   coverImage: {
     id: string;
+    storedName?: string | null;
     altText: string | null;
     originalName: string;
     imageFit?: "cover" | "contain" | string | null;
@@ -291,7 +293,7 @@ function toHomeInformation(item: InformationApiItem): HomeInformation {
     category: item.category,
     summary: item.summary,
     publishedAt: item.publishedAt,
-    image: item.coverImage ? `/api/information/images/${item.coverImage.id}` : "/gedung-fmipa.svg",
+    image: item.coverImage ? getInformationImageSrc(item.coverImage) : "/gedung-fmipa.svg",
     imageAlt: item.coverImage?.altText ?? item.coverImage?.originalName ?? item.title,
     imageFit: item.coverImage?.imageFit === "contain" ? "contain" : "cover",
   };

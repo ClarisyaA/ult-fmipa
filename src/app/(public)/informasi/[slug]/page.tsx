@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import { InformationImage } from "@/components/information/information-image";
 import { InformationImageGallery } from "@/components/information/information-image-gallery";
 import { Button } from "@/components/ui/button";
+import { getInformationImageSrc } from "@/lib/information-image-url";
 import { getInformationPostImages } from "@/lib/information-post-images";
 import { getPublishedInformationPostBySlug } from "@/lib/information-posts";
 
@@ -116,7 +117,7 @@ export default async function InformationDetailPage({
             {headerImage ? (
               <>
                 <InformationImage
-                  src={`/api/information/images/${headerImage.id}`}
+                  src={getInformationImageSrc(headerImage)}
                   alt={headerImage.altText ?? headerImage.originalName}
                   fill
                   priority

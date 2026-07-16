@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
   deleteInformationImageFile,
+  saveInformationImage,
   type SavedInformationImageMetadata,
 } from "@/lib/information-image-upload";
 
@@ -279,6 +280,78 @@ export async function updateInformationPostImageMetadata(
     WHERE ID = ${BigInt(imageId)}
     LIMIT 1
   `;
+}
+
+export async function replaceInformationPostImage(
+  postId: string,
+  imageId: string,
+  file: File,
+  input: {
+    altText?: string | null;
+    imageFit?: InformationImageFit | string | null;
+  } = {}
+) {
+  assertId(postId, "ID informasi tidak valid.");
+  assertId(imageId, "ID gambar tidak valid.");
+
+  if (!(await hasImageTable())) {
+    throw new InformationPostImageError("Tabel gambar informasi belum tersedia.");
+  }
+
+  const existing = await getInformationPostImageRecord(imageId);
+
+  if (!existing || String(existing.POST_ID) !== postId) {
+    throw new InformationPostImageError("Gambar informasi tidak ditemukan.");
+  }
+
+  const savedImage = await saveInformationImage(file);
+  let databaseUpdated = false;
+  const nextAltText =
+    input.altText === undefined
+      ? existing.ALT_TEXT
+      : input.altText?.trim().slice(0, 200) || null;
+  const nextImageFit =
+    input.imageFit === undefined
+      ? normalizeInformationImageFit(existing.IMAGE_FIT)
+      : normalizeInformationImageFit(input.imageFit);
+
+  try {
+    await prisma.$executeRaw`
+      UPDATE ult_information_post_images
+      SET
+        ORIGINAL_NAME = ${savedImage.originalName},
+        STORED_NAME = ${savedImage.storedName},
+        MIME_TYPE = ${savedImage.mimeType},
+        SIZE_BYTES = ${savedImage.sizeBytes},
+        STORAGE_PATH = ${savedImage.storagePath},
+        ALT_TEXT = ${nextAltText},
+        IMAGE_FIT = ${nextImageFit}
+      WHERE ID = ${BigInt(imageId)}
+        AND POST_ID = ${BigInt(postId)}
+      LIMIT 1
+    `;
+    databaseUpdated = true;
+
+    try {
+      await deleteInformationImageFile(existing.STORAGE_PATH);
+    } catch (cleanupError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "Gagal menghapus file gambar informasi lama setelah penggantian.",
+          cleanupError
+        );
+      }
+    }
+
+    const updated = await getInformationPostImageRecord(imageId);
+    return updated ? toImage(updated) : null;
+  } catch (error) {
+    if (!databaseUpdated) {
+      await deleteInformationImageFile(savedImage.storagePath);
+    }
+
+    throw error;
+  }
 }
 
 export async function deleteInformationPostImage(imageId: string) {

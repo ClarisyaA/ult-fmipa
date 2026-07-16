@@ -4,6 +4,7 @@ import {
   deleteHomeActivityImageFile,
   type SavedHomeActivityImageMetadata,
 } from "@/lib/home-activity-image-upload";
+import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
 
 export type HomeActivity = {
   id: string;
@@ -120,7 +121,7 @@ function toPublicActivity(activity: HomeActivity): PublicHomeActivity {
     title: activity.title,
     eyebrow: activity.eyebrow,
     description: activity.description,
-    image: activity.imagePath ? `/api/home/activities/images/${activity.id}` : null,
+    image: activity.imagePath ? getHomeActivityImageSrc(activity) : null,
     imageAlt: activity.imageAlt ?? activity.title,
     imageFit: activity.imageFit,
     sortOrder: activity.sortOrder,

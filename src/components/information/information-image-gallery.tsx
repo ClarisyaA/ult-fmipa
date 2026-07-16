@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
+import { getInformationImageSrc } from "@/lib/information-image-url";
 import type { InformationPostImage } from "@/lib/information-post-images";
 
 type InformationImageGalleryProps = {
@@ -126,7 +127,7 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
                   className="relative h-full w-full flex-none"
                 >
                   <InformationImage
-                    src={`/api/information/images/${image.id}`}
+                    src={getInformationImageSrc(image)}
                     alt={image.altText ?? image.originalName}
                     fill
                     unoptimized

@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImageIcon, Star, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { confirmToast } from "@/lib/confirm-toast";
+import { getInformationImageSrc } from "@/lib/information-image-url";
 import type {
   InformationImageFit,
   InformationPostImage,
@@ -39,6 +41,11 @@ type PendingImage = {
   file: File;
   previewUrl: string;
   imageFit: InformationImageFit;
+};
+
+type ReplacementImage = {
+  file: File;
+  previewUrl: string;
 };
 
 const maxImages = 5;
@@ -64,6 +71,25 @@ function getPreviewImageClass(imageFit: InformationImageFit) {
     : `${baseClass} object-cover`;
 }
 
+function getLocalReplacementPreviewClass(imageFit: InformationImageFit) {
+  return imageFit === "contain"
+    ? "aspect-video w-full rounded-md border border-[#edf0e9] bg-[#f7f3ea] bg-contain bg-center bg-no-repeat"
+    : "aspect-video w-full rounded-md border border-[#edf0e9] bg-[#f7f3ea] bg-cover bg-center bg-no-repeat";
+}
+
+function getVersionedFormImageSrc(
+  image: InformationPostImage,
+  previewVersion: number | undefined
+) {
+  const src = getInformationImageSrc(image);
+
+  if (!previewVersion) {
+    return src;
+  }
+
+  return `${src}${src.includes("?") ? "&" : "?"}preview=${previewVersion}`;
+}
+
 function toDateTimeLocal(value: string | null | undefined) {
   if (!value) {
     return "";
@@ -84,6 +110,18 @@ function hasAllowedExtension(fileName: string) {
   const lowerName = fileName.toLowerCase();
 
   return allowedImageExtensions.some((extension) => lowerName.endsWith(extension));
+}
+
+function getImageValidationError(file: File) {
+  if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
+    return "Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.";
+  }
+
+  if (file.size > maxImageSize) {
+    return `Gambar ${file.name} melebihi 2 MB.`;
+  }
+
+  return "";
 }
 
 export function InformationPostForm({
@@ -113,6 +151,18 @@ export function InformationPostForm({
   const [success, setSuccess] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const pendingImagesRef = useRef<PendingImage[]>([]);
+  const [replacementImages, setReplacementImages] = useState<
+    Record<string, ReplacementImage>
+  >({});
+  const replacementImagesRef = useRef<Record<string, ReplacementImage>>({});
+  const replacementFileInputRef = useRef<HTMLInputElement | null>(null);
+  const replacementTargetImageIdRef = useRef<string | null>(null);
+  const [replacingImageIds, setReplacingImageIds] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [imagePreviewVersions, setImagePreviewVersions] = useState<
+    Record<string, number>
+  >({});
   const [existingImages, setExistingImages] = useState(initialImages);
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>(() =>
     Object.fromEntries(initialImages.map((image) => [image.id, image.altText ?? ""]))
@@ -132,8 +182,15 @@ export function InformationPostForm({
   }, [pendingImages]);
 
   useEffect(() => {
+    replacementImagesRef.current = replacementImages;
+  }, [replacementImages]);
+
+  useEffect(() => {
     return () => {
       pendingImagesRef.current.forEach((image) =>
+        URL.revokeObjectURL(image.previewUrl)
+      );
+      Object.values(replacementImagesRef.current).forEach((image) =>
         URL.revokeObjectURL(image.previewUrl)
       );
     };
@@ -157,14 +214,10 @@ export function InformationPostForm({
     const validImages: PendingImage[] = [];
 
     for (const file of files) {
-      if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
-        setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
-        validImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
-        return;
-      }
+      const validationError = getImageValidationError(file);
 
-      if (file.size > maxImageSize) {
-        setError(`Gambar ${file.name} melebihi 2 MB.`);
+      if (validationError) {
+        setError(validationError);
         validImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
         return;
       }
@@ -194,6 +247,64 @@ export function InformationPostForm({
     });
   }
 
+  function openReplacementPicker(imageId: string) {
+    replacementTargetImageIdRef.current = imageId;
+    replacementFileInputRef.current?.click();
+  }
+
+  function handleReplacementImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    const imageId = replacementTargetImageIdRef.current;
+    replacementTargetImageIdRef.current = null;
+    setError("");
+    setSuccess("");
+
+    if (!file || !imageId) {
+      return;
+    }
+
+    const validationError = getImageValidationError(file);
+
+    if (validationError) {
+      setError(validationError);
+      toast.error(validationError);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setReplacementImages((current) => {
+      const previous = current[imageId];
+
+      if (previous) {
+        URL.revokeObjectURL(previous.previewUrl);
+      }
+
+      return {
+        ...current,
+        [imageId]: {
+          file,
+          previewUrl,
+        },
+      };
+    });
+  }
+
+  function clearReplacementImage(imageId: string) {
+    setReplacementImages((current) => {
+      const previous = current[imageId];
+
+      if (previous) {
+        URL.revokeObjectURL(previous.previewUrl);
+      }
+
+      const next = { ...current };
+      delete next[imageId];
+      return next;
+    });
+  }
+
   function updatePendingImageFit(index: number, imageFit: InformationImageFit) {
     setPendingImages((current) =>
       current.map((image, currentIndex) =>
@@ -202,10 +313,14 @@ export function InformationPostForm({
     );
   }
 
-  async function refreshAfterImageAction(message: string) {
+  async function refreshAfterImageAction(message: string, shouldRefresh = true) {
     setSuccess(message);
     setError("");
-    router.refresh();
+    toast.success(message);
+
+    if (shouldRefresh) {
+      router.refresh();
+    }
   }
 
   async function handleExistingImageAction(
@@ -246,7 +361,12 @@ export function InformationPostForm({
     await handleExistingImageAction(
       `/api/${rolePrefix}/information/${initialPost?.id}/images/${imageId}`,
       { method: "DELETE" },
-      () => setExistingImages((current) => current.filter((image) => image.id !== imageId))
+      () => {
+        clearReplacementImage(imageId);
+        setExistingImages((current) =>
+          current.filter((image) => image.id !== imageId)
+        );
+      }
     );
   }
 
@@ -290,6 +410,110 @@ export function InformationPostForm({
           )
         )
     );
+  }
+
+  async function replaceExistingImage(imageId: string) {
+    const replacement = replacementImages[imageId];
+
+    if (!replacement) {
+      setError("Pilih gambar pengganti terlebih dahulu.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setReplacingImageIds((current) => ({ ...current, [imageId]: true }));
+
+    try {
+      const formData = new FormData();
+      formData.append("image", replacement.file);
+      formData.append("altText", altDrafts[imageId] ?? "");
+      formData.append("imageFit", imageFitDrafts[imageId] ?? "cover");
+
+      const response = await fetch(
+        `/api/${rolePrefix}/information/${initialPost?.id}/images/${imageId}`,
+        {
+          method: "PATCH",
+          body: formData,
+        }
+      );
+      const body = (await response.json().catch(() => null)) as {
+        data?: {
+          image?: InformationPostImage | null;
+        };
+        error?: string;
+        message?: string;
+        image?: InformationPostImage | null;
+      } | null;
+
+      if (!response.ok) {
+        const message = body?.error ?? "Gambar gagal diganti.";
+        setError(message);
+        toast.error(message);
+        return;
+      }
+
+      const updatedImage = body?.data?.image ?? body?.image ?? null;
+
+      if (updatedImage) {
+        setExistingImages((current) =>
+          current.map((image) =>
+            image.id === imageId
+              ? {
+                  ...image,
+                  ...updatedImage,
+                }
+              : image
+          )
+        );
+        setAltDrafts((current) => ({
+          ...current,
+          [imageId]: updatedImage.altText ?? "",
+        }));
+        setImageFitDrafts((current) => ({
+          ...current,
+          [imageId]: updatedImage.imageFit ?? "cover",
+        }));
+      } else {
+        setExistingImages((current) =>
+          current.map((image) =>
+            image.id === imageId
+              ? {
+                  ...image,
+                  originalName: replacement.file.name,
+                  sizeBytes: replacement.file.size,
+                  altText: altDrafts[imageId] ?? "",
+                  imageFit: imageFitDrafts[imageId] ?? "cover",
+                }
+              : image
+          )
+        );
+      }
+
+      clearReplacementImage(imageId);
+      setImagePreviewVersions((current) => ({
+        ...current,
+        [imageId]: (current[imageId] ?? 0) + 1,
+      }));
+      await refreshAfterImageAction(
+        body?.message ?? "Gambar berhasil diganti.",
+        false
+      );
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[information-image-replace]", error);
+      }
+
+      const message = "Gambar gagal diganti. Gambar lama tetap tersimpan.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setReplacingImageIds((current) => {
+        const next = { ...current };
+        delete next[imageId];
+        return next;
+      });
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -541,6 +765,14 @@ export function InformationPostForm({
             <p className="text-xs font-semibold text-[#39433c]">
               Gambar Tersimpan
             </p>
+            <input
+              ref={replacementFileInputRef}
+              id="replacement-image"
+              type="file"
+              accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
+              className="sr-only"
+              onChange={handleReplacementImageSelection}
+            />
             <div className="grid gap-3 md:grid-cols-2">
               {existingImages.map((image) => (
                 <div
@@ -548,7 +780,10 @@ export function InformationPostForm({
                   className="grid gap-3 rounded-md border border-[#e3d9ca] bg-white p-3"
                 >
                   <InformationImage
-                    src={`/api/information/images/${image.id}`}
+                    src={getVersionedFormImageSrc(
+                      image,
+                      imagePreviewVersions[image.id]
+                    )}
                     alt={image.altText ?? image.originalName}
                     width={640}
                     height={360}
@@ -626,6 +861,82 @@ export function InformationPostForm({
                       untuk logo, SVG, poster, atau gambar yang tidak boleh
                       terpotong.
                     </p>
+                  </div>
+                  <div className="grid gap-2 rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-[#39433c]">
+                        Ganti gambar ini
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                        onClick={() => openReplacementPicker(image.id)}
+                      >
+                        <Upload className="size-4" />
+                        Ganti Gambar
+                      </Button>
+                    </div>
+                    {replacementImages[image.id] ? (
+                      <div className="grid gap-3 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
+                        <div
+                          role="img"
+                          aria-label={replacementImages[image.id].file.name}
+                          className={getLocalReplacementPreviewClass(
+                            imageFitDrafts[image.id] ?? "cover"
+                          )}
+                          style={{
+                            backgroundImage: `url("${replacementImages[image.id].previewUrl}")`,
+                          }}
+                        />
+                        <div className="flex min-w-0 flex-col justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[#303b34]">
+                              Gambar baru
+                            </p>
+                            <p className="mt-1 truncate text-sm font-semibold text-[#303b34]">
+                              {replacementImages[image.id].file.name}
+                            </p>
+                            <p className="text-xs text-[#7a7166]">
+                              {formatSize(replacementImages[image.id].file.size)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={Boolean(replacingImageIds[image.id])}
+                              className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                              onClick={() => replaceExistingImage(image.id)}
+                            >
+                              {replacingImageIds[image.id]
+                                ? "Mengganti..."
+                                : "Simpan Penggantian"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={Boolean(replacingImageIds[image.id])}
+                              className="h-8 rounded-md border-[#edd2c5] bg-white px-3 text-[11px] font-semibold text-[#8a3d23] hover:bg-[#fff7f2]"
+                              onClick={() => clearReplacementImage(image.id)}
+                            >
+                              Batal
+                            </Button>
+                          </div>
+                          <p className="text-xs leading-relaxed text-[#7a7166]">
+                            Gambar tersimpan tetap dipakai sampai penggantian
+                            berhasil disimpan.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs leading-relaxed text-[#7a7166]">
+                        File baru hanya mengganti gambar pada card ini setelah
+                        tombol Simpan Penggantian ditekan.
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { InformationImage } from "@/components/information/information-image";
 import { Input } from "@/components/ui/input";
+import { getInformationImageSrc } from "@/lib/information-image-url";
 
 interface InformationPost {
   id: string;
@@ -25,6 +26,8 @@ interface InformationPost {
 
 interface InformationImage {
   id: string;
+  storedName?: string | null;
+  createdAt?: string | null;
   altText: string | null;
   originalName: string;
   isCover: boolean;
@@ -147,7 +150,7 @@ export default function InformasiClient({
                 <div className="relative aspect-video w-full overflow-hidden bg-[#F7F3EA]">
                   {coverImage ? (
                     <InformationImage
-                      src={`/api/information/images/${coverImage.id}`}
+                      src={getInformationImageSrc(coverImage)}
                       alt={coverImage.altText ?? coverImage.originalName}
                       fill
                       unoptimized
