@@ -312,7 +312,7 @@ function OrgNodeCard({
         {node.name}
       </h3>
       <span
-        className={`mt-1 inline-flex rounded-sm border px-3 py-1 text-[9px] font-black uppercase tracking-normal ${color.bg} ${color.text} ${color.border}`}
+        className={`mt-1 inline-flex max-w-full justify-center rounded-sm border px-3 py-1 text-[9px] font-black uppercase leading-snug tracking-normal ${color.bg} ${color.text} ${color.border}`}
       >
         {node.roleLabel ?? node.positionTitle}
       </span>
@@ -376,13 +376,119 @@ function OrganizationSubtree({
   );
 }
 
+function MobileOrganizationBranch({
+  nodes,
+  revealClass,
+  depth = 0,
+}: {
+  nodes: ProfileOrganizationNode[];
+  revealClass: string;
+  depth?: number;
+}) {
+  return (
+    <ul
+      className={
+        depth === 0
+          ? "ml-5 mt-4 space-y-3 border-l border-[#d2b16d] pl-5"
+          : "ml-5 mt-3 space-y-3 border-l border-[#d2b16d] pl-5"
+      }
+    >
+      {nodes.map((node, index) => (
+        <li key={node.id} className="relative">
+          <span
+            aria-hidden="true"
+            className="absolute -left-5 top-8 h-px w-5 bg-[#d2b16d]"
+          />
+          <MobileOrgNodeCard
+            node={node}
+            revealClass={revealClass}
+            delay={420 + depth * 180 + index * 120}
+          />
+          {node.children.length > 0 ? (
+            <MobileOrganizationBranch
+              nodes={node.children}
+              revealClass={revealClass}
+              depth={depth + 1}
+            />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function MobileOrgNodeCard({
+  node,
+  revealClass,
+  delay,
+}: {
+  node: ProfileOrganizationNode;
+  revealClass: string;
+  delay: number;
+}) {
+  const color = orgColorClass[node.colorVariant];
+
+  return (
+    <div
+      className={`flex min-w-0 items-center gap-3 rounded-2xl border border-black/[0.06] bg-white/85 p-3 text-left shadow-md shadow-black/[0.05] ${revealClass}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="w-16 shrink-0">
+        <OrgAvatar
+          name={node.name}
+          photo={node.photoUrl ?? undefined}
+          color={node.colorVariant}
+          size="sm"
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="break-words text-sm font-black leading-tight text-neutral-900">
+          {node.name}
+        </h3>
+        <span
+          className={`mt-1.5 inline-flex max-w-full rounded-md border px-2 py-1 text-[8px] font-black uppercase leading-snug ${color.bg} ${color.text} ${color.border}`}
+        >
+          {node.roleLabel ?? node.positionTitle}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilPage() {
   const organizationRef = useRef<HTMLElement | null>(null);
+  const aboutHeadingRef = useRef<HTMLDivElement | null>(null);
   const [isOrganizationVisible, setIsOrganizationVisible] = useState(false);
+  const [isAboutHeadingVisible, setIsAboutHeadingVisible] = useState(false);
   const [organizationTree, setOrganizationTree] = useState<ProfileOrganizationNode[]>(
     fallbackOrganizationTree
   );
   const [location, setLocation] = useState<ProfileLocationData>(fallbackLocation);
+
+  useEffect(() => {
+    const heading = aboutHeadingRef.current;
+
+    if (!heading) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsAboutHeadingVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.75,
+        rootMargin: "0px 0px -12% 0px",
+      },
+    );
+
+    observer.observe(heading);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const section = organizationRef.current;
@@ -399,7 +505,7 @@ export default function ProfilPage() {
         }
       },
       {
-        threshold: 0.22,
+        threshold: 0.06,
         rootMargin: "0px 0px -18% 0px",
       },
     );
@@ -585,9 +691,27 @@ export default function ProfilPage() {
 
           <Reveal className="relative" direction="right" delay={120}>
             <div className="max-w-2xl">
-              <div className="mb-8 flex flex-nowrap items-center gap-x-4 sm:mb-9">
-                <p className="shrink-0 whitespace-nowrap text-3xl font-black uppercase tracking-[0.08em] text-neutral-950 sm:text-4xl lg:text-5xl">
+              <div
+                ref={aboutHeadingRef}
+                data-visible={isAboutHeadingVisible}
+                className="group mb-8 flex flex-col items-start gap-y-2 min-[400px]:flex-row min-[400px]:flex-nowrap min-[400px]:gap-x-4 min-[400px]:gap-y-0 sm:mb-9"
+              >
+                <p className="relative inline-block shrink-0 whitespace-nowrap pb-4 text-3xl font-black uppercase tracking-[0.08em] text-neutral-950 sm:pb-5 sm:text-4xl lg:text-5xl">
                   Tentang{" "}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 220 18"
+                    className="absolute bottom-0 left-0 h-4 w-full text-[#EE1C25]"
+                    fill="none"
+                  >
+                    <path
+                      d="M4 12 C48 2, 88 17, 132 8 S196 5, 216 11"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="3"
+                      className="[stroke-dasharray:230] [stroke-dashoffset:230] transition-[stroke-dashoffset] delay-300 duration-[1200ms] ease-out group-data-[visible=true]:[stroke-dashoffset:0] motion-reduce:[stroke-dashoffset:0]"
+                    />
+                  </svg>
                 </p>
                 <span className="shrink-0 whitespace-nowrap text-3xl font-black uppercase tracking-[0.08em] text-red-600 sm:text-4xl lg:text-5xl">
                   ULT FMIPA
@@ -846,7 +970,23 @@ export default function ProfilPage() {
             </p>
           </Reveal>
 
-          <div className="org-chart-scroll relative mx-auto mt-10 max-w-6xl pb-4 lg:mt-14">
+          <div className="mx-auto mt-10 max-w-sm md:hidden">
+            <MobileOrgNodeCard
+              node={rootOrganization}
+              revealClass={orgRevealClass}
+              delay={120}
+            />
+            {rootOrganization.children.length > 0 ? (
+              <div className="relative">
+                <MobileOrganizationBranch
+                  nodes={rootOrganization.children}
+                  revealClass={orgRevealClass}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <div className="org-chart-scroll relative mx-auto mt-10 hidden max-w-6xl pb-4 md:block lg:mt-14">
             <div className="org-chart-canvas flex min-w-max flex-col items-center px-8 sm:px-10 md:px-12">
                 <OrgNodeCard
                   node={rootOrganization}
@@ -960,7 +1100,7 @@ export default function ProfilPage() {
                 {location.email ? (
                   <a
                     href={`mailto:${location.email}`}
-                    className="inline-flex items-center gap-2 text-xs font-black text-neutral-950 transition hover:text-red-600"
+                    className="inline-flex min-w-0 items-center gap-2 break-all text-xs font-black text-neutral-950 transition hover:text-red-600"
                   >
                     {location.email}
                     <Mail className="size-4" />
