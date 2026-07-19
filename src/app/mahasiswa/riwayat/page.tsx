@@ -100,92 +100,103 @@ export default async function StudentHistoryPage({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-12 sm:px-6 lg:px-8">
-      <div>
-        <Button asChild variant="ghost" className="-ml-2 mb-4">
+    <main className="relative bg-[#FEFDF9]" data-testid="student-history-page">
+      <section className="mx-auto w-full max-w-4xl px-4 pt-28 pb-12 sm:px-6 lg:px-8">
+        <Button 
+          asChild 
+          variant="ghost" 
+          className="-ml-2 mb-6 text-[#6B5E52] hover:text-[#EE1C25] hover:bg-transparent"
+        >
           <Link href="/layanan">
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4 mr-2" />
             Kembali ke Layanan
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Riwayat Pengajuan
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {session.user.name ?? "Mahasiswa"} · NPM {session.user.npm}
-        </p>
-      </div>
 
-      {!result ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Data belum dapat dimuat</CardTitle>
-            <CardDescription>
-              Koneksi database sedang tidak tersedia. Coba muat ulang halaman
-              beberapa saat lagi.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/mahasiswa/riwayat">Muat ulang</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : result.data.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Belum ada pengajuan</CardTitle>
-            <CardDescription>
-              Pengajuan layanan yang memakai NPM session ini akan muncul di
-              sini.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/layanan">Lihat Layanan</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {result.data.map((request) => (
-            <Card key={`${request.sourceTable}-${request.id}`}>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>{request.serviceTitle}</CardTitle>
-                    <CardDescription>
-                      {formatDate(request.requestDate)}
-                    </CardDescription>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`rounded-sm ${statusStyles[request.status]}`}
-                  >
-                    {request.statusLabel}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                {request.description ? (
-                  <p className="text-sm text-muted-foreground">
-                    {request.description}
+        <div className="relative rounded-3xl border-2 border-[#DDD5C3] bg-white/70 backdrop-blur-sm shadow-lg overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#EE1C25] to-[#C41720]" />
+          
+          <Card className="border-0 shadow-none bg-transparent rounded-none">
+            <CardHeader className="px-8 pt-8 pb-2 sm:px-10 sm:pt-10">
+              <CardTitle className="text-2xl font-black tracking-tight text-[#18130E] sm:text-3xl">
+                Riwayat Pengajuan
+              </CardTitle>
+              <CardDescription className="mt-2 text-[#7A6A5C]">
+                {session.user.name ?? "Mahasiswa"} · NPM {session.user.npm}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-8 pb-8 sm:px-10 sm:pb-10">
+              {!result ? (
+                <div className="rounded-lg border border-[#F5F0E8] bg-[#F7F3EA]/30 p-6 text-center">
+                  <p className="text-[#7A6A5C] mb-4">
+                    Data belum dapat dimuat. Koneksi database sedang tidak tersedia.
                   </p>
-                ) : null}
-                <div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link
-                      href={`/mahasiswa/riwayat/${request.serviceSlug}/${request.id}`}
-                    >
-                      Detail
-                    </Link>
+                  <Button asChild variant="outline" className="border-[#DDD5C3] hover:bg-[#F5F0E8]">
+                    <Link href="/mahasiswa/riwayat">Muat ulang</Link>
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ) : result.data.length === 0 ? (
+                <div className="rounded-lg border border-[#F5F0E8] bg-[#F7F3EA]/30 p-6 text-center">
+                  <p className="text-[#7A6A5C] mb-2">Belum ada pengajuan</p>
+                  <p className="text-sm text-[#7A6A5C]/70 mb-4">
+                    Pengajuan layanan yang memakai NPM ini akan muncul di sini.
+                  </p>
+                  <Button asChild className="bg-[#EE1C25] hover:bg-[#C41720] text-white">
+                    <Link href="/layanan">Lihat Layanan</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {result.data.map((request) => (
+                    <div
+                      key={`${request.sourceTable}-${request.id}`}
+                      className="rounded-lg border-2 border-[#DDD5C3] bg-white/50 p-6 transition-all hover:border-[#EE1C25]/30 hover:shadow-md"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-[#18130E]">
+                            {request.serviceTitle}
+                          </h3>
+                          <p className="text-sm text-[#7A6A5C] mt-0.5">
+                            {formatDate(request.requestDate)}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`rounded-sm font-medium px-3 py-1 ${statusStyles[request.status]}`}
+                        >
+                          {request.statusLabel}
+                        </Badge>
+                      </div>
+
+                      {request.description && (
+                        <p className="text-sm text-[#7A6A5C] mt-3 line-clamp-2">
+                          {request.description}
+                        </p>
+                      )}
+
+                      <div className="mt-4 flex items-center gap-3">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="border-[#DDD5C3] hover:border-[#EE1C25] hover:bg-[#EE1C25]/5 hover:text-[#EE1C25]"
+                        >
+                          <Link
+                            href={`/mahasiswa/riwayat/${request.serviceSlug}/${request.id}`}
+                          >
+                            Lihat Detail
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
-    </div>
+      </section>
+    </main>
   );
 }
