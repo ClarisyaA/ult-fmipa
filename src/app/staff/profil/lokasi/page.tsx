@@ -1,11 +1,9 @@
 import { ProfileLocationManager } from "@/components/profile/profile-location-manager";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AdminPageHeader,
+  AdminPageShell,
+  AdminSectionCard,
+} from "@/components/admin/admin-ui";
 import { getProfileLocationState } from "@/lib/profile-cms";
 
 export const dynamic = "force-dynamic";
@@ -15,31 +13,22 @@ export default async function StaffProfileLocationPage() {
   const { location, unavailable } = await getProfileLocationState();
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Profil - Lokasi Kami
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Kelola teks lokasi, jam operasional, email, tombol arah, dan gambar.
-        </p>
-      </div>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Profil - Lokasi Kami"
+        description="Kelola teks lokasi, jam operasional, email, tombol petunjuk arah, dan gambar yang tampil pada halaman profil."
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>CMS Lokasi Kami</CardTitle>
-          <CardDescription>
-            Gunakan contain untuk denah/logo yang harus tampil utuh.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AdminSectionCard
+        title="Pengaturan Lokasi"
+        description="Lengkapi informasi publik dan gunakan mode tampil utuh untuk denah atau logo yang tidak boleh terpotong."
+      >
           <ProfileLocationManager
             rolePrefix="staff"
             initialLocation={location}
             unavailable={unavailable}
           />
-        </CardContent>
-      </Card>
-    </div>
+      </AdminSectionCard>
+    </AdminPageShell>
   );
 }

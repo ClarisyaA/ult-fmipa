@@ -14,9 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  ServiceSuggestionStatus,
-} from "@/lib/service-suggestions";
+import type { ServiceSuggestionStatus } from "@/lib/service-suggestions";
 
 export type ServiceSuggestionViewItem = {
   id: string;
@@ -77,25 +75,22 @@ function getErrorMessage(body: unknown, fallback: string) {
 
 function StatusBadge({ status }: { status: ServiceSuggestionStatus }) {
   return (
-    <Badge className={`rounded-full border px-2.5 py-1 ${statusClasses[status]}`}>
+    <Badge
+      variant="outline"
+      className={`rounded-sm border px-2.5 py-0.5 text-[10px] font-semibold ${statusClasses[status]}`}
+    >
       {statusLabels[status]}
     </Badge>
   );
 }
 
-function FieldBlock({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
+function FieldBlock({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className="grid gap-1 rounded-lg border border-[#e8dfd0] bg-[#fffdf9] p-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8a8174]">
+    <div className="grid min-w-0 gap-1 rounded-md border border-[#e3d9ca] bg-[#fffdf9] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7a7166]">
         {label}
       </p>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#222823]">
+      <p className="break-words whitespace-pre-wrap text-xs leading-relaxed text-[#303b34] sm:text-sm">
         {value || "-"}
       </p>
     </div>
@@ -129,16 +124,19 @@ export function ServiceSuggestionsView({
     setIsUpdating(true);
 
     try {
-      const response = await fetch(`/api/${rolePrefix}/service-suggestions/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/${rolePrefix}/service-suggestions/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status,
+            adminNote: note,
+          }),
         },
-        body: JSON.stringify({
-          status,
-          adminNote: note,
-        }),
-      });
+      );
       const body = (await response.json().catch(() => null)) as {
         data?: ServiceSuggestionViewItem;
       } | null;
@@ -189,15 +187,14 @@ export function ServiceSuggestionsView({
       const body = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        const message = getErrorMessage(
-          body,
-          "Usulan layanan gagal dihapus.",
-        );
+        const message = getErrorMessage(body, "Usulan layanan gagal dihapus.");
         toast.error(message);
         return;
       }
 
-      setItems((current) => current.filter((currentItem) => currentItem.id !== item.id));
+      setItems((current) =>
+        current.filter((currentItem) => currentItem.id !== item.id),
+      );
       if (selectedId === item.id) {
         setSelectedId(null);
       }
@@ -210,154 +207,233 @@ export function ServiceSuggestionsView({
   }
 
   return (
-    <div className="grid min-w-0 gap-6">
-      <header className="min-w-0 rounded-2xl border border-[#e8dfd0] bg-white p-5 shadow-sm">
-        <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+    <div
+      className="-m-4 min-h-[calc(100%+2rem)] min-w-0 overflow-x-hidden bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
+      style={{
+        backgroundImage: [
+          "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
+          "radial-gradient(ellipse 62% 28% at 75% 6%, transparent 63%, rgba(205,192,170,0.18) 63.15%, transparent 63.45%)",
+          "radial-gradient(circle at 74% 12%, rgba(247,238,224,0.92), transparent 34%)",
+          "radial-gradient(circle at 100% 0%, rgba(243,230,211,0.48), transparent 30%)",
+          "linear-gradient(180deg, #fbf8f2 0%, #f8f2ea 38%, #f5ecdf 100%)",
+        ].join(", "),
+        backgroundAttachment: "fixed",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+      }}
+    >
+      <div className="mx-auto grid w-full max-w-[1320px] min-w-0 gap-4 px-4 py-5 pb-8 sm:px-6 lg:px-7">
+        <header className="flex min-w-0 flex-col gap-3 text-[#173d2d] sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-black text-[#1f261f]">{title}</h1>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#6f766f]">
+            <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+              {title}
+            </h1>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[#566258]">
               {description}
             </p>
           </div>
-          <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left sm:w-auto sm:min-w-32 sm:text-right">
-            <p className="text-2xl font-black text-amber-700">{newCount}</p>
-            <p className="text-xs font-semibold text-amber-700">Usulan baru</p>
+          <div className="flex shrink-0 items-center justify-between gap-4 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 shadow-sm sm:justify-start">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
+                Usulan baru
+              </p>
+              <p className="text-lg font-semibold leading-tight text-[#173d2d]">
+                {newCount}
+              </p>
+            </div>
+            <div className="h-8 w-px bg-[#eee6d9]" />
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
+                Total
+              </p>
+              <p className="text-lg font-semibold leading-tight text-[#173d2d]">
+                {items.length}
+              </p>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <section
-        className="overflow-hidden rounded-2xl border border-[#e8dfd0] bg-white shadow-sm"
-        data-tour="admin-service-suggestions-list"
-      >
-        <div className="grid gap-3 p-4 md:hidden">
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className="grid gap-3 rounded-xl border border-[#efe7da] bg-[#fffdf9] p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-bold text-[#1f261f]">
-                    {item.layananDiajukan}
-                  </p>
-                  <p className="mt-1 text-xs text-[#6f766f]">
-                    {formatDate(item.createdAt)}
-                  </p>
+        <section
+          className="min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
+          data-tour="admin-service-suggestions-list"
+        >
+          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">
+            <h2 className="text-sm font-semibold text-[#173d2d]">
+              Daftar Usulan
+            </h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
+              Buka detail untuk meninjau isi usulan, menambahkan catatan, atau
+              memperbarui status.
+            </p>
+          </div>
+
+          <div className="grid gap-2 p-3 sm:p-4 md:hidden">
+            {items.map((item) => (
+              <article
+                key={item.id}
+                className="grid min-w-0 gap-3 rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.06)]"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold leading-snug text-[#202923]">
+                      {item.layananDiajukan}
+                    </p>
+                    <p className="mt-1 text-[10px] text-[#7a7166]">
+                      {formatDate(item.createdAt)}
+                    </p>
+                  </div>
+                  <StatusBadge status={item.status} />
                 </div>
-                <StatusBadge status={item.status} />
-              </div>
-              <div className="grid gap-1 text-sm">
-                <p className="font-semibold text-[#1f261f]">{item.nama}</p>
-                <p className="text-[#6f766f]">NPM: {item.npm}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openDetail(item)}
-                >
-                  Detail
-                </Button>
-                {canDelete ? (
+                <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs">
+                  <span className="text-[#7a7166]">Nama</span>
+                  <span className="min-w-0 break-words font-semibold text-[#303b34]">
+                    {item.nama}
+                  </span>
+                  <span className="text-[#7a7166]">NPM</span>
+                  <span className="min-w-0 break-words text-[#303b34]">
+                    {item.npm}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    disabled={isUpdating}
-                    onClick={() => deleteSuggestion(item)}
+                    className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                    onClick={() => openDetail(item)}
                   >
-                    Hapus
+                    Detail
                   </Button>
-                ) : null}
-              </div>
-            </article>
-          ))}
-          {items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#efe7da] px-4 py-10 text-center text-sm text-[#7a746b]">
-              Belum ada usulan layanan.
-            </div>
-          ) : null}
-        </div>
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-[#f3f8f4] text-xs uppercase tracking-[0.08em] text-[#536058]">
-              <tr>
-                <th className="px-4 py-3">Tanggal</th>
-                <th className="px-4 py-3">Nama</th>
-                <th className="px-4 py-3">NPM</th>
-                <th className="px-4 py-3">Layanan yang ingin diajukan</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#efe7da]">
-              {items.map((item) => (
-                <tr key={item.id} className="align-top">
-                  <td className="px-4 py-3 text-[#5f665f]">
-                    {formatDate(item.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-[#1f261f]">
-                    {item.nama}
-                  </td>
-                  <td className="px-4 py-3 text-[#5f665f]">{item.npm}</td>
-                  <td className="px-4 py-3 font-semibold text-[#1f261f]">
-                    {item.layananDiajukan}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={item.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
+                  {canDelete ? (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => openDetail(item)}
+                      className="h-8 rounded-md px-3 text-[11px] font-semibold"
+                      disabled={isUpdating}
+                      onClick={() => deleteSuggestion(item)}
                     >
-                      Detail
+                      Hapus
                     </Button>
-                    {canDelete ? (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        disabled={isUpdating}
-                        onClick={() => deleteSuggestion(item)}
-                      >
-                        Hapus
-                      </Button>
-                    ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 ? (
+                  ) : null}
+                </div>
+              </article>
+            ))}
+            {items.length === 0 ? (
+              <div className="rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-10 text-center text-sm text-[#6f746f]">
+                Belum ada usulan layanan.
+              </div>
+            ) : null}
+          </div>
+          <div className="hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain p-4 md:block">
+            <table className="w-full min-w-[900px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] text-left">
+              <colgroup>
+                <col className="w-[17%]" />
+                <col className="w-[18%]" />
+                <col className="w-[13%]" />
+                <col className="w-[27%]" />
+                <col className="w-[12%]" />
+                <col className="w-[13%]" />
+              </colgroup>
+              <thead className="bg-[#eef3ec]">
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-sm text-[#7a746b]"
-                  >
-                    Belum ada usulan layanan.
-                  </td>
+                  {[
+                    "Tanggal",
+                    "Nama",
+                    "NPM",
+                    "Layanan yang diajukan",
+                    "Status",
+                    "Aksi",
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      className="h-8 border-b border-[#dfe6dd] px-4 text-[10px] font-bold text-[#244934]"
+                    >
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="border-b border-[#ece7dc] bg-white align-top transition-colors hover:bg-[#f8faf6]"
+                  >
+                    <td className="px-4 py-3 text-[11px] text-[#303b34]">
+                      {formatDate(item.createdAt)}
+                    </td>
+                    <td className="break-words px-4 py-3 text-[11px] font-semibold text-[#202923]">
+                      {item.nama}
+                    </td>
+                    <td className="break-words px-4 py-3 text-[11px] text-[#303b34]">
+                      {item.npm}
+                    </td>
+                    <td className="break-words px-4 py-3 text-[11px] font-semibold leading-snug text-[#202923]">
+                      {item.layananDiajukan}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={item.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                          onClick={() => openDetail(item)}
+                        >
+                          Detail
+                        </Button>
+                        {canDelete ? (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 rounded-md px-3 text-[11px] font-semibold"
+                            disabled={isUpdating}
+                            onClick={() => deleteSuggestion(item)}
+                          >
+                            Hapus
+                          </Button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {items.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-10 text-center text-sm text-[#7a746b]"
+                    >
+                      Belum ada usulan layanan.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
 
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelectedId(null)}>
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelectedId(null)}
+      >
         <DialogContent
-          className="max-h-[86vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-3xl"
+          className="max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-none overflow-y-auto rounded-lg border border-[#e3d9ca] bg-white p-4 sm:max-h-[86dvh] sm:max-w-3xl sm:p-5"
           data-tour="admin-service-suggestions-detail"
         >
           {selected ? (
             <>
-              <DialogHeader>
-                <DialogTitle>Detail Usulan Layanan</DialogTitle>
-                <DialogDescription>
+              <DialogHeader className="pr-8">
+                <DialogTitle className="text-base font-semibold text-[#173d2d]">
+                  Detail Usulan Layanan
+                </DialogTitle>
+                <DialogDescription className="text-xs text-[#7a7166]">
                   Dikirim pada {formatDate(selected.createdAt)}
                 </DialogDescription>
               </DialogHeader>
@@ -365,7 +441,7 @@ export function ServiceSuggestionsView({
               <div className="grid gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={selected.status} />
-                  <span className="text-xs text-[#7a746b]">
+                  <span className="text-[11px] text-[#7a7166]">
                     Diperbarui: {formatDate(selected.updatedAt)}
                   </span>
                 </div>
@@ -389,7 +465,7 @@ export function ServiceSuggestionsView({
                 <div className="grid gap-2">
                   <label
                     htmlFor="adminNote"
-                    className="text-sm font-bold text-[#1f261f]"
+                    className="text-xs font-semibold text-[#303b34]"
                   >
                     Catatan admin/staff
                   </label>
@@ -397,15 +473,16 @@ export function ServiceSuggestionsView({
                     id="adminNote"
                     value={note}
                     maxLength={2000}
-                    className="min-h-24"
+                    className="min-h-24 resize-y border-[#e3d9ca] text-sm"
                     onChange={(event) => setNote(event.currentTarget.value)}
                   />
                 </div>
 
-                <div className="flex flex-wrap justify-end gap-2 border-t border-[#efe7da] pt-4">
+                <div className="grid gap-2 border-t border-[#eee6d9] pt-4 sm:flex sm:flex-wrap sm:justify-end">
                   <Button
                     type="button"
                     variant="outline"
+                    className="w-full rounded-md border-[#e1d8ca] text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
                     disabled={isUpdating}
                     onClick={() => updateStatus(selected.id, "reviewed")}
                   >
@@ -414,6 +491,7 @@ export function ServiceSuggestionsView({
                   <Button
                     type="button"
                     variant="outline"
+                    className="w-full rounded-md border-[#e1d8ca] text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:w-auto"
                     disabled={isUpdating}
                     onClick={() => updateStatus(selected.id, "archived")}
                   >
@@ -423,6 +501,7 @@ export function ServiceSuggestionsView({
                     <Button
                       type="button"
                       variant="destructive"
+                      className="w-full rounded-md text-xs font-semibold sm:w-auto"
                       disabled={isUpdating}
                       onClick={() => deleteSuggestion(selected)}
                     >

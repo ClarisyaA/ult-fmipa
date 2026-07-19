@@ -1,11 +1,9 @@
 import { ProfileOrganizationManager } from "@/components/profile/profile-organization-manager";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AdminPageHeader,
+  AdminPageShell,
+  AdminSectionCard,
+} from "@/components/admin/admin-ui";
 import { getAdminProfileOrganizationState } from "@/lib/profile-cms";
 
 export const dynamic = "force-dynamic";
@@ -15,31 +13,23 @@ export default async function StaffProfileStructurePage() {
   const { nodes, unavailable } = await getAdminProfileOrganizationState();
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
-          Profil - Struktur Organisasi
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Kelola node organisasi, foto, atasan, cabang, urutan, dan status aktif.
-        </p>
-      </div>
+    <AdminPageShell wide>
+      <AdminPageHeader
+        title="Profil - Struktur Organisasi"
+        description="Kelola node organisasi, foto, atasan, cabang, urutan, dan status aktif."
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>CMS Struktur Organisasi</CardTitle>
-          <CardDescription>
-            Parent root berarti node berada di level paling atas.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProfileOrganizationManager
-            rolePrefix="staff"
-            initialNodes={nodes}
-            unavailable={unavailable}
-          />
-        </CardContent>
-      </Card>
-    </div>
+      <AdminSectionCard
+        title="CMS Struktur Organisasi"
+        description="Parent root berarti node berada di level paling atas."
+        className="min-w-0"
+      >
+        <ProfileOrganizationManager
+          rolePrefix="staff"
+          initialNodes={nodes}
+          unavailable={unavailable}
+        />
+      </AdminSectionCard>
+    </AdminPageShell>
   );
 }

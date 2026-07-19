@@ -90,7 +90,7 @@ export default async function StaffInformasiPage() {
 
   return (
     <div
-      className="-m-4 min-h-full bg-[#f8f2ea] text-[#1f2922] sm:-m-5 lg:-m-6"
+      className="-m-4 min-h-[calc(100%+2rem)] bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
       style={{
         backgroundImage: [
           "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
