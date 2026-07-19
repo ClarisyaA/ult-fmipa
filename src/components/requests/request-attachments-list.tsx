@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { FileText, Download, Calendar, File, Image, Archive, FileSignature } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type { RequestAttachment } from "@/types/attachment";
 
 type RequestAttachmentsListProps = {

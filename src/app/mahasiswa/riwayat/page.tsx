@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Send,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,7 @@ const statusLabels: Record<RequestStatus, string> = {
   sikFinalSubmitted: "SIK Final Terkirim",
 };
 
-const statusIcons = {
+const statusIcons: Record<RequestStatus, LucideIcon> = {
   pending: Clock,
   inProgress: Clock,
   completed: CheckCircle2,
@@ -84,7 +85,7 @@ const statusIcons = {
   sikApprovalRejected: XCircle,
   sikApprovalVerified: CheckCircle2,
   sikFinalSubmitted: Send,
-} satisfies Record<RequestStatus, any>;
+};
 
 // Urutan status: Pengajuan → Diproses → Selesai → Diambil/Dikirim
 const statusFlow = [

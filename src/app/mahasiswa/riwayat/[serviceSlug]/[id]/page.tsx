@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, Calendar, Send, Archive } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
 import { SikRequestWorkflow } from "@/components/services/sik-request-workflow";
@@ -49,7 +50,7 @@ const statusLabels: Record<string, string> = {
   sikFinalSubmitted: "SIK Final Terkirim",
 };
 
-const statusIcons = {
+const statusIcons: Record<string, LucideIcon> = {
   pending: Clock,
   inProgress: Clock,
   completed: CheckCircle2,
@@ -58,7 +59,7 @@ const statusIcons = {
   sikApprovalRejected: XCircle,
   sikApprovalVerified: CheckCircle2,
   sikFinalSubmitted: Archive,
-} satisfies Record<string, any>;
+};
 
 // Urutan status
 const statusFlow = [
@@ -252,7 +253,7 @@ export default async function StudentHistoryDetailPage({
                   Timeline read-only dari proses layanan.
                 </p>
                 <div className="relative pl-6 border-l-2 border-[#DDD5C3] space-y-5">
-                  {detail.workflow.map((item, index) => (
+                  {detail.workflow.map((item) => (
                     <div key={item.label} className="relative">
                       <div
                         className={`absolute -left-[25px] top-0.5 size-4 rounded-full border-2 flex items-center justify-center ${
