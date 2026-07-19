@@ -67,8 +67,8 @@ function hasAllowedExtension(fileName: string) {
 
 function getPreviewImageClass(imageFit: ProfileImageFit) {
   return imageFit === "contain"
-    ? "aspect-video w-full rounded-lg border bg-[#f7f3ea] object-contain object-center p-3"
-    : "aspect-video w-full rounded-lg border bg-[#f7f3ea] object-cover object-center";
+    ? "aspect-video w-full rounded-md border border-[#e3d9ca] bg-[#f7f3ea] object-contain object-center p-3"
+    : "aspect-video w-full rounded-md border border-[#e3d9ca] bg-[#f7f3ea] object-cover object-center";
 }
 
 export function ProfileLocationManager({
@@ -313,11 +313,11 @@ export function ProfileLocationManager({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <form className="grid gap-4 rounded-xl border bg-white p-4" onSubmit={handleSubmit}>
+    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <form className="grid min-w-0 gap-4 rounded-lg border border-[#e3d9ca] bg-white p-4 shadow-[0_1px_6px_rgba(47,38,20,0.05)] sm:p-5" onSubmit={handleSubmit}>
         <div>
-          <h2 className="font-semibold">Pengaturan Lokasi Kami</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-sm font-semibold text-[#173d2d]">Informasi Lokasi</h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
             Edit copy, kontak, link arah, dan gambar kanan section lokasi.
           </p>
         </div>
@@ -328,10 +328,10 @@ export function ProfileLocationManager({
           </p>
         ) : null}
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 border-t border-[#eee6d9] pt-4 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Eyebrow</Label>
-            <Input
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
               value={eyebrow}
               onChange={(event) => setEyebrow(event.currentTarget.value)}
               maxLength={100}
@@ -340,7 +340,7 @@ export function ProfileLocationManager({
           </div>
           <div className="grid gap-2">
             <Label>Title</Label>
-            <Input
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
               value={title}
               onChange={(event) => setTitle(event.currentTarget.value)}
               maxLength={150}
@@ -356,7 +356,7 @@ export function ProfileLocationManager({
             value={description}
             onChange={(event) => setDescription(event.currentTarget.value)}
             required
-            className="min-h-32"
+            className="min-h-32 border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
             data-tour="admin-profile-location-description"
           />
         </div>
@@ -364,7 +364,7 @@ export function ProfileLocationManager({
         <div className="grid gap-3 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Direction Label</Label>
-            <Input
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
               value={directionLabel}
               onChange={(event) => setDirectionLabel(event.currentTarget.value)}
               required
@@ -374,7 +374,7 @@ export function ProfileLocationManager({
           </div>
           <div className="grid gap-2">
             <Label>Direction URL</Label>
-            <Input
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
               value={directionUrl}
               onChange={(event) => setDirectionUrl(event.currentTarget.value)}
               placeholder="https://..."
@@ -386,7 +386,7 @@ export function ProfileLocationManager({
         <div className="grid gap-3 md:grid-cols-2">
           <div className="grid gap-2">
             <Label>Email</Label>
-            <Input
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.currentTarget.value)}
@@ -397,7 +397,7 @@ export function ProfileLocationManager({
             <Label>Image Fit</Label>
             <Select value={imageFit} onValueChange={(value) => setImageFit(value as ProfileImageFit)}>
               <SelectTrigger
-                className="w-full bg-white"
+                className="w-full border-[#e1d8ca] bg-white focus:ring-[#0f5b45]"
                 data-tour="admin-profile-location-image-fit"
               >
                 <SelectValue placeholder="Pilih tampilan gambar" />
@@ -411,7 +411,7 @@ export function ProfileLocationManager({
         </div>
 
         <label
-          className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          className="inline-flex w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-[#fffdf9] px-3 py-2 text-sm text-[#303b34]"
           data-tour="admin-profile-location-active"
         >
           <input
@@ -425,7 +425,7 @@ export function ProfileLocationManager({
 
         <div className="grid gap-2">
           <Label>Image Alt</Label>
-          <Input value={imageAlt} onChange={(event) => setImageAlt(event.currentTarget.value)} maxLength={150} />
+          <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]" value={imageAlt} onChange={(event) => setImageAlt(event.currentTarget.value)} maxLength={150} />
         </div>
 
         <div className="grid gap-2">
@@ -440,7 +440,7 @@ export function ProfileLocationManager({
           <div
             role="button"
             tabIndex={0}
-            className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-8 text-center text-sm ${
+            className={`grid cursor-pointer place-items-center rounded-md border border-dashed px-4 py-8 text-center text-sm transition-colors ${
               isDragging ? "border-[#0f5b45] bg-[#eef9f1]" : "border-[#d8d4c8] bg-[#fffdf9]"
             }`}
             onClick={() => fileInputRef.current?.click()}
@@ -477,7 +477,7 @@ export function ProfileLocationManager({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-fit"
+          className="h-10 w-full rounded-md bg-[#0f3d2e] px-5 text-sm font-semibold text-white hover:bg-[#164b39] sm:w-fit"
           data-tour="admin-profile-location-save"
         >
           {isSubmitting ? "Menyimpan..." : "Simpan Lokasi"}
@@ -485,39 +485,40 @@ export function ProfileLocationManager({
       </form>
 
       <div
-        className="grid content-start gap-4 rounded-xl border bg-white p-4"
+        className="grid min-w-0 content-start gap-4 rounded-lg border border-[#e3d9ca] bg-[#fffdf9] p-4 shadow-[0_1px_6px_rgba(47,38,20,0.05)] sm:p-5"
         data-tour="admin-profile-location-hours"
       >
         <div>
-          <h2 className="font-semibold">Jam Operasional</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-sm font-semibold text-[#173d2d]">Jam Operasional</h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
             Tambah, edit, hapus, dan urutkan baris jam layanan.
           </p>
         </div>
 
         <div className="grid gap-3">
           {hours.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            <p className="rounded-md border border-dashed border-[#d8d4c8] bg-white p-4 text-sm text-[#7a7166]">
               Belum ada jam layanan.
             </p>
           ) : (
             hours.map((hour) => (
-              <div key={hour.id} className="grid gap-2 rounded-lg border bg-[#fffdf9] p-3">
+              <div key={hour.id} className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold">{hour.dayLabel}</p>
-                    <p className="text-sm text-muted-foreground">{hour.timeLabel}</p>
+                    <p className="text-sm font-semibold text-[#303b34]">{hour.dayLabel}</p>
+                    <p className="text-xs text-[#7a7166]">{hour.timeLabel}</p>
                   </div>
                   <Badge variant={hour.isActive ? "secondary" : "outline"}>
                     {hour.isActive ? "Aktif" : "Nonaktif"}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">Urutan: {hour.sortOrder}</p>
+                <p className="text-[11px] text-[#7a7166]">Urutan: {hour.sortOrder}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="h-8 border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
                     onClick={() =>
                       setHourForm({
                         id: hour.id,
@@ -530,7 +531,7 @@ export function ProfileLocationManager({
                   >
                     Edit
                   </Button>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => deleteHour(hour)}>
+                  <Button type="button" size="sm" variant="outline" className="h-8 border-[#edd2c5] bg-white px-3 text-[11px] font-semibold text-[#8a3d23] hover:bg-[#fff7f2]" onClick={() => deleteHour(hour)}>
                     <Trash2 className="size-4" />
                     Hapus
                   </Button>
@@ -540,23 +541,23 @@ export function ProfileLocationManager({
           )}
         </div>
 
-        <form className="grid gap-3 border-t pt-4" onSubmit={saveHour}>
-          <h3 className="text-sm font-semibold">
+        <form className="grid gap-3 border-t border-[#e3d9ca] pt-4" onSubmit={saveHour}>
+          <h3 className="text-sm font-semibold text-[#173d2d]">
             {hourForm.id ? "Edit Jam Layanan" : "Tambah Jam Layanan"}
           </h3>
           <div className="grid gap-2">
             <Label>Day Label</Label>
-            <Input value={hourForm.dayLabel} onChange={(event) => setHourForm({ ...hourForm, dayLabel: event.currentTarget.value })} required maxLength={100} />
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]" value={hourForm.dayLabel} onChange={(event) => setHourForm({ ...hourForm, dayLabel: event.currentTarget.value })} required maxLength={100} />
           </div>
           <div className="grid gap-2">
             <Label>Time Label</Label>
-            <Input value={hourForm.timeLabel} onChange={(event) => setHourForm({ ...hourForm, timeLabel: event.currentTarget.value })} required maxLength={100} />
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]" value={hourForm.timeLabel} onChange={(event) => setHourForm({ ...hourForm, timeLabel: event.currentTarget.value })} required maxLength={100} />
           </div>
           <div className="grid gap-2">
             <Label>Sort Order</Label>
-            <Input type="number" value={hourForm.sortOrder} onChange={(event) => setHourForm({ ...hourForm, sortOrder: event.currentTarget.value })} />
+            <Input className="border-[#e1d8ca] bg-white focus-visible:ring-[#0f5b45]" type="number" value={hourForm.sortOrder} onChange={(event) => setHourForm({ ...hourForm, sortOrder: event.currentTarget.value })} />
           </div>
-          <label className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <label className="inline-flex w-fit items-center gap-2 rounded-md border border-[#e8dfd0] bg-white px-3 py-2 text-sm text-[#303b34]">
             <input
               type="checkbox"
               className="size-4 accent-[#0f5b45]"
@@ -566,7 +567,7 @@ export function ProfileLocationManager({
             Aktif
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={isHourSubmitting}>
+            <Button type="submit" disabled={isHourSubmitting} className="h-9 rounded-md bg-[#0f3d2e] px-4 text-xs font-semibold text-white hover:bg-[#164b39]">
               <Plus className="size-4" />
               {isHourSubmitting ? "Menyimpan..." : hourForm.id ? "Simpan Jam" : "Tambah Jam"}
             </Button>
@@ -574,6 +575,7 @@ export function ProfileLocationManager({
               <Button
                 type="button"
                 variant="outline"
+                className="h-9 border-[#e1d8ca] bg-white px-4 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
                 onClick={() => setHourForm({ id: "", dayLabel: "", timeLabel: "", sortOrder: "0", isActive: true })}
               >
                 Batal Edit

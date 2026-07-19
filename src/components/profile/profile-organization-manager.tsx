@@ -54,12 +54,14 @@ const colorOptions: Array<{ value: ProfileColorVariant; label: string }> = [
 
 function hasAllowedExtension(fileName: string) {
   const lowerName = fileName.toLowerCase();
-  return allowedImageExtensions.some((extension) => lowerName.endsWith(extension));
+  return allowedImageExtensions.some((extension) =>
+    lowerName.endsWith(extension),
+  );
 }
 
 function flattenTree(
   nodes: ProfileOrganizationNode[],
-  depth = 0
+  depth = 0,
 ): Array<{ node: ProfileOrganizationNode; depth: number }> {
   return nodes.flatMap((node) => [
     { node, depth },
@@ -81,14 +83,19 @@ function buildTree(nodes: ProfileOrganizationNode[]) {
   });
 
   const sortTree = (items: ProfileOrganizationNode[]) => {
-    items.sort((a, b) => a.sortOrder - b.sortOrder || Number(a.id) - Number(b.id));
+    items.sort(
+      (a, b) => a.sortOrder - b.sortOrder || Number(a.id) - Number(b.id),
+    );
     items.forEach((item) => sortTree(item.children));
   };
   sortTree(roots);
   return roots;
 }
 
-function descendantsOf(nodes: ProfileOrganizationNode[], nodeId: string): Set<string> {
+function descendantsOf(
+  nodes: ProfileOrganizationNode[],
+  nodeId: string,
+): Set<string> {
   const result = new Set<string>();
   const target = nodes.find((node) => node.id === nodeId);
 
@@ -141,7 +148,9 @@ export function ProfileOrganizationManager({
   const pendingPhotoRef = useRef<typeof pendingPhoto>(null);
   const tree = useMemo(() => buildTree(nodes), [nodes]);
   const flatNodes = useMemo(() => flattenTree(tree), [tree]);
-  const blockedParentIds = form.id ? descendantsOf(tree, form.id) : new Set<string>();
+  const blockedParentIds = form.id
+    ? descendantsOf(tree, form.id)
+    : new Set<string>();
 
   useEffect(() => {
     pendingPhotoRef.current = pendingPhoto;
@@ -161,7 +170,9 @@ export function ProfileOrganizationManager({
     if (!file) return;
 
     if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
-      setError("Format foto tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
+      setError(
+        "Format foto tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.",
+      );
       return;
     }
 
@@ -233,7 +244,10 @@ export function ProfileOrganizationManager({
       formData.append("parentId", form.parentId);
       formData.append("name", form.name);
       formData.append("positionTitle", form.positionTitle);
-      formData.append("roleLabel", getRoleLabelFromPosition(form.positionTitle));
+      formData.append(
+        "roleLabel",
+        getRoleLabelFromPosition(form.positionTitle),
+      );
       formData.append("photoAlt", form.photoAlt);
       formData.append("colorVariant", form.colorVariant);
       formData.append("isActive", String(form.isActive));
@@ -278,11 +292,16 @@ export function ProfileOrganizationManager({
     formData.append("isActive", String(!node.isActive));
     formData.append("sortOrder", String(node.sortOrder));
 
-    const response = await fetch(`/api/${rolePrefix}/profile/organization/${node.id}`, {
-      method: "PATCH",
-      body: formData,
-    });
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    const response = await fetch(
+      `/api/${rolePrefix}/profile/organization/${node.id}`,
+      {
+        method: "PATCH",
+        body: formData,
+      },
+    );
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
 
     if (!response.ok) {
       setError(body?.error ?? "Status node gagal diperbarui.");
@@ -305,10 +324,15 @@ export function ProfileOrganizationManager({
       return;
     }
 
-    const response = await fetch(`/api/${rolePrefix}/profile/organization/${node.id}`, {
-      method: "DELETE",
-    });
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    const response = await fetch(
+      `/api/${rolePrefix}/profile/organization/${node.id}`,
+      {
+        method: "DELETE",
+      },
+    );
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
 
     if (!response.ok) {
       setError(body?.error ?? "Node struktur gagal dihapus.");
@@ -333,17 +357,22 @@ export function ProfileOrganizationManager({
   }
 
   return (
-    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,380px)]">
-      <div className="min-w-0 rounded-xl border bg-white" data-tour="admin-profile-structure-list">
-        <div className="border-b p-4">
-          <h2 className="font-semibold">Daftar Struktur</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+    <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,380px)]">
+      <div
+        className="min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white"
+        data-tour="admin-profile-structure-list"
+      >
+        <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[#173d2d]">
+            Daftar Struktur
+          </h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
             Atur atasan, cabang, urutan, dan status aktif.
           </p>
         </div>
-        <div className="grid min-w-0 gap-3 p-4">
+        <div className="grid min-w-0 gap-2 p-3 sm:p-4">
           {nodes.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            <p className="rounded-md border border-[#edf0e9] bg-[#fbfdf9] p-4 text-center text-sm text-[#6f746f]">
               {unavailable
                 ? "Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi."
                 : "Belum ada node struktur organisasi."}
@@ -352,10 +381,10 @@ export function ProfileOrganizationManager({
             flatNodes.map(({ node, depth }) => (
               <div
                 key={node.id}
-                className="grid min-w-0 gap-3 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-3 md:grid-cols-[auto_1fr_auto]"
-                style={{ marginLeft: `${Math.min(depth, 4) * 12}px` }}
+                className="grid min-w-0 gap-3 rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.05)] sm:grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)_auto]"
+                style={{ marginLeft: `${Math.min(depth, 4) * 6}px` }}
               >
-                <div className="grid size-14 place-items-center overflow-hidden rounded-full border bg-white">
+                <div className="grid size-12 place-items-center overflow-hidden rounded-full border border-[#e3d9ca] bg-[#fffdf9] sm:size-14">
                   {node.photoUrl ? (
                     <Image
                       src={node.photoUrl}
@@ -366,32 +395,59 @@ export function ProfileOrganizationManager({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <UserRound className="size-7 text-muted-foreground" />
+                    <UserRound className="size-6 text-[#8a8175] sm:size-7" />
                   )}
                 </div>
                 <div className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <p className="break-words font-semibold">{node.name}</p>
-                    <Badge variant={node.isActive ? "secondary" : "outline"}>
+                    <p className="break-words text-sm font-semibold text-[#202923]">
+                      {node.name}
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className={
+                        node.isActive
+                          ? "rounded-sm border-[#cce3d3] bg-[#eef9f1] px-2.5 py-0.5 text-[10px] font-semibold text-[#2f6b44]"
+                          : "rounded-sm border-[#d7d9e5] bg-[#f4f5fa] px-2.5 py-0.5 text-[10px] font-semibold text-[#4e5566]"
+                      }
+                    >
                       {node.isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </div>
-                  <p className="mt-1 break-words text-sm text-muted-foreground">
+                  <p className="mt-1 break-words text-xs text-[#566258]">
                     {node.positionTitle}
                   </p>
-                  <p className="mt-1 break-words text-xs text-muted-foreground">
+                  <p className="mt-1 break-words text-[10px] text-[#7a7166]">
                     Parent: {node.parentId ?? "Root"} | Urutan: {node.sortOrder}
                   </p>
                 </div>
-                <div className="flex min-w-0 flex-wrap gap-2 md:justify-end">
-                  <Button type="button" size="sm" variant="outline" onClick={() => startEdit(node)}>
+                <div className="col-span-full flex min-w-0 flex-wrap gap-2 sm:col-start-2 md:col-span-1 md:col-start-auto md:justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-md border-[#e1d8ca] px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                    onClick={() => startEdit(node)}
+                  >
                     <Edit className="size-4" />
                     Edit
                   </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => toggleActive(node)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-md border-[#e1d8ca] px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                    onClick={() => toggleActive(node)}
+                  >
                     {node.isActive ? "Nonaktifkan" : "Aktifkan"}
                   </Button>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => deleteNode(node)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="h-8 rounded-md px-3 text-[11px] font-semibold"
+                    onClick={() => deleteNode(node)}
+                  >
                     <Trash2 className="size-4" />
                     Hapus
                   </Button>
@@ -403,15 +459,15 @@ export function ProfileOrganizationManager({
       </div>
 
       <form
-        className="grid min-w-0 content-start gap-4 rounded-xl border bg-white p-4"
+        className="grid min-w-0 content-start gap-4 rounded-lg border border-[#e3d9ca] bg-white p-4 xl:sticky xl:top-4"
         data-tour="admin-profile-structure-form"
         onSubmit={handleSubmit}
       >
         <div>
-          <h2 className="font-semibold">
+          <h2 className="text-sm font-semibold text-[#173d2d]">
             {form.id ? "Edit Node Struktur" : "Tambah Node Struktur"}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
             Tambahkan root, koordinator, atau staff sesuai kebutuhan.
           </p>
         </div>
@@ -420,7 +476,9 @@ export function ProfileOrganizationManager({
           <Label>Nama Orang</Label>
           <Input
             value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.currentTarget.value })}
+            onChange={(event) =>
+              setForm({ ...form, name: event.currentTarget.value })
+            }
             required
             maxLength={150}
             data-tour="admin-profile-structure-name"
@@ -461,8 +519,14 @@ export function ProfileOrganizationManager({
 
         <div className="grid gap-2">
           <Label>Parent / Atasan</Label>
-          <Select value={form.parentId} onValueChange={(value) => setForm({ ...form, parentId: value })}>
-            <SelectTrigger className="w-full bg-white" data-tour="admin-profile-structure-parent">
+          <Select
+            value={form.parentId}
+            onValueChange={(value) => setForm({ ...form, parentId: value })}
+          >
+            <SelectTrigger
+              className="w-full bg-white"
+              data-tour="admin-profile-structure-parent"
+            >
               <SelectValue placeholder="Pilih atasan" />
             </SelectTrigger>
             <SelectContent>
@@ -471,7 +535,9 @@ export function ProfileOrganizationManager({
                 <SelectItem
                   key={node.id}
                   value={node.id}
-                  disabled={node.id === form.id || blockedParentIds.has(node.id)}
+                  disabled={
+                    node.id === form.id || blockedParentIds.has(node.id)
+                  }
                 >
                   {"- ".repeat(depth)}
                   {node.name} - {node.positionTitle}
@@ -487,14 +553,24 @@ export function ProfileOrganizationManager({
             <Input
               type="number"
               value={form.sortOrder}
-              onChange={(event) => setForm({ ...form, sortOrder: event.currentTarget.value })}
+              onChange={(event) =>
+                setForm({ ...form, sortOrder: event.currentTarget.value })
+              }
               data-tour="admin-profile-structure-order"
             />
           </div>
           <div className="grid gap-2">
             <Label>Warna Cabang</Label>
-            <Select value={form.colorVariant} onValueChange={(value) => setForm({ ...form, colorVariant: value as ProfileColorVariant })}>
-              <SelectTrigger className="w-full bg-white" data-tour="admin-profile-structure-color">
+            <Select
+              value={form.colorVariant}
+              onValueChange={(value) =>
+                setForm({ ...form, colorVariant: value as ProfileColorVariant })
+              }
+            >
+              <SelectTrigger
+                className="w-full bg-white"
+                data-tour="admin-profile-structure-color"
+              >
                 <SelectValue placeholder="Pilih warna" />
               </SelectTrigger>
               <SelectContent>
@@ -516,7 +592,9 @@ export function ProfileOrganizationManager({
             type="checkbox"
             className="size-4 accent-[#0f5b45]"
             checked={form.isActive}
-            onChange={(event) => setForm({ ...form, isActive: event.currentTarget.checked })}
+            onChange={(event) =>
+              setForm({ ...form, isActive: event.currentTarget.checked })
+            }
           />
           Aktif tampil di publik
         </label>
@@ -525,7 +603,9 @@ export function ProfileOrganizationManager({
           <Label>Alt Foto</Label>
           <Input
             value={form.photoAlt}
-            onChange={(event) => setForm({ ...form, photoAlt: event.currentTarget.value })}
+            onChange={(event) =>
+              setForm({ ...form, photoAlt: event.currentTarget.value })
+            }
             maxLength={150}
             data-tour="admin-profile-structure-photo-alt"
           />
@@ -545,7 +625,9 @@ export function ProfileOrganizationManager({
             tabIndex={0}
             data-tour="admin-profile-structure-photo"
             className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-6 text-center text-sm ${
-              isDragging ? "border-[#0f5b45] bg-[#eef9f1]" : "border-[#d8d4c8] bg-[#fffdf9]"
+              isDragging
+                ? "border-[#0f5b45] bg-[#eef9f1]"
+                : "border-[#d8d4c8] bg-[#fffdf9]"
             }`}
             onClick={() => fileInputRef.current?.click()}
             onDragEnter={(event) => {
@@ -585,7 +667,11 @@ export function ProfileOrganizationManager({
             data-tour="admin-profile-structure-save"
           >
             <Plus className="size-4" />
-            {isSubmitting ? "Menyimpan..." : form.id ? "Simpan Perubahan" : "Tambah Node"}
+            {isSubmitting
+              ? "Menyimpan..."
+              : form.id
+                ? "Simpan Perubahan"
+                : "Tambah Node"}
           </Button>
           {form.id ? (
             <Button type="button" variant="outline" onClick={resetForm}>
