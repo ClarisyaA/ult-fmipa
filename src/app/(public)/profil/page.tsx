@@ -607,11 +607,10 @@ export default function ProfilPage() {
       <section className="relative flex min-h-[calc(100vh+20px)] items-center overflow-hidden bg-neutral-950">
         <div className="absolute inset-0">
           <Image
-            src="/gedung-fmipa.svg"
+            src="/Beranda-Section1/gedung-fmipa.webp"
             alt="Gedung FMIPA Unpad"
             fill
             priority
-            unoptimized
             sizes="100vw"
             className="h-full w-full object-cover [animation:hero-image-reveal_1200ms_cubic-bezier(0.16,1,0.3,1)_forwards]"
           />

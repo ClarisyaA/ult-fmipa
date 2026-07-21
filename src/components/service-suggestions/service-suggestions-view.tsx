@@ -224,7 +224,7 @@ export function ServiceSuggestionsView({
       }}
     >
       <div className="mx-auto grid w-full max-w-[1320px] min-w-0 gap-4 px-4 py-5 pb-8 sm:px-6 lg:px-7">
-        <header className="flex min-w-0 flex-col gap-3 text-[#173d2d] sm:flex-row sm:items-start sm:justify-between">
+        <header className="flex min-w-0 flex-col gap-3 text-[#173d2d]">
           <div className="min-w-0">
             <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
               {title}
@@ -233,100 +233,44 @@ export function ServiceSuggestionsView({
               {description}
             </p>
           </div>
-          <div className="flex shrink-0 items-center justify-between gap-4 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 shadow-sm sm:justify-start">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
-                Usulan baru
-              </p>
-              <p className="text-lg font-semibold leading-tight text-[#173d2d]">
-                {newCount}
-              </p>
-            </div>
-            <div className="h-8 w-px bg-[#eee6d9]" />
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
-                Total
-              </p>
-              <p className="text-lg font-semibold leading-tight text-[#173d2d]">
-                {items.length}
-              </p>
-            </div>
-          </div>
         </header>
 
         <section
           className="min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
           data-tour="admin-service-suggestions-list"
         >
-          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">
-            <h2 className="text-sm font-semibold text-[#173d2d]">
-              Daftar Usulan
-            </h2>
-            <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
-              Buka detail untuk meninjau isi usulan, menambahkan catatan, atau
-              memperbarui status.
-            </p>
+          <div className="flex min-w-0 flex-col gap-3 border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-[#173d2d]">
+                Daftar Usulan
+              </h2>
+              <p className="mt-1 text-[11px] leading-relaxed text-[#7a7166]">
+                Buka detail untuk meninjau isi usulan, menambahkan catatan, atau
+                memperbarui status.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center justify-between gap-4 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 shadow-sm sm:justify-start">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
+                  Usulan baru
+                </p>
+                <p className="text-lg font-semibold leading-tight text-[#173d2d]">
+                  {newCount}
+                </p>
+              </div>
+              <div className="h-8 w-px bg-[#eee6d9]" />
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7a7166]">
+                  Total
+                </p>
+                <p className="text-lg font-semibold leading-tight text-[#173d2d]">
+                  {items.length}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-2 p-3 sm:p-4 md:hidden">
-            {items.map((item) => (
-              <article
-                key={item.id}
-                className="grid min-w-0 gap-3 rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.06)]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="break-words text-sm font-semibold leading-snug text-[#202923]">
-                      {item.layananDiajukan}
-                    </p>
-                    <p className="mt-1 text-[10px] text-[#7a7166]">
-                      {formatDate(item.createdAt)}
-                    </p>
-                  </div>
-                  <StatusBadge status={item.status} />
-                </div>
-                <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs">
-                  <span className="text-[#7a7166]">Nama</span>
-                  <span className="min-w-0 break-words font-semibold text-[#303b34]">
-                    {item.nama}
-                  </span>
-                  <span className="text-[#7a7166]">NPM</span>
-                  <span className="min-w-0 break-words text-[#303b34]">
-                    {item.npm}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
-                    onClick={() => openDetail(item)}
-                  >
-                    Detail
-                  </Button>
-                  {canDelete ? (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="h-8 rounded-md px-3 text-[11px] font-semibold"
-                      disabled={isUpdating}
-                      onClick={() => deleteSuggestion(item)}
-                    >
-                      Hapus
-                    </Button>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-            {items.length === 0 ? (
-              <div className="rounded-md border border-[#edf0e9] bg-[#fbfdf9] px-4 py-10 text-center text-sm text-[#6f746f]">
-                Belum ada usulan layanan.
-              </div>
-            ) : null}
-          </div>
-          <div className="hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain p-4 md:block">
+          <div className="w-full min-w-0 max-w-full touch-pan-x overflow-x-auto overscroll-x-contain p-4">
             <table className="w-full min-w-[900px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] text-left">
               <colgroup>
                 <col className="w-[17%]" />

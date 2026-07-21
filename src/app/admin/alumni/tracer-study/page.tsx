@@ -174,38 +174,6 @@ export default async function AdminTracerStudyPage({
             description="Tidak ada baris yang cocok dengan pencarian saat ini."
           />
         ) : (
-          <>
-          <div className="grid gap-3 md:hidden">
-            {rows.map((row) => (
-              <article
-                key={row.id}
-                className="grid gap-3 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="break-words text-sm font-bold text-[#1f2922]">
-                      {row.nama || "-"}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-[#6f746f]">
-                      {row.npm ?? "-"}
-                    </p>
-                  </div>
-                  <AdminStatusBadge tone={row.statusIsi ? "success" : "neutral"}>
-                    {row.statusIsi ? "Terisi" : "Belum terisi"}
-                  </AdminStatusBadge>
-                </div>
-                <div className="grid gap-1 text-xs text-[#6f746f]">
-                  <p>Program Studi: {row.programStudi ?? "-"}</p>
-                  <p>Tahun Lulus: {row.tahunLulus ?? "-"}</p>
-                  <p>Instansi: {row.instansi ?? "-"}</p>
-                </div>
-                <div data-tour="admin-tracer-actions">
-                  <TracerRowActions row={row} />
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="hidden md:block">
           <AdminTableScroll>
             <Table className="min-w-[1180px]">
               <TableHeader className="bg-[#eef3ec]">
@@ -246,8 +214,6 @@ export default async function AdminTracerStudyPage({
               </TableBody>
             </Table>
           </AdminTableScroll>
-          </div>
-          </>
         )}
           <div
             className="mt-4 flex flex-col gap-3 border-t border-[#eee6d9] pt-4 sm:flex-row sm:items-center sm:justify-between"

@@ -12,7 +12,7 @@ export default function LoginPage() {
     <main className="grid min-h-dvh bg-white lg:h-dvh lg:grid-cols-[1.45fr_1fr] lg:overflow-hidden">
       <section className="animate-login-media-in relative hidden h-dvh overflow-hidden bg-slate-950 lg:block">
         <Image
-          src="/gedung-fmipa.svg"
+          src="/Beranda-Section1/gedung-fmipa.webp"
           alt="Gedung FMIPA Universitas Padjadjaran"
           fill
           className="object-cover"

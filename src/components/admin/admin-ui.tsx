@@ -47,7 +47,7 @@ export function AdminPageShell({
       }}
     >
       <div
-        className={`mx-auto grid w-full min-w-0 gap-4 px-4 py-5 pb-8 sm:px-6 lg:px-7 ${
+        className={`mx-auto grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-4 px-4 py-5 pb-8 sm:px-6 lg:px-7 ${
           wide ? "max-w-[1660px]" : "max-w-[1320px]"
         }`}
       >
@@ -89,7 +89,7 @@ export function AdminSectionCard({
 }: AdminSectionCardProps) {
   return (
     <section
-      className={`min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${className}`}
+      className={`w-full max-w-full min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)] ${className}`}
     >
       {title || description ? (
         <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">

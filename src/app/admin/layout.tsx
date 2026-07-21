@@ -31,7 +31,7 @@ export default async function AdminLayout({
           userRole={userRole}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 w-0 flex-1 flex-col overflow-hidden">
           <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-3 pr-32 text-white sm:px-6 md:hidden">
             <div className="flex min-w-0 items-center gap-2.5">
               <AdminMobileMenu
@@ -59,7 +59,7 @@ export default async function AdminLayout({
             </div>
           </header>
           <main
-            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
+            className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
             data-admin-scroll-container
           >
             {children}
