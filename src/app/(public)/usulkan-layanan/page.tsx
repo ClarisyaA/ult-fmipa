@@ -14,7 +14,10 @@ export default async function ServiceSuggestionPage() {
     <main className="bg-[#fbfaf7] px-4 py-16 text-[#18130e] sm:px-6 lg:px-8">
       <div className="mx-auto grid w-full max-w-5xl gap-8">
         <section className="grid gap-4">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f5b45]">
+          <p
+            aria-hidden="true"
+            className="invisible pointer-events-none select-none text-xs font-black uppercase tracking-[0.22em] text-[#0f5b45]"
+          >
             Usulan Layanan
           </p>
           <div className="grid gap-3">

@@ -8,6 +8,7 @@ import { ArrowDown } from "lucide-react";
 
 const BASE_SCENE_WIDTH = 1440;
 const BASE_SCENE_HEIGHT = 810;
+const MOBILE_BREAKPOINT = 640;
 const DESKTOP_BREAKPOINT = 1024;
 const HERO_BACKGROUND_SIZES =
   "(max-width: 1023px) 1440px, (max-width: 1920px) 100vw, 2560px";
@@ -205,6 +206,23 @@ function useIsDesktopViewport() {
   return isDesktop;
 }
 
+function useIsMobileHeroViewport() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    update();
+    window.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return isMobile;
+}
+
 function scaleSceneStyle(style: React.CSSProperties, scale: number) {
   const next = { ...style };
   (["left", "right", "top", "bottom", "width", "height"] as const).forEach(
@@ -323,6 +341,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   const sceneSize = useDesktopSceneSize();
   const sceneScale = sceneSize.width / BASE_SCENE_WIDTH;
   const isDesktopViewport = useIsDesktopViewport();
+  const isMobileHeroViewport = useIsMobileHeroViewport();
 
   const scrollRef = useRef<HTMLElement | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
@@ -532,6 +551,14 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   const pose1 = getPose("orang1", renderedActive, renderedDir);
   const pose2 = getPose("orang2", renderedActive, renderedDir);
   const printerInfoVisible = !isDesktopViewport || showPrinterInfo;
+  const printerInfoStyle = isMobileHeroViewport
+    ? ({
+        left: "clamp(18px, 6vw, 28px)",
+        top: "236px",
+        width: "clamp(148px, 48vw, 184px)",
+        maxWidth: "calc(100vw - 132px)",
+      } satisfies React.CSSProperties)
+    : scaleSceneStyle(sceneElements.printerInfo.style, sceneScale);
 
   return (
     <section
@@ -660,12 +687,16 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
 
         <div
           id="printer-info"
-          className={`absolute z-40 max-w-[280px] rounded-lg border border-red-100 bg-white/95 px-4 py-3 text-left text-[12px] font-semibold leading-relaxed text-[#5c3a21] shadow-xl shadow-red-950/10 transition duration-200 ${
+          className={`absolute z-40 rounded-lg border border-red-100 bg-white/95 text-left font-semibold leading-relaxed text-[#5c3a21] shadow-xl shadow-red-950/10 transition duration-200 ${
+            isMobileHeroViewport
+              ? "max-w-none px-3 py-2.5 text-[12px]"
+              : "max-w-[280px] px-4 py-3 text-[12px]"
+          } ${
             printerInfoVisible
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-1 opacity-0"
           }`}
-          style={scaleSceneStyle(sceneElements.printerInfo.style, sceneScale)}
+          style={printerInfoStyle}
         >
           {printerText}
         </div>
