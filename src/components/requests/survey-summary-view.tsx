@@ -76,18 +76,20 @@ export function SurveySummaryView({
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
       </div>
 
-      <div
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        data-tour="admin-survey-summary"
-      >
-        {metrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardHeader>
-              <CardDescription>{metric.label}</CardDescription>
-              <CardTitle className="text-3xl">{metric.value}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
+      <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2">
+        <div
+          className="flex w-max flex-nowrap gap-3"
+          data-tour="admin-survey-summary"
+        >
+          {metrics.map((metric) => (
+            <Card key={metric.label} className="w-[240px] shrink-0">
+              <CardHeader>
+                <CardDescription>{metric.label}</CardDescription>
+                <CardTitle className="text-3xl">{metric.value}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <Card>
@@ -97,30 +99,49 @@ export function SurveySummaryView({
             Komentar ditampilkan tanpa membuka data master mahasiswa/alumni.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3">
-          {summary.totalCount === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Belum ada survei yang masuk.
-            </p>
-          ) : summary.recentComments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Belum ada komentar terbaru.
-            </p>
-          ) : (
-            summary.recentComments.map((comment) => (
-              <div key={comment.id} className="rounded-md border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{comment.serviceTitle}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {comment.overallRating}/5 - {formatDate(comment.createdAt)}
-                  </p>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {comment.comment}
-                </p>
-              </div>
-            ))
-          )}
+        <CardContent>
+          <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+            <Table className="min-w-[820px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Layanan</TableHead>
+                  <TableHead className="text-right">Rating</TableHead>
+                  <TableHead className="text-right">Tanggal</TableHead>
+                  <TableHead>Komentar</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.totalCount === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-muted-foreground">
+                      Belum ada survei yang masuk.
+                    </TableCell>
+                  </TableRow>
+                ) : summary.recentComments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-muted-foreground">
+                      Belum ada komentar terbaru.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  summary.recentComments.map((comment) => (
+                    <TableRow key={comment.id}>
+                      <TableCell className="font-medium">
+                        {comment.serviceTitle}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        {comment.overallRating}/5
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        {formatDate(comment.createdAt)}
+                      </TableCell>
+                      <TableCell>{comment.comment}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -132,7 +153,8 @@ export function SurveySummaryView({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Layanan</TableHead>
@@ -164,6 +186,7 @@ export function SurveySummaryView({
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

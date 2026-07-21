@@ -141,12 +141,10 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
       }`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(55,139,104,0.36),transparent_36%),linear-gradient(180deg,#003b2d_0%,#004633_52%,#003827_100%)]" />
-      <Image
-        src="/rektorat.svg"
-        alt=""
-        width={760}
-        height={660}
-        className="pointer-events-none absolute -bottom-14 -left-48 w-[280%] opacity-24 mix-blend-screen"
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-14 -left-48 aspect-[760/660] w-[280%] bg-contain bg-no-repeat opacity-24 mix-blend-screen"
+        style={{ backgroundImage: "url('/rektorat.svg')" }}
       />
       <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-[#003827] via-[#003827]/82 to-transparent" />
 
@@ -161,12 +159,11 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
           }`}
         >
           <Image
-            src="/logo-unpad.svg"
+            src="/letters/logo-unpad.png"
             alt="Logo Unpad"
             width={42}
             height={42}
             className="size-10 shrink-0"
-            priority
           />
           <div className={`leading-tight ${isCollapsed ? "hidden" : ""}`}>
             <p className="text-lg font-bold tracking-wide">ULT</p>
@@ -381,7 +378,7 @@ export function AdminMobileMenu({
             <div className="relative z-10 flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
                 <Image
-                  src="/logo-unpad.svg"
+                  src="/letters/logo-unpad.png"
                   alt="Logo Unpad"
                   width={38}
                   height={38}

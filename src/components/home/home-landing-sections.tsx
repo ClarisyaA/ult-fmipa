@@ -18,6 +18,8 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
+const HOME_GEDUNG_IMAGE = "/Beranda-Section1/gedung-fmipa.webp";
+
 function useReducedMotion() {
   const [reduced, setReduced] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -62,7 +64,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
     eyebrow: "Agenda Sivitas",
     description:
       "Pendampingan langsung oleh petugas ULT dalam pengajuan surat dan dokumen akademik, mulai dari surat aktif hingga legalisasi transkrip resmi.",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Layanan Akademik Terpandu",
     imageFit: "cover",
   },
@@ -72,7 +74,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
     eyebrow: "Agenda Sivitas",
     description:
       "Kabar layanan terbaru, pengumuman resmi fakultas, dan agenda penting kampus tersaji dalam satu portal yang mudah diakses sivitas akademika.",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Ruang Informasi Sivitas",
     imageFit: "cover",
   },
@@ -82,7 +84,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
     eyebrow: "Agenda Sivitas",
     description:
       "Akses peminjaman gedung, ruang belajar bersama, dan fasilitas laboratorium FMIPA untuk kegiatan akademik dan kemahasiswaan secara terstruktur.",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Dukungan Sarana Prasarana",
     imageFit: "cover",
   },
@@ -92,7 +94,7 @@ const fallbackStudentActivities: HomeActivitySlide[] = [
     eyebrow: "Agenda Sivitas",
     description:
       "Bantu ULT terus meningkatkan mutu pelayanan akademik melalui survei kepuasan berkala yang transparan dan berbasis data nyata.",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Survei Kepuasan Sivitas",
     imageFit: "cover",
   },
@@ -201,7 +203,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Pendaftaran",
     summary: "Informasi alur pendaftaran mahasiswa baru jalur mandiri (SMUP) & pascasarjana FMIPA Unpad.",
     publishedAt: "2026-06-28T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -212,7 +214,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Akademik",
     summary: "Pengumuman kalender akademik semester ganjil dan masa pengisian KRS mahasiswa.",
     publishedAt: "2026-06-27T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -223,7 +225,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Kemahasiswaan",
     summary: "Panduan pengajuan Program Kreativitas Mahasiswa (PKM) dan proposal pendanaan kegiatan.",
     publishedAt: "2026-06-25T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -234,7 +236,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Alumni",
     summary: "Sosialisasi Tracer Study FMIPA Unpad 2026 untuk peningkatan standar kualitas mutu.",
     publishedAt: "2026-06-24T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -245,7 +247,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Fasilitas",
     summary: "Peningkatan fasilitas smart-classroom dan pembukaan ruang belajar bersama (co-working space).",
     publishedAt: "2026-06-22T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -256,7 +258,7 @@ const fallbackInformation: HomeInformation[] = [
     category: "Beasiswa",
     summary: "Pendaftaran beasiswa industri dan lowongan magang bersertifikat MBKM dengan mitra.",
     publishedAt: "2026-06-20T00:00:00.000Z",
-    image: "/gedung-fmipa.svg",
+    image: HOME_GEDUNG_IMAGE,
     imageAlt: "Gedung FMIPA Unpad",
     imageFit: "cover",
   },
@@ -293,7 +295,7 @@ function toHomeInformation(item: InformationApiItem): HomeInformation {
     category: item.category,
     summary: item.summary,
     publishedAt: item.publishedAt,
-    image: item.coverImage ? getInformationImageSrc(item.coverImage) : "/gedung-fmipa.svg",
+    image: item.coverImage ? getInformationImageSrc(item.coverImage) : HOME_GEDUNG_IMAGE,
     imageAlt: item.coverImage?.altText ?? item.coverImage?.originalName ?? item.title,
     imageFit: item.coverImage?.imageFit === "contain" ? "contain" : "cover",
   };
@@ -551,7 +553,7 @@ export function HomeLandingSections() {
 
     async function loadHomeLinks() {
       try {
-        const response = await fetch("/api/home/links", { cache: "no-store" });
+        const response = await fetch("/api/home/links");
         if (!response.ok) return;
         const payload = (await response.json()) as HomeLinksApiResponse;
         const nextUrl = payload.data?.academicCalendar?.url?.trim();
@@ -575,7 +577,7 @@ export function HomeLandingSections() {
 
     async function loadActivities() {
       try {
-        const response = await fetch("/api/home/activities", { cache: "no-store" });
+        const response = await fetch("/api/home/activities");
         if (!response.ok) return;
         const payload = (await response.json()) as { data?: HomeActivityApiItem[] };
         const nextActivities: HomeActivitySlide[] =
@@ -584,7 +586,7 @@ export function HomeLandingSections() {
             title: activity.title,
             eyebrow: activity.eyebrow,
             description: activity.description,
-            image: activity.image ?? "/gedung-fmipa.svg",
+            image: activity.image ?? HOME_GEDUNG_IMAGE,
             imageAlt: activity.imageAlt ?? activity.title,
             imageFit: activity.imageFit === "contain" ? "contain" : "cover",
           })) ?? [];
@@ -608,7 +610,7 @@ export function HomeLandingSections() {
 
     async function loadServices() {
       try {
-        const response = await fetch("/api/services", { cache: "no-store" });
+        const response = await fetch("/api/services");
         if (!response.ok) return;
         const payload = (await response.json()) as { data?: PublicService[] };
         const nextServices =
@@ -638,7 +640,7 @@ export function HomeLandingSections() {
 
     async function loadInformation() {
       try {
-        const response = await fetch("/api/information", { cache: "no-store" });
+        const response = await fetch("/api/information");
         if (!response.ok) return;
         const payload = (await response.json()) as { data?: InformationApiItem[] };
         const nextInformation = payload.data?.map(toHomeInformation) ?? [];
@@ -707,17 +709,21 @@ export function HomeLandingSections() {
         },
       });
 
-      gsap.to(".dekanat-parallax-fast", {
-        y: -44,
-        x: 18,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".dekanat-sec",
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 0.55,
-        },
-      });
+      const fastParallaxTargets = gsap.utils.toArray(".dekanat-parallax-fast");
+
+      if (fastParallaxTargets.length > 0) {
+        gsap.to(fastParallaxTargets, {
+          y: -44,
+          x: 18,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ".dekanat-sec",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 0.55,
+          },
+        });
+      }
 
       gsap.utils.toArray<SVGPathElement>(".editorial-underline path").forEach((path) => {
         const length = path.getTotalLength();
@@ -904,11 +910,10 @@ export function HomeLandingSections() {
             </div> */}
 
             <Image
-              src="/Beranda-Section1/LogoTeks.svg"
+              src="/Beranda-Section1/LogoTeks.webp"
               alt=""
-              width={900}
-              height={360}
-              priority
+              width={5386}
+              height={2583}
               sizes="(max-width: 640px) 150px, (max-width: 1024px) 180px, 200px"
               className="hero-eyebrow pointer-events-none mb-0 h-auto w-36 translate-y-3 object-contain drop-shadow-[0_12px_20px_rgba(92,58,30,0.10)] sm:mb-1 sm:w-44 lg:mb-0 lg:w-48"
               aria-hidden="true"
@@ -983,10 +988,11 @@ export function HomeLandingSections() {
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2.2rem] bg-[#F5EEE4]">
                 <Image
-                  src="/gedung-fmipa.svg"
+                  src={HOME_GEDUNG_IMAGE}
                   alt="Gedung Dekanat FMIPA Unpad"
                   fill
                   priority
+                  fetchPriority="high"
                   sizes="(max-width: 1024px) 90vw, 40vw"
                   className="dekanat-hero-image object-cover transition-transform duration-700 hover:scale-105"
                 />
@@ -1004,12 +1010,11 @@ export function HomeLandingSections() {
               </div>
             </div>
 
-            <Image
-              src="/Beranda-Section1/Turah1.svg"
+              <Image
+              src="/Beranda-Section1/Turah1.webp"
               alt=""
-              width={900}
-              height={900}
-              priority
+              width={2324}
+              height={3037}
               sizes="(max-width: 640px) 112px, (max-width: 1024px) 140px, 168px"
               className="turah-hero-mascot pointer-events-none absolute bottom-6 right-0 z-10 h-auto w-[112px] object-contain drop-shadow-[0_14px_22px_rgba(92,58,30,0.14)] sm:bottom-8 sm:-right-5 sm:w-[140px] lg:bottom-10 lg:-right-10 lg:w-[168px]"
               aria-hidden="true"
@@ -1349,7 +1354,7 @@ export function HomeLandingSections() {
             >
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] bg-[#F0EAD8]">
                 <InformationImage
-                  src={featuredInformation?.image ?? "/gedung-fmipa.svg"}
+                  src={featuredInformation?.image ?? HOME_GEDUNG_IMAGE}
                   alt={featuredInformation?.imageAlt ?? "Informasi Layanan"}
                   fill
                   unoptimized

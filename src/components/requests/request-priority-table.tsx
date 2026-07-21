@@ -96,107 +96,50 @@ export function RequestPriorityTable({
   }
 
   return (
-    <>
-      <div className="grid min-w-0 gap-3 xl:hidden">
-        {rows.map((row) => (
-          <article
-            key={`${row.serviceSlug}-${row.id}`}
-            className="min-w-0 rounded-md border border-[#edf0e9] bg-[#fbfdf9] p-3"
-          >
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="break-words text-sm font-semibold text-[#173d2d]">
-                  {row.serviceTitle}
-                </p>
-                <p className="mt-1 break-words text-xs text-[#4f5b52]">
-                  {row.requesterName}
-                </p>
-              </div>
-              <div className="shrink-0">{getPriorityBadge(row.priorityLevel)}</div>
-            </div>
-
-            <dl className="mt-3 grid gap-2 text-xs text-[#6f746f]">
-              <div className="min-w-0">
-                <dt className="font-semibold text-[#39433c]">Program Studi</dt>
-                <dd className="break-words">{row.programStudy}</dd>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <dt className="font-semibold text-[#39433c]">Masuk</dt>
-                  <dd>{formatDate(row.requestDate)}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-[#39433c]">
-                    Lama Menunggu
-                  </dt>
-                  <dd className="font-medium text-[#8a3d23]">
-                    {formatWaitingTime(row.waitingHours)}
-                  </dd>
-                </div>
-              </div>
-            </dl>
-
-            <Button
-              asChild
-              size="sm"
-              className="mt-3 h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
-            >
-              <Link href={buildPreviewHref(role, row)}>
-                Proses
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </Button>
-          </article>
-        ))}
-      </div>
-
-      <div className="hidden xl:block">
-        <AdminTableScroll>
-          <Table className="min-w-[900px]">
-            <TableHeader className="bg-[#eef3ec]">
-              <TableRow>
-                <TableHead>Layanan</TableHead>
-                <TableHead>Pemohon</TableHead>
-                <TableHead>Program Studi</TableHead>
-                <TableHead>Masuk</TableHead>
-                <TableHead>Lama Menunggu</TableHead>
-                <TableHead>Prioritas</TableHead>
-                <TableHead className="text-center">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={`${row.serviceSlug}-${row.id}`}>
-                  <TableCell className="font-medium">
-                    {row.serviceTitle}
-                  </TableCell>
-                  <TableCell>{row.requesterName}</TableCell>
-                  <TableCell>{row.programStudy}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(row.requestDate)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap font-medium text-[#8a3d23]">
-                    {formatWaitingTime(row.waitingHours)}
-                  </TableCell>
-                  <TableCell>{getPriorityBadge(row.priorityLevel)}</TableCell>
-                  <TableCell className="text-center">
-                    <Button
-                      asChild
-                      size="sm"
-                      className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
-                    >
-                      <Link href={buildPreviewHref(role, row)}>
-                        Proses
-                        <ArrowRight className="size-3.5" />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </AdminTableScroll>
-      </div>
-    </>
+    <AdminTableScroll>
+      <Table className="min-w-[900px]">
+        <TableHeader className="bg-[#eef3ec]">
+          <TableRow>
+            <TableHead>Layanan</TableHead>
+            <TableHead>Pemohon</TableHead>
+            <TableHead>Program Studi</TableHead>
+            <TableHead>Masuk</TableHead>
+            <TableHead>Lama Menunggu</TableHead>
+            <TableHead>Prioritas</TableHead>
+            <TableHead className="text-center">Aksi</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={`${row.serviceSlug}-${row.id}`}>
+              <TableCell className="font-medium">
+                {row.serviceTitle}
+              </TableCell>
+              <TableCell>{row.requesterName}</TableCell>
+              <TableCell>{row.programStudy}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                {formatDate(row.requestDate)}
+              </TableCell>
+              <TableCell className="whitespace-nowrap font-medium text-[#8a3d23]">
+                {formatWaitingTime(row.waitingHours)}
+              </TableCell>
+              <TableCell>{getPriorityBadge(row.priorityLevel)}</TableCell>
+              <TableCell className="text-center">
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-8 shrink-0 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                >
+                  <Link href={buildPreviewHref(role, row)}>
+                    Proses
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </AdminTableScroll>
   );
 }

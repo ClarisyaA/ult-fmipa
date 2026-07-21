@@ -115,33 +115,6 @@ export default async function AdminSystemUserLogPage({
           />
         ) : (
           <div className="grid gap-3">
-            <div className="grid gap-3 md:hidden">
-              {rows.map((row) => (
-                <article
-                  key={row.id}
-                  className="grid gap-2 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="text-xs font-semibold text-[#6f746f]">
-                      {formatDate(row.time)}
-                    </p>
-                    <p className="rounded-full border border-[#d7d9e5] bg-[#f4f5fa] px-2 py-0.5 text-[10px] font-semibold text-[#4e5566]">
-                      {row.module ?? "-"}
-                    </p>
-                  </div>
-                  <p className="break-words text-sm font-bold text-[#1f2922]">
-                    {row.userName}
-                  </p>
-                  <p className="break-words text-xs font-semibold text-[#536058]">
-                    {row.action}
-                  </p>
-                  <p className="break-words text-xs leading-relaxed text-[#6f746f]">
-                    {row.description}
-                  </p>
-                </article>
-              ))}
-            </div>
-            <div className="hidden md:block">
             <AdminTableScroll>
               <Table className="min-w-[860px]">
                 <TableHeader className="bg-[#eef3ec]">
@@ -168,7 +141,6 @@ export default async function AdminSystemUserLogPage({
                 </TableBody>
               </Table>
             </AdminTableScroll>
-            </div>
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#6a6258]">
               <span>
                 Halaman {result.page} dari {result.pageCount}

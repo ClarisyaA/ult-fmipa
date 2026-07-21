@@ -6,11 +6,41 @@ import {
   getAcademicCalendarLink,
 } from "@/lib/home-links";
 
+const CACHE_TTL_MS = 60_000;
+let cachedPayload:
+  | {
+      expiresAt: number;
+      data: {
+        success: true;
+        data: {
+          academicCalendar: {
+            label: string;
+            url: string;
+            isActive: boolean;
+          };
+        };
+      };
+    }
+  | null = null;
+
+function jsonResponse(data: NonNullable<typeof cachedPayload>["data"]) {
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    },
+  });
+}
+
 export async function GET() {
   try {
-    const link = await getAcademicCalendarLink();
+    const now = Date.now();
 
-    return NextResponse.json({
+    if (cachedPayload && cachedPayload.expiresAt > now) {
+      return jsonResponse(cachedPayload.data);
+    }
+
+    const link = await getAcademicCalendarLink();
+    const data = {
       success: true,
       data: {
         academicCalendar: {
@@ -22,7 +52,14 @@ export async function GET() {
           isActive: link?.isActive ?? true,
         },
       },
-    });
+    } as const;
+
+    cachedPayload = {
+      expiresAt: now + CACHE_TTL_MS,
+      data,
+    };
+
+    return jsonResponse(data);
   } catch (error) {
     return jsonApiError(
       error,

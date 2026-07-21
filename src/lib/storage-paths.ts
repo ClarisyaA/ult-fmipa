@@ -1,4 +1,5 @@
 import path from "path";
+import { stat } from "fs/promises";
 
 export type StorageArea =
   | "uploads"
@@ -86,4 +87,19 @@ export function resolveStoredFilePath(area: StorageArea, storedName: string | nu
   }
 
   return absolutePath;
+}
+
+export async function storedFileExists(area: StorageArea, storedName: string | null) {
+  const absolutePath = resolveStoredFilePath(area, storedName);
+
+  if (!absolutePath) {
+    return false;
+  }
+
+  try {
+    const fileStat = await stat(absolutePath);
+    return fileStat.isFile();
+  } catch {
+    return false;
+  }
 }

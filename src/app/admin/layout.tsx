@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 
 import {
   AdminMobileMenu,
@@ -12,6 +13,12 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AdminLayout({
   children,
@@ -31,7 +38,7 @@ export default async function AdminLayout({
           userRole={userRole}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 w-0 flex-1 flex-col overflow-hidden">
           <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-3 pr-32 text-white sm:px-6 md:hidden">
             <div className="flex min-w-0 items-center gap-2.5">
               <AdminMobileMenu
@@ -41,7 +48,7 @@ export default async function AdminLayout({
               />
               <div className="flex min-w-0 items-center gap-2">
                 <Image
-                  src="/logo-unpad.svg"
+                  src="/letters/logo-unpad.png"
                   alt="Logo Unpad"
                   width={36}
                   height={36}
@@ -59,7 +66,7 @@ export default async function AdminLayout({
             </div>
           </header>
           <main
-            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
+            className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
             data-admin-scroll-container
           >
             {children}

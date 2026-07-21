@@ -86,29 +86,6 @@ export default async function AdminSystemUnitsPage({
         ) : rows.length === 0 ? (
           <AdminEmptyState title="Data unit tidak ditemukan" />
         ) : (
-          <>
-          <div className="grid gap-3 md:hidden">
-            {rows.map((row) => (
-              <article
-                key={row.unitId}
-                className="grid gap-2 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-4"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#6f746f]">
-                    ID {row.unitId}
-                  </p>
-                  <p className="break-words text-sm font-bold text-[#1f2922]">
-                    {row.unitName}
-                  </p>
-                  <p className="mt-1 break-words text-xs text-[#6f746f]">
-                    Level {row.levelDataId} - {row.levelDataCode}
-                  </p>
-                </div>
-                <UnitRowActions row={row} levels={levels} />
-              </article>
-            ))}
-          </div>
-          <div className="hidden md:block">
           <AdminTableScroll>
             <Table className="min-w-[760px]">
               <TableHeader className="bg-[#eef3ec]">
@@ -137,8 +114,6 @@ export default async function AdminSystemUnitsPage({
               </TableBody>
             </Table>
           </AdminTableScroll>
-          </div>
-          </>
         )}
         </AdminSectionCard>
       </div>

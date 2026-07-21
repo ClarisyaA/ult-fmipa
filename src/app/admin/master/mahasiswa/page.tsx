@@ -168,73 +168,40 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
               description="Tidak ada baris yang cocok dengan pencarian saat ini."
             />
           ) : (
-            <>
-            <div className="grid gap-3 md:hidden">
-              {rows.map((row) => (
-                <article
-                  key={row.npm}
-                  className="grid gap-3 rounded-lg border border-[#eee6d9] bg-[#fffdf9] p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-bold text-[#1f2922]">
-                        {row.nama ?? "-"}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-[#6f746f]">
-                        {row.npm}
-                      </p>
-                    </div>
-                    <AdminStatusBadge tone="neutral">
-                      {row.status ?? "Aktif"}
-                    </AdminStatusBadge>
-                  </div>
-                  <div className="grid gap-1 text-xs text-[#6f746f]">
-                    <p>Program Studi: {row.programStudi ?? "-"}</p>
-                    <p>Angkatan: {row.angkatan ?? "-"}</p>
-                  </div>
-                  <div data-tour="admin-students-actions">
-                    <MahasiswaRowActions row={row} />
-                  </div>
-                </article>
-              ))}
-            </div>
-            <div className="hidden md:block">
             <AdminTableScroll>
-            <Table className="min-w-[1040px]">
-              <TableHeader className="bg-[#eef3ec]">
-                <TableRow>
-                  <TableHead>NPM</TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Program Studi</TableHead>
-                  <TableHead>Angkatan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Aksi</TableHead>
+              <Table className="min-w-[1040px]">
+                <TableHeader className="bg-[#eef3ec]">
+                  <TableRow>
+                    <TableHead>NPM</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Program Studi</TableHead>
+                    <TableHead>Angkatan</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.npm}>
-                    <TableCell className="font-semibold">{row.npm}</TableCell>
-                    <TableCell>{row.nama ?? "-"}</TableCell>
-                    <TableCell>{row.programStudi ?? "-"}</TableCell>
-                    <TableCell>{row.angkatan ?? "-"}</TableCell>
-                    <TableCell>
-                      <AdminStatusBadge tone="neutral">
-                        {row.status ?? "Aktif"}
-                      </AdminStatusBadge>
-                    </TableCell>
-                    <TableCell>
-                      <div data-tour="admin-students-actions">
-                        <MahasiswaRowActions row={row} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  {rows.map((row) => (
+                    <TableRow key={row.npm}>
+                      <TableCell className="font-semibold">{row.npm}</TableCell>
+                      <TableCell>{row.nama ?? "-"}</TableCell>
+                      <TableCell>{row.programStudi ?? "-"}</TableCell>
+                      <TableCell>{row.angkatan ?? "-"}</TableCell>
+                      <TableCell>
+                        <AdminStatusBadge tone="neutral">
+                          {row.status ?? "Aktif"}
+                        </AdminStatusBadge>
+                      </TableCell>
+                      <TableCell>
+                        <div data-tour="admin-students-actions">
+                          <MahasiswaRowActions row={row} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </AdminTableScroll>
-            </div>
-            </>
           )}
           <div
             className="mt-4 flex flex-col gap-3 border-t border-[#eee6d9] pt-4 sm:flex-row sm:items-center sm:justify-between"
