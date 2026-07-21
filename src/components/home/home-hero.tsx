@@ -9,6 +9,13 @@ import { ArrowDown } from "lucide-react";
 const BASE_SCENE_WIDTH = 1440;
 const BASE_SCENE_HEIGHT = 810;
 const DESKTOP_BREAKPOINT = 1024;
+const HERO_BACKGROUND_SIZES =
+  "(max-width: 1023px) 1440px, (max-width: 1920px) 100vw, 2560px";
+const HERO_LAYER_SIZES = "640px";
+
+function heroAsset(name: string, width: number) {
+  return `/beranda-new/beranda-webp-optimized/${name}-${width}.webp`;
+}
 
 const personWrapperConfig = {
   orang1: {
@@ -62,25 +69,22 @@ const personPoseTransform: Record<ActivePerson, Record<PersonPose, string>> = {
 
 const furniture = [
   {
-    src: "/beranda-new/MejaKiri.svg",
-    width: 2680,
-    height: 2669,
+    src: heroAsset("MejaKiri", 900),
+    width: 900,
+    height: 896,
     style: { left: 150, bottom: 25, width: 400 } as React.CSSProperties,
-    sizesRatio: 0.24,
   },
   {
-    src: "/beranda-new/MejaTengah.svg",
-    width: 2671,
-    height: 2282,
+    src: heroAsset("MejaTengah", 900),
+    width: 900,
+    height: 769,
     style: { left: 560, bottom: 35, width: 387 } as React.CSSProperties,
-    sizesRatio: 0.23,
   },
   {
-    src: "/beranda-new/MejaKanan.svg",
-    width: 2167,
-    height: 2145,
+    src: heroAsset("MejaKanan", 900),
+    width: 900,
+    height: 891,
     style: { right: 65, bottom: 40, width: 330 } as React.CSSProperties,
-    sizesRatio: 0.25,
   },
 ];
 
@@ -113,27 +117,18 @@ type PersonPose = "normal" | "line" | "left" | "right";
 
 const personImageMap = {
   orang1: {
-    normal: "/beranda-new/Orang1.svg",
-    line: "/beranda-new/Orang1Line.svg",
-    left: "/beranda-new/Orang1Left.svg",
-    right: "/beranda-new/Orang1Right.svg",
+    normal: heroAsset("Orang1", 800),
+    line: heroAsset("Orang1Line", 800),
+    left: heroAsset("Orang1Left", 800),
+    right: heroAsset("Orang1Right", 800),
   },
   orang2: {
-    normal: "/beranda-new/Orang2.svg",
-    line: "/beranda-new/Orang2Line.svg",
-    left: "/beranda-new/Orang2Left.svg",
-    right: "/beranda-new/Orang2Right.svg",
+    normal: heroAsset("Orang2", 800),
+    line: heroAsset("Orang2Line", 800),
+    left: heroAsset("Orang2Left", 800),
+    right: heroAsset("Orang2Right", 800),
   },
 } satisfies Record<ActivePerson, Record<PersonPose, string>>;
-
-const preloadImages = [
-  "/beranda-new/ULT.svg",
-  "/beranda-new/MejaKiri.svg",
-  "/beranda-new/MejaKanan.svg",
-  "/beranda-new/MejaTengah.svg",
-  ...Object.values(personImageMap.orang1),
-  ...Object.values(personImageMap.orang2),
-];
 
 function getPose(
   person: ActivePerson,
@@ -264,16 +259,12 @@ function SceneImage({
   width,
   height,
   style,
-  sceneWidth,
-  sizesRatio,
   className = "",
 }: {
   src: string;
   width: number;
   height: number;
   style: React.CSSProperties;
-  sceneWidth: number;
-  sizesRatio: number;
   className?: string;
 }) {
   return (
@@ -283,9 +274,9 @@ function SceneImage({
         alt=""
         width={width}
         height={height}
-        sizes={`${Math.round(sceneWidth * sizesRatio)}px`}
+        sizes={HERO_LAYER_SIZES}
         className="h-auto w-full object-contain"
-        priority
+        quality={75}
         aria-hidden="true"
       />
     </div>
@@ -302,11 +293,13 @@ function PersonSprite({
   return (
     <div className="relative h-full w-full">
       {(["normal", "line", "left", "right"] as const).map((p) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           key={p}
           src={personImageMap[person][p]}
           alt=""
+          fill
+          sizes={HERO_LAYER_SIZES}
+          quality={75}
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-contain"
           style={{
@@ -336,6 +329,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   const person1Wrap = useRef<HTMLAnchorElement | null>(null);
   const person2Wrap = useRef<HTMLAnchorElement | null>(null);
 
+  const heroRectRef = useRef<DOMRect | null>(null);
   const prevXRef = useRef<number | null>(null);
   const activeRef = useRef<ActivePerson>("orang1");
   const dirRef = useRef<PersonDirection>("idle");
@@ -350,34 +344,6 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   useEffect(() => {
     dirRef.current = mouseDirection;
   }, [mouseDirection]);
-
-  useEffect(() => {
-    let active = true;
-    let loadedCount = 0;
-    const totalCount = preloadImages.length;
-
-    const checkLoad = () => {
-      loadedCount++;
-      if (loadedCount >= totalCount && active) {
-        onLoadComplete?.();
-      }
-    };
-
-    preloadImages.forEach((src) => {
-      const img = new window.Image();
-      img.src = src;
-      if (img.complete) {
-        checkLoad();
-      } else {
-        img.addEventListener("load", checkLoad, { once: true });
-        img.addEventListener("error", checkLoad, { once: true });
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [onLoadComplete]);
 
   useEffect(() => {
     const check = () => setShowScrollHint(window.innerWidth < sceneSize.width);
@@ -400,14 +366,24 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
     if (!hero) return;
 
     const MY = 6 * sceneScale;
+    const updateHeroRect = () => {
+      heroRectRef.current = hero.getBoundingClientRect();
+    };
+    updateHeroRect();
+    window.addEventListener("resize", updateHeroRect);
+    window.addEventListener("scroll", updateHeroRect, { passive: true });
 
     const onMove = (e: MouseEvent) => {
       if (rafId.current) cancelAnimationFrame(rafId.current);
+      const clientX = e.clientX;
+      const clientY = e.clientY;
       rafId.current = requestAnimationFrame(() => {
-        const b = hero.getBoundingClientRect();
-        const localX = e.clientX - b.left;
+        const b = heroRectRef.current;
+        if (!b) return;
+
+        const localX = clientX - b.left;
         const baselineLocalX = localX / sceneScale;
-        const localY = e.clientY - b.top;
+        const localY = clientY - b.top;
         const nx =
           (Math.min(1, Math.max(0, localX / sceneSize.width)) - 0.5) * 2;
         const ny =
@@ -420,7 +396,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         }
 
         if (prevXRef.current !== null) {
-          const dx = e.clientX - prevXRef.current;
+          const dx = clientX - prevXRef.current;
           if (dx < -6 && dirRef.current !== "left") {
             dirRef.current = "left";
             setMouseDir("left");
@@ -429,7 +405,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
             setMouseDir("right");
           }
         }
-        prevXRef.current = e.clientX;
+        prevXRef.current = clientX;
 
         const ty = ny * MY;
         if (next === "orang1") {
@@ -476,6 +452,8 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
     return () => {
       hero.removeEventListener("mousemove", onMove);
       hero.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("resize", updateHeroRect);
+      window.removeEventListener("scroll", updateHeroRect);
       if (rafId.current) cancelAnimationFrame(rafId.current);
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
@@ -494,10 +472,11 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
     const updateFromScroll = () => {
       if (window.innerWidth >= sceneSize.width) return;
       if (raf) cancelAnimationFrame(raf);
+      const scrollLeft = scroller.scrollLeft;
+      const maxScroll = Math.max(stage.scrollWidth - scroller.clientWidth, 1);
+      const progress = scrollLeft / maxScroll;
+      const dx = scrollLeft - lastScrollLeft;
       raf = requestAnimationFrame(() => {
-        const maxScroll = Math.max(stage.scrollWidth - scroller.clientWidth, 1);
-        const progress = scroller.scrollLeft / maxScroll;
-        const dx = scroller.scrollLeft - lastScrollLeft;
         const next: ActivePerson = progress < 0.5 ? "orang1" : "orang2";
         const dir: PersonDirection =
           dx < -1 ? "left" : dx > 1 ? "right" : dirRef.current;
@@ -520,7 +499,7 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
           movePerson(person2Wrap.current, tx, 0);
         }
 
-        lastScrollLeft = scroller.scrollLeft;
+        lastScrollLeft = scrollLeft;
         if (timer) clearTimeout(timer);
         timer = window.setTimeout(() => {
           if (dirRef.current !== "idle") {
@@ -571,22 +550,17 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         }}
       >
         <Image
-          src="/beranda-new/ULT.svg"
+          src="/beranda-new/beranda-webp/ULT.svg"
           alt=""
           fill
           priority
-          sizes={`${sceneSize.width}px`}
+          sizes={HERO_BACKGROUND_SIZES}
           className="pointer-events-none object-cover object-center"
           aria-hidden="true"
+          onLoad={onLoadComplete}
         />
         <div className="absolute inset-x-0 top-0 z-[1] h-24 bg-gradient-to-b from-[#fffaf2]/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-t from-[#fffaf2]/55 to-transparent" />
-
-        <div className="pointer-events-none hidden" aria-hidden="true">
-          {preloadImages.map((s) => (
-            <Image key={s} src={s} alt="" width={1} height={1} />
-          ))}
-        </div>
 
         <Link
           href="/profil"
@@ -607,8 +581,6 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
               width={item.width}
               height={item.height}
               style={scaleSceneStyle(item.style, sceneScale)}
-              sceneWidth={sceneSize.width}
-              sizesRatio={item.sizesRatio}
               className="drop-shadow-lg"
             />
           ))}

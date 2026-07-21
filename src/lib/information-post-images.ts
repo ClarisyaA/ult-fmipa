@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import {
@@ -5,6 +7,7 @@ import {
   saveInformationImage,
   type SavedInformationImageMetadata,
 } from "@/lib/information-image-upload";
+import { storedFileExists } from "@/lib/storage-paths";
 
 export type InformationPostImage = {
   id: string;
@@ -168,6 +171,37 @@ export async function getInformationPostCoverImage(postId: string) {
   const images = await getInformationPostImages(postId);
 
   return images.find((image) => image.isCover) ?? images[0] ?? null;
+}
+
+export async function getAvailableInformationPostCoverImages(postIds: string[]) {
+  const validIds = postIds.filter((id) => /^\d+$/.test(id));
+
+  if (validIds.length === 0 || !(await hasImageTable())) {
+    return new Map<string, InformationPostImage>();
+  }
+
+  const rows = await prisma.$queryRaw<ImageRecord[]>`
+    SELECT *
+    FROM ult_information_post_images
+    WHERE POST_ID IN (${Prisma.join(validIds.map((id) => BigInt(id)))})
+    ORDER BY POST_ID ASC, IS_COVER DESC, SORT_ORDER ASC, ID ASC
+  `;
+
+  const covers = new Map<string, InformationPostImage>();
+
+  for (const record of rows) {
+    const image = toImage(record);
+
+    if (covers.has(image.postId)) {
+      continue;
+    }
+
+    if (await storedFileExists("information", image.storedName)) {
+      covers.set(image.postId, image);
+    }
+  }
+
+  return covers;
 }
 
 export async function getInformationPostImageRecord(imageId: string) {

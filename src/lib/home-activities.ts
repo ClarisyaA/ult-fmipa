@@ -5,6 +5,7 @@ import {
   type SavedHomeActivityImageMetadata,
 } from "@/lib/home-activity-image-upload";
 import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
+import { storedFileExists } from "@/lib/storage-paths";
 
 export type HomeActivity = {
   id: string;
@@ -126,6 +127,24 @@ function toPublicActivity(activity: HomeActivity): PublicHomeActivity {
     imageFit: activity.imageFit,
     sortOrder: activity.sortOrder,
   };
+}
+
+async function toPublicActivityWithAvailableImage(
+  activity: HomeActivity
+): Promise<PublicHomeActivity> {
+  const publicActivity = toPublicActivity(activity);
+
+  if (
+    activity.imageStoredName &&
+    !(await storedFileExists("homeActivities", activity.imageStoredName))
+  ) {
+    return {
+      ...publicActivity,
+      image: null,
+    };
+  }
+
+  return publicActivity;
 }
 
 function isMissingHomeActivitiesTableError(error: unknown) {
@@ -322,7 +341,7 @@ export async function getPublicHomeActivities() {
       ORDER BY SORT_ORDER ASC, CREATED_AT DESC, ID DESC
     `;
 
-    return rows.map(toActivity).map(toPublicActivity);
+    return Promise.all(rows.map(toActivity).map(toPublicActivityWithAvailableImage));
   } catch (error) {
     handleReadError(error);
     return [];

@@ -23,11 +23,12 @@ export function HomeClientWrapper() {
             <div className="absolute inset-4 animate-ping rounded-full bg-[#EE1C25]/8 opacity-70" />
             <div className="relative grid h-20 w-20 place-items-center rounded-full bg-white shadow-[0_14px_34px_rgba(24,19,14,0.10)]">
               <Image
-                src="/Beranda-Section1/Turah1.svg"
+                src="/Beranda-Section1/Turah1.webp"
                 alt="Logo ULT FMIPA"
-                width={68}
-                height={68}
+                width={2324}
+                height={3037}
                 priority
+                quality={75}
                 className="h-16 w-16 object-contain"
               />
             </div>
