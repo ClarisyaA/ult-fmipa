@@ -1,4 +1,5 @@
 import { getServerSession, type NextAuthOptions } from "next-auth";
+import { cache } from "react";
 import type { OAuthConfig } from "next-auth/providers/oauth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
@@ -308,11 +309,11 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await getServerSession(authOptions);
 
   return session?.user ?? null;
-}
+});
 
 export async function requireRole(allowedRoles: AppRole[]) {
   const user = await getCurrentUser();

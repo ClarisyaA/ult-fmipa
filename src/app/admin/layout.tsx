@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 
 import {
   AdminMobileMenu,
@@ -12,6 +13,12 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AdminLayout({
   children,
@@ -41,7 +48,7 @@ export default async function AdminLayout({
               />
               <div className="flex min-w-0 items-center gap-2">
                 <Image
-                  src="/logo-unpad.svg"
+                  src="/letters/logo-unpad.png"
                   alt="Logo Unpad"
                   width={36}
                   height={36}

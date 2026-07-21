@@ -181,6 +181,7 @@ export type PerformanceSummary = {
 
 type PendingRequestRow = {
   id: string | bigint | number;
+  npm: string | bigint | number | null;
   serviceTitle: string;
   serviceSlug: string;
   serviceCategory: string;
@@ -188,6 +189,12 @@ type PendingRequestRow = {
   programStudy: string | null;
   requestDate: Date | string | null;
   waitingHours: bigint | number | null;
+};
+
+type StudentProfileRow = {
+  npm: string | number | bigint | null;
+  name: string | null;
+  programStudy: string | null;
 };
 
 function quoteIdentifier(identifier: string) {
@@ -317,24 +324,6 @@ async function getVerificationWorkflowSummary(
   return rows[0];
 }
 
-function buildProgramStudySql() {
-  return Prisma.sql`COALESCE(
-    NULLIF(CONVERT(active_student.\`PROGRAM_STUDI\` USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    NULLIF(CONVERT(archived_student.\`PROGRAM_STUDI\` USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    NULLIF(CONVERT(CONCAT_WS(' ', alumni_profile.\`program\`, alumni_profile.\`prodi\`) USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    CONVERT('Tidak diketahui' USING utf8mb4) COLLATE utf8mb4_unicode_ci
-  )`;
-}
-
-function buildRequesterNameSql() {
-  return Prisma.sql`COALESCE(
-    NULLIF(CONVERT(active_student.\`NAMA\` USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    NULLIF(CONVERT(archived_student.\`NAMA\` USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    NULLIF(CONVERT(alumni_profile.\`nama\` USING utf8mb4) COLLATE utf8mb4_unicode_ci, ''),
-    CONVERT('Tidak diketahui' USING utf8mb4) COLLATE utf8mb4_unicode_ci
-  )`;
-}
-
 function buildPendingCondition(metadata: RequestTableMetadata) {
   if (metadata.workflow === "normal") {
     const processColumn = Prisma.raw(quoteIdentifier(metadata.processColumn));
@@ -348,38 +337,20 @@ function buildPendingCondition(metadata: RequestTableMetadata) {
 function buildPendingRequestSelect(service: ServiceWithRequestTable) {
   const metadata = requestTableMetadata[service.sourceTable];
   const table = Prisma.raw(quoteIdentifier(service.sourceTable));
-  const requesterNameSql = buildRequesterNameSql();
-  const programStudySql = buildProgramStudySql();
   const pendingCondition = buildPendingCondition(metadata);
 
   return Prisma.sql`
     SELECT
       CAST(requests.\`ID\` AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS id,
+      CAST(requests.\`NPM\` AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS npm,
       CONVERT(${service.title} USING utf8mb4) COLLATE utf8mb4_unicode_ci AS serviceTitle,
       CONVERT(${service.slug} USING utf8mb4) COLLATE utf8mb4_unicode_ci AS serviceSlug,
       CONVERT(${service.category} USING utf8mb4) COLLATE utf8mb4_unicode_ci AS serviceCategory,
-      ${requesterNameSql} AS requesterName,
-      ${programStudySql} AS programStudy,
+      CONVERT('Tidak diketahui' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS requesterName,
+      CONVERT('Tidak diketahui' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS programStudy,
       requests.\`PERMINTAAN_TGL\` AS requestDate,
       TIMESTAMPDIFF(HOUR, requests.\`PERMINTAAN_TGL\`, NOW()) AS waitingHours
     FROM ${table} requests
-    LEFT JOIN \`mahasiswa\` active_student
-      ON CONVERT(active_student.\`NPM\` USING utf8mb4) COLLATE utf8mb4_unicode_ci =
-        CONVERT(requests.\`NPM\` USING utf8mb4) COLLATE utf8mb4_unicode_ci
-    LEFT JOIN \`mahasiswa_sd_2015\` archived_student
-      ON CONVERT(archived_student.\`NPM\` USING utf8mb4) COLLATE utf8mb4_unicode_ci =
-        CONVERT(requests.\`NPM\` USING utf8mb4) COLLATE utf8mb4_unicode_ci
-    LEFT JOIN (
-      SELECT
-        \`npm\`,
-        MAX(\`nama\`) AS \`nama\`,
-        MAX(\`program\`) AS \`program\`,
-        MAX(\`prodi\`) AS \`prodi\`
-      FROM \`alumni\`
-      GROUP BY \`npm\`
-    ) alumni_profile
-      ON CONVERT(alumni_profile.\`npm\` USING utf8mb4) COLLATE utf8mb4_unicode_ci =
-        CONVERT(requests.\`NPM\` USING utf8mb4) COLLATE utf8mb4_unicode_ci
     WHERE ${pendingCondition}
   `;
 }
@@ -438,18 +409,16 @@ export async function getDashboardSummary(
     },
   );
 
-  const serviceSummaries: ServiceRequestSummary[] = [];
-
-  for (const service of services) {
-    const serviceSummary = await getServiceSummary(
+  const serviceSummaries = await Promise.all(
+    services.map((service) =>
+      getServiceSummary(
       service.title,
       service.slug,
       service.sourceTable,
       options,
-    );
-
-    serviceSummaries.push(serviceSummary);
-  }
+      ),
+    ),
+  );
 
   return serviceSummaries.reduce<DashboardSummary>(
     (summary, service) => ({
@@ -715,6 +684,84 @@ function buildPendingRequestDateWhereSql(options: {
     : Prisma.empty;
 }
 
+function normalizeProfileKey(value: string | bigint | number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value).trim();
+}
+
+function profileMap(rows: StudentProfileRow[]) {
+  return new Map(
+    rows
+      .map((row) => [normalizeProfileKey(row.npm), row] as const)
+      .filter(([npm]) => npm.length > 0),
+  );
+}
+
+async function getLimitedStudentProfiles(rows: PendingRequestRow[]) {
+  const npms = Array.from(
+    new Set(rows.map((row) => normalizeProfileKey(row.npm)).filter(Boolean)),
+  );
+
+  if (npms.length === 0) {
+    return {
+      active: new Map<string, StudentProfileRow>(),
+      archived: new Map<string, StudentProfileRow>(),
+      alumni: new Map<string, StudentProfileRow>(),
+    };
+  }
+
+  const [activeRows, archivedRows, alumniRows] = await Promise.all([
+    prisma.$queryRaw<StudentProfileRow[]>`
+      SELECT
+        \`NPM\` AS npm,
+        NULLIF(\`NAMA\`, '') AS name,
+        NULLIF(\`PROGRAM_STUDI\`, '') AS programStudy
+      FROM \`mahasiswa\`
+      WHERE \`NPM\` IN (${Prisma.join(npms)})
+    `,
+    prisma.$queryRaw<StudentProfileRow[]>`
+      SELECT
+        \`NPM\` AS npm,
+        NULLIF(\`NAMA\`, '') AS name,
+        NULLIF(\`PROGRAM_STUDI\`, '') AS programStudy
+      FROM \`mahasiswa_sd_2015\`
+      WHERE \`NPM\` IN (${Prisma.join(npms)})
+    `,
+    prisma.$queryRaw<StudentProfileRow[]>`
+      SELECT
+        \`npm\` AS npm,
+        NULLIF(MAX(\`nama\`), '') AS name,
+        NULLIF(CONCAT_WS(' ', MAX(\`program\`), MAX(\`prodi\`)), '') AS programStudy
+      FROM \`alumni\`
+      WHERE \`npm\` IN (${Prisma.join(npms)})
+      GROUP BY \`npm\`
+    `,
+  ]);
+
+  return {
+    active: profileMap(activeRows),
+    archived: profileMap(archivedRows),
+    alumni: profileMap(alumniRows),
+  };
+}
+
+async function hydratePendingRequestRows(rows: PendingRequestRow[]) {
+  const profiles = await getLimitedStudentProfiles(rows);
+
+  return rows.map((row) => {
+    const npm = normalizeProfileKey(row.npm);
+    const profile =
+      profiles.active.get(npm) ??
+      profiles.archived.get(npm) ??
+      profiles.alumni.get(npm);
+
+    return {
+      ...row,
+      requesterName: profile?.name || "Tidak diketahui",
+      programStudy: profile?.programStudy || "Tidak diketahui",
+    };
+  });
+}
+
 async function getPendingDashboardRequests(options: {
   order: "newest" | "oldest";
   limit: number;
@@ -751,6 +798,7 @@ async function getPendingDashboardRequests(options: {
   const rows = await prisma.$queryRaw<PendingRequestRow[]>`
     SELECT
       id,
+      npm,
       serviceTitle,
       serviceSlug,
       serviceCategory,
@@ -763,8 +811,9 @@ async function getPendingDashboardRequests(options: {
     ORDER BY requestDate ${Prisma.raw(options.order === "oldest" ? "ASC" : "DESC")}, id ${Prisma.raw(options.order === "oldest" ? "ASC" : "DESC")}
     LIMIT ${options.limit}
   `;
+  const hydratedRows = await hydratePendingRequestRows(rows);
 
-  return rows.map((row) => ({
+  return hydratedRows.map((row) => ({
     id: String(row.id),
     serviceTitle: row.serviceTitle,
     serviceSlug: row.serviceSlug,
@@ -812,6 +861,7 @@ export async function getPriorityDashboardRequests(
   const rows = await prisma.$queryRaw<PendingRequestRow[]>`
     SELECT
       id,
+      npm,
       serviceTitle,
       serviceSlug,
       serviceCategory,
@@ -824,8 +874,9 @@ export async function getPriorityDashboardRequests(
     ORDER BY waitingHours DESC, requestDate ASC, id ASC
     LIMIT ${limit}
   `;
+  const hydratedRows = await hydratePendingRequestRows(rows);
 
-  return rows.map((row) => {
+  return hydratedRows.map((row) => {
     const waitingHours = Math.max(0, toNumber(row.waitingHours));
 
     return {
