@@ -73,10 +73,13 @@ async function stopServer(child) {
   }
 }
 
-const server = spawn(pnpmCommand, ["exec", "next", "dev"], {
-  stdio: "inherit",
-  shell: isWindows,
-});
+const server = spawn(
+  process.execPath,
+  ["scripts/next-with-dist.mjs", ".next-e2e", "dev"],
+  {
+    stdio: "inherit",
+  },
+);
 
 try {
   await waitForServer();

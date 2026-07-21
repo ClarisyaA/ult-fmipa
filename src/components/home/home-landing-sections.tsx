@@ -1028,7 +1028,7 @@ export function HomeLandingSections() {
       {/* ══════════════════════════════════════════════
           SECTION 2 — KEGIATAN MAHASISWA
       ══════════════════════════════════════════════ */}
-      <section className="kegiatan-sec relative border-t border-[#EAE2D4] bg-[#F7F3EA] px-4 py-24 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="kegiatan-sec relative border-t border-[#EAE2D4] bg-[#F7F3EA] px-4 py-6 sm:px-6 sm:py-24 sm:overflow-hidden lg:px-8">
 
         {/* Subtle grid texture */}
         <div
@@ -1049,18 +1049,18 @@ export function HomeLandingSections() {
                 <span className="size-1.5 rounded-full bg-[#03B36B]" />
                 Aktivitas Sivitas
               </span> */}
-              <h2 className="mt-4 text-[2.2rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[3rem]">
+              <h2 className="mt-0 text-[2.2rem] font-black leading-tight tracking-tight text-[#18130E] sm:mt-4 sm:text-[3rem]">
                 Kegiatan Mahasiswa
               </h2>
               <SectionUnderline className="text-[#03B36B]" />
-              <p className="mt-2 max-w-lg text-[0.9375rem] leading-relaxed text-[#6B5E52]">
+              <p className="mt-3 max-w-lg text-[0.9375rem] leading-relaxed text-[#6B5E52] sm:mt-2">
                 Jelajahi program dan aktivitas yang diselenggarakan dalam lingkungan civitas akademika FMIPA Unpad.
               </p>
             </div>
 
             {/* Manual prev/next controls */}
             {activities.length > 1 ? (
-            <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 sm:flex">
               <button
                 onClick={() =>
                   goToActivity(
@@ -1087,7 +1087,7 @@ export function HomeLandingSections() {
           </div>
 
           {/* Slide container */}
-          <div className="kegiatan-container relative mt-8 min-h-[650px] overflow-hidden md:min-h-[430px]">
+          <div className="kegiatan-container relative mt-6 sm:mt-8 sm:min-h-[650px] sm:overflow-hidden md:min-h-[430px]">
             {activities.map((act, idx) => {
               const isActive = idx === currentActivityIdx;
               const isPrevious = idx === previousIdx;
@@ -1111,14 +1111,16 @@ export function HomeLandingSections() {
                   key={act.id}
                   role="tabpanel"
                   aria-hidden={!isActive}
-                  className={`absolute inset-0 grid w-full items-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${slideStateClass} ${
+                  className={`${
+                    isActive ? "grid" : "hidden"
+                  } w-full items-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:absolute sm:inset-0 sm:grid ${slideStateClass} ${
                     isActive ? "pointer-events-auto" : "pointer-events-none"
                   }`}
                 >
-                  <div className="grid items-center gap-10 md:grid-cols-2">
+                  <div className="grid rounded-2xl border border-[#DDD5C3] bg-white p-3 shadow-sm sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none md:grid-cols-2 md:items-center md:gap-10">
 
                     {/* Image block */}
-                    <div className={`relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-[#DDD5C3] bg-[#F5F0E8] ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
+                    <div className={`relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-[#DDD5C3] bg-[#F5F0E8] sm:aspect-[16/10] sm:rounded-3xl ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}>
                       <HomeActivityImage
                         src={act.image}
                         alt={act.imageAlt}
@@ -1131,24 +1133,49 @@ export function HomeLandingSections() {
                       />
                       {/* Eyebrow number badge */}
                       <div
-                        className="absolute left-4 top-4 flex size-10 items-center justify-center rounded-xl bg-[#18130E] text-sm font-black text-white"
+                        className="absolute left-3 top-3 flex size-10 items-center justify-center rounded-xl bg-[#18130E] text-sm font-black text-white sm:left-4 sm:top-4"
                       >
                         {displayNumber}
                       </div>
+                      {activities.length > 1 ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              goToActivity(
+                                (activeIdx - 1 + activities.length) % activities.length,
+                                -1
+                              )
+                            }
+                            className="absolute left-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#D9D0BC] bg-white/95 text-[#18130E] shadow-lg shadow-black/15 transition-all duration-200 hover:bg-[#EE1C25] hover:text-white hover:border-[#EE1C25] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:hidden"
+                            aria-label="Slide sebelumnya"
+                          >
+                            <ChevronLeft className="size-5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              goToActivity((currentActivityIdx + 1) % activities.length, 1)
+                            }
+                            className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#D9D0BC] bg-white/95 text-[#18130E] shadow-lg shadow-black/15 transition-all duration-200 hover:bg-[#EE1C25] hover:text-white hover:border-[#EE1C25] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:hidden"
+                            aria-label="Slide berikutnya"
+                          >
+                            <ChevronRight className="size-5" />
+                          </button>
+                        </>
+                      ) : null}
                     </div>
 
                     {/* Text block */}
-                    <div className={`relative flex flex-col justify-center ${idx % 2 === 0 ? "md:order-2" : "md:order-1"}`}>
-                      <span className="activity-bg-number pointer-events-none absolute -top-12 left-0 text-[7rem] font-black leading-none text-[#18130E]/5 sm:text-[9rem]">
+                    <div className={`relative mt-5 flex flex-col justify-center sm:mt-0 ${idx % 2 === 0 ? "md:order-2" : "md:order-1"}`}>
+                      <span className="activity-bg-number pointer-events-none absolute -top-12 left-0 hidden text-[7rem] font-black leading-none text-[#18130E]/5 sm:block sm:text-[9rem]">
                         {displayNumber}
                       </span>
                       <span className="relative text-[11px] font-bold uppercase tracking-[0.28em] text-[#6B5E52]">
                         {act.eyebrow ?? "Agenda Sivitas"}
                       </span>
-                      <h3 className="relative mt-3 text-[1.75rem] font-black leading-tight tracking-tight text-[#18130E] sm:text-[2.1rem]">
+                      <h3 className="relative mt-2 text-[1.65rem] font-black leading-tight tracking-tight text-[#18130E] sm:mt-3 sm:text-[2.1rem]">
                         {act.title}
                       </h3>
-                      <p className="relative mt-4 text-[0.9375rem] leading-[1.8] text-[#6B5E52]">{act.description}</p>
+                      <p className="relative mt-3 text-[0.9375rem] leading-[1.75] text-[#6B5E52] sm:mt-4 sm:leading-[1.8]">{act.description}</p>
                     </div>
                   </div>
                 </div>
@@ -1159,7 +1186,7 @@ export function HomeLandingSections() {
           {/* Progress bars */}
           {activities.length > 1 ? (
           <div
-            className="mt-10 grid gap-2"
+            className="mt-7 grid gap-2 sm:mt-10"
             style={{ gridTemplateColumns: `repeat(${activities.length}, minmax(0, 1fr))` }}
           >
             {activities.map((activity, idx) => (

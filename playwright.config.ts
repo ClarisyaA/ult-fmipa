@@ -23,7 +23,7 @@ export default defineConfig({
     ? undefined
     : {
         command:
-          process.platform === "win32" ? "pnpm.cmd exec next dev" : "pnpm dev",
+          "node scripts/next-with-dist.mjs .next-e2e dev",
         url: `${baseURL}/api/auth/providers`,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
