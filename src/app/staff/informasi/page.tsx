@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Newspaper, PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 
 import { InformationDeleteButton } from "@/components/information/information-delete-button";
 import { InformationStatusAction } from "@/components/information/information-status-action";
@@ -159,10 +159,6 @@ export default async function StaffInformasiPage() {
               <p className="mt-1 text-[11px] text-[#7a7166]">
                 Semua draft, publikasi, dan arsip informasi.
               </p>
-            </div>
-            <div className="flex items-center gap-2 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 text-xs font-semibold text-[#173d2d] shadow-sm">
-              <Newspaper className="size-4 text-[#0f5b45]" />
-              {error ? "Perlu dimuat ulang" : `${posts.length} informasi`}
             </div>
           </div>
 

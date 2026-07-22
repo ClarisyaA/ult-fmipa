@@ -50,7 +50,7 @@ export default async function StaffHomeActivitiesPage() {
     <AdminPageShell>
       <AdminPageHeader
         title="Kegiatan Mahasiswa"
-        description="Kelola item carousel Kegiatan Mahasiswa di homepage."
+        description="Kelola item Kegiatan Mahasiswa di homepage."
         action={
           <Button
             asChild

@@ -7,7 +7,6 @@ import { signOut } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
-  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   FileText,
@@ -15,10 +14,8 @@ import {
   Home,
   Images,
   LogOut,
-  MapPin,
   Menu,
   MessageSquarePlus,
-  Network,
   Newspaper,
   X,
 } from "lucide-react";
@@ -38,8 +35,6 @@ const navIcons = {
   "Usulan Layanan": MessageSquarePlus,
   Informasi: Newspaper,
   "Kegiatan Mahasiswa": Images,
-  "Profil - Struktur": Network,
-  "Profil - Lokasi": MapPin,
   Survei: BarChart3,
   "Website Publik": Globe,
 };
@@ -185,9 +180,6 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
               </p>
               <p className="text-xs text-white/68">{userRole}</p>
             </div>
-            {isCollapsed ? null : (
-              <ChevronDown className="size-3.5 text-white/62" />
-            )}
           </div>
           <Button
             type="button"

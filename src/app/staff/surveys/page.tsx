@@ -1,4 +1,4 @@
-import { ClipboardList, MessageSquareText, Star } from "lucide-react";
+import { ClipboardList, MessageSquareText } from "lucide-react";
 
 import {
   Table,
@@ -86,10 +86,6 @@ export default async function StaffSurveysPage() {
                 "Pantau kepuasan layanan dari pengajuan yang sudah selesai."}
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 text-xs font-semibold text-[#173d2d] shadow-sm">
-            <Star className="size-4 text-[#0f5b45]" />
-            {error ? "Perlu dimuat ulang" : `${summary.totalCount} respons`}
-          </div>
         </div>
       </div>
 
@@ -118,7 +114,7 @@ export default async function StaffSurveysPage() {
                   Komentar Terbaru
                 </h2>
                 <p className="mt-1 text-[11px] text-[#7a7166]">
-                  Komentar ditampilkan tanpa membuka data master pemohon.
+                  Komentar ditampilkan tanpa menyertakan identitas pemohon.
                 </p>
               </div>
               <MessageSquareText className="size-4 text-[#0f5b45]" />
@@ -163,7 +159,7 @@ export default async function StaffSurveysPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:px-5">
               <div>
                 <h2 className="text-sm font-semibold text-[#173d2d]">
-                  Breakdown Per Layanan
+                  Hasil Survei per Layanan
                 </h2>
                 <p className="mt-1 text-[11px] text-[#7a7166]">
                   Ringkasan jumlah respons dan rating keseluruhan.

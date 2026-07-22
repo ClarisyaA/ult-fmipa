@@ -81,8 +81,6 @@ export const staffNavItems: NavItem[] = [
   { label: "Usulan Layanan", href: "/staff/usulan-layanan" },
   { label: "Informasi", href: "/staff/informasi" },
   { label: "Kegiatan Mahasiswa", href: "/staff/beranda/kegiatan" },
-  { label: "Profil - Struktur", href: "/staff/profil/struktur" },
-  { label: "Profil - Lokasi", href: "/staff/profil/lokasi" },
   { label: "Survei", href: "/staff/surveys" },
   { label: "Website Publik", href: "/" },
 ];

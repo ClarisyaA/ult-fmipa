@@ -66,8 +66,8 @@ function DetailField({
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-medium">{value}</p>
+      <p className="text-[11px] font-semibold text-[#7a7166]">{label}</p>
+      <p className="mt-1 text-sm font-medium text-[#28352c]">{value}</p>
     </div>
   );
 }
@@ -102,14 +102,14 @@ function formatLanguage(value: string | null | undefined) {
 function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   if (detail.sourceTable === "permohonan_magang") {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
           <CardTitle>Detail Pengajuan Magang/KP/TA</CardTitle>
           <CardDescription>
             Data pengajuan dikelompokkan sesuai kebutuhan proses layanan.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-4 p-4">
           <DetailSection title="Data Mahasiswa">
             <DetailField label="Nama" value={detail.requesterName} />
             <DetailField label="NPM" value={detail.npm} />
@@ -144,14 +144,14 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
 
   if (detail.sourceTable === "surat_izin_kegiatan") {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
           <CardTitle>Detail Surat Izin Kegiatan</CardTitle>
           <CardDescription>
             Tahap verifikasi, form final, dan pemrosesan surat dipisahkan agar mudah ditindaklanjuti.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-4 p-4">
           <DetailSection title="Tahap Verifikasi ACC">
             <DetailField label="Status Verifikasi" value={detail.approvalStatus} />
             <DetailField
@@ -204,14 +204,14 @@ function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+      <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
         <CardTitle>Detail Pengajuan</CardTitle>
         <CardDescription>
           Field yang ditampilkan sudah dibatasi untuk kebutuhan operasional.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2">
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
         <DetailField label="NPM" value={detail.npm} />
         <DetailField label="Email" value={detail.requesterEmail} />
         <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
@@ -451,9 +451,23 @@ export default async function StaffRequestDetailPage({
   const printReadiness = await getPrintReadiness(printableInfo, detail.id);
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <Button asChild variant="ghost" className="-ml-2 mb-4">
+    <div
+      className="-m-4 min-h-[calc(100%+2rem)] bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
+      style={{
+        backgroundImage: [
+          "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
+          "radial-gradient(circle at 74% 12%, rgba(247,238,224,0.92), transparent 34%)",
+          "linear-gradient(180deg, #fbf8f2 0%, #f8f2ea 38%, #f5ecdf 100%)",
+        ].join(", "),
+        backgroundAttachment: "fixed",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+      }}
+    >
+      <div className="px-5 pb-10 pt-5 sm:px-7 lg:px-8">
+        <div className="mx-auto max-w-[1320px]">
+        <Button asChild variant="ghost" className="-ml-2 mb-3 text-[#173d2d] hover:bg-white/60 hover:text-[#0f3d2e]">
           <Link href="/staff/requests">
             <ArrowLeft className="size-4" />
             Kembali ke Pengajuan
@@ -461,18 +475,21 @@ export default async function StaffRequestDetailPage({
         </Button>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-normal">
+            <h1 className="text-lg font-semibold tracking-normal text-[#173d2d] sm:text-xl">
               {detail.serviceTitle}
             </h1>
             <Badge variant="secondary">{detail.statusLabel}</Badge>
           </div>
           <PrintLetterButton detail={detail} printableInfo={printableInfo} />
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-xs text-[#566258]">
           Mode terbatas. Hanya update status workflow yang diaktifkan.
         </p>
         <PrintReadinessNotice readiness={printReadiness} />
+        </div>
       </div>
+
+      <div className="relative z-10 mx-auto -mt-6 grid max-w-[1320px] gap-4 px-4 pb-6 sm:px-6 lg:px-7">
 
       {detail.sourceTable === "surat_izin_kegiatan" ? (
         <SikApprovalActions
@@ -512,15 +529,15 @@ export default async function StaffRequestDetailPage({
 
       <RequestAttachmentsList attachments={attachments} />
 
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
           <CardTitle>Alur Status</CardTitle>
           <CardDescription>
             Timeline berdasarkan kolom workflow tabel legacy. Status yang sudah
             terisi dapat dibatalkan jika perlu koreksi.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-4 p-4">
           {detail.workflow.map((item) => {
             const cancelAction = item.done
               ? getWorkflowCancelAction(item.label)
@@ -558,6 +575,7 @@ export default async function StaffRequestDetailPage({
           })}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

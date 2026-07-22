@@ -543,7 +543,7 @@ function RequestPreview({
 
   return (
     <aside
-      className={`flex min-h-0 flex-col overflow-hidden border border-[#d8d4e4] bg-[#fbfaff] shadow-sm transition-all duration-300 ease-out animate-in fade-in ${
+      className={`flex min-h-0 flex-col overflow-hidden border border-[#d8d4e4] bg-[#fbfaff] shadow-sm transition-all duration-[250ms] ease-out animate-in fade-in ${
         variant === "sheet"
           ? "h-[85dvh] rounded-t-xl slide-in-from-bottom-5"
           : `rounded-lg slide-in-from-right-4 ${
@@ -564,7 +564,7 @@ function RequestPreview({
             className="rounded-full text-[#7d8290] hover:bg-[#ece8f5] hover:text-[#17231c]"
             title="Tutup detail"
           >
-            <Link href={closeHref} scroll={false}>
+            <Link href={closeHref} scroll={false} prefetch>
               <X className="size-3.5" />
             </Link>
           </Button>
@@ -777,6 +777,7 @@ function RequestCard({
           ) : null}
           <Link
             scroll={false}
+            prefetch
             className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
               isSelected
                 ? "border-[#0b3f30] bg-[#0b3f30] text-white"
@@ -955,7 +956,7 @@ export default async function StaffRequestsPage({
       </div>
 
       <div
-        className={`relative z-10 mx-auto -mt-6 grid gap-3 px-4 pb-6 transition-[grid-template-columns] duration-300 ease-out sm:px-6 lg:px-7 ${
+        className={`relative z-10 mx-auto -mt-6 grid gap-3 px-4 pb-6 transition-[grid-template-columns] duration-[250ms] ease-out sm:px-6 lg:px-7 ${
           shouldLockPreviewLayout ? "xl:min-h-0 xl:flex-1" : ""
         } ${
           hasPreview
@@ -1159,8 +1160,8 @@ export default async function StaffRequestsPage({
               <div className="hidden md:block">
                 <Table className="min-w-[900px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] xl:min-w-[1100px]">
                 <colgroup>
-                  <col className="w-[13%]" />
-                  <col className="w-[23%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[14%]" />
                   <col className="w-[28%]" />
                   <col className="w-[14%]" />
                   <col className="w-[12%]" />
@@ -1168,8 +1169,8 @@ export default async function StaffRequestsPage({
                 </colgroup>
                 <TableHeader className="bg-[#eef3ec]">
                   <TableRow className="border-[#dfe6dd] hover:bg-[#eef3ec]">
-                    <TableHead className="h-8 px-4 text-center text-[12px] font-bold text-[#244934]">
-                      NPM
+                    <TableHead className="h-8 px-4 text-left text-[12px] font-bold text-[#244934]">
+                      Pemohon
                     </TableHead>
                     <TableHead className="h-8 px-4 text-left text-[12px] font-bold text-[#244934]">
                       Layanan
@@ -1216,8 +1217,10 @@ export default async function StaffRequestsPage({
                               : "border-l-transparent bg-white"
                           }`}
                         >
-                          <TableCell className="px-4 py-3 text-center text-[11px] font-semibold text-[#28352c]">
-                            {request.maskedNpm}
+                          <TableCell className="px-4 py-3 text-left text-[11px] font-semibold text-[#28352c]">
+                            <p className="truncate">
+                              {request.npm ?? request.maskedNpm} - {request.requesterName ?? "-"}
+                            </p>
                           </TableCell>
                           <TableCell className="px-4 py-3 text-left">
                             <p className="flex min-w-0 items-center gap-1.5 truncate text-[11px] font-semibold text-[#202923]">
@@ -1265,6 +1268,7 @@ export default async function StaffRequestsPage({
                               ) : null}
                               <Link
                                 scroll={false}
+                                prefetch
                                 className={`inline-flex items-center gap-1.5 text-[10px] font-bold underline-offset-3 hover:underline ${
                                   isSelected ? "text-[#0b3f30]" : "text-[#0f5b45]"
                                 }`}
@@ -1374,7 +1378,7 @@ export default async function StaffRequestsPage({
         </div>
 
         <div
-          className={`min-w-0 transition-all duration-300 ease-out ${
+          className={`min-w-0 transition-all duration-[250ms] ease-out ${
             hasPreview
               ? "hidden min-h-0 translate-x-0 opacity-100 xl:block"
               : "pointer-events-none hidden translate-x-4 opacity-0 xl:block xl:overflow-hidden"
@@ -1410,6 +1414,7 @@ export default async function StaffRequestsPage({
               limit,
             })}
             scroll={false}
+            prefetch
             aria-label="Tutup detail"
             className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
           />
