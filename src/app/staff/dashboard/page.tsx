@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ListChecks } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { RequestPriorityTable } from "@/components/requests/request-priority-table";
 import { Button } from "@/components/ui/button";
@@ -124,10 +124,6 @@ export default async function StaffDashboardPage({
               Pantau pengajuan terbaru yang belum masuk tahap proses.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-md border border-[#e3d9ca] bg-white px-3 py-2 text-xs font-semibold text-[#173d2d] shadow-sm">
-            <ListChecks className="size-4 text-[#0f5b45]" />
-            {dashboardError ? "Perlu dimuat ulang" : "Top 10 baru masuk"}
-          </div>
         </div>
       </div>
 
@@ -195,28 +191,6 @@ export default async function StaffDashboardPage({
               {isPriorityFilterActive ? "Filter tanggal aktif" : "Semua tanggal"}
             </div>
           </form>
-        </section>
-
-        <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
-          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
-            <h2 className="text-sm font-semibold text-[#173d2d]">
-              Prioritas Tindak Lanjut
-            </h2>
-            <p className="mt-1 text-[11px] text-[#7a7166]">
-              {isPriorityFilterActive
-                ? "Daftar prioritas sudah mengikuti rentang tanggal pengajuan yang dipilih."
-                : "Fokuskan proses ke pengajuan pending yang paling lama menunggu."}
-            </p>
-          </div>
-          <div className="p-4">
-            {dashboardError ? (
-              <div className="rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-6 text-center text-sm text-[#8a3d23]">
-                {dashboardError}
-              </div>
-            ) : (
-              <RequestPriorityTable rows={priorityRows} role="staff" />
-            )}
-          </div>
         </section>
 
         <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
@@ -356,6 +330,28 @@ export default async function StaffDashboardPage({
               </div>
             </>
           )}
+        </section>
+
+        <section className="overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+          <div className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+            <h2 className="text-sm font-semibold text-[#173d2d]">
+              Prioritas Tindak Lanjut
+            </h2>
+            <p className="mt-1 text-[11px] text-[#7a7166]">
+              {isPriorityFilterActive
+                ? "Daftar prioritas sudah mengikuti rentang tanggal pengajuan yang dipilih."
+                : "Fokuskan proses ke pengajuan pending yang paling lama menunggu."}
+            </p>
+          </div>
+          <div className="p-4">
+            {dashboardError ? (
+              <div className="rounded-md border border-[#edd2c5] bg-[#fff7f2] px-4 py-6 text-center text-sm text-[#8a3d23]">
+                {dashboardError}
+              </div>
+            ) : (
+              <RequestPriorityTable rows={priorityRows} role="staff" />
+            )}
+          </div>
         </section>
       </div>
     </div>
