@@ -558,7 +558,6 @@ export default function LayananPage() {
 
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {group.items.map((service) => {
-                      const Icon = getServiceIcon(service.slug);
                       return (
                         <Link
                           key={service.slug}
@@ -566,15 +565,6 @@ export default function LayananPage() {
                           className="service-card group relative flex flex-col justify-between overflow-hidden rounded-[1.8rem] border border-[#E8DECE] bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#18130E]/15 hover:shadow-xl"
                         >
                           <div>
-                            <div
-                              className={`mb-5 flex size-12 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-105 ${group.theme.iconWrap}`}
-                            >
-                              <Icon
-                                className={`size-6 ${group.theme.icon}`}
-                                strokeWidth={2}
-                              />
-                            </div>
-
                             <h3 className="text-[1.05rem] font-black leading-snug text-[#18130E] transition-colors duration-200 group-hover:text-[#EE1C25]">
                               {service.title}
                             </h3>
