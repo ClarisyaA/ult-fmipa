@@ -117,93 +117,104 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
     return (
       <div
         key="select-access"
-        className="animate-login-content-in w-full max-w-sm sm:max-w-[38rem]"
+        data-login-mode="select"
+        className="login-glass-panel login-access-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:h-[39rem] lg:max-w-[30rem] lg:p-4"
       >
         <nav
           aria-label="Navigasi login"
-          className="mb-8 pb-4 sm:mb-10"
+          className="relative top-2 mb-4 pb-2 sm:top-0 sm:mb-10 sm:pb-4 lg:mb-5 lg:pb-2"
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-bold text-[#d6001c] transition-colors hover:text-[#a80016] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6001c]/40 focus-visible:ring-offset-2"
+            className="login-back-link inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Kembali ke Beranda
           </Link>
         </nav>
-        <div className="mb-5 text-center sm:mb-7">
-          <h2 className="text-2xl font-extrabold tracking-normal text-slate-950 sm:text-[2rem]">
+        <div className="mb-4 text-center sm:mb-7 lg:mb-5">
+          <h2 className="text-xl font-extrabold tracking-normal text-white sm:text-[2rem]">
             Pilih Akses Layanan
           </h2>
-          <p className="mt-3 text-sm font-medium text-[#4f3b36]">
+          <p className="mt-2 text-xs font-medium text-white/75 sm:mt-3 sm:text-sm">
             Silakan pilih kategori pengguna untuk melanjutkan.
           </p>
         </div>
 
-        <div className="grid gap-4">
-          <article className="group relative overflow-hidden rounded-2xl border border-[#ead8c7] bg-white p-4 shadow-[0_18px_55px_rgba(20,24,36,0.08)] transition-all hover:-translate-y-1 hover:border-[#d6001c]/55 hover:shadow-[0_24px_70px_rgba(214,0,28,0.16)]">
-            <div className="grid gap-4 sm:grid-cols-[1fr_0.9fr] sm:items-center">
+        <div className="mx-auto mt-[35px] grid w-full max-w-[26rem] gap-3 px-3 sm:mt-0 sm:gap-4 sm:px-0 lg:gap-3">
+          <article className="login-access-card group relative overflow-hidden rounded-xl p-3 transition-all hover:-translate-y-1 sm:rounded-2xl sm:p-4 lg:p-2.5">
+            <h3 className="text-center text-lg font-extrabold text-white sm:hidden">
+              Pengguna Layanan
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-[1fr_0.9fr] sm:items-center sm:gap-4 lg:grid-cols-[1fr_0.72fr] lg:gap-3">
               <div className="order-2 px-1 text-center sm:order-1 sm:text-left">
-                <h3 className="text-xl font-extrabold text-slate-950">
+                <h3 className="hidden text-xl font-extrabold text-white sm:block lg:text-lg">
                   Pengguna Layanan
                 </h3>
-                <p className="mt-2 text-sm font-medium leading-6 text-[#4f3b36]">
+                <p className="mt-1 text-xs font-medium leading-5 text-white/75 sm:mt-2 sm:text-sm sm:leading-6 lg:mt-1 lg:text-xs lg:leading-5">
                   Untuk mahasiswa dan alumni FMIPA Unpad yang ingin mengakses
                   layanan akademik terpadu.
                 </p>
                 <Button
                   type="button"
-                  variant="outline"
                   disabled={!isPausAvailable}
-                  className="mt-5 h-11 w-full rounded-full border-[#d6001c] bg-white text-sm font-extrabold text-[#d6001c] shadow-sm transition-all hover:bg-[#d6001c] hover:text-white hover:shadow-lg hover:shadow-[#d6001c]/20 disabled:opacity-60"
+                  className="mt-3 h-10 w-full rounded-xl bg-[#df001d] text-xs font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] hover:text-white disabled:opacity-60 disabled:hover:translate-y-0 sm:mt-5 sm:h-11 sm:text-sm lg:mt-3 lg:h-9 lg:text-xs"
                   onClick={handlePausLogin}
                 >
                   Masuk sebagai Pengguna
                 </Button>
               </div>
-              <div className="order-1 flex items-center justify-center sm:order-2">
+              <div className="order-1 flex h-full items-end justify-center self-stretch sm:order-2">
                 <Image
-                  src="/mahasiswa.svg"
+                  src="/login/mahasiswa.webp"
                   alt="Ilustrasi pengguna layanan"
                   width={360}
                   height={245}
-                  className="h-32 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03] min-[400px]:h-40 sm:h-40"
+                  className="-mb-3 h-32 w-full object-contain object-bottom transition-transform duration-300 group-hover:scale-[1.03] sm:-mb-4 sm:h-52 lg:-mb-2.5 lg:h-36"
                 />
               </div>
             </div>
           </article>
 
-          <article className="group relative overflow-hidden rounded-2xl border border-[#ead8c7] bg-white p-4 shadow-[0_18px_55px_rgba(20,24,36,0.08)] transition-all hover:-translate-y-1 hover:border-[#d6001c]/55 hover:shadow-[0_24px_70px_rgba(214,0,28,0.16)]">
-            <div className="grid gap-4 sm:grid-cols-[1fr_0.9fr] sm:items-center">
+          <article className="login-access-card group relative overflow-hidden rounded-xl p-3 transition-all hover:-translate-y-1 sm:rounded-2xl sm:p-4 lg:p-2.5">
+            <h3 className="text-center text-lg font-extrabold text-white sm:hidden">
+              Administrator
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-[1fr_0.9fr] sm:items-center sm:gap-4 lg:grid-cols-[1fr_0.72fr] lg:gap-3">
               <div className="order-2 px-1 text-center sm:order-1 sm:text-left">
-                <h3 className="text-xl font-extrabold text-slate-950">
+                <h3 className="hidden text-xl font-extrabold text-white sm:block lg:text-lg">
                   Administrator
                 </h3>
-                <p className="mt-2 text-sm font-medium leading-6 text-[#4f3b36]">
+                <p className="mt-1 text-xs font-medium leading-5 text-white/75 sm:mt-2 sm:text-sm sm:leading-6 lg:mt-1 lg:text-xs lg:leading-5">
                   Untuk administrator ULT FMIPA Unpad dengan akun internal
                   layanan.
                 </p>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="mt-5 h-11 w-full rounded-full border-[#d6001c] bg-white text-sm font-extrabold text-[#d6001c] shadow-sm transition-all hover:bg-[#d6001c] hover:text-white hover:shadow-lg hover:shadow-[#d6001c]/20"
+                  className="mt-3 h-10 w-full rounded-xl bg-[#df001d] text-xs font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] hover:text-white sm:mt-5 sm:h-11 sm:text-sm lg:mt-3 lg:h-9 lg:text-xs"
                   onClick={() => setAccessMode("sivitas")}
                 >
                   Masuk sebagai Administrator
                 </Button>
               </div>
-              <div className="order-1 flex items-center justify-center sm:order-2">
+              <div className="order-1 flex h-full items-end justify-center self-stretch sm:order-2">
                 <Image
-                  src="/sivitas.svg"
+                  src="/login/sivitas.webp"
                   alt="Ilustrasi sivitas akademika"
                   width={360}
                   height={245}
-                  className="h-32 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03] min-[400px]:h-40 sm:h-40"
+                  className="-mb-3 h-32 w-full object-contain object-bottom transition-transform duration-300 group-hover:scale-[1.03] sm:-mb-4 sm:h-52 lg:-mb-2.5 lg:h-36"
                 />
               </div>
             </div>
           </article>
         </div>
+
+        <p className="mt-5 text-center text-[0.68rem] leading-5 text-white/60 sm:mt-6 sm:text-xs sm:leading-6 lg:mt-4">
+          © 2026 Unit Layanan Terpadu FMIPA
+          <br />
+          Universitas Padjadjaran.
+        </p>
       </div>
     );
   }
@@ -211,48 +222,49 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
   return (
     <div
       key="administrator-login"
-      className="animate-login-content-in w-full max-w-sm sm:max-w-[38rem]"
+      data-login-mode="administrator"
+      className="login-glass-panel login-admin-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:h-[39rem] lg:max-w-[30rem] lg:p-4"
     >
       <nav
         aria-label="Navigasi login"
-        className="mb-8 flex -translate-y-2 flex-wrap items-center justify-between gap-x-5 gap-y-1 pb-4 sm:mb-10"
+        className="mx-auto mb-9 flex w-full max-w-[26rem] flex-wrap items-center justify-between gap-x-5 gap-y-2 px-3 sm:px-0"
       >
         <button
           type="button"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#d6001c] transition-colors hover:text-[#a80016] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6001c]/40 focus-visible:ring-offset-2"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-white transition-colors hover:text-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:gap-2 sm:text-sm"
           onClick={() => setAccessMode("select")}
         >
-          <ArrowLeft className="size-4" aria-hidden="true" />
+          <ArrowLeft className="size-3.5 sm:size-4" aria-hidden="true" />
           Pilih akses lain
         </button>
         <Link
           href="/"
-          className="inline-flex items-center text-sm font-bold text-[#70443e] transition-colors hover:text-[#d6001c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6001c]/40 focus-visible:ring-offset-2"
+          className="inline-flex items-center text-xs font-bold text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:text-sm"
         >
           Beranda
         </Link>
       </nav>
 
-      <div className="mx-auto w-full sm:max-w-md">
-        <div className="mb-7 sm:mb-9">
-          <h2 className="text-2xl font-extrabold tracking-normal text-slate-950 sm:text-3xl">
+      <div className="mx-auto w-full max-w-[26rem] px-3 sm:px-0">
+        <div className="mb-5 sm:mb-9">
+          <h2 className="text-xl font-extrabold tracking-normal text-white sm:text-3xl">
             Selamat Datang Kembali
           </h2>
-          <p className="mt-3 text-base text-[#6f4f4a]">
+          <p className="mt-2 text-sm text-white/75 sm:mt-3 sm:text-base">
             Masuk dengan akun Anda untuk melanjutkan.
           </p>
         </div>
 
-        <form className="grid gap-4 min-[400px]:gap-5" onSubmit={handleSubmit}>
+        <form className="grid gap-5" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label
               htmlFor="email"
-              className="text-sm font-bold tracking-[0.04em] text-[#70443e]"
+              className="text-xs font-bold tracking-[0.04em] text-white/85 sm:text-sm"
             >
               Username
             </Label>
             <div className="relative">
-              <UserRound className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#d6001c]" />
+              <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
               <Input
                 id="email"
                 type="text"
@@ -260,7 +272,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="h-14 rounded-xl border-[#ead8c7] bg-[#f8f8ff] pl-14 pr-4 text-base text-slate-900 shadow-sm focus-visible:border-[#d6001c] focus-visible:ring-[#d6001c]/15"
+                className="h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-4 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:text-base"
                 data-testid="login-email"
               />
             </div>
@@ -270,19 +282,19 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
             <div className="flex items-center justify-between gap-4">
               <Label
                 htmlFor="password"
-                className="text-sm font-bold tracking-[0.04em] text-[#70443e]"
+                className="text-xs font-bold tracking-[0.04em] text-white/85 sm:text-sm"
               >
                 Password
               </Label>
               <button
                 type="button"
-                className="text-sm font-bold text-[#d6001c] transition-colors hover:text-[#a80016]"
+                className="text-xs font-bold text-red-200 transition-colors hover:text-white sm:text-sm"
               >
                 Lupa Kata Sandi?
               </button>
             </div>
             <div className="relative">
-              <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#d6001c]" />
+              <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -290,7 +302,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                className="h-14 rounded-xl border-[#ead8c7] bg-[#f8f8ff] pl-14 pr-14 text-base text-slate-900 shadow-sm focus-visible:border-[#d6001c] focus-visible:ring-[#d6001c]/15"
+                className="h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-12 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:pr-14 sm:text-base"
                 data-testid="login-password"
               />
               <button
@@ -298,24 +310,24 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 aria-label={
                   showPassword ? "Sembunyikan password" : "Tampilkan password"
                 }
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6f4f4a] transition-colors hover:text-[#d6001c]"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 transition-colors hover:text-white sm:right-4"
                 onClick={() => setShowPassword((value) => !value)}
               >
                 {showPassword ? (
-                  <EyeOff className="size-5" />
+                  <EyeOff className="size-[18px] sm:size-5" />
                 ) : (
-                  <Eye className="size-5" />
+                  <Eye className="size-[18px] sm:size-5" />
                 )}
               </button>
             </div>
           </div>
 
-          <label className="flex items-center gap-2.5 text-sm font-semibold text-[#70443e]">
+          <label className="flex items-center gap-2 text-xs font-semibold text-white/85 sm:gap-2.5 sm:text-sm">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(event) => setRememberMe(event.target.checked)}
-              className="size-4 rounded border-[#efb9b3] text-[#d6001c] accent-[#d6001c]"
+              className="size-3.5 rounded border-[#efb9b3] text-[#d6001c] accent-[#d6001c] sm:size-4"
             />
             Ingat saya di perangkat ini
           </label>
@@ -329,7 +341,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="mt-1 h-14 rounded-xl bg-[#df001d] text-lg font-extrabold text-white shadow-xl shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] disabled:hover:translate-y-0 sm:h-16 sm:text-xl"
+            className="mt-1 h-12 rounded-xl bg-[#df001d] text-base font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] disabled:hover:translate-y-0 sm:h-16 sm:text-xl"
             data-testid="login-submit"
           >
             {isSubmitting ? "Memproses..." : "Masuk Sekarang"}
