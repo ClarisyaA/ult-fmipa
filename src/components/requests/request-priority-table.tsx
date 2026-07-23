@@ -96,50 +96,106 @@ export function RequestPriorityTable({
   }
 
   return (
-    <AdminTableScroll>
-      <Table className="min-w-[900px]">
-        <TableHeader className="bg-[#eef3ec]">
-          <TableRow>
-            <TableHead>Layanan</TableHead>
-            <TableHead>Pemohon</TableHead>
-            <TableHead>Program Studi</TableHead>
-            <TableHead>Masuk</TableHead>
-            <TableHead>Lama Menunggu</TableHead>
-            <TableHead>Prioritas</TableHead>
-            <TableHead className="text-center">Aksi</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <>
+      {role === "staff" ? (
+        <div className="grid gap-2 md:hidden">
           {rows.map((row) => (
-            <TableRow key={`${row.serviceSlug}-${row.id}`}>
-              <TableCell className="font-medium">
-                {row.serviceTitle}
-              </TableCell>
-              <TableCell>{row.requesterName}</TableCell>
-              <TableCell>{row.programStudy}</TableCell>
-              <TableCell className="whitespace-nowrap">
-                {formatDate(row.requestDate)}
-              </TableCell>
-              <TableCell className="whitespace-nowrap font-medium text-[#8a3d23]">
-                {formatWaitingTime(row.waitingHours)}
-              </TableCell>
-              <TableCell>{getPriorityBadge(row.priorityLevel)}</TableCell>
-              <TableCell className="text-center">
-                <Button
-                  asChild
-                  size="sm"
-                  className="h-8 shrink-0 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
-                >
-                  <Link href={buildPreviewHref(role, row)}>
-                    Proses
-                    <ArrowRight className="size-3.5" />
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRow>
+            <div
+              key={`${row.serviceSlug}-${row.id}`}
+              className="rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.06)]"
+            >
+              <div className="grid gap-2">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase text-[#7a7166]">
+                    Layanan
+                  </p>
+                  <p className="mt-1 text-xs font-semibold leading-snug text-[#202923]">
+                    {row.serviceTitle}
+                  </p>
+                </div>
+                <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-2 text-xs">
+                  <span className="text-[#7a7166]">Nama</span>
+                  <span className="min-w-0 break-words font-semibold text-[#303b34]">
+                    {row.requesterName}
+                  </span>
+                  <span className="text-[#7a7166]">Prodi</span>
+                  <span className="min-w-0 break-words text-[#303b34]">
+                    {row.programStudy}
+                  </span>
+                  <span className="text-[#7a7166]">Masuk</span>
+                  <span className="min-w-0 break-words text-[#303b34]">
+                    {formatDate(row.requestDate)}
+                  </span>
+                  <span className="text-[#7a7166]">Menunggu</span>
+                  <span className="font-semibold text-[#8a3d23]">
+                    {formatWaitingTime(row.waitingHours)}
+                  </span>
+                  <span className="text-[#7a7166]">Prioritas</span>
+                  <span>{getPriorityBadge(row.priorityLevel)}</span>
+                </div>
+              </div>
+              <Button
+                asChild
+                size="sm"
+                className="mt-3 h-9 w-full rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+              >
+                <Link href={buildPreviewHref(role, row)}>
+                  Proses
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
           ))}
-        </TableBody>
-      </Table>
-    </AdminTableScroll>
+        </div>
+      ) : null}
+
+      <div className={role === "staff" ? "hidden md:block" : undefined}>
+        <AdminTableScroll>
+          <Table className="min-w-[900px]">
+            <TableHeader className="bg-[#eef3ec]">
+              <TableRow>
+                <TableHead>Layanan</TableHead>
+                <TableHead>Pemohon</TableHead>
+                <TableHead>Program Studi</TableHead>
+                <TableHead>Masuk</TableHead>
+                <TableHead>Lama Menunggu</TableHead>
+                <TableHead>Prioritas</TableHead>
+                <TableHead className="text-center">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={`${row.serviceSlug}-${row.id}`}>
+                  <TableCell className="font-medium">
+                    {row.serviceTitle}
+                  </TableCell>
+                  <TableCell>{row.requesterName}</TableCell>
+                  <TableCell>{row.programStudy}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {formatDate(row.requestDate)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap font-medium text-[#8a3d23]">
+                    {formatWaitingTime(row.waitingHours)}
+                  </TableCell>
+                  <TableCell>{getPriorityBadge(row.priorityLevel)}</TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-8 shrink-0 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                    >
+                      <Link href={buildPreviewHref(role, row)}>
+                        Proses
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </AdminTableScroll>
+      </div>
+    </>
   );
 }

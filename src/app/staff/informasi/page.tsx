@@ -118,7 +118,7 @@ export default async function StaffInformasiPage() {
           </div>
           <Button
             asChild
-            className="h-9 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+            className="mr-14 h-9 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39] sm:mr-16"
           >
             <Link href="/staff/informasi/tambah">
               <PlusCircle className="size-3.5" />
@@ -129,7 +129,7 @@ export default async function StaffInformasiPage() {
       </div>
 
       <div className="relative z-10 mx-auto -mt-6 grid max-w-[1320px] gap-3 px-4 pb-6 sm:px-6 lg:px-7">
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             { label: "Total Informasi", value: summary.total },
             { label: "Dipublikasikan", value: summary.published },

@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { PlusCircle } from "lucide-react";
 
 import {
-  AdminPageHeader,
   AdminPageShell,
   AdminSectionCard,
 } from "@/components/admin/admin-ui";
@@ -48,19 +48,25 @@ export default async function StaffHomeActivitiesPage() {
 
   return (
     <AdminPageShell>
-      <AdminPageHeader
-        title="Kegiatan Mahasiswa"
-        description="Kelola item Kegiatan Mahasiswa di homepage."
-        action={
-          <Button
-            asChild
-            size="sm"
-            className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
-          >
-            <Link href="/staff/beranda/kegiatan/tambah">Tambah Kegiatan</Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-wrap items-start justify-between gap-4 text-[#173d2d]">
+        <div>
+          <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+            Kegiatan Mahasiswa
+          </h1>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[#566258]">
+            Kelola item Kegiatan Mahasiswa di homepage.
+          </p>
+        </div>
+        <Button
+          asChild
+          className="mr-14 h-9 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39] sm:mr-16"
+        >
+          <Link href="/staff/beranda/kegiatan/tambah">
+            <PlusCircle className="size-3.5" />
+            Tambah Kegiatan
+          </Link>
+        </Button>
+      </div>
 
       <div className="grid min-w-0 gap-4">
         <AdminSectionCard

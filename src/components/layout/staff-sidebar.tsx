@@ -39,6 +39,26 @@ const navIcons = {
   "Website Publik": Globe,
 };
 
+function groupStaffNavItems(items: NavItem[]) {
+  return [
+    {
+      label: "Ringkasan",
+      items: items.filter((item) => item.label === "Dashboard"),
+    },
+    {
+      label: "Operasional",
+      items: items.filter(
+        (item) =>
+          item.label !== "Dashboard" && item.label !== "Website Publik",
+      ),
+    },
+    {
+      label: "Pintasan",
+      items: items.filter((item) => item.label === "Website Publik"),
+    },
+  ].filter((group) => group.items.length > 0);
+}
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -61,6 +81,7 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const initials = getInitials(userName) || "SU";
+  const navGroups = groupStaffNavItems(items);
 
   return (
     <aside
@@ -108,10 +129,14 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
           variant="ghost"
           size="sm"
           className={`mt-5 min-h-10 rounded-lg bg-[#ecfff4] px-3 py-2 text-sm font-semibold text-[#27614d] shadow-[0_10px_22px_rgba(0,0,0,0.14)] transition-all duration-200 hover:bg-[#ecfff4] hover:text-[#27614d] ${
-            isCollapsed ? "mx-auto w-10 justify-center px-0" : "w-full justify-start gap-3"
+            isCollapsed
+              ? "mx-auto w-10 justify-center px-0"
+              : "w-full justify-start gap-3"
           }`}
           title={isCollapsed ? "Buka sidebar" : "Ciutkan sidebar"}
-          aria-label={isCollapsed ? "Buka sidebar staff" : "Tutup sidebar staff"}
+          aria-label={
+            isCollapsed ? "Buka sidebar staff" : "Tutup sidebar staff"
+          }
           aria-expanded={!isCollapsed}
           onClick={() => setIsCollapsed((current) => !current)}
         >
@@ -130,35 +155,44 @@ export function StaffSidebar({ items, userName, userRole }: StaffSidebarProps) {
             isCollapsed ? "pr-0" : "pr-1"
           }`}
         >
-          {items.map((item) => {
-            const Icon =
-              navIcons[item.label as keyof typeof navIcons] ?? FileText;
-            const isActive = isActivePath(pathname, item.href);
+          {navGroups.map((group) => (
+            <div key={group.label} className="grid gap-1.5">
+              {isCollapsed ? null : (
+                <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/42">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const Icon =
+                  navIcons[item.label as keyof typeof navIcons] ?? FileText;
+                const isActive = isActivePath(pathname, item.href);
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={isCollapsed ? item.label : undefined}
-                className={`group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all duration-200 ${
-                  isCollapsed ? "justify-center" : ""
-                } ${
-                  isActive
-                    ? "bg-[#ecfff4] text-[#27614d] shadow-[0_12px_24px_rgba(0,0,0,0.16)]"
-                    : "text-white/68 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon
-                  className={`size-4 shrink-0 transition-colors ${
-                    isActive
-                      ? "text-[#3d8067]"
-                      : "text-white/58 group-hover:text-white"
-                  }`}
-                />
-                {isCollapsed ? null : <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all duration-200 ${
+                      isCollapsed ? "justify-center" : ""
+                    } ${
+                      isActive
+                        ? "bg-[#ecfff4] text-[#27614d] shadow-[0_12px_24px_rgba(0,0,0,0.16)]"
+                        : "text-white/68 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <Icon
+                      className={`size-4 shrink-0 transition-colors ${
+                        isActive
+                          ? "text-[#3d8067]"
+                          : "text-white/58 group-hover:text-white"
+                      }`}
+                    />
+                    {isCollapsed ? null : <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div
@@ -212,6 +246,7 @@ export function StaffMobileMenu({
   const menuId = "staff-mobile-navigation";
   const isOpen = openPathname === pathname;
   const initials = getInitials(userName) || "SU";
+  const navGroups = groupStaffNavItems(items);
 
   const restoreTriggerFocus = useCallback(() => {
     triggerRef.current?.focus({ preventScroll: true });
@@ -286,15 +321,14 @@ export function StaffMobileMenu({
         ref={triggerRef}
         type="button"
         variant="ghost"
-        size="sm"
-        className="h-10 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white shadow-none hover:bg-white/15 hover:text-white"
+        size="icon"
+        className="size-10 rounded-lg bg-white/10 p-0 text-white shadow-none hover:bg-white/15 hover:text-white"
         aria-label={isOpen ? "Tutup menu staff" : "Buka menu staff"}
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={handleTriggerClick}
       >
         {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        Menu
       </Button>
 
       <div
@@ -366,28 +400,35 @@ export function StaffMobileMenu({
               </div>
             </div>
 
-            <nav className="grid gap-1.5">
-              {items.map((item) => {
-                const Icon =
-                  navIcons[item.label as keyof typeof navIcons] ?? FileText;
-                const isActive = isActivePath(pathname, item.href);
+            <nav className="grid gap-3">
+              {navGroups.map((group) => (
+                <div key={group.label} className="grid gap-1.5">
+                  <p className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a8f8b]">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => {
+                    const Icon =
+                      navIcons[item.label as keyof typeof navIcons] ?? FileText;
+                    const isActive = isActivePath(pathname, item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => handleNavigationClick(item.href)}
-                    className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-colors ${
-                      isActive
-                        ? "bg-[#eaf7ef] text-[#0f5b45]"
-                        : "text-[#536058] hover:bg-[#f6f1e8] hover:text-[#0f3d2e]"
-                    }`}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => handleNavigationClick(item.href)}
+                        className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-colors ${
+                          isActive
+                            ? "bg-[#eaf7ef] text-[#0f5b45]"
+                            : "text-[#536058] hover:bg-[#f6f1e8] hover:text-[#0f3d2e]"
+                        }`}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
           </div>
 

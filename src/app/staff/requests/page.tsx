@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Eye,
   FileText,
-  Info,
   X,
 } from "lucide-react";
 
@@ -556,7 +555,6 @@ function RequestPreview({
       <div className="flex items-center justify-between border-b border-[#e4dfec] px-4 py-3">
         <h2 className="text-sm font-semibold text-[#213027]">Detail Preview</h2>
         <div className="flex items-center gap-2">
-          <Info className="size-4 text-[#7d8290]" />
           <Button
             asChild
             variant="ghost"
@@ -758,17 +756,21 @@ function RequestCard({
         {request.purpose ?? "-"}
       </p>
 
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#eee6d9] pt-3">
+      <div className="mt-3 border-t border-[#eee6d9] pt-3">
         <div className="text-[11px] text-[#606860]">
           <p className="font-semibold text-[#303b34]">
             {formatDate(request.requestDate)}
           </p>
           {time ? <p className="mt-0.5">{time} WIB</p> : null}
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div
+          className={`mt-3 grid gap-2 ${
+            hasPrintableTemplate ? "grid-cols-2" : "grid-cols-1"
+          }`}
+        >
           {hasPrintableTemplate ? (
             <Link
-              className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[#b8d8c9] bg-[#f3fbf6] px-3 text-[11px] font-bold text-[#0f5b45]"
+              className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-[#b8d8c9] bg-[#f3fbf6] px-3 text-[11px] font-bold text-[#0f5b45]"
               href={`/staff/requests/${request.serviceSlug}/${request.id}`}
             >
               <FileText className="size-3.5" />
@@ -778,7 +780,7 @@ function RequestCard({
           <Link
             scroll={false}
             prefetch
-            className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
+            className={`inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-3 text-[11px] font-bold ${
               isSelected
                 ? "border-[#0b3f30] bg-[#0b3f30] text-white"
                 : "border-[#d8e2d7] bg-[#f8faf6] text-[#0f5b45]"
@@ -1296,11 +1298,11 @@ export default async function StaffRequestsPage({
               </div>
             </div>
 
-            <div className="flex flex-col items-stretch gap-3 border-t border-[#eee6d9] bg-[#fffdf9] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
-              <p className="text-[11px] text-[#7a7166]">
+            <div className="flex flex-col items-center gap-3 border-t border-[#eee6d9] bg-[#fffdf9] px-3 py-3 sm:flex-row sm:flex-wrap sm:justify-between sm:px-5">
+              <p className="text-center text-[11px] text-[#7a7166] sm:text-left">
                 Menampilkan {rows.length} dari {result.pagination.total} data
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <div className="flex w-full flex-wrap items-center justify-center gap-1.5 sm:w-auto">
                 {pageItems.map((pageNumber, index) => {
                   const previousPage = pageItems[index - 1];
                   const showGap = previousPage && pageNumber - previousPage > 1;
@@ -1342,7 +1344,7 @@ export default async function StaffRequestsPage({
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                  className="h-8 gap-1 rounded-md border-[#e1d8ca] bg-white px-2.5 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8] sm:px-3"
                   disabled={result.pagination.page >= totalPages}
                 >
                   <Link
@@ -1360,7 +1362,7 @@ export default async function StaffRequestsPage({
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 text-[11px] text-[#7a7166]">
+              <div className="flex w-full items-center justify-center gap-2 text-[11px] text-[#7a7166] sm:w-auto">
                 <span>Tampilkan</span>
                 <select
                   className="h-8 rounded-md border border-[#e1d8ca] bg-white px-2 text-[11px] font-semibold text-[#39433c] outline-none"

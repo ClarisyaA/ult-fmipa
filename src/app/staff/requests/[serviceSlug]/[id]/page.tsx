@@ -9,7 +9,6 @@ import { RequestEmailHelper } from "@/components/requests/request-email-helper";
 import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
 import { RequestStatusActions } from "@/components/requests/request-status-actions";
 import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -322,9 +321,13 @@ function PrintLetterButton({
   }
 
   return (
-    <div className="grid gap-1 text-right">
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button asChild variant="outline">
+    <div className="grid w-full gap-2 text-left sm:w-auto sm:gap-1 sm:text-right">
+      <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end">
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 w-full justify-center border-[#ddd4c6] bg-white text-xs text-[#173d2d] shadow-sm hover:bg-[#f6f1e8] sm:w-auto"
+        >
           <Link
             href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=id`}
             target="_blank"
@@ -335,7 +338,11 @@ function PrintLetterButton({
             Cetak Surat Indo
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 w-full justify-center border-[#ddd4c6] bg-white text-xs text-[#173d2d] shadow-sm hover:bg-[#f6f1e8] sm:w-auto"
+        >
           <Link
             href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=en`}
             target="_blank"
@@ -347,7 +354,7 @@ function PrintLetterButton({
           </Link>
         </Button>
       </div>
-      <p className="max-w-[260px] text-xs text-muted-foreground">
+      <p className="text-[11px] leading-relaxed text-[#7a7166] sm:max-w-[300px]">
         Pastikan Data Surat sudah lengkap sebelum mencetak PDF resmi.
       </p>
     </div>
@@ -467,25 +474,30 @@ export default async function StaffRequestDetailPage({
     >
       <div className="px-5 pb-10 pt-5 sm:px-7 lg:px-8">
         <div className="mx-auto max-w-[1320px]">
-        <Button asChild variant="ghost" className="-ml-2 mb-3 text-[#173d2d] hover:bg-white/60 hover:text-[#0f3d2e]">
-          <Link href="/staff/requests">
-            <ArrowLeft className="size-4" />
-            Kembali ke Pengajuan
-          </Link>
-        </Button>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-lg font-semibold tracking-normal text-[#173d2d] sm:text-xl">
-              {detail.serviceTitle}
-            </h1>
-            <Badge variant="secondary">{detail.statusLabel}</Badge>
+          <Button
+            asChild
+            variant="ghost"
+            className="-ml-2 mb-4 h-8 rounded-md px-2 text-[11px] font-semibold text-[#536058] hover:bg-white/60 hover:text-[#0f3d2e]"
+          >
+            <Link href="/staff/requests">
+              <ArrowLeft className="size-3.5" />
+              Kembali ke Pengajuan
+            </Link>
+          </Button>
+          <div className="grid gap-4 sm:flex sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg font-semibold tracking-normal text-[#173d2d] sm:text-xl">
+                  {detail.serviceTitle}
+                </h1>
+              </div>
+              <p className="mt-2 max-w-xl text-xs leading-relaxed text-[#566258]">
+                Mode terbatas. Hanya update status workflow yang diaktifkan.
+              </p>
+            </div>
+            <PrintLetterButton detail={detail} printableInfo={printableInfo} />
           </div>
-          <PrintLetterButton detail={detail} printableInfo={printableInfo} />
-        </div>
-        <p className="mt-2 text-xs text-[#566258]">
-          Mode terbatas. Hanya update status workflow yang diaktifkan.
-        </p>
-        <PrintReadinessNotice readiness={printReadiness} />
+          <PrintReadinessNotice readiness={printReadiness} />
         </div>
       </div>
 
