@@ -40,13 +40,15 @@ const initialFormState: SurveyFormState = {
   overallRating: "",
   comment: "",
 };
+
 const ratingOptions = ["1", "2", "3", "4", "5"];
+
 const ratingFields: Array<{
   key: keyof Omit<SurveyFormState, "comment">;
   label: string;
   required?: boolean;
 }> = [
-  { key: "overallRating", label: "Overall rating", required: true },
+  { key: "overallRating", label: "Overall rating / Penilaian Keseluruhan", required: true },
   { key: "ratingTangibility", label: "Tangibility / Bukti Fisik" },
   { key: "ratingReliability", label: "Reliability / Keandalan" },
   { key: "ratingResponsiveness", label: "Responsiveness / Daya Tanggap" },
@@ -290,41 +292,98 @@ export function StudentSurveyPage() {
 
                   {expandedId === request.id ? (
                     <form
-                      className="mt-4 space-y-4 border-t border-[#EAE2D4] pt-4"
+                      className="mt-6 space-y-5 border-t border-[#EAE2D4] pt-5"
                       onSubmit={(event) => handleSubmit(event, request)}
                     >
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {ratingFields.map((field) => (
-                          <div key={field.key} className="space-y-1.5">
-                            <Label
-                              htmlFor={`${request.id}-${field.key}`}
-                              className="text-sm font-medium text-[#18130E]"
-                            >
-                              {field.label}
-                              {field.required ? (
-                                <span className="text-[#EE1C25]"> *</span>
-                              ) : null}
-                            </Label>
-                            <select
-                              id={`${request.id}-${field.key}`}
-                              className="h-9 w-full rounded-lg border border-[#DDD5C3] bg-white px-3 text-sm text-[#18130E] transition-colors focus:border-[#EE1C25]/50 focus:ring-1 focus:ring-[#EE1C25]/30 focus:outline-none"
-                              value={formState[field.key]}
-                              onChange={(event) =>
-                                updateField(field.key, event.currentTarget.value)
-                              }
-                              required={field.required}
-                            >
-                              <option value="">Pilih</option>
-                              {ratingOptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
+                      {/* KETERANGAN SKALA RATING */}
+                      <div className="rounded-xl border border-[#EAE2D4] bg-[#F7F3EA]/40 p-3 text-xs text-[#6B5E52]">
+                        <p className="font-semibold text-[#18130E] mb-1">
+                          Keterangan Skala Rating:
+                        </p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:flex-wrap sm:gap-6">
+                          <span>
+                            <strong>1</strong> = Sangat Buruk
+                          </span>
+                          <span>
+                            <strong>2</strong> = Buruk
+                          </span>
+                          <span>
+                            <strong>3</strong> = Cukup
+                          </span>
+                          <span>
+                            <strong>4</strong> = Baik
+                          </span>
+                          <span>
+                            <strong>5</strong> = Sangat Baik
+                          </span>
+                        </div>
                       </div>
 
+                      {/* TABEL / MATRIKS RATING */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[500px] border-collapse text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-[#EAE2D4] text-[#18130E]">
+                              <th className="py-2 px-3 font-semibold w-1/2">
+                                Faktor Penilaian
+                              </th>
+                              {ratingOptions.map((num) => (
+                                <th
+                                  key={num}
+                                  className="py-2 px-2 text-center font-bold w-[10%]"
+                                >
+                                  {num}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#EAE2D4]/60">
+                            {ratingFields.map((field) => (
+                              <tr
+                                key={field.key}
+                                className="hover:bg-[#F7F3EA]/30 transition-colors"
+                              >
+                                <td className="py-2 px-3 font-medium text-[#18130E]">
+                                  {field.label}
+                                  {field.required ? (
+                                    <span className="text-[#EE1C25]"> *</span>
+                                  ) : (
+                                    <span className="text-[#A0917F] font-normal text-xs block sm:inline sm:ml-1">
+                                      (opsional)
+                                    </span>
+                                  )}
+                                </td>
+                                {ratingOptions.map((option) => {
+                                  const isChecked =
+                                    formState[field.key] === option;
+                                  return (
+                                    <td
+                                      key={option}
+                                      className="py-2 px-2 text-center"
+                                    >
+                                      <label className="inline-flex items-center justify-center cursor-pointer p-1 rounded-full hover:bg-[#EE1C25]/5">
+                                        <input
+                                          type="radio"
+                                          name={`${request.id}-${field.key}`}
+                                          value={option}
+                                          checked={isChecked}
+                                          onChange={(e) =>
+                                            updateField(field.key, e.target.value)
+                                          }
+                                          required={field.required}
+                                          className="size-4 accent-[#EE1C25] cursor-pointer"
+                                        />
+                                      </label>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* BAGIAN KOMENTAR */}
                       <div className="space-y-1.5">
                         <Label
                           htmlFor={`${request.id}-comment`}
@@ -347,6 +406,7 @@ export function StudentSurveyPage() {
                         </p>
                       </div>
 
+                      {/* TOMBOL SUBMIT */}
                       <Button
                         type="submit"
                         disabled={isSubmitting}
