@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Mail,
   MapPin,
   UserRound,
 } from "lucide-react";
@@ -13,8 +12,8 @@ import {
 import { Reveal } from "@/components/sections/reveal";
 
 const missionItems = [
-  "Menyederhanakan prosedur birokrasi melalui integrasi sistem digital.",
-  "Meningkatkan kompetensi sumber daya manusia dalam melayani publik.",
+  "Memberikan pelayanan terintegrasi yang mudah diakses melalui pemanfaatan teknologi informasi.",
+  "Meningkatkan profesionalisme sumber daya manusia yang responsif dan akuntabel.",
   "Menjamin keterbukaan informasi dan kepastian waktu layanan.",
 ];
 
@@ -182,9 +181,9 @@ const fallbackLocation: ProfileLocationData = {
   description:
     "Lokasi ULT FMIPA berada di Lt. 1 Gedung Otto Sumarwoto Fakultas MIPA (Gedung Dekanat), Jl. Ir. Sukarno Km. 21, Jatinangor, Sumedang dan berada di pusat kawasan Universitas Padjadjaran Kampus Jatinangor.",
   directionLabel: "Petunjuk Arah",
-  directionUrl: "https://www.google.com/maps/search/?api=1&query=FMIPA%20Unpad%20Jatinangor",
+  directionUrl: "https://maps.app.goo.gl/yT3wqVpxQteXAweZ9?g_st=ic",
   email: "ult.fmipa@unpad.ac.id",
-  imageUrl: null,
+  imageUrl: null, 
   imageAlt: "Denah lokasi FMIPA Unpad",
   imageFit: "cover",
   hours: [
@@ -225,8 +224,6 @@ const orgColorClass = {
 } as const;
 
 const orgLineClass = "bg-[#d2b16d]";
-const baseOrgRevealClass = "opacity-0";
-const animatedOrgRevealClass = "[animation:org-reveal_650ms_ease-out_forwards]";
 
 type OrgColor = keyof typeof orgColorClass;
 
@@ -460,7 +457,7 @@ export default function ProfilPage() {
   const aboutHeadingRef = useRef<HTMLDivElement | null>(null);
   const [isOrganizationVisible, setIsOrganizationVisible] = useState(false);
   const [isAboutHeadingVisible, setIsAboutHeadingVisible] = useState(false);
-  const [organizationTree, setOrganizationTree] = useState<ProfileOrganizationNode[]>(
+  const [, setOrganizationTree] = useState<ProfileOrganizationNode[]>(
     fallbackOrganizationTree
   );
   const [location, setLocation] = useState<ProfileLocationData>(fallbackLocation);
@@ -561,10 +558,6 @@ export default function ProfilPage() {
     };
   }, []);
 
-  const orgRevealClass = isOrganizationVisible
-    ? `${baseOrgRevealClass} ${animatedOrgRevealClass}`
-    : baseOrgRevealClass;
-  const rootOrganization = organizationTree[0] ?? fallbackOrganizationTree[0];
   const locationImageClass =
     location.imageFit === "contain"
       ? "h-full w-full bg-[#f7f3ea] object-contain object-center p-4"
@@ -598,13 +591,46 @@ export default function ProfilPage() {
             }
           }
 
+          .profile-marquee-track {
+            animation: vision-marquee 28s linear infinite;
+          }
+
+          @keyframes about-card-sway {
+            0% {
+              transform: translateY(0) rotate(-1.2deg);
+            }
+            50% {
+              transform: translateY(-7px) rotate(1.2deg);
+            }
+            100% {
+              transform: translateY(0) rotate(-1.2deg);
+            }
+          }
+
+          .about-card-sway {
+            animation: about-card-sway 4.5s ease-in-out infinite;
+            transform-origin: center center;
+            will-change: transform;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .about-card-sway {
+              animation: none;
+              transform: none;
+            }
+
+            .profile-marquee-track {
+              animation: none;
+            }
+          }
+
           html {
             scroll-behavior: smooth;
           }
         `}
       </style>
 
-      <section className="relative flex min-h-[calc(100vh+20px)] items-center overflow-hidden bg-neutral-950">
+      <section className="relative flex min-h-[calc(100svh-40px)] items-start overflow-hidden bg-neutral-950 sm:items-center">
         <div className="absolute inset-0">
           <Image
             src="/Beranda-Section1/gedung-fmipa.webp"
@@ -617,10 +643,10 @@ export default function ProfilPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/65 to-black/10" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-28 pt-32 sm:px-6 sm:py-24 lg:px-8">
           <div className="max-w-5xl">
             <Reveal delay={160}>
-              <h1 className="max-w-5xl text-4xl font-black leading-[0.95] tracking-normal text-white min-[380px]:text-5xl sm:text-5xl lg:text-6xl xl:text-7xl">
+              <h1 className="max-w-5xl text-[2.15rem] font-black leading-[1] tracking-normal text-white min-[380px]:text-4xl sm:text-5xl sm:leading-[0.95] lg:text-6xl xl:text-7xl">
                 Profil{" "}
                 <span className="bg-gradient-to-r from-[#ff2d28] via-[#ff7f87] to-white bg-clip-text text-transparent">
                   Unit Layanan
@@ -631,20 +657,18 @@ export default function ProfilPage() {
             </Reveal>
 
             <Reveal delay={320}>
-              <p className="mt-7 max-w-2xl text-sm leading-7 text-white/70 sm:mt-8 sm:text-base sm:leading-8">
-                Komitmen kami dalam memberikan layanan berkualitas tinggi,
-                transparan, dan efisien bagi seluruh civitas akademika, alumni,
-                serta masyarakat luas di lingkungan Fakultas MIPA Unpad.
+              <p className="mt-5 max-w-2xl text-base leading-7 text-white/70 sm:mt-8 sm:text-xl sm:leading-8">
+                Kami berkomitmen memberikan pelayanan akademik, kemahasiswaan, dan penyediaan informasi yang mudah, cepat, profesional, akuntabel, dan transparan bagi mahasiswa, dosen, tenaga kependidikan, dan masyarakat.
               </p>
             </Reveal>
 
             <Reveal
-              className="mt-11 flex flex-col gap-4 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center"
+              className="mt-7 flex flex-col gap-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4"
               delay={480}
             >
               <Link
                 href="/layanan"
-                className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#ff2d28] px-8 py-4 text-sm font-black text-white shadow-2xl shadow-red-600/30 transition duration-300 hover:-translate-y-0.5 hover:bg-[#ff1f1a] hover:shadow-red-600/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto"
+                className="group inline-flex min-w-44 self-start items-center justify-center gap-2.5 rounded-full bg-[#ff2d28] px-5 py-3 text-xs font-black text-white shadow-2xl shadow-red-600/30 transition duration-300 hover:-translate-y-0.5 hover:bg-[#ff1f1a] hover:shadow-red-600/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
               >
                 <span>Lihat Layanan</span>
                 <ArrowRight className="size-4 transition duration-300 group-hover:translate-x-1" />
@@ -652,35 +676,54 @@ export default function ProfilPage() {
 
               <Link
                 href="#tentang"
-                className="inline-flex w-full items-center justify-center rounded-full border border-white/30 bg-black/35 px-8 py-4 text-sm font-black text-white backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/55 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto"
+                className="inline-flex min-w-44 self-start items-center justify-center rounded-full border border-white/30 bg-black/35 px-5 py-3 text-xs font-black text-white backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/55 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
               >
                 Kenali Kami
               </Link>
             </Reveal>
           </div>
         </div>
+
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 z-20 overflow-hidden border-y border-[#D8CEB6] bg-[#EAE4CA] py-4">
+          <div className="profile-marquee-track flex w-max whitespace-nowrap">
+            {Array.from({ length: 2 }).map((_, groupIndex) => (
+              <div key={groupIndex} className="flex shrink-0 items-center">
+                {Array.from({ length: 6 }).map((__, itemIndex) => (
+                  <div key={itemIndex} className="flex items-center">
+                    <span className="px-6 text-[11px] font-bold uppercase tracking-[0.2em] text-[#6B5E52] sm:px-8 sm:text-xs">
+                      PROFIL ULT FMIPA
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section
         id="tentang"
-        className="relative z-10 flex min-h-[calc(100vh-64px)] items-center overflow-hidden bg-[linear-gradient(135deg,#fff8f7_0%,#fff_42%,#f8fbfa_100%)] px-4 py-24 sm:px-6 sm:py-32 lg:px-8"
+        className="relative z-10 flex min-h-[calc(100vh-64px)] items-center overflow-hidden bg-[#FEFDF9] px-4 py-24 sm:px-6 sm:py-32 lg:px-8"
       >
-        <div className="pointer-events-none absolute -left-24 top-20 size-72 rounded-full bg-red-100/45 blur-3xl" />
-        <div className="pointer-events-none absolute right-8 top-14 hidden h-px w-48 bg-gradient-to-r from-transparent via-red-200 to-transparent lg:block" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-32 size-[600px] rounded-full bg-[#EE1C25] opacity-[0.04] blur-3xl" />
+          <div className="absolute -bottom-32 -right-32 size-[500px] rounded-full bg-[#03B36B] opacity-[0.05] blur-3xl" />
+          <div className="absolute right-1/3 top-1/3 size-[300px] rounded-full bg-[#FCB71B] opacity-[0.04] blur-3xl" />
+        </div>
 
         <div className="relative mx-auto mt-8 grid w-full max-w-7xl items-center gap-6 lg:mt-12 lg:grid-cols-[1fr_1fr] lg:gap-4">
           <Reveal className="relative w-full max-w-[520px] justify-self-start lg:-ml-10 lg:max-w-[580px]" direction="left">
             <div className="absolute -left-4 -top-4 hidden h-24 w-24 rounded-2xl border border-red-200/70 sm:block" />
 
-            <div className="group relative overflow-hidden rounded-[1.5rem] bg-white p-2 shadow-2xl shadow-black/10 transition duration-500 hover:-translate-y-1 hover:shadow-black/15">
+            <div className="about-card-sway group relative overflow-hidden rounded-[1.5rem] bg-white p-2 shadow-[0_0_55px_rgba(92,58,30,0.22),0_18px_45px_-18px_rgba(92,58,30,0.3)] transition-shadow duration-500 hover:shadow-[0_0_70px_rgba(92,58,30,0.3),0_24px_55px_-16px_rgba(92,58,30,0.4)]">
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[1rem]">
                 <Image
-                  src="/sbak.svg"
-                  alt="Ruang layanan administrasi"
+                  src="/beranda-new/beranda-webp/ULT.webp"
+                  alt="Unit Layanan Terpadu FMIPA"
                   fill
                   unoptimized
                   sizes="(max-width: 1024px) 90vw, 580px"
-                  className="object-cover transition duration-700 group-hover:scale-105"
+                  className="object-cover"
                 />
               </div>
               <div className="absolute inset-2 rounded-[1rem] bg-gradient-to-t from-black/35 via-transparent to-transparent" />
@@ -788,19 +831,9 @@ export default function ProfilPage() {
                     Visi Kami
                   </span>
                 </div>
-                <p className="flex flex-1 items-center text-xl font-semibold leading-tight text-white sm:text-xl lg:text-[1.85rem] lg:leading-[1.16]">
-                  Menjadi Unit Layanan Terpadu yang unggul dalam menyediakan
-                  pelayanan publik yang profesional, transparan, dan akuntabel
-                  di tingkat nasional pada tahun 2026.
+                <p className="flex flex-1 items-center text-base font-semibold leading-tight text-white sm:text-lg lg:text-[1.5rem] lg:leading-[1.5]">
+                   Menjadi Unit Layanan Terpadu yang unggul dalam menyediakan pelayanan akademik, kemahasiswaan, dan penyediaan informasi yang mudah, cepat, profesional, akuntabel, dan transparan bagi mahasiswa, dosen, tenaga kependidikan, dan masyarakat.
                 </p>
-                <div className="mt-auto pt-8">
-                  <div className="h-px w-full bg-gradient-to-r from-red-500/70 via-white/10 to-transparent" />
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="h-1.5 w-10 rounded-full bg-red-500/70" />
-                    <span className="h-1.5 w-5 rounded-full bg-white/15" />
-                    <span className="h-1.5 w-5 rounded-full bg-white/10" />
-                  </div>
-                </div>
               </div>
             </Reveal>
 
@@ -835,7 +868,7 @@ export default function ProfilPage() {
 
       <section
         ref={organizationRef}
-        className="relative z-30 overflow-hidden bg-[radial-gradient(circle_at_10%_12%,rgba(251,191,36,0.09),transparent_14rem),radial-gradient(circle_at_92%_24%,rgba(0,0,0,0.035),transparent_16rem),radial-gradient(circle_at_88%_92%,rgba(251,191,36,0.08),transparent_18rem),linear-gradient(135deg,#fffdf7_0%,#fffaf1_48%,#f8f6ee_100%)] px-4 pb-24 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8"
+        className="relative z-30 overflow-hidden border-t border-[#E5E2DB] bg-[radial-gradient(ellipse_at_50%_38%,rgba(255,255,255,0.98)_0%,rgba(255,253,249,0.8)_32%,transparent_60%),radial-gradient(ellipse_at_92%_0%,rgba(184,200,189,0.4)_0%,rgba(214,222,214,0.18)_23%,transparent_48%),radial-gradient(ellipse_at_2%_24%,rgba(214,224,216,0.24)_0%,transparent_43%),radial-gradient(ellipse_at_50%_108%,rgba(236,227,213,0.42)_0%,rgba(243,236,225,0.3)_34%,transparent_68%),radial-gradient(ellipse_at_4%_90%,rgba(234,224,208,0.34)_0%,rgba(243,236,226,0.2)_31%,transparent_60%),radial-gradient(ellipse_at_92%_90%,rgba(237,228,214,0.28)_0%,transparent_54%),linear-gradient(135deg,#F7F5F0_0%,#FCF9F4_48%,#F7F3EC_100%)] px-4 pb-24 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8"
       >
         <style>
           {`
@@ -856,6 +889,115 @@ export default function ProfilPage() {
               }
               to {
                 opacity: 1;
+              }
+            }
+
+            @keyframes org-card-in-left {
+              from {
+                opacity: 0;
+                transform: translateX(-42px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+
+            @keyframes org-card-in-right {
+              from {
+                opacity: 0;
+                transform: translateX(42px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+
+            @keyframes org-marker-pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.12); }
+            }
+
+            @keyframes org-level-reveal {
+              from { opacity: 0; transform: translateY(24px) scale(0.97); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+
+            @keyframes org-title-letter {
+              from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+              to { opacity: 1; transform: translateY(0); filter: blur(0); }
+            }
+
+            @keyframes org-title-highlight {
+              from { background-size: 0% 100%; }
+              to { background-size: 100% 100%; }
+            }
+
+            .org-title-letter[data-visible="true"] {
+              animation: org-title-letter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-title-highlight[data-visible="true"] {
+              animation: org-title-highlight 1.15s 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-title-highlight {
+              -webkit-box-decoration-break: clone;
+              background-image: linear-gradient(
+                to bottom,
+                transparent 62%,
+                rgba(238, 28, 37, 0.28) 62%,
+                rgba(238, 28, 37, 0.28) 91%,
+                transparent 91%
+              );
+              background-position: left center;
+              background-repeat: no-repeat;
+              background-size: 0% 100%;
+              box-decoration-break: clone;
+            }
+
+            .org-chart-level {
+              animation: org-level-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-role-row:nth-child(1) {
+              animation: org-card-in-left 700ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-role-row:nth-child(2) {
+              animation: org-card-in-right 700ms 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-role-row:nth-child(3) {
+              animation: org-card-in-left 700ms 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-role-row:nth-child(4) {
+              animation: org-card-in-right 700ms 580ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            .org-role-marker {
+              animation: org-marker-pulse 3.6s ease-in-out infinite;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .org-role-row,
+              .org-role-marker,
+              .org-chart-level,
+              .org-title-letter,
+              .org-title-highlight {
+                animation: none !important;
+              }
+
+              .org-title-letter {
+                filter: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+              }
+
+              .org-title-highlight {
+                background-size: 100% 100% !important;
               }
             }
 
@@ -949,83 +1091,134 @@ export default function ProfilPage() {
             }
           `}
         </style>
-        <div className="pointer-events-none absolute left-0 top-0 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-200/45" />
-        <div className="pointer-events-none absolute bottom-0 right-0 size-80 translate-x-1/3 translate-y-1/3 rounded-full border border-amber-200/45" />
-        <div className="pointer-events-none absolute left-8 top-24 size-8 rounded-full bg-amber-100/70" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-neutral-50" />
-        <div className="pointer-events-none absolute right-10 top-20 grid grid-cols-5 gap-1 opacity-20">
-          {Array.from({ length: 25 }).map((_, index) => (
-            <span key={index} className="size-1 rounded-full bg-amber-300" />
-          ))}
-        </div>
-
-        <div className="relative mx-auto max-w-7xl">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-24 bg-gradient-to-b from-transparent via-[#FAF9F6]/20 to-[#FAF9F6]" />
+        <div className="relative z-10 mx-auto max-w-7xl">
           <Reveal className="text-center">
-            <h2 className="text-3xl font-black tracking-normal text-neutral-900 sm:text-4xl lg:text-5xl">
-              Struktur Organisasi
+            <h2 aria-label="Struktur Organisasi ULT" className="relative isolate inline-block text-3xl font-black tracking-normal text-neutral-900 sm:text-4xl lg:text-5xl">
+              <span
+                data-visible={isOrganizationVisible ? "true" : "false"}
+                className="org-title-highlight rounded-sm"
+              >
+              <span className="inline-block">
+                {Array.from("Struktur").map((character, index) => (
+                  <span
+                    key={`${character}-${index}`}
+                    aria-hidden="true"
+                    data-visible={isOrganizationVisible ? "true" : "false"}
+                    className="org-title-letter inline-block opacity-0"
+                    style={{ animationDelay: `${index * 48}ms` }}
+                  >
+                    {character}
+                  </span>
+                ))}
+              </span>{" "}
+              <span className="inline-block">
+                {Array.from("Organisasi").map((character, index) => (
+                  <span
+                    key={`${character}-${index}`}
+                    aria-hidden="true"
+                    data-visible={isOrganizationVisible ? "true" : "false"}
+                    className="org-title-letter inline-block opacity-0"
+                    style={{ animationDelay: `${(index + 9) * 48}ms` }}
+                  >
+                    {character}
+                  </span>
+                ))}
+              </span>{" "}
+              <span className="inline-block">
+                {Array.from("ULT").map((character, index) => (
+                  <span
+                    key={`${character}-${index}`}
+                    aria-hidden="true"
+                    data-visible={isOrganizationVisible ? "true" : "false"}
+                    className="org-title-letter inline-block opacity-0"
+                    style={{ animationDelay: `${(index + 20) * 48}ms` }}
+                  >
+                    {character}
+                  </span>
+                ))}
+              </span>
+              </span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm font-medium text-neutral-500 sm:text-base">
               Sinergi kepemimpinan dan eksekusi layanan yang tertata.
             </p>
           </Reveal>
 
-          <div className="mx-auto mt-10 max-w-sm md:hidden">
-            <MobileOrgNodeCard
-              node={rootOrganization}
-              revealClass={orgRevealClass}
-              delay={120}
-            />
-            {rootOrganization.children.length > 0 ? (
-              <div className="relative">
-                <MobileOrganizationBranch
-                  nodes={rootOrganization.children}
-                  revealClass={orgRevealClass}
-                />
+          <Reveal
+            className="relative mx-auto mt-12 max-w-5xl lg:mt-16"
+            delay={120}
+          >
+            <div className="mx-auto flex max-w-5xl flex-col items-center">
+              <div className="org-chart-level relative mt-5 w-full max-w-2xl rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8] sm:px-9" style={{ animationDelay: "100ms" }}>
+                <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-6 py-2.5 text-center text-xs font-black uppercase tracking-[0.2em] text-white shadow-[4px_4px_0_#DDD5C3]">Tim Pembina</h3>
+                <div className="mt-4 space-y-2 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">
+                  <p>Dekan Fakultas MIPA</p>
+                  <p>Wakil Dekan Bidang Akademik, Kemahasiswaan dan Riset</p>
+                  <p>Wakil Dekan Bidang Sumber Daya dan Organisasi</p>
+                </div>
               </div>
-            ) : null}
-          </div>
 
-          <div className="org-chart-scroll relative mx-auto mt-10 hidden max-w-6xl pb-4 md:block lg:mt-14">
-            <div className="org-chart-canvas flex min-w-max flex-col items-center px-8 sm:px-10 md:px-12">
-                <OrgNodeCard
-                  node={rootOrganization}
-                  size="lg"
-                  revealClass={orgRevealClass}
-                  delay={120}
-                />
+              <span className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
 
-                {rootOrganization.children.length > 0 ? (
-                  <>
-                    <div
-                      className={`org-parent-stem mt-5 h-8 w-px ${orgLineClass}`}
-                      data-visible={isOrganizationVisible ? "true" : "false"}
-                      style={{ animationDelay: "520ms" }}
-                    />
-                    <ul
-                      className="org-tree-children"
-                      data-visible={isOrganizationVisible ? "true" : "false"}
-                      style={{ "--org-line-delay": "820ms" } as CSSProperties}
-                    >
-                      {rootOrganization.children.map((child, childIndex) => (
-                        <li key={child.id} className="org-tree-item">
-                          <span aria-hidden="true" className="org-item-stem" />
-                          <OrganizationSubtree
-                            node={child}
-                            revealClass={orgRevealClass}
-                            linesVisible={isOrganizationVisible}
-                            index={childIndex}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : null}
+              <div className="relative w-full max-w-4xl sm:pt-9">
+                <span className="absolute left-[calc(25%_-_0.5rem)] right-[calc(25%_-_0.5rem)] top-0 hidden h-px bg-[#C9BFA8] sm:block" aria-hidden="true" />
+                <div className="grid gap-5 sm:grid-cols-2 sm:gap-8">
+                  <div className="relative sm:pt-0">
+                    <span className="absolute left-1/2 -top-9 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
+                    <div className="org-chart-level mt-5 h-[calc(100%-1.25rem)] rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "280ms" }}>
+                      <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Penanggung Jawab Harian</h3>
+                      <div className="mt-4 space-y-2 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">
+                        <p>Manajer Akademik dan Kemahasiswaan</p>
+                        <p>Manajer Sumber Daya, Perencanaan, dan Informasi</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative sm:pt-0">
+                    <span className="absolute left-1/2 -top-9 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
+                    <div className="org-chart-level mt-5 h-[calc(100%-1.25rem)] rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "380ms" }}>
+                      <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Koordinator Pelaksana</h3>
+                      <p className="mt-4 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">Koordinator Urusan Akademik dan Kemahasiswaan</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <span className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
+
+              <div className="org-chart-level relative mt-5 w-full max-w-md rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "640ms" }}>
+                <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Staf Pelaksana</h3>
+                <p className="mt-4 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">Tim Adhoc ULT</p>
+              </div>
+
+              <div className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
+              <div className="relative hidden h-px w-full sm:block" aria-hidden="true">
+                <span className="absolute left-[calc(10%_-_0.4rem)] right-[calc(10%_-_0.4rem)] top-0 h-px bg-[#C9BFA8]" />
+              </div>
+
+              <div className="grid w-full gap-3 sm:grid-cols-5 sm:gap-4">
+                {[
+                  "Urusan Akademik",
+                  "Urusan Kemahasiswaan",
+                  "Urusan Perencanaan dan Keuangan",
+                  "Urusan Kehumasan",
+                  "Urusan Sarana Prasarana",
+                ].map((item, index) => (
+                  <div key={item} className="relative flex pt-3 sm:pt-9">
+                    <span className="absolute left-1/2 top-0 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
+                    <div className="org-chart-level flex min-h-20 w-full items-center justify-center rounded-xl border-2 border-[#18130E] bg-[#FEFDF9] px-4 py-4 text-center text-xs font-bold leading-5 text-[#18130E] shadow-[4px_4px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0_#C9BFA8]" style={{ animationDelay: `${820 + index * 100}ms` }}>
+                      <span>{item}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      <section className="relative z-40 overflow-hidden bg-neutral-50 px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
+      <section className="relative z-40 overflow-hidden bg-[#FAF9F6] px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8">
         <div className="relative mx-auto min-h-[560px] max-w-7xl">
           <Reveal className="absolute inset-y-8 right-0 hidden w-[68%] overflow-hidden rounded-[2rem] border-4 border-white bg-neutral-200 shadow-2xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:shadow-black/25 lg:block">
             <Image
@@ -1086,7 +1279,7 @@ export default function ProfilPage() {
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
                 {location.directionUrl ? (
                   <a
-                    href={location.directionUrl}
+                    href="https://maps.app.goo.gl/yT3wqVpxQteXAweZ9?g_st=ic"
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-7 py-4 text-xs font-black text-white shadow-lg shadow-red-600/25 transition duration-300 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-red-600/35 sm:w-auto"
@@ -1096,15 +1289,6 @@ export default function ProfilPage() {
                   </a>
                 ) : null}
 
-                {location.email ? (
-                  <a
-                    href={`mailto:${location.email}`}
-                    className="inline-flex min-w-0 items-center gap-2 break-all text-xs font-black text-neutral-950 transition hover:text-red-600"
-                  >
-                    {location.email}
-                    <Mail className="size-4" />
-                  </a>
-                ) : null}
               </div>
             </Reveal>
           </div>
