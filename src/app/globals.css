@@ -137,6 +137,15 @@
 }
 
 @layer utilities {
+  .login-field:-webkit-autofill,
+  .login-field:-webkit-autofill:hover,
+  .login-field:-webkit-autofill:focus,
+  .login-field:-webkit-autofill:active {
+    -webkit-text-fill-color: white;
+    caret-color: white;
+    transition: background-color 9999s ease-out 0s;
+  }
+
   @keyframes login-media-in {
     from {
       opacity: 0;

@@ -264,7 +264,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
               Username
             </Label>
             <div className="relative">
-              <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
+              <UserRound className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
               <Input
                 id="email"
                 type="text"
@@ -272,7 +272,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-4 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:text-base"
+                className="login-field h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-4 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:text-base"
                 data-testid="login-email"
               />
             </div>
@@ -294,7 +294,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
               </button>
             </div>
             <div className="relative">
-              <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
+              <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[18px] -translate-y-1/2 text-white sm:left-4 sm:size-5" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -302,7 +302,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                className="h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-12 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:pr-14 sm:text-base"
+                className="login-field h-12 rounded-xl border-white/40 bg-slate-950/45 pl-11 pr-12 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_24px_rgba(2,6,23,0.2)] backdrop-blur-xl focus-visible:border-white/80 focus-visible:ring-white/25 sm:h-14 sm:pl-14 sm:pr-14 sm:text-base"
                 data-testid="login-password"
               />
               <button
@@ -310,7 +310,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                 aria-label={
                   showPassword ? "Sembunyikan password" : "Tampilkan password"
                 }
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 transition-colors hover:text-white sm:right-4"
+                className="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 text-white/70 transition-colors hover:text-white sm:right-4"
                 onClick={() => setShowPassword((value) => !value)}
               >
                 {showPassword ? (
@@ -322,7 +322,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-semibold text-white/85 sm:gap-2.5 sm:text-sm">
+          <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-white/85 sm:gap-2.5 sm:text-sm">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -341,7 +341,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="mt-1 h-12 rounded-xl bg-[#df001d] text-base font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] disabled:hover:translate-y-0 sm:h-16 sm:text-xl"
+            className="mt-3 h-12 rounded-xl bg-[#df001d] text-base font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] disabled:hover:translate-y-0 sm:h-16 sm:text-xl"
             data-testid="login-submit"
           >
             {isSubmitting ? "Memproses..." : "Masuk Sekarang"}
