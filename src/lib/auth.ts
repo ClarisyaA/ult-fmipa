@@ -183,7 +183,7 @@ export const authOptions: NextAuthOptions = {
           email === process.env.DEV_ADMIN_EMAIL &&
           password === process.env.DEV_ADMIN_PASSWORD
         ) {
-          return mapDevUserToSessionUser("admin", email);
+          return mapDevUserToSessionUser("ADMIN", email);
         }
 
         if (
@@ -192,7 +192,7 @@ export const authOptions: NextAuthOptions = {
           email === process.env.DEV_STAFF_EMAIL &&
           password === process.env.DEV_STAFF_PASSWORD
         ) {
-          return mapDevUserToSessionUser("staff", email);
+          return mapDevUserToSessionUser("STAFF", email);
         }
 
         if (
@@ -201,7 +201,7 @@ export const authOptions: NextAuthOptions = {
           email === process.env.DEV_STUDENT_EMAIL &&
           password === process.env.DEV_STUDENT_PASSWORD
         ) {
-          return mapDevUserToSessionUser("student", email);
+          return mapDevUserToSessionUser("MAHASISWA", email);
         }
 
         if (email && password) {
@@ -260,6 +260,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.positionCode = user.positionCode;
+        token.accessCode = user.accessCode;
         token.npm = user.npm;
         token.nip = user.nip;
         token.pausId = user.pausId;
@@ -276,6 +278,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id ?? "";
         session.user.role = token.role;
+        session.user.positionCode = token.positionCode;
+        session.user.accessCode = token.accessCode;
         session.user.npm = token.npm;
         session.user.nip = token.nip;
         session.user.pausId = token.pausId;

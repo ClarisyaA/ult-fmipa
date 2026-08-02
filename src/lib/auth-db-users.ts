@@ -2,43 +2,10 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import type { AppRole, AppSessionUser } from "@/lib/auth-user-mapper";
 import { prisma } from "@/lib/prisma";
-
-const DEFAULT_ADMIN_ACCESS_CODES = ["SUPER_USER"];
-const DEFAULT_STAFF_ACCESS_CODES = ["ADMIN", "OPERATOR", "KRS", "PIMPINAN"];
-
-function parseAccessCodes(value: string | undefined, fallback: string[]) {
-  if (!value) {
-    return fallback;
-  }
-
-  const codes = value
-    .split(",")
-    .map((code) => code.trim().toUpperCase())
-    .filter(Boolean);
-
-  return codes.length > 0 ? codes : fallback;
-}
+import { resolveAppRole } from "@/lib/roles";
 
 export function mapAccessCodeToRole(accessCode: string): AppRole | null {
-  const code = accessCode.trim().toUpperCase();
-  const adminAccessCodes = parseAccessCodes(
-    process.env.DB_ADMIN_ACCESS_CODES,
-    DEFAULT_ADMIN_ACCESS_CODES
-  );
-  const staffAccessCodes = parseAccessCodes(
-    process.env.DB_STAFF_ACCESS_CODES,
-    DEFAULT_STAFF_ACCESS_CODES
-  );
-
-  if (adminAccessCodes.includes(code)) {
-    return "admin";
-  }
-
-  if (staffAccessCodes.includes(code)) {
-    return "staff";
-  }
-
-  return null;
+  return resolveAppRole({ positionCode: accessCode });
 }
 
 function timingSafeEqualText(left: string, right: string) {
@@ -94,6 +61,7 @@ export async function authorizeDbCredentialUser(
       CONFIRMED: true,
       PASSWORD: true,
       ACCESS_CODE: true,
+      APP_ROLE: true,
     },
   });
 
@@ -101,7 +69,10 @@ export async function authorizeDbCredentialUser(
     return null;
   }
 
-  const role = mapAccessCodeToRole(user.ACCESS_CODE);
+  const role = resolveAppRole({
+    appRole: user.APP_ROLE,
+    positionCode: user.ACCESS_CODE,
+  });
 
   if (!role || !verifyLegacyPassword(password, user.PASSWORD)) {
     return null;
@@ -112,6 +83,8 @@ export async function authorizeDbCredentialUser(
     name: user.FULL_NAME,
     email: user.EMAIL,
     role,
+    positionCode: user.ACCESS_CODE,
+    accessCode: user.ACCESS_CODE,
     phone: user.TELEPHONE ?? undefined,
   };
 }

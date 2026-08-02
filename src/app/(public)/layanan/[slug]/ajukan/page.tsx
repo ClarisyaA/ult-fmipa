@@ -52,11 +52,11 @@ export default async function SubmitServiceRequestPage({
     redirect(`/login?callbackUrl=/layanan/${service.slug}/ajukan`);
   }
 
-  if (user.role === "admin") {
+  if (user.role === "ADMIN") {
     redirect("/admin/dashboard");
   }
 
-  if (user.role === "staff") {
+  if (user.role === "STAFF") {
     redirect("/staff/dashboard");
   }
 

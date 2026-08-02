@@ -38,7 +38,7 @@ async function authorize() {
     };
   }
 
-  if (!["admin", "staff"].includes(user.role)) {
+  if (!["ADMIN", "STAFF"].includes(user.role)) {
     return {
       user,
       response: jsonError("Forbidden", 403),

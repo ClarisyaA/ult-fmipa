@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import {
   getLatestPendingDashboardRequestsByDate,
   getPriorityDashboardRequests,
@@ -271,8 +272,8 @@ export default async function StaffDashboardPage({
                     <col className="w-[28%]" />
                     <col className="w-[22%]" />
                     <col className="w-[25%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[10%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[11%]" />
                   </colgroup>
                   <TableHeader className="bg-[#eef3ec]">
                     <TableRow className="border-[#dfe6dd] hover:bg-[#eef3ec]">
@@ -288,7 +289,7 @@ export default async function StaffDashboardPage({
                       <TableHead className="h-8 px-4 text-left text-[10px] font-bold text-[#244934]">
                         Tanggal Pengajuan
                       </TableHead>
-                      <TableHead className="h-8 px-4 text-center text-[10px] font-bold text-[#244934]">
+                      <TableHead className="h-8 min-w-28 px-4 text-center text-[10px] font-bold text-[#244934]">
                         Aksi
                       </TableHead>
                     </TableRow>
@@ -299,23 +300,23 @@ export default async function StaffDashboardPage({
                         key={`${row.serviceSlug}-${row.id}`}
                         className="border-b border-[#ece7dc] bg-white transition-colors hover:bg-[#f8faf6]"
                       >
-                        <TableCell className="px-4 py-3 text-[11px] font-semibold text-[#202923]">
-                          {row.serviceTitle}
+                        <TableCell className="min-w-0 px-4 py-3 text-[11px] font-semibold text-[#202923]">
+                          <TruncatedTableText value={row.serviceTitle} />
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-[11px] font-semibold text-[#303b34]">
-                          {row.requesterName}
+                        <TableCell className="min-w-0 px-4 py-3 text-[11px] font-semibold text-[#303b34]">
+                          <TruncatedTableText value={row.requesterName} />
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
-                          {row.programStudy}
+                        <TableCell className="min-w-0 px-4 py-3 text-[11px] text-[#303b34]">
+                          <TruncatedTableText value={row.programStudy} />
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
+                        <TableCell className="px-4 py-3 text-[11px] whitespace-nowrap text-[#303b34]">
                           {formatDate(row.requestDate)}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-center">
+                        <TableCell className="w-28 min-w-28 px-4 py-3 text-center whitespace-nowrap">
                           <Button
                             asChild
                             size="sm"
-                            className="h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
+                            className="admin-action-button h-8 rounded-md bg-[#0f3d2e] px-3 text-[11px] font-semibold text-white hover:bg-[#164b39]"
                           >
                             <Link href={buildRequestPreviewHref(row)}>
                               Proses

@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getLevelOptions, getUnitRows } from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
@@ -87,26 +88,39 @@ export default async function AdminSystemUnitsPage({
           <AdminEmptyState title="Data unit tidak ditemukan" />
         ) : (
           <AdminTableScroll>
-            <Table className="min-w-[760px]">
+            <Table className="min-w-[920px] table-fixed">
+              <colgroup>
+                <col className="w-[12%]" />
+                <col className="w-[34%]" />
+                <col className="w-[12%]" />
+                <col className="w-[18%]" />
+                <col className="w-[24%]" />
+              </colgroup>
               <TableHeader className="bg-[#eef3ec]">
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Nama Unit</TableHead>
                   <TableHead>Level ID</TableHead>
                   <TableHead>Kode Level</TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead className="admin-action-cell">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.unitId}>
-                    <TableCell>{row.unitId}</TableCell>
-                    <TableCell className="font-semibold">
-                      {row.unitName}
+                    <TableCell className="whitespace-nowrap">
+                      {row.unitId}
                     </TableCell>
-                    <TableCell>{row.levelDataId}</TableCell>
-                    <TableCell>{row.levelDataCode}</TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-0 font-semibold">
+                      <TruncatedTableText value={row.unitName} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {row.levelDataId}
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.levelDataCode} />
+                    </TableCell>
+                    <TableCell className="admin-action-cell whitespace-nowrap">
                       <UnitRowActions row={row} levels={levels} />
                     </TableCell>
                   </TableRow>

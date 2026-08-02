@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getAdminUserLogRows } from "@/lib/admin-user-log";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
@@ -116,7 +117,14 @@ export default async function AdminSystemUserLogPage({
         ) : (
           <div className="grid gap-3">
             <AdminTableScroll>
-              <Table className="min-w-[860px]">
+              <Table className="min-w-[960px] table-fixed">
+                <colgroup>
+                  <col className="w-[16%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[38%]" />
+                </colgroup>
                 <TableHeader className="bg-[#eef3ec]">
                   <TableRow>
                     <TableHead>Waktu</TableHead>
@@ -129,13 +137,21 @@ export default async function AdminSystemUserLogPage({
                 <TableBody>
                   {rows.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell>{formatDate(row.time)}</TableCell>
-                      <TableCell className="font-semibold">
-                        {row.userName}
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(row.time)}
                       </TableCell>
-                      <TableCell>{row.action}</TableCell>
-                      <TableCell>{row.module ?? "-"}</TableCell>
-                      <TableCell>{row.description}</TableCell>
+                      <TableCell className="min-w-0 font-semibold">
+                        <TruncatedTableText value={row.userName} />
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={row.action} />
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={row.module ?? "-"} />
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={row.description} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

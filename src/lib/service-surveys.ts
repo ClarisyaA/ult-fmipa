@@ -1,5 +1,7 @@
 import { getPublicServiceBySlug, getPublicServices } from "@/lib/legacy-services";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { isDatabaseUnavailableError } from "@/lib/error-utils";
 import { getStudentRequestHistory } from "@/lib/student-request-history";
 
@@ -87,6 +89,46 @@ type ServiceBreakdownRow = {
   averageOverallRating: number | string | null;
 };
 
+type SurveyCommentRow = SurveyRecord & {
+  totalRows?: bigint | number;
+};
+
+type CountRow = {
+  totalCount: bigint | number | null;
+};
+
+export type SurveySummaryOptions = {
+  serviceSlug?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type SurveyExportRow = {
+  id: string;
+  serviceSlug: string;
+  serviceTitle: string;
+  sourceTable: string;
+  requestId: string;
+  overallRating: number;
+  ratingTangibility: number | null;
+  ratingReliability: number | null;
+  ratingResponsiveness: number | null;
+  ratingAssurance: number | null;
+  ratingEmpathy: number | null;
+  comment: string | null;
+  createdAt: string;
+};
+
+const surveyOptionsSchema = z
+  .object({
+    serviceSlug: z.string().trim().max(100).optional(),
+    search: z.string().trim().max(120).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  })
+  .optional();
+
 export type SurveySummary = {
   totalCount: number;
   averageOverallRating: number | null;
@@ -103,6 +145,12 @@ export type SurveySummary = {
     comment: string;
     createdAt: string;
   }>;
+  commentsPagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
   serviceBreakdown: Array<{
     serviceSlug: string;
     serviceTitle: string;
@@ -120,6 +168,12 @@ const emptySummary: SurveySummary = {
   averageAssurance: null,
   averageEmpathy: null,
   recentComments: [],
+  commentsPagination: {
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 1,
+  },
   serviceBreakdown: [],
 };
 
@@ -239,6 +293,128 @@ function serviceTitleBySlug() {
   return Object.fromEntries(
     getPublicServices().map((service) => [service.slug, service.title])
   );
+}
+
+export function getSurveyServiceOptions() {
+  return getPublicServices().map((service) => ({
+    slug: service.slug,
+    title: service.title,
+  }));
+}
+
+function normalizeSurveyOptions(options?: SurveySummaryOptions) {
+  const parsed = surveyOptionsSchema.safeParse(options);
+  const safeOptions = parsed.success ? parsed.data : undefined;
+  const services = getPublicServices();
+  const validSlugs = new Set(services.map((service) => service.slug));
+  const rawSearch = safeOptions?.search?.trim() ?? "";
+  const search = rawSearch.slice(0, 120);
+  const serviceSlug =
+    safeOptions?.serviceSlug && validSlugs.has(safeOptions.serviceSlug)
+      ? safeOptions.serviceSlug
+      : undefined;
+  const pageSize = Math.min(Math.max(safeOptions?.pageSize ?? 10, 1), 50);
+  const page = Math.max(safeOptions?.page ?? 1, 1);
+
+  return {
+    serviceSlug,
+    search,
+    page,
+    pageSize,
+    matchingServiceSlugs: search
+      ? services
+          .filter((service) =>
+            service.title.toLowerCase().includes(search.toLowerCase()),
+          )
+          .map((service) => service.slug)
+      : [],
+  };
+}
+
+function buildServiceFilter(serviceSlug?: string) {
+  return serviceSlug
+    ? Prisma.sql`WHERE SERVICE_SLUG = ${serviceSlug}`
+    : Prisma.empty;
+}
+
+function buildCommentFilter({
+  serviceSlug,
+  search,
+  matchingServiceSlugs,
+}: ReturnType<typeof normalizeSurveyOptions>) {
+  const conditions = [
+    Prisma.sql`COMMENT IS NOT NULL`,
+    Prisma.sql`COMMENT <> ''`,
+  ];
+
+  if (serviceSlug) {
+    conditions.push(Prisma.sql`SERVICE_SLUG = ${serviceSlug}`);
+  }
+
+  if (search) {
+    const searchPattern = `%${search}%`;
+    const searchConditions = [Prisma.sql`COMMENT LIKE ${searchPattern}`];
+
+    if (matchingServiceSlugs.length > 0) {
+      searchConditions.push(
+        Prisma.sql`SERVICE_SLUG IN (${Prisma.join(matchingServiceSlugs)})`,
+      );
+    }
+
+    conditions.push(Prisma.sql`(${Prisma.join(searchConditions, " OR ")})`);
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`;
+}
+
+function buildSurveyListFilter({
+  serviceSlug,
+  search,
+  matchingServiceSlugs,
+}: ReturnType<typeof normalizeSurveyOptions>) {
+  const conditions: Prisma.Sql[] = [];
+
+  if (serviceSlug) {
+    conditions.push(Prisma.sql`SERVICE_SLUG = ${serviceSlug}`);
+  }
+
+  if (search) {
+    const searchPattern = `%${search}%`;
+    const searchConditions = [Prisma.sql`COMMENT LIKE ${searchPattern}`];
+
+    if (matchingServiceSlugs.length > 0) {
+      searchConditions.push(
+        Prisma.sql`SERVICE_SLUG IN (${Prisma.join(matchingServiceSlugs)})`,
+      );
+    }
+
+    conditions.push(Prisma.sql`(${Prisma.join(searchConditions, " OR ")})`);
+  }
+
+  return conditions.length > 0
+    ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
+    : Prisma.empty;
+}
+
+function toSurveyExportRow(
+  survey: SurveyRecord,
+  titles: Record<string, string>,
+): SurveyExportRow {
+  return {
+    id: String(survey.ID),
+    serviceSlug: survey.SERVICE_SLUG,
+    serviceTitle: titles[survey.SERVICE_SLUG] ?? survey.SERVICE_SLUG,
+    sourceTable: survey.SOURCE_TABLE,
+    requestId: String(survey.REQUEST_ID),
+    overallRating: survey.OVERALL_RATING,
+    ratingTangibility: survey.RATING_TANGIBILITY,
+    ratingReliability: survey.RATING_RELIABILITY,
+    ratingResponsiveness: survey.RATING_RESPONSIVENESS,
+    ratingAssurance: survey.RATING_ASSURANCE,
+    ratingEmpathy: survey.RATING_EMPATHY,
+    comment: survey.COMMENT,
+    createdAt: toIso(survey.CREATED_AT) ?? "",
+  };
 }
 
 async function hasSurveyTable() {
@@ -405,12 +581,21 @@ export async function getRecentSurveyComments() {
   }
 }
 
-export async function getSurveySummary(role?: "admin" | "staff") {
+export async function getSurveySummary(
+  role?: "admin" | "staff",
+  options?: SurveySummaryOptions,
+) {
   void role;
+  const normalized = normalizeSurveyOptions(options);
+  const serviceFilter = buildServiceFilter(normalized.serviceSlug);
+  const commentFilter = buildCommentFilter(normalized);
+  const offset = (normalized.page - 1) * normalized.pageSize;
 
   try {
-    const [summaryRows, recentComments, serviceGroups] = await Promise.all([
-      prisma.$queryRaw<SummaryRow[]>`
+    const [summaryRows, commentCountRows, commentRows, serviceGroups] =
+      await Promise.all([
+      prisma.$queryRaw<SummaryRow[]>(
+        Prisma.sql`
         SELECT
           COUNT(*) AS totalCount,
           AVG(OVERALL_RATING) AS averageOverallRating,
@@ -420,20 +605,60 @@ export async function getSurveySummary(role?: "admin" | "staff") {
           AVG(RATING_ASSURANCE) AS averageAssurance,
           AVG(RATING_EMPATHY) AS averageEmpathy
         FROM ult_service_surveys
+        ${serviceFilter}
       `,
-      getRecentSurveyComments(),
-      prisma.$queryRaw<ServiceBreakdownRow[]>`
+      ),
+      prisma.$queryRaw<CountRow[]>(
+        Prisma.sql`
+        SELECT COUNT(*) AS totalCount
+        FROM ult_service_surveys
+        ${commentFilter}
+      `,
+      ),
+      prisma.$queryRaw<SurveyCommentRow[]>(
+        Prisma.sql`
+        SELECT
+          ID,
+          SERVICE_SLUG,
+          SOURCE_TABLE,
+          REQUEST_ID,
+          NPM,
+          RATING_TANGIBILITY,
+          RATING_RELIABILITY,
+          RATING_RESPONSIVENESS,
+          RATING_ASSURANCE,
+          RATING_EMPATHY,
+          OVERALL_RATING,
+          COMMENT,
+          CREATED_AT,
+          UPDATED_AT
+        FROM ult_service_surveys
+        ${commentFilter}
+        ORDER BY CREATED_AT DESC, ID DESC
+        LIMIT ${normalized.pageSize}
+        OFFSET ${offset}
+      `,
+      ),
+      prisma.$queryRaw<ServiceBreakdownRow[]>(
+        Prisma.sql`
         SELECT
           SERVICE_SLUG,
           COUNT(*) AS totalCount,
           AVG(OVERALL_RATING) AS averageOverallRating
         FROM ult_service_surveys
+        ${serviceFilter}
         GROUP BY SERVICE_SLUG
         ORDER BY totalCount DESC, SERVICE_SLUG ASC
       `,
+      ),
     ]);
     const summary = summaryRows[0];
     const titles = serviceTitleBySlug();
+    const totalComments = toNumber(commentCountRows[0]?.totalCount);
+    const totalPages = Math.max(
+      Math.ceil(totalComments / normalized.pageSize),
+      1,
+    );
 
     if (!summary) {
       return emptySummary;
@@ -447,7 +672,28 @@ export async function getSurveySummary(role?: "admin" | "staff") {
       averageResponsiveness: roundAverage(summary.averageResponsiveness),
       averageAssurance: roundAverage(summary.averageAssurance),
       averageEmpathy: roundAverage(summary.averageEmpathy),
-      recentComments,
+      recentComments: commentRows.flatMap((survey) => {
+        if (!survey.COMMENT) {
+          return [];
+        }
+
+        return [
+          {
+            id: String(survey.ID),
+            serviceSlug: survey.SERVICE_SLUG,
+            serviceTitle: titles[survey.SERVICE_SLUG] ?? survey.SERVICE_SLUG,
+            overallRating: survey.OVERALL_RATING,
+            comment: survey.COMMENT,
+            createdAt: toIso(survey.CREATED_AT) ?? "",
+          },
+        ];
+      }),
+      commentsPagination: {
+        page: normalized.page,
+        pageSize: normalized.pageSize,
+        total: totalComments,
+        totalPages,
+      },
       serviceBreakdown: serviceGroups.map((group) => ({
         serviceSlug: group.SERVICE_SLUG,
         serviceTitle: titles[group.SERVICE_SLUG] ?? group.SERVICE_SLUG,
@@ -458,6 +704,42 @@ export async function getSurveySummary(role?: "admin" | "staff") {
   } catch (error) {
     handleSurveyReadError(error);
     return emptySummary;
+  }
+}
+
+export async function getSurveyExportRows(options?: SurveySummaryOptions) {
+  const normalized = normalizeSurveyOptions(options);
+  const listFilter = buildSurveyListFilter(normalized);
+
+  try {
+    const rows = await prisma.$queryRaw<SurveyRecord[]>(
+      Prisma.sql`
+        SELECT
+          ID,
+          SERVICE_SLUG,
+          SOURCE_TABLE,
+          REQUEST_ID,
+          NPM,
+          RATING_TANGIBILITY,
+          RATING_RELIABILITY,
+          RATING_RESPONSIVENESS,
+          RATING_ASSURANCE,
+          RATING_EMPATHY,
+          OVERALL_RATING,
+          COMMENT,
+          CREATED_AT,
+          UPDATED_AT
+        FROM ult_service_surveys
+        ${listFilter}
+        ORDER BY CREATED_AT DESC, ID DESC
+      `,
+    );
+    const titles = serviceTitleBySlug();
+
+    return rows.map((row) => toSurveyExportRow(row, titles));
+  } catch (error) {
+    handleSurveyReadError(error);
+    return [];
   }
 }
 

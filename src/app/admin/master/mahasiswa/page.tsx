@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getMahasiswaPage } from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
@@ -169,7 +170,15 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
             />
           ) : (
             <AdminTableScroll>
-              <Table className="min-w-[1040px]">
+              <Table className="min-w-[1040px] table-fixed">
+                <colgroup>
+                  <col className="w-[16%]" />
+                  <col className="w-[25%]" />
+                  <col className="w-[27%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[14%]" />
+                </colgroup>
                 <TableHeader className="bg-[#eef3ec]">
                   <TableRow>
                     <TableHead>NPM</TableHead>
@@ -177,22 +186,28 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
                     <TableHead>Program Studi</TableHead>
                     <TableHead>Angkatan</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
+                    <TableHead className="admin-action-cell">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((row) => (
                     <TableRow key={row.npm}>
-                      <TableCell className="font-semibold">{row.npm}</TableCell>
-                      <TableCell>{row.nama ?? "-"}</TableCell>
-                      <TableCell>{row.programStudi ?? "-"}</TableCell>
+                      <TableCell className="min-w-0 font-semibold">
+                        <TruncatedTableText value={row.npm} />
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={row.nama ?? "-"} />
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={row.programStudi ?? "-"} />
+                      </TableCell>
                       <TableCell>{row.angkatan ?? "-"}</TableCell>
                       <TableCell>
                         <AdminStatusBadge tone="neutral">
                           {row.status ?? "Aktif"}
                         </AdminStatusBadge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="admin-action-cell">
                         <div data-tour="admin-students-actions">
                           <MahasiswaRowActions row={row} />
                         </div>

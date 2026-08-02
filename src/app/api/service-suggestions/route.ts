@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const input = parseServiceSuggestionInput(
       body,
-      session?.user.role === "student" ? session.user.npm : null,
+      session?.user.role === "MAHASISWA" ? session.user.npm : null,
     );
     const id = await createServiceSuggestion(input);
 

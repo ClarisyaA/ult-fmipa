@@ -57,7 +57,7 @@ export async function POST(
       );
     }
 
-    if (session.user.role !== "student") {
+    if (session.user.role !== "MAHASISWA") {
       return NextResponse.json(
         {
           error: "Hanya mahasiswa yang dapat mengajukan layanan.",

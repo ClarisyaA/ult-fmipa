@@ -2,13 +2,14 @@ import { getServerSession } from "next-auth";
 
 import { ServiceSuggestionForm } from "@/components/service-suggestions/service-suggestion-form";
 import { authOptions } from "@/lib/auth";
+import { isRole } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ServiceSuggestionPage() {
   const session = await getServerSession(authOptions);
-  const isStudent = session?.user.role === "student";
+  const isStudent = isRole(session?.user.role, "MAHASISWA");
 
   return (
     <main className="bg-[#fbfaf7] px-4 py-16 text-[#18130e] sm:px-6 lg:px-8">
@@ -41,9 +42,9 @@ export default async function ServiceSuggestionPage() {
           </div>
           <div className="p-5 sm:p-7">
             <ServiceSuggestionForm
-              initialNama={isStudent ? (session.user.name ?? "") : ""}
-              initialNpm={isStudent ? (session.user.npm ?? "") : ""}
-              lockNpm={Boolean(isStudent && session.user.npm)}
+              initialNama={isStudent ? (session?.user.name ?? "") : ""}
+              initialNpm={isStudent ? (session?.user.npm ?? "") : ""}
+              lockNpm={Boolean(isStudent && session?.user.npm)}
             />
           </div>
         </section>

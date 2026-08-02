@@ -22,8 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import {
   getAccessRows,
+  getAppRoleRows,
   getUnitOptions,
   getUserRows,
 } from "@/lib/admin-readonly-data";
@@ -43,6 +45,7 @@ export default async function AdminSystemUsersPage({
   const params = await searchParams;
   let rows: Awaited<ReturnType<typeof getUserRows>> = [];
   let accessRows: Awaited<ReturnType<typeof getAccessRows>> = [];
+  const appRoleRows = getAppRoleRows();
   let units: Awaited<ReturnType<typeof getUnitOptions>> = [];
   let unavailable = false;
   const currentUser = await getCurrentUser();
@@ -68,6 +71,7 @@ export default async function AdminSystemUsersPage({
     Nama: row.FULL_NAME,
     Email: row.EMAIL,
     Akses: row.ACCESS_CODE,
+    "Akses Aplikasi": row.APP_ROLE ?? "",
     Unit: row.UNIT_ID,
     Status: row.CONFIRMED === "1" ? "Aktif" : "Belum konfirmasi",
   }));
@@ -78,7 +82,11 @@ export default async function AdminSystemUsersPage({
         title="User List"
         description="Kelola field user yang aman. Password hash dan field sensitif tidak ditampilkan."
         action={
-          <UserCreateButton accessRows={accessRows} units={units} />
+          <UserCreateButton
+            accessRows={accessRows}
+            appRoleRows={appRoleRows}
+            units={units}
+          />
         }
       />
       <AdminSectionCard title="Pencarian">
@@ -107,28 +115,50 @@ export default async function AdminSystemUsersPage({
           <AdminEmptyState title="Data user tidak ditemukan" />
         ) : (
           <AdminTableScroll>
-            <Table className="min-w-[860px]">
+            <Table className="min-w-[1160px] table-fixed">
+              <colgroup>
+                <col className="w-[13%]" />
+                <col className="w-[17%]" />
+                <col className="w-[18%]" />
+                <col className="w-[13%]" />
+                <col className="w-[12%]" />
+                <col className="w-[9%]" />
+                <col className="w-[6%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <TableHeader className="bg-[#eef3ec]">
                 <TableRow>
                   <TableHead>Username</TableHead>
                   <TableHead>Nama</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Akses</TableHead>
+                  <TableHead>Posisi / Level</TableHead>
+                  <TableHead>Akses Aplikasi</TableHead>
                   <TableHead>Unit</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead className="admin-action-cell-wide">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.USER_NAME}>
-                    <TableCell className="font-semibold">
-                      {row.USER_NAME}
+                    <TableCell className="min-w-0 font-semibold">
+                      <TruncatedTableText value={row.USER_NAME} />
                     </TableCell>
-                    <TableCell>{row.FULL_NAME}</TableCell>
-                    <TableCell>{row.EMAIL}</TableCell>
-                    <TableCell>{row.ACCESS_CODE}</TableCell>
-                    <TableCell>{row.UNIT_ID}</TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.FULL_NAME} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.EMAIL} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.ACCESS_CODE} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.APP_ROLE ?? "-"} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.UNIT_ID} />
+                    </TableCell>
                     <TableCell>
                       <AdminStatusBadge
                         tone={row.CONFIRMED === "1" ? "success" : "neutral"}
@@ -136,10 +166,11 @@ export default async function AdminSystemUsersPage({
                         {row.CONFIRMED === "1" ? "Aktif" : "Belum konfirmasi"}
                       </AdminStatusBadge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="admin-action-cell-wide">
                       <UserRowActions
                         row={row}
                         accessRows={accessRows}
+                        appRoleRows={appRoleRows}
                         units={units}
                         currentUserEmail={currentUser?.email}
                         currentLegacyUsername={currentLegacyUsername}

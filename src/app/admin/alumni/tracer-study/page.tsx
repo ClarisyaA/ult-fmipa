@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getTracerStudyPage } from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
@@ -175,7 +176,16 @@ export default async function AdminTracerStudyPage({
           />
         ) : (
           <AdminTableScroll>
-            <Table className="min-w-[1180px]">
+            <Table className="min-w-[1180px] table-fixed">
+              <colgroup>
+                <col className="w-[14%]" />
+                <col className="w-[22%]" />
+                <col className="w-[23%]" />
+                <col className="w-[10%]" />
+                <col className="w-[17%]" />
+                <col className="w-[8%]" />
+                <col className="w-[6%]" />
+              </colgroup>
               <TableHeader className="bg-[#eef3ec]">
                 <TableRow>
                   <TableHead>NPM</TableHead>
@@ -190,13 +200,21 @@ export default async function AdminTracerStudyPage({
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-semibold">
-                      {row.npm ?? "-"}
+                    <TableCell className="min-w-0 font-semibold">
+                      <TruncatedTableText value={row.npm ?? "-"} />
                     </TableCell>
-                    <TableCell>{row.nama || "-"}</TableCell>
-                    <TableCell>{row.programStudi ?? "-"}</TableCell>
-                    <TableCell>{row.tahunLulus ?? "-"}</TableCell>
-                    <TableCell>{row.instansi ?? "-"}</TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.nama || "-"} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.programStudi ?? "-"} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {row.tahunLulus ?? "-"}
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.instansi ?? "-"} />
+                    </TableCell>
                     <TableCell>
                       <AdminStatusBadge
                         tone={row.statusIsi ? "success" : "neutral"}

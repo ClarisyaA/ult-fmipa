@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getAdminHomeActivitiesState } from "@/lib/home-activities";
 import { getHomeLinksState } from "@/lib/home-links";
 import { getServiceLinksState } from "@/lib/service-links";
@@ -189,7 +190,15 @@ export default async function StaffHomeActivitiesPage() {
         </div>
 
         <div className="hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain rounded-md border border-[#edf0e9] md:block">
-          <Table className="min-w-[840px]">
+          <Table className="min-w-[900px] table-fixed">
+            <colgroup>
+              <col className="w-32" />
+              <col className="w-[32%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[16%]" />
+              <col className="w-[18%]" />
+            </colgroup>
             <TableHeader>
               <TableRow className="border-[#dfe6dd] bg-[#eef3ec] hover:bg-[#eef3ec]">
                 {[
@@ -202,7 +211,9 @@ export default async function StaffHomeActivitiesPage() {
                 ].map((heading) => (
                   <TableHead
                     key={heading}
-                    className="h-8 px-4 text-[10px] font-bold text-[#244934]"
+                    className={`h-8 px-4 text-[10px] font-bold text-[#244934] ${
+                      heading === "Aksi" ? "admin-action-cell" : ""
+                    }`}
                   >
                     {heading}
                   </TableHead>
@@ -251,13 +262,15 @@ export default async function StaffHomeActivitiesPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-0">
                         <div className="max-w-xs">
                           <p className="text-[11px] font-semibold text-[#202923]">
-                            {activity.title}
+                            <TruncatedTableText value={activity.title} />
                           </p>
                           <p className="mt-1 text-[10px] text-[#7a7166]">
-                            {activity.eyebrow ?? "Tanpa kategori"}
+                            <TruncatedTableText
+                              value={activity.eyebrow ?? "Tanpa kategori"}
+                            />
                           </p>
                         </div>
                       </TableCell>
@@ -274,16 +287,16 @@ export default async function StaffHomeActivitiesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{activity.sortOrder}</TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         {formatDate(activity.updatedAt ?? activity.createdAt)}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-2">
+                      <TableCell className="admin-action-cell">
+                        <div className="admin-action-group">
                           <Button
                             asChild
                             variant="outline"
                             size="sm"
-                            className="h-8 rounded-md border-[#e1d8ca] px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                            className="admin-action-button h-8 rounded-md border-[#e1d8ca] px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
                           >
                             <Link
                               href={`/staff/beranda/kegiatan/${activity.id}/edit`}

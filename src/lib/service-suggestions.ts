@@ -1,11 +1,14 @@
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 
 export const serviceSuggestionStatuses = ["new", "reviewed", "archived"] as const;
+export const serviceSuggestionSortOptions = ["newest", "oldest"] as const;
 
 export type ServiceSuggestionStatus =
   (typeof serviceSuggestionStatuses)[number];
+export type ServiceSuggestionSort = (typeof serviceSuggestionSortOptions)[number];
 
 export type ServiceSuggestion = {
   id: string;
@@ -31,6 +34,10 @@ export type ServiceSuggestionInput = {
 export type ServiceSuggestionUpdateInput = {
   status: ServiceSuggestionStatus;
   adminNote?: string | null;
+};
+
+export type ServiceSuggestionListOptions = {
+  sort?: ServiceSuggestionSort;
 };
 
 export class ServiceSuggestionValidationError extends Error {
@@ -59,6 +66,12 @@ type ServiceSuggestionRow = {
   CREATED_AT: Date;
   UPDATED_AT: Date | null;
 };
+
+const serviceSuggestionListOptionsSchema = z
+  .object({
+    sort: z.enum(serviceSuggestionSortOptions).optional(),
+  })
+  .optional();
 
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -123,6 +136,12 @@ export function parseServiceSuggestionStatus(value: unknown) {
   return status as ServiceSuggestionStatus;
 }
 
+export function parseServiceSuggestionSort(value: unknown): ServiceSuggestionSort {
+  const result = z.enum(serviceSuggestionSortOptions).safeParse(value);
+
+  return result.success ? result.data : "newest";
+}
+
 export function parseServiceSuggestionId(value: string) {
   if (!/^\d+$/.test(value)) {
     throw new ServiceSuggestionValidationError("ID usulan layanan tidak valid.");
@@ -162,6 +181,20 @@ function mapSuggestionRow(row: ServiceSuggestionRow): ServiceSuggestion {
   };
 }
 
+function normalizeListOptions(options?: ServiceSuggestionListOptions) {
+  const result = serviceSuggestionListOptionsSchema.safeParse(options);
+
+  return {
+    sort: result.success ? (result.data?.sort ?? "newest") : "newest",
+  };
+}
+
+function getSortOrder(sort: ServiceSuggestionSort) {
+  return sort === "oldest"
+    ? Prisma.sql`CREATED_AT ASC, ID ASC`
+    : Prisma.sql`CREATED_AT DESC, ID DESC`;
+}
+
 export async function createServiceSuggestion(input: ServiceSuggestionInput) {
   const rows = await prisma.$transaction(async (tx) => {
     const affected = await tx.$executeRaw`
@@ -183,8 +216,11 @@ export async function createServiceSuggestion(input: ServiceSuggestionInput) {
   return String(rows[0]?.id ?? "");
 }
 
-export async function getServiceSuggestions() {
-  const rows = await prisma.$queryRaw<ServiceSuggestionRow[]>`
+export async function getServiceSuggestions(options?: ServiceSuggestionListOptions) {
+  const { sort } = normalizeListOptions(options);
+  const orderBy = getSortOrder(sort);
+  const rows = await prisma.$queryRaw<ServiceSuggestionRow[]>(
+    Prisma.sql`
     SELECT
       ID,
       NAMA,
@@ -197,8 +233,9 @@ export async function getServiceSuggestions() {
       CREATED_AT,
       UPDATED_AT
     FROM ult_service_suggestions
-    ORDER BY CREATED_AT DESC, ID DESC
-  `;
+    ORDER BY ${orderBy}
+  `,
+  );
 
   return rows.map(mapSuggestionRow);
 }

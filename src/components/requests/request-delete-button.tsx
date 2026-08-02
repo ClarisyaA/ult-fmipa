@@ -76,7 +76,7 @@ export function RequestDeleteButton({
   }
 
   return (
-    <div className="grid gap-1">
+    <div className="grid w-fit min-w-max gap-1">
       <Button
         type="button"
         variant="destructive"
@@ -85,7 +85,7 @@ export function RequestDeleteButton({
         disabled={isDeleting}
         className={
           compact
-            ? "h-7 w-full rounded-md px-2 text-[10px] font-semibold"
+            ? "admin-action-button h-7 w-fit rounded-md px-2.5 text-[10px] font-semibold"
             : undefined
         }
       >

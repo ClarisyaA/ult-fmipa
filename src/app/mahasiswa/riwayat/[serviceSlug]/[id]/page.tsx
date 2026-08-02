@@ -103,7 +103,7 @@ export default async function StudentHistoryDetailPage({
     redirect("/login?callbackUrl=/mahasiswa/riwayat");
   }
 
-  if (session.user.role !== "student") {
+  if (session.user.role !== "MAHASISWA") {
     redirect(getDefaultRedirectByRole(session.user.role));
   }
 

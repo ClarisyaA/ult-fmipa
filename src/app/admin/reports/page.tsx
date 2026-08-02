@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import {
   getDashboardSummary,
   getPerformanceSummary,
@@ -385,7 +386,9 @@ export default async function AdminReportsPage({
               <TableBody>
                 {summary.services.map((service) => (
                   <TableRow key={service.slug}>
-                    <TableCell className="font-medium">{service.title}</TableCell>
+                    <TableCell className="min-w-0 font-medium">
+                      <TruncatedTableText value={service.title} />
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatNumber(service.total)}
                     </TableCell>
@@ -503,11 +506,17 @@ export default async function AdminReportsPage({
                 <TableBody>
                   {(performance?.staff ?? []).map((staff) => (
                     <TableRow key={staff.userName}>
-                      <TableCell>
-                        <p className="font-medium">{staff.fullName}</p>
-                        <p className="text-[11px] text-[#7a7166]">{staff.userName}</p>
+                      <TableCell className="min-w-0">
+                        <p className="font-medium">
+                          <TruncatedTableText value={staff.fullName} />
+                        </p>
+                        <p className="text-[11px] text-[#7a7166]">
+                          <TruncatedTableText value={staff.userName} />
+                        </p>
                       </TableCell>
-                      <TableCell>{staff.unitName}</TableCell>
+                      <TableCell className="min-w-0">
+                        <TruncatedTableText value={staff.unitName} />
+                      </TableCell>
                       <TableCell className="text-right font-semibold">
                         {formatNumber(staff.total)}
                       </TableCell>
@@ -541,7 +550,9 @@ export default async function AdminReportsPage({
                 <TableBody>
                   {(performance?.units ?? []).map((unit) => (
                     <TableRow key={unit.unitName}>
-                      <TableCell className="font-medium">{unit.unitName}</TableCell>
+                      <TableCell className="min-w-0 font-medium">
+                        <TruncatedTableText value={unit.unitName} />
+                      </TableCell>
                       <TableCell className="text-right">
                         {formatNumber(unit.staffCount)}
                       </TableCell>

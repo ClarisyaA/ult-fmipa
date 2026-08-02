@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getCurrentUser } from "@/lib/auth";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getPrintableLetterService } from "@/lib/letters/letter-data";
@@ -1219,12 +1220,14 @@ export default async function StaffRequestsPage({
                               : "border-l-transparent bg-white"
                           }`}
                         >
-                          <TableCell className="px-4 py-3 text-left text-[11px] font-semibold text-[#28352c]">
-                            <p className="truncate">
-                              {request.npm ?? request.maskedNpm} - {request.requesterName ?? "-"}
-                            </p>
+                          <TableCell className="min-w-0 px-4 py-3 text-left text-[11px] font-semibold text-[#28352c]">
+                            <TruncatedTableText
+                              value={`${request.npm ?? request.maskedNpm} - ${
+                                request.requesterName ?? "-"
+                              }`}
+                            />
                           </TableCell>
-                          <TableCell className="px-4 py-3 text-left">
+                          <TableCell className="min-w-0 px-4 py-3 text-left">
                             <p className="flex min-w-0 items-center gap-1.5 truncate text-[11px] font-semibold text-[#202923]">
                               {isPrintableRequest(request) ? (
                                 <FileText
@@ -1232,13 +1235,14 @@ export default async function StaffRequestsPage({
                                   aria-label="Layanan ini memiliki template surat"
                                 />
                               ) : null}
-                              <span className="truncate">{request.serviceTitle}</span>
+                              <TruncatedTableText
+                                value={request.serviceTitle}
+                                className="min-w-0"
+                              />
                             </p>
                           </TableCell>
-                          <TableCell className="px-4 py-3 pr-8 text-left">
-                            <p className="line-clamp-2 text-[11px] text-[#303b34]">
-                              {request.purpose ?? "-"}
-                            </p>
+                          <TableCell className="min-w-0 px-4 py-3 pr-8 text-left text-[11px] text-[#303b34]">
+                            <TruncatedTableText value={request.purpose ?? "-"} />
                           </TableCell>
                           <TableCell className="px-4 py-3 text-left text-[11px] text-[#303b34]">
                             <p>{formatDate(request.requestDate)}</p>

@@ -88,7 +88,7 @@ export function mapPausBridgePayloadToSessionUser(
     id,
     name: payload.name?.trim() || "Pengguna PAUS",
     email: payload.email,
-    role: npm ? "student" : "staff",
+    role: npm ? "MAHASISWA" : "STAFF",
     npm,
     nip,
     pausId: payload.pausId,

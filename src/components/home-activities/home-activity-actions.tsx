@@ -89,14 +89,15 @@ export function HomeActivityActions({
   }
 
   return (
-    <div className="grid gap-1">
-      <div className="flex flex-wrap gap-2">
+    <div className="grid w-fit min-w-max gap-1">
+      <div className="admin-action-group">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={toggleActive}
           disabled={isSubmitting}
+          className="admin-action-button"
         >
           {isSubmitting
             ? "Menyimpan..."
@@ -110,6 +111,7 @@ export function HomeActivityActions({
           size="sm"
           onClick={deleteActivity}
           disabled={isDeleting}
+          className="admin-action-button"
         >
           {isDeleting ? "Menghapus..." : "Hapus"}
         </Button>

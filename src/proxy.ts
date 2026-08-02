@@ -2,6 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getDefaultRedirectByRole } from "@/lib/auth-redirect";
+import { isAnyRole, isRole, normalizeRole } from "@/lib/roles";
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -28,7 +29,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = token.role;
+  const role = normalizeRole(token.role);
   const isAdminPath =
     pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
   const isStaffPath =
@@ -36,11 +37,19 @@ export async function proxy(request: NextRequest) {
   const isStudentPath =
     pathname.startsWith("/mahasiswa") || pathname.startsWith("/api/student");
 
-  if (isSubmissionPage && !["student", "admin", "staff"].includes(role)) {
+  if (!role) {
+    if (isApiRoute) {
+      return jsonError("Forbidden", 403);
+    }
+
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (isAdminPath && role !== "admin") {
+  if (isSubmissionPage && !isAnyRole(role, ["MAHASISWA", "ADMIN", "STAFF"])) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isAdminPath && !isRole(role, "ADMIN")) {
     return isApiRoute
       ? jsonError("Forbidden", 403)
       : NextResponse.redirect(
@@ -48,7 +57,7 @@ export async function proxy(request: NextRequest) {
         );
   }
 
-  if (isStaffPath && role !== "staff") {
+  if (isStaffPath && !isRole(role, "STAFF")) {
     return isApiRoute
       ? jsonError("Forbidden", 403)
       : NextResponse.redirect(
@@ -56,7 +65,7 @@ export async function proxy(request: NextRequest) {
         );
   }
 
-  if (isStudentPath && role !== "student") {
+  if (isStudentPath && !isRole(role, "MAHASISWA")) {
     return isApiRoute
       ? jsonError("Forbidden", 403)
       : NextResponse.redirect(

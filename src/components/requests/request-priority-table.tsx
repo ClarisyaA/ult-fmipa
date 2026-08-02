@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import type { PriorityDashboardRequestRow } from "@/types/dashboard";
 
 function getCategoryParam(category: string) {
@@ -151,7 +152,16 @@ export function RequestPriorityTable({
 
       <div className={role === "staff" ? "hidden md:block" : undefined}>
         <AdminTableScroll>
-          <Table className="min-w-[900px]">
+          <Table className="min-w-[980px] table-fixed">
+            <colgroup>
+              <col className="w-[22%]" />
+              <col className="w-[18%]" />
+              <col className="w-[20%]" />
+              <col className="w-[12%]" />
+              <col className="w-[11%]" />
+              <col className="w-[8%]" />
+              <col className="w-[9%]" />
+            </colgroup>
             <TableHeader className="bg-[#eef3ec]">
               <TableRow>
                 <TableHead>Layanan</TableHead>
@@ -166,11 +176,15 @@ export function RequestPriorityTable({
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={`${row.serviceSlug}-${row.id}`}>
-                  <TableCell className="font-medium">
-                    {row.serviceTitle}
+                  <TableCell className="min-w-0 font-medium">
+                    <TruncatedTableText value={row.serviceTitle} />
                   </TableCell>
-                  <TableCell>{row.requesterName}</TableCell>
-                  <TableCell>{row.programStudy}</TableCell>
+                  <TableCell className="min-w-0">
+                    <TruncatedTableText value={row.requesterName} />
+                  </TableCell>
+                  <TableCell className="min-w-0">
+                    <TruncatedTableText value={row.programStudy} />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {formatDate(row.requestDate)}
                   </TableCell>

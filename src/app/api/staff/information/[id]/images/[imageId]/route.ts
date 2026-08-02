@@ -25,7 +25,7 @@ async function assertImageBelongsToPost(id: string, imageId: string) {
 }
 
 export async function PATCH(request: Request, { params }: ImageRouteProps) {
-  const user = await requireRole(["staff"]);
+  const user = await requireRole(["STAFF"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -111,7 +111,7 @@ export async function PATCH(request: Request, { params }: ImageRouteProps) {
 }
 
 export async function DELETE(_request: Request, { params }: ImageRouteProps) {
-  const user = await requireRole(["staff"]);
+  const user = await requireRole(["STAFF"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

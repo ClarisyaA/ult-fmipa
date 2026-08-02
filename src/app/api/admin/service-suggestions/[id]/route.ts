@@ -20,7 +20,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -52,7 +52,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -86,7 +86,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

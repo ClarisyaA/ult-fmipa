@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit-log";
 import { jsonApiError } from "@/lib/error-utils";
+import { isRole } from "@/lib/roles";
 import {
   createProfileLocationHour,
   createProfileOrganizationNode,
@@ -37,7 +38,7 @@ async function requireRole(rolePrefix: RolePrefix) {
     return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  if (user.role !== rolePrefix) {
+  if (!isRole(user.role, rolePrefix === "admin" ? "ADMIN" : "STAFF")) {
     return { user: null, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit-log";
-import { hashLegacyPassword, mapAccessCodeToRole } from "@/lib/auth-db-users";
+import { hashLegacyPassword } from "@/lib/auth-db-users";
+import { normalizeStaffAppRole } from "@/lib/roles";
 import {
   AdminActionError,
   cleanString,
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     const email = cleanString(body.email, 50);
     const telephone = cleanString(body.telephone, 50);
     const accessCode = cleanString(body.accessCode, 25).toUpperCase();
+    const appRole = normalizeStaffAppRole(cleanString(body.appRole, 25));
     const unitId = Number(body.unitId);
     const confirmed = body.confirmed === true || body.confirmed === "1" ? "1" : "0";
     const passwordHash = parsePassword(body, true);
@@ -63,8 +65,11 @@ export async function POST(request: Request) {
     if (!validatePhone(telephone)) {
       throw new AdminActionError("Nomor telepon tidak valid.");
     }
-    if (!accessCode || !mapAccessCodeToRole(accessCode)) {
-      throw new AdminActionError("Kode akses harus berupa role admin/staff yang valid.");
+    if (!accessCode) {
+      throw new AdminActionError("Posisi / level wajib dipilih.");
+    }
+    if (!appRole) {
+      throw new AdminActionError("Akses aplikasi harus ADMIN atau STAFF.");
     }
     if (!Number.isInteger(unitId) || unitId <= 0) {
       throw new AdminActionError("Unit wajib dipilih.");
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
       throw new AdminActionError("Username sudah digunakan.");
     }
     if (!access) {
-      throw new AdminActionError("Kode akses tidak ditemukan.");
+      throw new AdminActionError("Posisi / level tidak ditemukan.");
     }
     if (!unit) {
       throw new AdminActionError("Unit tidak ditemukan.");
@@ -108,6 +113,7 @@ export async function POST(request: Request) {
         PASSWORD: passwordHash,
         UNIT_ID: unitId,
         ACCESS_CODE: accessCode,
+        APP_ROLE: appRole,
         TIME_INSERT: new Date(),
         TIME_UPDATE: new Date(),
       },
@@ -118,6 +124,7 @@ export async function POST(request: Request) {
         TELEPHONE: true,
         CONFIRMED: true,
         ACCESS_CODE: true,
+        APP_ROLE: true,
         UNIT_ID: true,
       },
     });

@@ -2,12 +2,30 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@font-face {
+  font-family: "Unpad Sans";
+  src: url("/fonts/Unpad%20Sans%20Reguler/Woff/UnpadSans-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Unpad Sans";
+  src: url("/fonts/Unpad%20Sans%20Bold/Woff/UnpadSans-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Times New Roman", Times, serif;
+  --font-sans: "Unpad Sans", Arial, Helvetica, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -128,15 +146,66 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    @apply font-sans;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  button,
+  input,
+  select,
+  textarea,
+  option,
+  optgroup,
+  dialog,
+  table {
+    font-family: inherit;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    line-height: 1.35;
+  }
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
   }
 }
 
 @layer utilities {
+  .admin-action-cell {
+    min-width: 14rem;
+    width: 14rem;
+  }
+
+  .admin-action-cell-wide {
+    min-width: 16rem;
+    width: 16rem;
+  }
+
+  .admin-action-group {
+    display: flex;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .admin-action-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    white-space: nowrap;
+    text-align: center;
+  }
+
   .login-field:-webkit-autofill,
   .login-field:-webkit-autofill:hover,
   .login-field:-webkit-autofill:focus,

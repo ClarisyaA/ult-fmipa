@@ -24,7 +24,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!["admin", "staff"].includes(user.role)) {
+  if (!["ADMIN", "STAFF"].includes(user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

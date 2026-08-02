@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { STAFF_APP_ROLE_LABELS, STAFF_APP_ROLES } from "@/lib/roles";
 
 const DEFAULT_LIMIT = 20;
 const MAX_PAGE_SIZE = 100;
@@ -387,6 +388,7 @@ export async function getUserRows({
       TELEPHONE: true,
       CONFIRMED: true,
       ACCESS_CODE: true,
+      APP_ROLE: true,
       UNIT_ID: true,
     },
     orderBy: { USER_NAME: "asc" },
@@ -478,4 +480,11 @@ export async function getAccessRows({
     orderBy: { ACCESS_CODE: "asc" },
     take: safeTake(limit),
   });
+}
+
+export function getAppRoleRows() {
+  return STAFF_APP_ROLES.map((role) => ({
+    APP_ROLE: role,
+    DESCRIPTION: STAFF_APP_ROLE_LABELS[role],
+  }));
 }

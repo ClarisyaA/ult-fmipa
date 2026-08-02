@@ -26,7 +26,7 @@ function getImageFits(formData: FormData) {
 }
 
 export async function POST(request: Request, { params }: ImagesRouteProps) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

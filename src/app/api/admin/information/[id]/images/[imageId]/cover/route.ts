@@ -14,7 +14,7 @@ type CoverRouteProps = {
 };
 
 export async function POST(_request: Request, { params }: CoverRouteProps) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
