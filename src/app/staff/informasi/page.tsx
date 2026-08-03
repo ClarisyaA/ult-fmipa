@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import type { InformationPost, InformationPostStatus } from "@/lib/information-posts";
 import { getStaffInformationApiData } from "@/lib/staff-api-data";
 
@@ -327,8 +328,8 @@ export default async function StaffInformasiPage() {
                           key={post.id}
                           className="border-b border-[#ece7dc] bg-white transition-colors hover:bg-[#f8faf6]"
                         >
-                          <TableCell className="px-4 py-3 text-[11px] font-semibold leading-snug text-[#202923]">
-                            {post.title}
+                          <TableCell className="min-w-0 px-4 py-3 text-[11px] font-semibold leading-snug text-[#202923]">
+                            <TruncatedTableText value={post.title} />
                           </TableCell>
                           <TableCell className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
@@ -356,10 +357,10 @@ export default async function StaffInformasiPage() {
                               ) : null}
                             </div>
                           </TableCell>
-                          <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
-                            {post.category ?? "-"}
+                          <TableCell className="min-w-0 px-4 py-3 text-[11px] text-[#303b34]">
+                            <TruncatedTableText value={post.category ?? "-"} />
                           </TableCell>
-                          <TableCell className="px-4 py-3 text-[11px] text-[#303b34]">
+                          <TableCell className="px-4 py-3 text-[11px] whitespace-nowrap text-[#303b34]">
                             {formatDate(post.publishedAt)}
                           </TableCell>
                           <TableCell className="px-4 py-3">

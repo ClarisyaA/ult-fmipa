@@ -25,7 +25,7 @@ type EditInformationPageProps = {
 export default async function AdminEditInformasiPage({
   params,
 }: EditInformationPageProps) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     redirect("/login?callbackUrl=/admin/informasi");

@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getAdminInformationPosts } from "@/lib/information-posts";
 import type { InformationPost, InformationPostStatus } from "@/lib/information-posts";
 
@@ -92,7 +93,15 @@ export default async function AdminInformasiPage() {
           <CardDescription>Semua draft dan publikasi.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="min-w-[980px] table-fixed">
+            <colgroup>
+              <col className="w-[29%]" />
+              <col className="w-[15%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[18%]" />
+              <col className="w-[12%]" />
+            </colgroup>
             <TableHeader>
               <TableRow>
                 <TableHead>Judul</TableHead>
@@ -113,7 +122,9 @@ export default async function AdminInformasiPage() {
               ) : (
                 posts.map((post) => (
                   <TableRow key={post.id}>
-                    <TableCell className="font-medium">{post.title}</TableCell>
+                    <TableCell className="min-w-0 font-medium">
+                      <TruncatedTableText value={post.title} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         <Badge variant="secondary">{statusLabels[post.status]}</Badge>
@@ -125,9 +136,13 @@ export default async function AdminInformasiPage() {
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell>{post.category ?? "-"}</TableCell>
-                    <TableCell>{formatDate(post.publishedAt)}</TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={post.category ?? "-"} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {formatDate(post.publishedAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <div className="grid gap-1 text-sm">
                         <Badge variant="outline">{getDisplayStatus(post)}</Badge>
                         <span className="text-xs text-muted-foreground">

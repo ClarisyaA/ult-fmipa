@@ -16,6 +16,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  getDefaultAppRoleForPosition,
+  normalizeStaffAppRole,
+  type StaffAppRole,
+} from "@/lib/roles";
 
 const DB_UNAVAILABLE_MESSAGE =
   "Koneksi database sedang tidak tersedia. Coba lagi beberapa saat lagi.";
@@ -73,6 +78,7 @@ type UserRow = {
   TELEPHONE: string | null;
   CONFIRMED: string;
   ACCESS_CODE: string;
+  APP_ROLE: string | null;
   UNIT_ID: number;
 };
 
@@ -81,10 +87,22 @@ type AccessRow = {
   DESCRIPTION: string;
 };
 
+type AppRoleRow = {
+  APP_ROLE: StaffAppRole;
+  DESCRIPTION: string;
+};
+
 type UnitOption = {
   unitId: string;
   unitName: string;
 };
+
+function getAppRoleForForm(appRole: string | null | undefined, positionCode: string) {
+  return (
+    normalizeStaffAppRole(appRole) ??
+    (getDefaultAppRoleForPosition(positionCode) === "ADMIN" ? "ADMIN" : "STAFF")
+  );
+}
 
 function getApiMessage(body: unknown, fallback: string) {
   if (
@@ -254,10 +272,14 @@ export function LevelRowActions({ row }: { row: LevelRow }) {
   const action = useSaveAction();
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-action-group">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 rounded-md text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-action-button h-8 rounded-md text-xs"
+          >
             <Edit className="size-3.5" />
             Edit
           </Button>
@@ -307,7 +329,7 @@ export function LevelRowActions({ row }: { row: LevelRow }) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        className="admin-action-button h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
         onClick={async () => {
           if (
@@ -430,10 +452,14 @@ export function UnitRowActions({
   const action = useSaveAction();
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-action-group">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 rounded-md text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-action-button h-8 rounded-md text-xs"
+          >
             <Edit className="size-3.5" />
             Edit
           </Button>
@@ -471,7 +497,7 @@ export function UnitRowActions({
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        className="admin-action-button h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
         onClick={async () => {
           if (
@@ -598,10 +624,14 @@ export function MahasiswaRowActions({ row }: { row: MahasiswaRow }) {
   const url = `/api/admin/master/mahasiswa/${encodeURIComponent(row.npm)}`;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-action-group">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 rounded-md text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-action-button h-8 rounded-md text-xs"
+          >
             <Edit className="size-3.5" />
             Edit
           </Button>
@@ -635,7 +665,7 @@ export function MahasiswaRowActions({ row }: { row: MahasiswaRow }) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        className="admin-action-button h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
         onClick={async () => {
           if (
@@ -797,10 +827,14 @@ export function TracerRowActions({ row }: { row: TracerRow }) {
   const url = `/api/admin/alumni/tracer-study/${row.id}`;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-action-group">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 rounded-md text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-action-button h-8 rounded-md text-xs"
+          >
             <Edit className="size-3.5" />
             Edit
           </Button>
@@ -833,7 +867,7 @@ export function TracerRowActions({ row }: { row: TracerRow }) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        className="admin-action-button h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending}
         onClick={async () => {
           if (
@@ -864,18 +898,23 @@ export function TracerRowActions({ row }: { row: TracerRow }) {
 export function UserRowActions({
   row,
   accessRows,
+  appRoleRows,
   units,
   currentUserEmail,
   currentLegacyUsername,
 }: {
   row: UserRow;
   accessRows: AccessRow[];
+  appRoleRows: AppRoleRow[];
   units: UnitOption[];
   currentUserEmail?: string | null;
   currentLegacyUsername?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [selectedAppRole, setSelectedAppRole] = useState<StaffAppRole>(() =>
+    getAppRoleForForm(row.APP_ROLE, row.ACCESS_CODE),
+  );
   const action = useSaveAction();
   const passwordAction = useSaveAction();
   const isSelf =
@@ -886,10 +925,14 @@ export function UserRowActions({
   );
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-action-group">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 rounded-md text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-action-button h-8 rounded-md text-xs"
+          >
             <Edit className="size-3.5" />
             Edit Aman
           </Button>
@@ -916,6 +959,7 @@ export function UserRowActions({
                       email: form.get("email"),
                       telephone: form.get("telephone"),
                       accessCode: form.get("accessCode"),
+                      appRole: form.get("appRole"),
                       unitId: form.get("unitId"),
                       confirmed: form.get("confirmed") === "1",
                     },
@@ -935,6 +979,11 @@ export function UserRowActions({
                   />
                   <input
                     type="hidden"
+                    name="appRole"
+                    value={selectedAppRole}
+                  />
+                  <input
+                    type="hidden"
                     name="unitId"
                     value={currentUnit?.unitId ?? String(row.UNIT_ID)}
                   />
@@ -950,22 +999,52 @@ export function UserRowActions({
               <Field label="Telepon">
                 <Input name="telephone" defaultValue={row.TELEPHONE ?? ""} />
               </Field>
-              <Field label="Akses">
+              <Field label="Posisi / Level">
                 <select
                   name="accessCode"
                   defaultValue={row.ACCESS_CODE}
                   disabled={isSelf}
                   title={
                     isSelf
-                      ? "Akses akun yang sedang login tidak dapat diubah."
+                      ? "Posisi akun yang sedang login tidak dapat diubah."
                       : undefined
                   }
                   className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm disabled:bg-[#f4f1eb]"
                   required
+                  onChange={(event) => {
+                    const defaultRole = getAppRoleForForm(
+                      null,
+                      event.currentTarget.value,
+                    );
+                    setSelectedAppRole(defaultRole);
+                  }}
                 >
                   {accessRows.map((access) => (
                     <option key={access.ACCESS_CODE} value={access.ACCESS_CODE}>
                       {access.ACCESS_CODE} - {access.DESCRIPTION}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Akses Aplikasi">
+                <select
+                  name="appRole"
+                  value={selectedAppRole}
+                  disabled={isSelf}
+                  title={
+                    isSelf
+                      ? "Akses aplikasi akun yang sedang login tidak dapat diubah."
+                      : undefined
+                  }
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm disabled:bg-[#f4f1eb]"
+                  required
+                  onChange={(event) =>
+                    setSelectedAppRole(event.currentTarget.value as StaffAppRole)
+                  }
+                >
+                  {appRoleRows.map((role) => (
+                    <option key={role.APP_ROLE} value={role.APP_ROLE}>
+                      {role.DESCRIPTION}
                     </option>
                   ))}
                 </select>
@@ -1019,7 +1098,7 @@ export function UserRowActions({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 rounded-md text-xs"
+            className="admin-action-button h-8 rounded-md text-xs"
             data-tour="admin-user-reset-password"
             data-tutorial-action="open-user-reset-password"
           >
@@ -1097,7 +1176,7 @@ export function UserRowActions({
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
+        className="admin-action-button h-8 rounded-md border-[#f0c9c2] text-xs text-[#9b2f1f]"
         disabled={action.isPending || isSelf}
         title={
           isSelf
@@ -1137,12 +1216,17 @@ export function UserRowActions({
 
 export function UserCreateButton({
   accessRows,
+  appRoleRows,
   units,
 }: {
   accessRows: AccessRow[];
+  appRoleRows: AppRoleRow[];
   units: UnitOption[];
 }) {
   const [open, setOpen] = useState(false);
+  const [selectedAppRole, setSelectedAppRole] = useState<StaffAppRole>(() =>
+    getAppRoleForForm(null, accessRows[0]?.ACCESS_CODE ?? "OPERATOR"),
+  );
   const action = useSaveAction();
 
   return (
@@ -1179,6 +1263,7 @@ export function UserCreateButton({
                     email: form.get("email"),
                     telephone: form.get("telephone"),
                     accessCode: form.get("accessCode"),
+                    appRole: form.get("appRole"),
                     unitId: form.get("unitId"),
                     confirmed: form.get("confirmed") === "1",
                     password: form.get("password"),
@@ -1222,16 +1307,41 @@ export function UserCreateButton({
                   data-tour="admin-user-phone"
                 />
               </Field>
-              <Field label="Akses">
+              <Field label="Posisi / Level">
                 <select
                   name="accessCode"
                   className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
                   required
                   data-tour="admin-user-access"
+                  onChange={(event) => {
+                    const defaultRole = getAppRoleForForm(
+                      null,
+                      event.currentTarget.value,
+                    );
+                    setSelectedAppRole(defaultRole);
+                  }}
                 >
                   {accessRows.map((access) => (
                     <option key={access.ACCESS_CODE} value={access.ACCESS_CODE}>
                       {access.ACCESS_CODE} - {access.DESCRIPTION}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Akses Aplikasi">
+                <select
+                  name="appRole"
+                  value={selectedAppRole}
+                  className="h-9 w-full min-w-0 rounded-md border border-[#e1d8ca] bg-white px-3 text-sm"
+                  required
+                  data-tour="admin-user-app-role"
+                  onChange={(event) =>
+                    setSelectedAppRole(event.currentTarget.value as StaffAppRole)
+                  }
+                >
+                  {appRoleRows.map((role) => (
+                    <option key={role.APP_ROLE} value={role.APP_ROLE}>
+                      {role.DESCRIPTION}
                     </option>
                   ))}
                 </select>

@@ -19,7 +19,7 @@ export class AdminActionError extends Error {
 }
 
 export async function requireAdminApi(): Promise<AdminValidationResult> {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return {

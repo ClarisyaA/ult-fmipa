@@ -100,6 +100,7 @@ model data_users {
   PASSWORD    String   @db.VarChar(75)
   UNIT_ID     Int
   ACCESS_CODE String   @db.VarChar(25)
+  APP_ROLE    String?  @db.VarChar(25)
   TIME_UPDATE DateTime @default(now()) @db.Timestamp(0)
   TIME_INSERT DateTime @default(now()) @db.Timestamp(0)
 }

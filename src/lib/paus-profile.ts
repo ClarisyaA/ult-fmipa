@@ -54,7 +54,7 @@ export function mapPausProfileToSessionUser(
     id: pausId ?? profile.sub ?? profile.id ?? profile.email ?? "paus-user",
     name: name ?? "Pengguna PAUS",
     email: profile.email,
-    role: npm ? "student" : nip ? "staff" : "student",
+    role: npm ? "MAHASISWA" : nip ? "STAFF" : "MAHASISWA",
     npm,
     nip,
     pausId,

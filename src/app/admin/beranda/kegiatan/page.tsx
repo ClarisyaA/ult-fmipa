@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getAdminHomeActivitiesState } from "@/lib/home-activities";
 import { getHomeLinksState } from "@/lib/home-links";
 import { getServiceLinksState } from "@/lib/service-links";
@@ -118,7 +119,15 @@ export default async function AdminHomeActivitiesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="min-w-[900px] table-fixed">
+            <colgroup>
+              <col className="w-32" />
+              <col className="w-[32%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[16%]" />
+              <col className="w-[18%]" />
+            </colgroup>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-32">Gambar</TableHead>
@@ -167,9 +176,14 @@ export default async function AdminHomeActivitiesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs">
-                        <p className="font-medium">{activity.title}</p>
+                        <TruncatedTableText
+                          value={activity.title}
+                          className="font-medium"
+                        />
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {activity.eyebrow ?? "Tanpa kategori"}
+                          <TruncatedTableText
+                            value={activity.eyebrow ?? "Tanpa kategori"}
+                          />
                         </p>
                       </div>
                     </TableCell>
@@ -179,7 +193,7 @@ export default async function AdminHomeActivitiesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{activity.sortOrder}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {formatDate(activity.updatedAt ?? activity.createdAt)}
                     </TableCell>
                     <TableCell>

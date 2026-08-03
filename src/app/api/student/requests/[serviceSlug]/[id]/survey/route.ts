@@ -62,7 +62,7 @@ async function getStudentSessionOrResponse() {
     };
   }
 
-  if (session.user.role !== "student") {
+  if (session.user.role !== "MAHASISWA") {
     return {
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };

@@ -40,7 +40,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (session.user.role !== "student") {
+  if (session.user.role !== "MAHASISWA") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

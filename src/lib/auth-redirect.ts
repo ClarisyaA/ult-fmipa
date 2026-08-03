@@ -1,4 +1,5 @@
 import type { AppRole } from "@/lib/auth";
+import { isRole } from "@/lib/roles";
 
 const publicRoutePrefixes = [
   "/",
@@ -10,11 +11,11 @@ const publicRoutePrefixes = [
 ];
 
 export function getDefaultRedirectByRole(role: AppRole) {
-  if (role === "admin") {
+  if (isRole(role, "ADMIN")) {
     return "/admin/dashboard";
   }
 
-  if (role === "staff") {
+  if (isRole(role, "STAFF")) {
     return "/staff/dashboard";
   }
 
@@ -60,11 +61,11 @@ export function isCallbackAllowedForRole(
 
   const pathname = path.split(/[?#]/)[0] ?? path;
 
-  if (role === "admin") {
+  if (isRole(role, "ADMIN")) {
     return pathname === "/admin" || pathname.startsWith("/admin/");
   }
 
-  if (role === "staff") {
+  if (isRole(role, "STAFF")) {
     return pathname === "/staff" || pathname.startsWith("/staff/");
   }
 

@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { confirmToast } from "@/lib/confirm-toast";
 import {
   Dialog,
@@ -14,7 +16,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import type { ServiceSuggestionStatus } from "@/lib/service-suggestions";
+import type {
+  ServiceSuggestionSort,
+  ServiceSuggestionStatus,
+} from "@/lib/service-suggestions";
 
 export type ServiceSuggestionViewItem = {
   id: string;
@@ -34,6 +39,8 @@ type ServiceSuggestionsViewProps = {
   description: string;
   rolePrefix: "admin" | "staff";
   suggestions: ServiceSuggestionViewItem[];
+  sort: ServiceSuggestionSort;
+  exportBasePath: string;
 };
 
 const statusLabels: Record<ServiceSuggestionStatus, string> = {
@@ -84,6 +91,14 @@ function StatusBadge({ status }: { status: ServiceSuggestionStatus }) {
   );
 }
 
+function sortHref(sort: ServiceSuggestionSort) {
+  return sort === "newest" ? "?sort=newest" : "?sort=oldest";
+}
+
+function exportHref(basePath: string, sort: ServiceSuggestionSort) {
+  return `${basePath}?sort=${sort}`;
+}
+
 function FieldBlock({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="grid min-w-0 gap-1 rounded-md border border-[#e3d9ca] bg-[#fffdf9] p-3">
@@ -102,6 +117,8 @@ export function ServiceSuggestionsView({
   description,
   rolePrefix,
   suggestions,
+  sort,
+  exportBasePath,
 }: ServiceSuggestionsViewProps) {
   const [items, setItems] = useState(suggestions);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -235,6 +252,46 @@ export function ServiceSuggestionsView({
           </div>
         </header>
 
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#e3d9ca] bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-[#5d665f]">
+              Urutkan:
+            </span>
+            <Button
+              asChild
+              variant={sort === "newest" ? "default" : "outline"}
+              size="sm"
+              className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
+                sort === "newest"
+                  ? "bg-[#0f3d2e] text-white hover:bg-[#164b39]"
+                  : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
+              }`}
+            >
+              <Link href={sortHref("newest")}>Terbaru dulu</Link>
+            </Button>
+            <Button
+              asChild
+              variant={sort === "oldest" ? "default" : "outline"}
+              size="sm"
+              className={`h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-xs font-semibold ${
+                sort === "oldest"
+                  ? "bg-[#0f3d2e] text-white hover:bg-[#164b39]"
+                  : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
+              }`}
+            >
+              <Link href={sortHref("oldest")}>Terlama dulu</Link>
+            </Button>
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-8 shrink-0 whitespace-nowrap rounded-md border-[#e1d8ca] bg-white px-3 text-xs font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+          >
+            <Link href={exportHref(exportBasePath, sort)}>Download CSV</Link>
+          </Button>
+        </div>
+
         <section
           className="min-w-0 overflow-hidden rounded-lg border border-[#e3d9ca] bg-white shadow-[0_2px_10px_rgba(47,38,20,0.08)]"
           data-tour="admin-service-suggestions-list"
@@ -271,14 +328,14 @@ export function ServiceSuggestionsView({
           </div>
 
           <div className="w-full min-w-0 max-w-full touch-pan-x overflow-x-auto overscroll-x-contain p-4">
-            <table className="w-full min-w-[900px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] text-left">
+            <table className="w-full min-w-[1080px] table-fixed overflow-hidden rounded-md border border-[#edf0e9] text-left">
               <colgroup>
-                <col className="w-[17%]" />
-                <col className="w-[18%]" />
-                <col className="w-[13%]" />
-                <col className="w-[27%]" />
+                <col className="w-[15%]" />
+                <col className="w-[16%]" />
                 <col className="w-[12%]" />
-                <col className="w-[13%]" />
+                <col className="w-[23%]" />
+                <col className="w-[12%]" />
+                <col className="w-[22%]" />
               </colgroup>
               <thead className="bg-[#eef3ec]">
                 <tr>
@@ -308,25 +365,25 @@ export function ServiceSuggestionsView({
                     <td className="px-4 py-3 text-[11px] text-[#303b34]">
                       {formatDate(item.createdAt)}
                     </td>
-                    <td className="break-words px-4 py-3 text-[11px] font-semibold text-[#202923]">
-                      {item.nama}
+                    <td className="min-w-0 px-4 py-3 text-[11px] font-semibold text-[#202923]">
+                      <TruncatedTableText value={item.nama} />
                     </td>
-                    <td className="break-words px-4 py-3 text-[11px] text-[#303b34]">
-                      {item.npm}
+                    <td className="min-w-0 px-4 py-3 text-[11px] text-[#303b34]">
+                      <TruncatedTableText value={item.npm} />
                     </td>
-                    <td className="break-words px-4 py-3 text-[11px] font-semibold leading-snug text-[#202923]">
-                      {item.layananDiajukan}
+                    <td className="min-w-0 px-4 py-3 text-[11px] font-semibold leading-snug text-[#202923]">
+                      <TruncatedTableText value={item.layananDiajukan} />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="admin-action-cell px-4 py-3 whitespace-nowrap">
+                      <div className="admin-action-group">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
+                          className="admin-action-button h-8 rounded-md border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]"
                           onClick={() => openDetail(item)}
                         >
                           Detail
@@ -336,7 +393,7 @@ export function ServiceSuggestionsView({
                             type="button"
                             variant="destructive"
                             size="sm"
-                            className="h-8 rounded-md px-3 text-[11px] font-semibold"
+                            className="admin-action-button h-8 rounded-md px-3 text-[11px] font-semibold"
                             disabled={isUpdating}
                             onClick={() => deleteSuggestion(item)}
                           >

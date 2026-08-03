@@ -2,9 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const BASE_SCENE_WIDTH = 1440;
 const BASE_SCENE_HEIGHT = 810;
@@ -99,10 +113,20 @@ const sceneElements = {
     } as React.CSSProperties,
   },
   printer: {
-    style: { left: 37, bottom: 230, width: 230, height: 162 } as React.CSSProperties,
+    style: {
+      left: 37,
+      bottom: 230,
+      width: 230,
+      height: 162,
+    } as React.CSSProperties,
   },
   printerHint: {
-    style: { left: 124, bottom: 390, width: 56, height: 56 } as React.CSSProperties,
+    style: {
+      left: 124,
+      bottom: 390,
+      width: 56,
+      height: 56,
+    } as React.CSSProperties,
   },
   printerInfo: {
     style: { left: 44, bottom: 406 } as React.CSSProperties,
@@ -112,9 +136,73 @@ const sceneElements = {
 const printerText =
   "Mahasiswa dapat menggunakan printer layanan untuk kebutuhan administrasi akademik. Gunakan fasilitas ini secara tertib sesuai arahan petugas ULT.";
 
+const heroHotspots = [
+  {
+    id: "mipa-corner",
+    imageSrc: "/beranda-new/beranda-webp/MipaCorner.webp",
+    imageAlt: "Gelas minuman Mipa Corner di meja layanan",
+    imageWidth: 2897,
+    imageHeight: 3769,
+    imageSizes: "(max-width: 640px) 48px, (max-width: 1023px) 56px, 62px",
+    style: { left: 1272, bottom: 238, width: 56, height: 74 },
+    arrowStyle: { left: 16, top: -36, width: 40, height: 40 },
+    popoverClassName: "right-6 bottom-[calc(100%+16px)]",
+    title: "Mampir ke Mipa Corner",
+    description:
+      "Nikmati pilihan kopi, minuman, dan bakery dari Mipa Corner FMIPA Unpad.",
+    ctaLabel: "Lihat Lokasi Mipa Corner",
+    href: "https://share.google/GLuKZXOcqpUlBDGxc",
+    supportingImage: {
+      src: "/beranda-new/beranda-webp/MipaCornerWA.webp",
+      alt: "QR WhatsApp Mipa Corner FMIPA Unpad",
+      width: 4405,
+      height: 4139,
+    },
+  },
+  {
+    id: "lab-catalog",
+    imageSrc: "/beranda-new/beranda-webp/Stetoskop.webp",
+    imageAlt: "Mikroskop katalog laboratorium di meja layanan",
+    imageWidth: 2659,
+    imageHeight: 3988,
+    imageSizes: "(max-width: 640px) 62px, (max-width: 1023px) 74px, 90px",
+    style: { left: 784, bottom: 238, width: 76, height: 114 },
+    arrowStyle: { left: 26, top: -40, width: 44, height: 44 },
+    popoverClassName: "left-1/2 bottom-[calc(100%+16px)] -translate-x-1/2",
+    title: "Jelajahi Laboratorium FMIPA",
+    description:
+      "Lihat fasilitas dan katalog laboratorium FMIPA Universitas Padjadjaran.",
+    ctaLabel: "Lihat Katalog Laboratorium",
+    href: "https://bit.ly/KatalogLaboratoriumFMIPAUnpad?r=qr",
+  },
+] satisfies HeroHotspotConfig[];
+
 type PersonDirection = "idle" | "left" | "right";
 type ActivePerson = "orang1" | "orang2";
 type PersonPose = "normal" | "line" | "left" | "right";
+type HeroHotspotId = "mipa-corner" | "lab-catalog";
+
+type HeroHotspotConfig = {
+  id: HeroHotspotId;
+  imageSrc: string;
+  imageAlt: string;
+  imageWidth: number;
+  imageHeight: number;
+  imageSizes: string;
+  style: React.CSSProperties;
+  arrowStyle: React.CSSProperties;
+  popoverClassName: string;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  href: string;
+  supportingImage?: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+  };
+};
 
 const personImageMap = {
   orang1: {
@@ -333,11 +421,344 @@ function PersonSprite({
   );
 }
 
+function HotspotContent({
+  hotspot,
+  useDialogSemantics = false,
+  showSupportingImage = true,
+}: {
+  hotspot: HeroHotspotConfig;
+  useDialogSemantics?: boolean;
+  showSupportingImage?: boolean;
+}) {
+  const heading = useDialogSemantics ? (
+    <DialogTitle className="text-center text-xl font-black leading-tight text-[#18130E] sm:text-base sm:font-bold">
+      {hotspot.title}
+    </DialogTitle>
+  ) : (
+    <h3 className="text-base font-bold text-[#18130E]">{hotspot.title}</h3>
+  );
+  const description = useDialogSemantics ? (
+    <DialogDescription className="mx-auto max-w-[18rem] text-center text-[0.9375rem] leading-relaxed text-[#6B5E52] sm:max-w-none sm:text-left sm:text-sm">
+      {hotspot.description}
+    </DialogDescription>
+  ) : (
+    <p className="text-sm leading-[1.7] text-[#6B5E52]">
+      {hotspot.description}
+    </p>
+  );
+
+  return (
+    <>
+      {useDialogSemantics ? (
+        <DialogHeader className="items-center gap-3 px-2 pt-2 text-center sm:items-start sm:px-0 sm:pt-0 sm:text-left">
+          {heading}
+          {description}
+        </DialogHeader>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {heading}
+          {description}
+        </div>
+      )}
+      <div
+        className={
+          useDialogSemantics ? "flex w-full justify-center pt-4" : "pt-4"
+        }
+      >
+        <a
+          href={hotspot.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center justify-center gap-2 rounded-md bg-[#EE1C25] px-4 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/10 transition hover:bg-[#c9161e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+            useDialogSemantics
+              ? "w-fit min-w-[210px] max-w-full px-5 py-3 text-center text-base leading-tight"
+              : "w-fit"
+          }`}
+        >
+          {hotspot.ctaLabel}
+          <ExternalLink className="size-4" aria-hidden="true" />
+        </a>
+      </div>
+      {showSupportingImage && hotspot.supportingImage && (
+        <div
+          className={`rounded-md border border-red-100 bg-white shadow-sm ${
+            useDialogSemantics
+              ? "mx-auto mt-5 w-full max-w-[18.5rem] p-3"
+              : "w-fit p-2"
+          }`}
+        >
+          <Image
+            src={hotspot.supportingImage.src}
+            alt={hotspot.supportingImage.alt}
+            width={hotspot.supportingImage.width}
+            height={hotspot.supportingImage.height}
+            loading={useDialogSemantics ? "eager" : "lazy"}
+            fetchPriority={useDialogSemantics ? "high" : "auto"}
+            sizes={
+              useDialogSemantics ? "(max-width: 640px) 82vw, 296px" : "128px"
+            }
+            className={`h-auto object-contain ${
+              useDialogSemantics ? "w-full" : "w-28 sm:w-32"
+            }`}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function HotspotPreviewPortal({
+  hotspot,
+  isOpen,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  hotspot: HeroHotspotConfig;
+  isOpen: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  const isHydrated = useSyncExternalStore(
+    (onStoreChange) => {
+      const frameId = window.requestAnimationFrame(onStoreChange);
+      return () => window.cancelAnimationFrame(frameId);
+    },
+    () => true,
+    () => false,
+  );
+
+  if (
+    !isOpen ||
+    !isHydrated ||
+    typeof document === "undefined" ||
+    !hotspot.supportingImage
+  ) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className={`fixed left-1/2 top-1/2 z-[2147483647] max-h-[80vh] w-[clamp(360px,32vw,520px)] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/80 bg-white/95 p-4 shadow-2xl shadow-[#5c3a21]/25 ring-1 ring-red-100/80 backdrop-blur transition duration-200 ${
+        isOpen
+          ? "pointer-events-auto scale-100 opacity-100"
+          : "pointer-events-none scale-95 opacity-0"
+      }`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      aria-hidden={!isOpen}
+    >
+      <Image
+        src={hotspot.supportingImage.src}
+        alt={hotspot.supportingImage.alt}
+        width={hotspot.supportingImage.width}
+        height={hotspot.supportingImage.height}
+        loading="eager"
+        fetchPriority="high"
+        sizes="(max-width: 1280px) 360px, (max-width: 1920px) 32vw, 520px"
+        className="max-h-[calc(80vh-2rem)] w-full object-contain"
+      />
+    </div>,
+    document.body,
+  );
+}
+
+function HeroHotspot({
+  hotspot,
+  sceneScale,
+  isDesktopViewport,
+  onOpenDialog,
+}: {
+  hotspot: HeroHotspotConfig;
+  sceneScale: number;
+  isDesktopViewport: boolean;
+  onOpenDialog: (id: HeroHotspotId) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const closeTimerRef = useRef<number | null>(null);
+
+  const openPreview = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsOpen(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = window.setTimeout(() => {
+      setIsOpen(false);
+      closeTimerRef.current = null;
+    }, 160);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      className="group absolute z-[34]"
+      style={scaleSceneStyle(hotspot.style, sceneScale)}
+      onMouseEnter={openPreview}
+      onMouseLeave={scheduleClose}
+      onFocusCapture={openPreview}
+      onBlurCapture={(event) => {
+        const nextFocus = event.relatedTarget as Node | null;
+
+        if (!event.currentTarget.contains(nextFocus)) {
+          scheduleClose();
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-label={hotspot.title}
+        className="relative block h-full w-full rounded bg-transparent focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+        onClick={() => {
+          if (!isDesktopViewport) onOpenDialog(hotspot.id);
+        }}
+      >
+        <Image
+          src={hotspot.imageSrc}
+          alt={hotspot.imageAlt}
+          fill
+          sizes={hotspot.imageSizes}
+          loading="eager"
+          className="object-contain drop-shadow-[0_8px_10px_rgba(92,58,33,0.22)] transition duration-200 group-hover:-translate-y-0.5 group-focus-within:-translate-y-0.5"
+        />
+      </button>
+      <button
+        type="button"
+        aria-label={hotspot.title}
+        className="absolute flex animate-bounce items-center justify-center rounded text-[#EE1C25] drop-shadow-[0_2px_3px_rgba(92,58,33,0.25)] transition group-hover:opacity-0 group-focus-within:opacity-0 focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+        style={scaleSceneStyle(hotspot.arrowStyle, sceneScale)}
+        onClick={() => {
+          if (!isDesktopViewport) onOpenDialog(hotspot.id);
+        }}
+      >
+        <ArrowDown className="size-7" strokeWidth={3} aria-hidden="true" />
+      </button>
+
+      {isDesktopViewport && (
+        <div
+          className={`absolute z-50 w-[min(300px,calc(100vw-32px))] rounded-lg border border-red-100 bg-white/95 px-5 py-4 text-left shadow-xl shadow-red-950/10 transition duration-200 ${
+            isOpen
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-1 opacity-0"
+          } ${hotspot.popoverClassName}`}
+        >
+          <HotspotContent hotspot={hotspot} showSupportingImage={false} />
+        </div>
+      )}
+
+      {isDesktopViewport && (
+        <HotspotPreviewPortal
+          hotspot={hotspot}
+          isOpen={isOpen}
+          onMouseEnter={openPreview}
+          onMouseLeave={scheduleClose}
+        />
+      )}
+    </div>
+  );
+}
+
+function TurahPatrol({ reducedMotion }: { reducedMotion: boolean }) {
+  const laneRef = useRef<HTMLDivElement | null>(null);
+  const turahRef = useRef<HTMLDivElement | null>(null);
+  const spriteRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const lane = laneRef.current;
+    const turah = turahRef.current;
+    const sprite = spriteRef.current;
+
+    if (!lane || !turah || !sprite) return;
+
+    if (reducedMotion) {
+      gsap.killTweensOf(turah);
+      gsap.set(turah, { x: 0 });
+      gsap.set(sprite, { scaleX: 1 });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      let timeline: gsap.core.Timeline | null = null;
+
+      const createAnimation = () => {
+        const distance = Math.max(0, lane.clientWidth - turah.clientWidth);
+        timeline?.kill();
+        gsap.killTweensOf(turah);
+        gsap.set(turah, { x: 0 });
+        gsap.set(sprite, { scaleX: 1, transformOrigin: "center bottom" });
+
+        timeline = gsap
+          .timeline({ repeat: -1 })
+          .to(turah, {
+            x: distance,
+            duration: 12,
+            ease: "none",
+            onStart: () => gsap.set(sprite, { scaleX: 1 }),
+          })
+          .to(turah, {
+            x: 0,
+            duration: 12,
+            ease: "none",
+            onStart: () => gsap.set(sprite, { scaleX: -1 }),
+          });
+      };
+
+      createAnimation();
+
+      const resizeObserver = new ResizeObserver(createAnimation);
+      resizeObserver.observe(lane);
+      resizeObserver.observe(turah);
+
+      return () => {
+        resizeObserver.disconnect();
+        timeline?.kill();
+      };
+    }, lane);
+
+    return () => ctx.revert();
+  }, [reducedMotion]);
+
+  return (
+    <div
+      ref={laneRef}
+      className="pointer-events-none absolute inset-x-[clamp(24px,5vw,96px)] bottom-2 z-[45] h-[88px] overflow-hidden sm:h-[108px] lg:h-[144px]"
+      aria-hidden="true"
+    >
+      <div
+        ref={turahRef}
+        className="absolute bottom-0 left-0 w-14 will-change-transform sm:w-[72px] lg:w-[86px] xl:w-24"
+      >
+        <div ref={spriteRef} className="h-auto w-full">
+          <Image
+            src="/Beranda-Section1/Turah1.webp"
+            alt=""
+            width={2324}
+            height={3037}
+            sizes="(max-width: 640px) 56px, (max-width: 1023px) 72px, 96px"
+            quality={75}
+            className="h-auto w-full object-contain drop-shadow-[0_8px_12px_rgba(92,58,33,0.16)]"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   const [activePerson, setActivePerson] = useState<ActivePerson>("orang1");
   const [mouseDirection, setMouseDir] = useState<PersonDirection>("idle");
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [showPrinterInfo, setShowPrinterInfo] = useState(false);
+  const [activeHotspotDialog, setActiveHotspotDialog] =
+    useState<HeroHotspotId | null>(null);
   const sceneSize = useDesktopSceneSize();
   const sceneScale = sceneSize.width / BASE_SCENE_WIDTH;
   const isDesktopViewport = useIsDesktopViewport();
@@ -559,6 +980,8 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         maxWidth: "calc(100vw - 132px)",
       } satisfies React.CSSProperties)
     : scaleSceneStyle(sceneElements.printerInfo.style, sceneScale);
+  const activeDialogHotspot =
+    heroHotspots.find((item) => item.id === activeHotspotDialog) ?? null;
 
   return (
     <section
@@ -589,6 +1012,8 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         <div className="absolute inset-x-0 top-0 z-[1] h-24 bg-gradient-to-b from-[#fffaf2]/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-t from-[#fffaf2]/55 to-transparent" />
 
+        <TurahPatrol reducedMotion={reducedMotion} />
+
         <Link
           href="/profil"
           aria-label="Buka profil Unit Layanan Terpadu"
@@ -600,7 +1025,10 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
           </span>
         </Link>
 
-        <div className="pointer-events-none absolute inset-0 z-30" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute inset-0 z-30"
+          aria-hidden="true"
+        >
           {furniture.map((item) => (
             <SceneImage
               key={item.src}
@@ -700,7 +1128,33 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         >
           {printerText}
         </div>
+
+        {heroHotspots.map((hotspot) => (
+          <HeroHotspot
+            key={hotspot.id}
+            hotspot={hotspot}
+            sceneScale={sceneScale}
+            isDesktopViewport={isDesktopViewport}
+            onOpenDialog={setActiveHotspotDialog}
+          />
+        ))}
       </div>
+
+      <Dialog
+        open={activeHotspotDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setActiveHotspotDialog(null);
+        }}
+      >
+        {activeDialogHotspot && (
+          <DialogContent
+            aria-label={activeDialogHotspot.title}
+            className="max-w-[calc(100%-2rem)] sm:max-w-sm"
+          >
+            <HotspotContent hotspot={activeDialogHotspot} useDialogSemantics />
+          </DialogContent>
+        )}
+      </Dialog>
 
       {showScrollHint && (
         <div

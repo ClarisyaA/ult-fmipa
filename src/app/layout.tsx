@@ -22,7 +22,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className="h-full antialiased"
     >
-      <body suppressHydrationWarning className="min-h-full flex flex-col">
+      <body
+        suppressHydrationWarning
+        className="flex min-h-full flex-col font-sans"
+      >
         <Suspense fallback={null}>
           <RouteLoadingBar />
         </Suspense>

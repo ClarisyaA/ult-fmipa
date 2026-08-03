@@ -229,7 +229,13 @@ export function InlineStatusAction({
         mode="completion-dialog"
         openSignal={emailDialogSignal}
       />
-      <div className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}>
+      <div
+        className={
+          compact
+            ? "flex min-w-max flex-wrap items-center gap-1.5"
+            : "flex min-w-max flex-wrap items-center gap-2"
+        }
+      >
         {actions.map((config) => {
           const enabled = config.activeStatuses.includes(currentStatus);
           const title = enabled
@@ -245,11 +251,11 @@ export function InlineStatusAction({
               className={
                 enabled
                   ? compact
-                    ? "h-7 rounded-md bg-[#111111] px-2 text-[10px] text-white hover:bg-[#252525]"
-                    : "h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
+                    ? "admin-action-button h-7 rounded-md bg-[#111111] px-2.5 text-[10px] text-white hover:bg-[#252525]"
+                    : "admin-action-button h-8 rounded-md bg-[#111111] px-3 text-xs text-white hover:bg-[#252525]"
                   : compact
-                    ? "h-7 rounded-md border-[#e2dee8] bg-white px-2 text-[10px] text-[#9b98a3]"
-                    : "h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
+                    ? "admin-action-button h-7 rounded-md border-[#e2dee8] bg-white px-2.5 text-[10px] text-[#9b98a3]"
+                    : "admin-action-button h-8 rounded-md border-[#e2dee8] bg-white px-3 text-xs text-[#9b98a3]"
               }
               onClick={() => handleClick(config)}
               disabled={!enabled || submittingAction !== null}

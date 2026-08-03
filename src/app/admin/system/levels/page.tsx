@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getLevelRows } from "@/lib/admin-readonly-data";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 
@@ -82,24 +83,34 @@ export default async function AdminSystemLevelsPage({
           <AdminEmptyState title="Data level tidak ditemukan" />
         ) : (
           <AdminTableScroll>
-            <Table className="min-w-[720px]">
+            <Table className="min-w-[860px] table-fixed">
+              <colgroup>
+                <col className="w-[12%]" />
+                <col className="w-[36%]" />
+                <col className="w-[28%]" />
+                <col className="w-[24%]" />
+              </colgroup>
               <TableHeader className="bg-[#eef3ec]">
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Nama Level</TableHead>
                   <TableHead>Field Name</TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead className="admin-action-cell">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.LEVEL_DATA_ID}>
-                    <TableCell>{row.LEVEL_DATA_ID}</TableCell>
-                    <TableCell className="font-semibold">
-                      {row.LEVEL_DATA_NAME}
+                    <TableCell className="whitespace-nowrap">
+                      {row.LEVEL_DATA_ID}
                     </TableCell>
-                    <TableCell>{row.FIELD_NAME}</TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-0 font-semibold">
+                      <TruncatedTableText value={row.LEVEL_DATA_NAME} />
+                    </TableCell>
+                    <TableCell className="min-w-0">
+                      <TruncatedTableText value={row.FIELD_NAME} />
+                    </TableCell>
+                    <TableCell className="admin-action-cell whitespace-nowrap">
                       <LevelRowActions row={row} />
                     </TableCell>
                   </TableRow>

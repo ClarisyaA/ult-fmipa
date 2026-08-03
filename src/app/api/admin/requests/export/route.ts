@@ -68,7 +68,7 @@ function getCategoryServiceSlugs(category: string | null) {
 }
 
 export async function GET(request: Request) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

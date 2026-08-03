@@ -17,7 +17,7 @@ function getActorName(user: { name?: string | null; email?: string | null }) {
 }
 
 export async function GET() {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -37,7 +37,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

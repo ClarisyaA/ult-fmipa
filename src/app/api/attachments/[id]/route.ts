@@ -43,7 +43,7 @@ export async function GET(
     return NextResponse.json({ error: "Lampiran tidak ditemukan." }, { status: 404 });
   }
 
-  if (session.user.role === "student") {
+  if (session.user.role === "MAHASISWA") {
     if (!session.user.npm) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -67,7 +67,7 @@ export async function GET(
     if (!detail || detail.sourceTable !== attachment.SOURCE_TABLE) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-  } else if (!["admin", "staff"].includes(session.user.role)) {
+  } else if (!["ADMIN", "STAFF"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

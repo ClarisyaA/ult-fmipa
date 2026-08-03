@@ -15,13 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getRoleLabel, isRole, normalizeRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-const roleLabels = {
-  admin: "Admin",
-  staff: "Staff",
-  student: "Mahasiswa",
-} as const;
 
 interface UserMenuProps {
   variant?: "desktop" | "mobile";
@@ -37,8 +32,8 @@ function useUserSession() {
 }
 
 function getShortcut(role: string) {
-  if (role === "admin") return { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard };
-  if (role === "staff") return { label: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard };
+  if (isRole(role, "ADMIN")) return { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard };
+  if (isRole(role, "STAFF")) return { label: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard };
   return { label: "Riwayat", href: "/mahasiswa/riwayat", icon: History };
 }
 
@@ -63,8 +58,8 @@ export function UserMenu({ variant = "desktop", onNavigate }: UserMenuProps) {
     );
   }
 
-  const role = (session.user.role as keyof typeof roleLabels) ?? "student";
-  const roleLabel = roleLabels[role] ?? "User";
+  const role = normalizeRole(session.user.role) ?? "MAHASISWA";
+  const roleLabel = getRoleLabel(role);
   const displayName = session.user.name ?? session.user.email ?? "User";
   const initial = displayName.charAt(0).toUpperCase();
   const shortcut = getShortcut(role);

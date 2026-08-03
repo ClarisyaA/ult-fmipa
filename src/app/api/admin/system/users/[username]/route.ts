@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit-log";
-import { hashLegacyPassword, mapAccessCodeToRole } from "@/lib/auth-db-users";
+import { hashLegacyPassword } from "@/lib/auth-db-users";
+import { normalizeStaffAppRole } from "@/lib/roles";
 import {
   AdminActionError,
   cleanString,
@@ -67,6 +68,7 @@ export async function PATCH(
     const email = cleanString(body.email, 50);
     const telephone = cleanString(body.telephone, 50) || null;
     const accessCode = cleanString(body.accessCode, 25).toUpperCase();
+    const appRole = normalizeStaffAppRole(cleanString(body.appRole, 25));
     const unitId = Number(body.unitId);
     const confirmed = body.confirmed === true || body.confirmed === "1" ? "1" : "0";
     const passwordHash = parseOptionalPassword(body);
@@ -82,8 +84,11 @@ export async function PATCH(
     if (!validatePhone(telephone ?? "")) {
       throw new AdminActionError("Nomor telepon tidak valid.");
     }
-    if (!accessCode || !mapAccessCodeToRole(accessCode)) {
-      throw new AdminActionError("Kode akses harus berupa role admin/staff yang valid.");
+    if (!accessCode) {
+      throw new AdminActionError("Posisi / level wajib dipilih.");
+    }
+    if (!appRole) {
+      throw new AdminActionError("Akses aplikasi harus ADMIN atau STAFF.");
     }
     if (!Number.isInteger(unitId) || unitId <= 0) {
       throw new AdminActionError("Unit wajib dipilih.");
@@ -97,6 +102,7 @@ export async function PATCH(
           EMAIL: true,
           CONFIRMED: true,
           ACCESS_CODE: true,
+          APP_ROLE: true,
           UNIT_ID: true,
         },
       }),
@@ -114,7 +120,7 @@ export async function PATCH(
       return validationError("User tidak ditemukan.", 404);
     }
     if (!access) {
-      throw new AdminActionError("Kode akses tidak ditemukan.");
+      throw new AdminActionError("Posisi / level tidak ditemukan.");
     }
     if (!unit) {
       throw new AdminActionError("Unit tidak ditemukan.");
@@ -122,7 +128,7 @@ export async function PATCH(
     if (isSelf && confirmed !== "1") {
       throw new AdminActionError("Akun yang sedang login tidak dapat dinonaktifkan.");
     }
-    if (isSelf && mapAccessCodeToRole(accessCode) !== "admin") {
+    if (isSelf && appRole !== "ADMIN") {
       throw new AdminActionError(
         "Akun yang sedang login tidak dapat diturunkan dari akses admin.",
       );
@@ -140,6 +146,7 @@ export async function PATCH(
         EMAIL: email,
         TELEPHONE: telephone,
         ACCESS_CODE: accessCode,
+        APP_ROLE: appRole,
         UNIT_ID: unitId,
         CONFIRMED: confirmed,
         ...(passwordHash ? { PASSWORD: passwordHash } : {}),
@@ -152,6 +159,7 @@ export async function PATCH(
         TELEPHONE: true,
         CONFIRMED: true,
         ACCESS_CODE: true,
+        APP_ROLE: true,
         UNIT_ID: true,
       },
     });

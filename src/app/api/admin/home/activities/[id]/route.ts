@@ -31,7 +31,7 @@ async function requireAdmin() {
     return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "ADMIN") {
     return { user: null, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

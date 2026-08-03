@@ -38,7 +38,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await requireRole(["staff"]);
+  const user = await requireRole(["STAFF"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

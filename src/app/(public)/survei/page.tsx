@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
+import { isRole } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -89,11 +90,11 @@ export default async function SurveiPage() {
 
         {/* CONTENT SECTION */}
         <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
-          {role === "student" ? (
+          {isRole(role, "MAHASISWA") ? (
             <StudentSurveyPage />
-          ) : role === "admin" ? (
+          ) : isRole(role, "ADMIN") ? (
             <AdminSurveyCard />
-          ) : role === "staff" ? (
+          ) : isRole(role, "STAFF") ? (
             <StaffSurveyCard />
           ) : (
             <GuestSurveyCard />

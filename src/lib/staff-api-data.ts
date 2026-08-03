@@ -3,7 +3,7 @@ import { getAdminInformationPosts } from "@/lib/information-posts";
 import { getSurveySummary } from "@/lib/service-surveys";
 
 export async function getStaffInformationApiData() {
-  const user = await requireRole(["staff"]);
+  const user = await requireRole(["STAFF"]);
 
   if (!user) {
     return {
@@ -21,7 +21,7 @@ export async function getStaffInformationApiData() {
 }
 
 export async function getStaffSurveySummaryApiData() {
-  const user = await requireRole(["staff"]);
+  const user = await requireRole(["STAFF"]);
 
   if (!user) {
     return {

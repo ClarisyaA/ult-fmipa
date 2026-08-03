@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: EmailDraftRouteProps) {
     );
   }
 
-  if (!["admin", "staff"].includes(user.role)) {
+  if (!["ADMIN", "STAFF"].includes(user.role)) {
     return NextResponse.json(
       {
         success: false,

@@ -5,7 +5,7 @@ import { jsonApiError } from "@/lib/error-utils";
 import { getRequestNotificationSnapshot } from "@/lib/legacy-request-stats";
 
 export async function GET() {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

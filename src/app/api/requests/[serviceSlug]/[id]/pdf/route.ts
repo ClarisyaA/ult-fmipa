@@ -164,7 +164,7 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
     return errorResponse(request, "Unauthorized", 401);
   }
 
-  if (!["admin", "staff"].includes(user.role)) {
+  if (!["ADMIN", "STAFF"].includes(user.role)) {
     return errorResponse(request, "Forbidden", 403);
   }
 

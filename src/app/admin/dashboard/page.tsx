@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import {
   getDashboardSummary,
   getLatestPendingDashboardRequestsByDate,
@@ -246,7 +247,14 @@ export default async function AdminDashboardPage({
             <AdminUnavailableState />
           ) : (
             <AdminTableScroll>
-              <Table className="min-w-[780px] table-auto">
+              <Table className="min-w-[860px] table-fixed">
+                <colgroup>
+                  <col className="w-[27%]" />
+                  <col className="w-[21%]" />
+                  <col className="w-[24%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
+                </colgroup>
                 <TableHeader className="bg-[#eef3ec]">
                   <TableRow>
                     <TableHead>Layanan</TableHead>
@@ -260,15 +268,19 @@ export default async function AdminDashboardPage({
                   {latestRows.length > 0 ? (
                     latestRows.map((row) => (
                       <TableRow key={`${row.serviceSlug}-${row.id}`}>
-                        <TableCell className="font-medium">
-                          {row.serviceTitle}
+                        <TableCell className="min-w-0 font-medium">
+                          <TruncatedTableText value={row.serviceTitle} />
                         </TableCell>
-                        <TableCell>{row.requesterName}</TableCell>
-                        <TableCell>{row.programStudy}</TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-0">
+                          <TruncatedTableText value={row.requesterName} />
+                        </TableCell>
+                        <TableCell className="min-w-0">
+                          <TruncatedTableText value={row.programStudy} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {formatDashboardDate(row.requestDate)}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center whitespace-nowrap">
                           <Button
                             asChild
                             size="sm"
@@ -324,8 +336,8 @@ export default async function AdminDashboardPage({
               <TableBody>
                 {summary!.services.map((service) => (
                   <TableRow key={service.slug}>
-                    <TableCell className="font-medium">
-                      {service.title}
+                    <TableCell className="min-w-0 font-medium">
+                      <TruncatedTableText value={service.title} />
                     </TableCell>
                     <TableCell className="text-right">
                       {formatNumber(service.total)}

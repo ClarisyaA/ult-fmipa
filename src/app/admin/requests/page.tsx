@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TruncatedTableText } from "@/components/ui/truncated-table-text";
 import { getCurrentUser } from "@/lib/auth";
 import { isDatabaseUnavailableError, logServerError } from "@/lib/error-utils";
 import { getPrintableLetterService } from "@/lib/letters/letter-data";
@@ -933,25 +934,25 @@ function RequestWorkflowCell({
     );
   }
 
-  return (
-    <span
-      className={`block overflow-hidden text-ellipsis ${
-        column.nowrap ? "whitespace-nowrap" : "line-clamp-2"
-      }`}
-      title={dash(value)}
-    >
-      {column.key === "layanan" && isPrintableRequest(request) ? (
-        <span className="inline-flex min-w-0 items-center gap-1.5">
+  const displayValue =
+    column.key === "layanan" && isPrintableRequest(request) ? (
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
           <FileText
             className="size-3.5 shrink-0 text-[#0f5b45]"
             aria-label="Layanan ini memiliki template surat"
           />
           <span className="truncate">{dash(value)}</span>
         </span>
-      ) : (
-        dash(value)
-      )}
-    </span>
+    ) : (
+      dash(value)
+    );
+
+  return (
+    <TruncatedTableText
+      value={displayValue}
+      tooltipValue={dash(value)}
+      className={column.nowrap ? "whitespace-nowrap" : undefined}
+    />
   );
 }
 
@@ -968,15 +969,15 @@ function RequestActionsCell({
 
   return (
     <div
-      className={`grid gap-1 ${
-        hasPrintableTemplate ? "w-[156px] grid-cols-3" : "w-[104px] grid-cols-2"
+      className={`admin-action-group ${
+        hasPrintableTemplate ? "min-w-[226px]" : "min-w-[148px]"
       }`}
     >
       <Button
         asChild
         variant={isSelected ? "default" : "outline"}
         size="sm"
-        className={`h-7 rounded-md px-1.5 text-[10px] font-semibold ${
+        className={`admin-action-button h-7 rounded-md px-2.5 text-[10px] font-semibold ${
           isSelected
             ? "bg-[#0f3d2e] text-white hover:bg-[#164b39]"
             : "border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
@@ -999,7 +1000,7 @@ function RequestActionsCell({
             asChild
             variant="outline"
             size="sm"
-            className="h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-1.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
+            className="admin-action-button h-7 rounded-md border-[#b8d8c9] bg-[#f3fbf6] px-2.5 text-[10px] font-semibold text-[#0f5b45] hover:bg-[#e5f5eb]"
             title="Isi Data Surat dan cetak PDF resmi"
             data-tour="admin-request-print-buttons"
           >
@@ -1392,7 +1393,7 @@ export default async function AdminRequestsPage({
                         <TableHead className="h-8 w-[100px] px-2 text-center text-[10px] font-bold text-[#244934]">
                           Status
                         </TableHead>
-                        <TableHead className="h-8 w-[164px] px-2 text-center text-[10px] font-bold text-[#244934]">
+                        <TableHead className="admin-action-cell-wide h-8 px-2 text-center text-[10px] font-bold text-[#244934]">
                           Aksi
                         </TableHead>
                       </TableRow>
@@ -1437,7 +1438,7 @@ export default async function AdminRequestsPage({
                                 {request.statusLabel}
                               </AdminStatusBadge>
                             </TableCell>
-                            <TableCell className="w-[164px] px-2 py-1.5">
+                            <TableCell className="admin-action-cell-wide px-2 py-1.5">
                               <RequestActionsCell
                                 request={request}
                                 isSelected={isSelected}

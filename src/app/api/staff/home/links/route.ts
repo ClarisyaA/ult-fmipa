@@ -11,7 +11,7 @@ async function requireStaffAccess() {
     return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  if (!["admin", "staff"].includes(user.role)) {
+  if (!["ADMIN", "STAFF"].includes(user.role)) {
     return { user: null, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

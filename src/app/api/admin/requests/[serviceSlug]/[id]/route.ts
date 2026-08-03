@@ -42,7 +42,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ serviceSlug: string; id: string }> }
 ) {
-  const user = await requireRole(["admin"]);
+  const user = await requireRole(["ADMIN"]);
 
   if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
