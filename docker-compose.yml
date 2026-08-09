@@ -35,13 +35,21 @@ services:
       PAUS_LEGACY_LOGIN_URL: ${PAUS_LEGACY_LOGIN_URL:-}
       PAUS_BRIDGE_SECRET: ${PAUS_BRIDGE_SECRET:-change-me}
       PAUS_BRIDGE_TOKEN_TTL_SECONDS: ${PAUS_BRIDGE_TOKEN_TTL_SECONDS:-120}
-      STORAGE_ROOT: /app/storage
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ult-fmipa}
     ports:
       - "3000:3000"
-    volumes:
-      - ./storage:/app/storage
     depends_on:
-      - db
+      db:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
 
   db:
     image: mariadb:11
@@ -66,5 +74,47 @@ services:
     depends_on:
       - db
 
+  minio:
+    image: minio/minio:latest
+    container_name: ult-fmipa-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # Idempotent bucket bootstrap: creates the private bucket if it doesn't
+  # already exist, then exits. Safe to re-run (e.g. on every `compose up`).
+  minio-init:
+    image: minio/mc:latest
+    container_name: ult-fmipa-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ult-fmipa}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 \"$$MINIO_ACCESS_KEY\" \"$$MINIO_SECRET_KEY\" &&
+      (mc mb local/$$MINIO_BUCKET || true) &&
+      mc anonymous set none local/$$MINIO_BUCKET &&
+      echo 'MinIO bucket ready (private):' \"$$MINIO_BUCKET\"
+      "
+    restart: "no"
+
 volumes:
   ult_fmipa_db_data:
+  minio_data:

@@ -11,7 +11,10 @@ import { HomeLinksSettingsForm } from "@/components/home-activities/home-links-s
 import { ServiceLinksSettingsForm } from "@/components/services/service-links-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
+import {
+  getHomeActivityImageFileSrc,
+  getHomeActivityImageSrc,
+} from "@/lib/home-activity-image-url";
 import {
   Table,
   TableBody,
@@ -107,8 +110,17 @@ export default async function StaffHomeActivitiesPage() {
             </div>
           ) : (
             activities.map((activity) => {
+              const cover =
+                activity.images.find((image) => image.isCover) ?? activity.images[0] ?? null;
+              const coverFit = cover?.imageFit ?? activity.imageFit;
+              const coverSrc = cover
+                ? getHomeActivityImageFileSrc(cover)
+                : activity.imagePath
+                  ? getHomeActivityImageSrc(activity)
+                  : null;
+              const coverAlt = cover?.imageAlt ?? activity.imageAlt ?? activity.title;
               const imageClass =
-                activity.imageFit === "contain"
+                coverFit === "contain"
                   ? "aspect-video w-full rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-contain object-center p-1"
                   : "aspect-video w-full rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-cover object-center";
 
@@ -117,10 +129,10 @@ export default async function StaffHomeActivitiesPage() {
                   key={activity.id}
                   className="grid min-w-0 gap-3 rounded-md border border-[#e3d9ca] bg-white p-3 shadow-[0_1px_4px_rgba(47,38,20,0.06)] sm:grid-cols-[140px_minmax(0,1fr)]"
                 >
-                  {activity.imagePath ? (
+                  {coverSrc ? (
                     <HomeActivityImage
-                      src={getHomeActivityImageSrc(activity)}
-                      alt={activity.imageAlt ?? activity.title}
+                      src={coverSrc}
+                      alt={coverAlt}
                       width={320}
                       height={180}
                       unoptimized
@@ -234,8 +246,17 @@ export default async function StaffHomeActivitiesPage() {
                 </TableRow>
               ) : (
                 activities.map((activity) => {
+                  const cover =
+                    activity.images.find((image) => image.isCover) ?? activity.images[0] ?? null;
+                  const coverFit = cover?.imageFit ?? activity.imageFit;
+                  const coverSrc = cover
+                    ? getHomeActivityImageFileSrc(cover)
+                    : activity.imagePath
+                      ? getHomeActivityImageSrc(activity)
+                      : null;
+                  const coverAlt = cover?.imageAlt ?? activity.imageAlt ?? activity.title;
                   const imageClass =
-                    activity.imageFit === "contain"
+                    coverFit === "contain"
                       ? "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-contain object-center p-1"
                       : "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-cover object-center";
 
@@ -245,10 +266,10 @@ export default async function StaffHomeActivitiesPage() {
                       className="border-b border-[#ece7dc] bg-white transition-colors hover:bg-[#f8faf6]"
                     >
                       <TableCell className="w-32 max-w-32">
-                        {activity.imagePath ? (
+                        {coverSrc ? (
                           <HomeActivityImage
-                            src={getHomeActivityImageSrc(activity)}
-                            alt={activity.imageAlt ?? activity.title}
+                            src={coverSrc}
+                            alt={coverAlt}
                             width={128}
                             height={80}
                             unoptimized

@@ -114,8 +114,6 @@ const serviceGroups = [
   categories: string[] | null;
 }>;
 
-const unsupportedInlineStatusTables = new Set(["transkrip", "ijazah"]);
-
 function isPrintableRequest(request: Pick<ServiceRequestListItem, "serviceSlug">) {
   return Boolean(getPrintableLetterService(request.serviceSlug));
 }
@@ -180,10 +178,6 @@ type RequestColumn = {
 };
 
 function supportsInlineStatus(request: ServiceRequestListItem) {
-  if (unsupportedInlineStatusTables.has(request.sourceTable)) {
-    return false;
-  }
-
   if (request.sourceTable !== "surat_izin_kegiatan") {
     return true;
   }

@@ -39,42 +39,46 @@ export default async function AdminLayout({
         />
 
         <div className="flex min-h-0 min-w-0 w-0 flex-1 flex-col overflow-hidden">
-          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-3 pr-32 text-white sm:px-6 md:hidden">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <AdminMobileMenu
-                groups={adminNavGroups}
-                userName={userName}
-                userRole={userRole}
-              />
+          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-3 py-2.5 text-white sm:px-6 md:hidden">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
+                <AdminMobileMenu
+                  groups={adminNavGroups}
+                  userName={userName}
+                  userRole={userRole}
+                />
                 <Image
                   src="/letters/logo-unpad.png"
                   alt="Logo Unpad"
-                  width={36}
-                  height={36}
-                  className="size-8 shrink-0"
+                  width={32}
+                  height={32}
+                  className="size-7 shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold leading-tight">
+                  <p className="truncate text-xs font-semibold leading-tight sm:text-sm">
                     Admin ULT FMIPA
                   </p>
-                  <p className="truncate text-[11px] capitalize leading-tight text-white/70">
+                  <p className="truncate text-[10px] capitalize leading-tight text-white/70 sm:text-[11px]">
                     {userName} - {userRole}
                   </p>
                 </div>
               </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <OpsRequestNotifier role="admin" inline />
+                <AdminTutorialButton />
+              </div>
             </div>
           </header>
           <main
-            className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6"
+            className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 lg:p-6"
             data-admin-scroll-container
           >
             {children}
           </main>
-          <OpsRequestNotifier role="admin" />
-          <div className="fixed right-20 top-4 z-40 md:right-24 md:top-6">
-            <AdminTutorialButton />
+          <div className="hidden md:block">
+            <OpsRequestNotifier role="admin" />
           </div>
+
           <AdminTutorialOverlay />
         </div>
       </div>

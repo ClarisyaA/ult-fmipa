@@ -1,13 +1,13 @@
 import { randomUUID } from "crypto";
-import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { deleteObject, uploadObject } from "@/lib/minio-storage";
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
 import {
+  extractStoredName,
   getStorageAreaForProfileType,
-  getStorageDirectory,
   getStorageReference,
-  resolveStoredFilePath,
+  resolveObjectKey,
 } from "@/lib/storage-paths";
 
 export type ProfileImageType = "organization" | "location";
@@ -37,10 +37,6 @@ const extensionByMimeType: Record<string, string> = {
 
 export class ProfileImageUploadError extends Error {
   statusCode = 400;
-}
-
-function getImageDir(type: ProfileImageType) {
-  return getStorageDirectory(getStorageAreaForProfileType(type));
 }
 
 function sanitizeFilename(value: string) {
@@ -80,27 +76,24 @@ export async function saveProfileImage(
 ): Promise<SavedProfileImageMetadata> {
   validateProfileImage(file, type);
 
-  const imageDir = getImageDir(type);
-  await mkdir(imageDir, { recursive: true });
-
   const originalName = sanitizeFilename(file.name || `profil-${type}`);
   const extension = extensionByMimeType[file.type] ?? getExtension(originalName);
   const storedName = `${randomUUID()}${extension}`;
-  const absolutePath = path.join(imageDir, storedName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (file.type === "image/svg+xml" && !validateSafeSvgBuffer(buffer)) {
     throw new ProfileImageUploadError("File SVG mengandung konten yang tidak aman.");
   }
 
-  await writeFile(absolutePath, buffer);
+  const objectKey = getStorageReference(getStorageAreaForProfileType(type), storedName);
+  await uploadObject(objectKey, buffer, file.type);
 
   return {
     originalName,
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: getStorageReference(getStorageAreaForProfileType(type), storedName),
+    storagePath: objectKey,
   };
 }
 
@@ -112,20 +105,14 @@ export async function deleteProfileImageFile(
     return;
   }
 
-  const storedName = path.basename(storagePath);
-
-  if (!storedName) {
-    return;
-  }
-
-  const absolutePath = resolveStoredFilePath(
+  const objectKey = resolveObjectKey(
     getStorageAreaForProfileType(type),
-    storedName
+    extractStoredName(storagePath)
   );
 
-  if (!absolutePath) {
+  if (!objectKey) {
     return;
   }
 
-  await rm(absolutePath, { force: true });
+  await deleteObject(objectKey);
 }

@@ -906,6 +906,7 @@ export async function getProfileImageRecord(
     return {
       storedName: node.photoStoredName,
       mimeType: node.photoMimeType,
+      sizeBytes: node.photoSizeBytes,
       isActive: node.isActive,
     };
   }
@@ -918,6 +919,7 @@ export async function getProfileImageRecord(
   return {
     storedName: location.imageStoredName,
     mimeType: location.imageMimeType,
+    sizeBytes: location.imageSizeBytes,
     isActive: location.isActive,
   };
 }

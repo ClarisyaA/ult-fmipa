@@ -371,6 +371,9 @@ export function ServiceRequestForm({
               Kembali ke Detail Layanan
             </Link>
           </Button>
+          <Button asChild variant="outline" className="border-[#DDD5C3] hover:border-[#EE1C25]/40 hover:text-[#EE1C25]">
+            <Link href="/layanan">Ajukan Layanan Lain</Link>
+          </Button>
         </div>
       </div>
     );
@@ -388,7 +391,6 @@ export function ServiceRequestForm({
   const isIjazah = serviceSlug === "penerbitan-ijazah";
   const isTranskrip = serviceSlug === "penerbitan-transkrip";
   const isLegalisir = serviceSlug === "legalisir-ijazah-transkrip";
-  const isUnggahKaryaIlmiah = serviceSlug === "unggah-karya-ilmiah";
   const isMagang = serviceSlug === "permohonan-magang-kerja-praktek-ta";
   const isRequiredUpload = Boolean(uploadRule.minFiles);
   const uploadHelperText = isRequiredUpload
@@ -827,13 +829,6 @@ export function ServiceRequestForm({
         </div>
       ) : null}
 
-      {isUnggahKaryaIlmiah ? (
-        <div className="rounded-xl border-2 border-[#DDD5C3] bg-white/50 px-5 py-4">
-          <p className="text-sm text-[#7A6A5C]">
-            Unggah file karya ilmiah akan ditambahkan pada tahap berikutnya.
-          </p>
-        </div>
-      ) : null}
 
       {/* Legalisir */}
       {isLegalisir ? (

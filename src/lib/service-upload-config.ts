@@ -67,6 +67,35 @@ const serviceUploadRules: Record<string, ServiceUploadRule> = {
   },
 };
 
-export function getServiceUploadRule(serviceSlug: string) {
-  return serviceUploadRules[serviceSlug] ?? defaultUploadRule;
+export function getMaxUploadSizeOverrideBytes(): number | null {
+  const envValue = process.env.MAX_UPLOAD_SIZE_MB;
+
+  if (!envValue) {
+    return null;
+  }
+
+  const parsedMb = Number(envValue);
+
+  if (Number.isNaN(parsedMb) || parsedMb <= 0) {
+    return null;
+  }
+
+  // Safe bounds: minimum 1 MB, maximum 50 MB
+  const boundedMb = Math.min(Math.max(parsedMb, 1), 50);
+
+  return Math.floor(boundedMb * 1024 * 1024);
+}
+
+export function getServiceUploadRule(serviceSlug: string): ServiceUploadRule {
+  const rule = serviceUploadRules[serviceSlug] ?? defaultUploadRule;
+  const overrideBytes = getMaxUploadSizeOverrideBytes();
+
+  if (overrideBytes !== null) {
+    return {
+      ...rule,
+      maxFileSizeBytes: Math.min(rule.maxFileSizeBytes, overrideBytes),
+    };
+  }
+
+  return rule;
 }

@@ -19,7 +19,7 @@ export function HomeActivityImage({
   className,
   fallbackClassName,
   fallbackTitle = "Gambar tidak tersedia",
-  fallbackDescription = "File gambar belum ada di storage lokal. Silakan unggah ulang gambar.",
+  fallbackDescription = "File gambar belum tersedia. Silakan unggah ulang gambar.",
   onMissing,
   ...imageProps
 }: HomeActivityImageProps) {

@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ult-fmipa-minio-init
+  namespace: ult-fmipa
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: minio-init
+          image: minio/mc:latest
+          envFrom:
+            - configMapRef:
+                name: ult-fmipa-app-config
+            - secretRef:
+                name: ult-fmipa-minio-secret
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              mc alias set local "http://${MINIO_ENDPOINT}:${MINIO_PORT}" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              mc mb "local/${MINIO_BUCKET}" || true
+              mc anonymous set none "local/${MINIO_BUCKET}"
+              echo "MinIO bucket ready (private): ${MINIO_BUCKET}"

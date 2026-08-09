@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -486,9 +487,35 @@ export function LetterMetadataEditor({
     }
   };
 
+  const handlePrintClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (readiness?.isReady === false) {
+      e.preventDefault();
+
+      toast.error("Data surat belum lengkap", {
+        description:
+          readiness.message ??
+          "Lengkapi nomor surat, tanggal surat, dan penandatangan terlebih dahulu.",
+        action: {
+          label: "Lengkapi Data Surat",
+          onClick: () => {
+            const target =
+              document.getElementById("letter-TTD_NO_SURAT") ||
+              document.querySelector("[data-tour='admin-request-letter-metadata']");
+
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth", block: "center" });
+              (target as HTMLElement).focus?.();
+            }
+          },
+        },
+      });
+    }
+  };
+
   return (
     <Card
       className="overflow-hidden rounded-none border-2 border-[#0f5b45] bg-[#fffaf2] shadow-sm"
+      id="data-surat"
       data-tour="admin-request-letter-metadata"
     >
       <CardHeader
@@ -652,13 +679,14 @@ export function LetterMetadataEditor({
                   asChild
                   type="button"
                   variant="outline"
-                  disabled={saving || readiness?.isReady === false}
+                  disabled={saving}
                   className="h-9 rounded-[4px] border-[#0f5b45] bg-white px-5 text-[15px] font-semibold text-[#0f5b45] hover:bg-[#eef9f1]"
                 >
                   <Link
                     href={printHref(serviceSlug, id, "id")}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={handlePrintClick}
                   >
                     Cetak Surat Indo
                   </Link>
@@ -667,13 +695,14 @@ export function LetterMetadataEditor({
                   asChild
                   type="button"
                   variant="outline"
-                  disabled={saving || readiness?.isReady === false}
+                  disabled={saving}
                   className="h-9 rounded-[4px] border-[#0f5b45] bg-white px-5 text-[15px] font-semibold text-[#0f5b45] hover:bg-[#eef9f1]"
                 >
                   <Link
                     href={printHref(serviceSlug, id, "en")}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={handlePrintClick}
                   >
                     Cetak Surat Inggris
                   </Link>

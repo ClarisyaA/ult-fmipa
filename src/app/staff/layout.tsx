@@ -30,19 +30,21 @@ export default async function StaffLayout({
         />
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-4 py-4 text-white sm:px-6 md:hidden">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+          <header className="shrink-0 border-b border-[#d8d2e7] bg-[#003f2f] px-3 py-2.5 text-white sm:px-6 md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <Image
                   src="/logo-unpad.svg"
                   alt="Logo Unpad"
-                  width={36}
-                  height={36}
-                  className="size-9"
+                  width={32}
+                  height={32}
+                  className="size-8 shrink-0"
                 />
-                <div>
-                  <p className="font-semibold">ULT FMIPA UNPAD</p>
-                  <p className="text-xs text-white/70">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold leading-tight sm:text-sm">
+                    ULT FMIPA UNPAD
+                  </p>
+                  <p className="truncate text-[10px] text-white/70 sm:text-xs">
                     {userName} - {userRole}
                   </p>
                 </div>
@@ -54,7 +56,7 @@ export default async function StaffLayout({
               />
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 lg:p-6">
             {children}
           </main>
           <OpsRequestNotifier role="staff" />

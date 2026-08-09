@@ -16,6 +16,20 @@ type NormalWorkflowMetadata = {
   requireFinalSubmitted?: boolean;
 };
 
+/**
+ * Maps the generic Proses/Selesai/Dikirim actions onto the 4-stage
+ * verification pipeline (Verifikasi -> Fakultas -> Universitas -> Diambil)
+ * used by ijazah/transkrip, matching the read-side status derivation in
+ * `getVerificationStatus` (legacy-request-detail.ts): VERIFIKASI_TGL drives
+ * "inProgress", UNIVERSITAS_TGL drives "completed", DIAMBIL_TGL drives
+ * "delivered". FAKULTAS_TGL/STAF is set alongside "complete" so the
+ * intermediate faculty stage isn't left permanently empty once a request
+ * is marked done.
+ */
+type VerificationWorkflowMetadata = {
+  workflow: "verification";
+};
+
 type UnsupportedWorkflowMetadata = {
   workflow: "unsupported";
   message?: string;
@@ -23,6 +37,7 @@ type UnsupportedWorkflowMetadata = {
 
 type RequestTableMetadata =
   | NormalWorkflowMetadata
+  | VerificationWorkflowMetadata
   | UnsupportedWorkflowMetadata;
 
 const requestTableMetadata = {
@@ -52,8 +67,7 @@ const requestTableMetadata = {
     deliveryByColumn: "DIAMBIL_OLEH",
   },
   transkrip: {
-    workflow: "unsupported",
-    message: "Status update untuk layanan transkrip belum diaktifkan.",
+    workflow: "verification",
   },
   bebas_pinjaman: {
     workflow: "normal",
@@ -102,7 +116,7 @@ const requestTableMetadata = {
     deliveryByColumn: "DIAMBIL_OLEH",
   },
   ijazah: {
-    workflow: "unsupported",
+    workflow: "verification",
   },
   kks: {
     workflow: "normal",
@@ -235,6 +249,90 @@ async function updateNormalWorkflow(
   `;
 }
 
+async function updateVerificationWorkflow(
+  sourceTable: RequestTableName,
+  action: RequestStatusAction,
+  staffName: string,
+  id: string
+) {
+  const table = Prisma.raw(quoteIdentifier(sourceTable));
+
+  if (action === "process") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET \`VERIFIKASI_TGL\` = NOW(), \`VERIFIKASI_STAF\` = ${staffName}
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "cancelProcess") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET
+        \`VERIFIKASI_TGL\` = NULL,
+        \`VERIFIKASI_STAF\` = NULL,
+        \`FAKULTAS_TGL\` = NULL,
+        \`FAKULTAS_STAF\` = NULL,
+        \`UNIVERSITAS_TGL\` = NULL,
+        \`UNIVERSITAS_STAF\` = NULL,
+        \`DIAMBIL_TGL\` = NULL,
+        \`DIAMBIL_OLEH\` = NULL
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "complete") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET
+        \`FAKULTAS_TGL\` = COALESCE(\`FAKULTAS_TGL\`, NOW()),
+        \`FAKULTAS_STAF\` = COALESCE(\`FAKULTAS_STAF\`, ${staffName}),
+        \`UNIVERSITAS_TGL\` = NOW(),
+        \`UNIVERSITAS_STAF\` = ${staffName}
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "cancelComplete") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET
+        \`FAKULTAS_TGL\` = NULL,
+        \`FAKULTAS_STAF\` = NULL,
+        \`UNIVERSITAS_TGL\` = NULL,
+        \`UNIVERSITAS_STAF\` = NULL,
+        \`DIAMBIL_TGL\` = NULL,
+        \`DIAMBIL_OLEH\` = NULL
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  if (action === "cancelDeliver") {
+    await prisma.$executeRaw`
+      UPDATE ${table}
+      SET \`DIAMBIL_TGL\` = NULL, \`DIAMBIL_OLEH\` = NULL
+      WHERE \`ID\` = ${id}
+      LIMIT 1
+    `;
+    return;
+  }
+
+  await prisma.$executeRaw`
+    UPDATE ${table}
+    SET \`DIAMBIL_TGL\` = NOW(), \`DIAMBIL_OLEH\` = ${staffName}
+    WHERE \`ID\` = ${id}
+    LIMIT 1
+  `;
+}
+
 export async function updateRequestStatus(
   serviceSlug: string,
   id: string,
@@ -258,13 +356,15 @@ export async function updateRequestStatus(
     throw new RequestStatusUpdateError("Pengajuan tidak ditemukan.", 404);
   }
 
-  const metadata = requestTableMetadata[service.sourceTable];
+  // Widened back to the full union: the object literal's inferred type is
+  // narrower than `RequestTableMetadata` right now (every current entry is
+  // "normal" or "verification"), but the "unsupported" branch below remains
+  // a valid safety net for any future table that isn't wired up yet.
+  const metadata = requestTableMetadata[service.sourceTable] as RequestTableMetadata;
 
   if (metadata.workflow === "unsupported") {
     const message =
-      "message" in metadata
-        ? metadata.message
-        : "Layanan ini belum mendukung update status.";
+      metadata.message ?? "Layanan ini belum mendukung update status.";
 
     throw new RequestStatusUpdateError(
       message,
@@ -283,13 +383,22 @@ export async function updateRequestStatus(
     );
   }
 
-  await updateNormalWorkflow(
-    service.sourceTable,
-    metadata,
-    input.action,
-    input.staffName.trim(),
-    id
-  );
+  if (metadata.workflow === "verification") {
+    await updateVerificationWorkflow(
+      service.sourceTable,
+      input.action,
+      input.staffName.trim(),
+      id
+    );
+  } else {
+    await updateNormalWorkflow(
+      service.sourceTable,
+      metadata,
+      input.action,
+      input.staffName.trim(),
+      id
+    );
+  }
 
   const updatedDetail = await getRequestDetail(serviceSlug, id);
 

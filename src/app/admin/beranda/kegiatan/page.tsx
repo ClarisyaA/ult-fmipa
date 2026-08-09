@@ -13,7 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
+import {
+  getHomeActivityImageFileSrc,
+  getHomeActivityImageSrc,
+} from "@/lib/home-activity-image-url";
 import {
   Table,
   TableBody,
@@ -149,18 +152,27 @@ export default async function AdminHomeActivitiesPage() {
                 </TableRow>
               ) : (
                 activities.map((activity) => {
+                  const cover =
+                    activity.images.find((image) => image.isCover) ?? activity.images[0] ?? null;
+                  const coverFit = cover?.imageFit ?? activity.imageFit;
+                  const coverSrc = cover
+                    ? getHomeActivityImageFileSrc(cover)
+                    : activity.imagePath
+                      ? getHomeActivityImageSrc(activity)
+                      : null;
+                  const coverAlt = cover?.imageAlt ?? activity.imageAlt ?? activity.title;
                   const imageClass =
-                    activity.imageFit === "contain"
+                    coverFit === "contain"
                       ? "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-contain object-center p-1"
                       : "aspect-video w-28 rounded-md border border-[#edf0e9] bg-[#f7f3ea] object-cover object-center";
 
                   return (
                     <TableRow key={activity.id}>
                     <TableCell className="w-32 max-w-32">
-                      {activity.imagePath ? (
+                      {coverSrc ? (
                         <HomeActivityImage
-                          src={getHomeActivityImageSrc(activity)}
-                          alt={activity.imageAlt ?? activity.title}
+                          src={coverSrc}
+                          alt={coverAlt}
                           width={128}
                           height={80}
                           unoptimized
@@ -173,6 +185,11 @@ export default async function AdminHomeActivitiesPage() {
                           Tanpa gambar
                         </div>
                       )}
+                      {activity.images.length > 1 ? (
+                        <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                          {activity.images.length} gambar
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs">

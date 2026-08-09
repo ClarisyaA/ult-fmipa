@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { InformationImage } from "@/components/information/information-image";
@@ -13,31 +13,30 @@ type InformationImageGalleryProps = {
 };
 
 export function InformationImageGallery({ images }: InformationImageGalleryProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [trackIndex, setTrackIndex] = useState(() => (images.length > 1 ? 1 : 0));
   const [isTransitionEnabled, setIsTransitionEnabled] = useState(true);
   const hasMultipleImages = images.length > 1;
+  // Guards against rapid clicks stacking multiple moves before the previous
+  // CSS transition finishes, which could push trackIndex past the
+  // clone-padded array bounds. A ref (not state) since it's an internal
+  // semaphore, not something that should trigger a render.
+  const isAnimatingRef = useRef(false);
+
+  // Derived from trackIndex (the single source of truth for carousel
+  // position) instead of a separately-incremented state, so the dots/counter
+  // can never drift out of sync with what's actually visible.
+  const activeIndex = hasMultipleImages
+    ? ((trackIndex - 1) % images.length + images.length) % images.length
+    : 0;
 
   function move(direction: -1 | 1) {
-    if (!hasMultipleImages) {
+    if (!hasMultipleImages || isAnimatingRef.current) {
       return;
     }
 
+    isAnimatingRef.current = true;
     setIsTransitionEnabled(true);
     setTrackIndex((current) => current + direction);
-    setActiveIndex((current) => {
-      const next = current + direction;
-
-      if (next < 0) {
-        return images.length - 1;
-      }
-
-      if (next >= images.length) {
-        return 0;
-      }
-
-      return next;
-    });
   }
 
   useEffect(() => {
@@ -52,9 +51,13 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
     }
 
     const interval = window.setInterval(() => {
+      if (isAnimatingRef.current) {
+        return;
+      }
+
+      isAnimatingRef.current = true;
       setIsTransitionEnabled(true);
       setTrackIndex((current) => current + 1);
-      setActiveIndex((current) => (current + 1 >= images.length ? 0 : current + 1));
     }, 5000);
 
     return () => window.clearInterval(interval);
@@ -69,6 +72,8 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
     : images;
 
   function handleTransitionEnd() {
+    isAnimatingRef.current = false;
+
     if (!hasMultipleImages) {
       return;
     }
@@ -133,7 +138,7 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
                     unoptimized
                     sizes="(max-width: 1024px) 90vw, 896px"
                     className={imageClass}
-                    fallbackTitle="Gambar informasi tidak tersedia di storage lokal."
+                    fallbackTitle="Gambar informasi belum tersedia."
                     fallbackClassName="flex h-full w-full items-center justify-center bg-[#f7f3ea] p-4 text-center text-[#7a6a5c]"
                   />
                 </div>
@@ -178,10 +183,10 @@ export function InformationImageGallery({ images }: InformationImageGalleryProps
                 index === activeIndex ? "w-8 bg-[#EE1C25]" : "w-2 bg-[#D8CFBE]"
               }`}
               onClick={() => {
-                if (index === activeIndex) {
+                if (index === activeIndex || isAnimatingRef.current) {
                   return;
                 }
-                setActiveIndex(index);
+                isAnimatingRef.current = true;
                 setIsTransitionEnabled(true);
                 setTrackIndex(index + 1);
               }}

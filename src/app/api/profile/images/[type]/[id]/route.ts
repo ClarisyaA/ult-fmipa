@@ -1,14 +1,17 @@
-import { readFile, stat } from "fs/promises";
+import { Readable } from "stream";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { getObjectStream, isObjectNotFoundError } from "@/lib/minio-storage";
 import { isProfileImageType } from "@/lib/profile-cms-api";
 import { getProfileImageRecord } from "@/lib/profile-cms";
 import {
   getStorageAreaForProfileType,
-  resolveStoredFilePath,
+  resolveObjectKey,
 } from "@/lib/storage-paths";
+
+export const runtime = "nodejs";
 
 type ImageRouteProps = {
   params: Promise<{ type: string; id: string }>;
@@ -35,32 +38,38 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
     }
   }
 
-  const absolutePath = resolveStoredFilePath(
+  const objectKey = resolveObjectKey(
     getStorageAreaForProfileType(type),
     image.storedName
   );
 
-  if (!absolutePath) {
+  if (!objectKey) {
     return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
   }
 
   try {
-    const fileStat = await stat(absolutePath);
-    const file = await readFile(absolutePath);
+    const nodeStream = await getObjectStream(objectKey);
+    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+    const headers: Record<string, string> = {
+      "Content-Type": image.mimeType,
+      "Cache-Control": image.isActive ? "public, max-age=300" : "private, max-age=60",
+      "Content-Security-Policy":
+        image.mimeType === "image/svg+xml"
+          ? "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox;"
+          : "default-src 'none'",
+      "X-Content-Type-Options": "nosniff",
+    };
 
-    return new Response(file, {
-      headers: {
-        "Content-Type": image.mimeType,
-        "Content-Length": String(fileStat.size),
-        "Cache-Control": image.isActive ? "public, max-age=300" : "private, max-age=60",
-        "Content-Security-Policy":
-          image.mimeType === "image/svg+xml"
-            ? "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox;"
-            : "default-src 'none'",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
+    if (typeof image.sizeBytes === "number") {
+      headers["Content-Length"] = String(image.sizeBytes);
+    }
+
+    return new Response(webStream, { headers });
+  } catch (error) {
+    if (isObjectNotFoundError(error)) {
+      return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: "Gagal mengambil gambar dari storage." }, { status: 503 });
   }
 }

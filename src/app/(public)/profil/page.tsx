@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  MapPin,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 
 import { Reveal } from "@/components/sections/reveal";
+import {
+  OrganizationStructureTree,
+  type PublicStructureNode,
+} from "@/components/profile/organization-structure-tree";
 
 const missionItems = [
   "Memberikan pelayanan terintegrasi yang mudah diakses melalui pemanfaatan teknologi informasi.",
@@ -17,17 +17,20 @@ const missionItems = [
   "Menjamin keterbukaan informasi dan kepastian waktu layanan.",
 ];
 
-type ProfileOrganizationNode = {
-  id: string;
-  parentId: string | null;
-  name: string;
-  positionTitle: string;
-  roleLabel: string | null;
-  photoUrl: string | null;
-  photoAlt: string | null;
-  colorVariant: OrgColor;
-  sortOrder: number;
-  children: ProfileOrganizationNode[];
+type ProfileStructureSettingsData = {
+  title: string;
+  subtitle: string | null;
+};
+
+type ProfileStructureApiResponse = {
+  settings: ProfileStructureSettingsData | null;
+  tree: PublicStructureNode[];
+};
+
+type ProfileStructureState = {
+  settings: ProfileStructureSettingsData;
+  tree: PublicStructureNode[];
+  loaded: boolean;
 };
 
 type ProfileLocationData = {
@@ -48,132 +51,14 @@ type ProfileLocationData = {
   }>;
 };
 
-const fallbackOrganizationTree: ProfileOrganizationNode[] = [
-  {
-    id: "fallback-head",
-    parentId: null,
-    name: "Nama Lengkap",
-    positionTitle: "KEPALA ULT",
-    roleLabel: "KEPALA ULT",
-    colorVariant: "emerald",
-    photoUrl: null,
-    photoAlt: null,
-    sortOrder: 1,
-    children: [
-      {
-        id: "fallback-operasional",
-        parentId: "fallback-head",
-        name: "Nama Lengkap",
-        positionTitle: "KOORDINATOR OPERASIONAL",
-        roleLabel: "KOORDINATOR OPERASIONAL",
-        colorVariant: "emerald",
-        photoUrl: null,
-        photoAlt: null,
-        sortOrder: 1,
-        children: [
-          {
-            id: "fallback-operasional-1",
-            parentId: "fallback-operasional",
-            name: "Staff 1",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "emerald",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 1,
-            children: [],
-          },
-          {
-            id: "fallback-operasional-2",
-            parentId: "fallback-operasional",
-            name: "Staff 2",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "emerald",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 2,
-            children: [],
-          },
-        ],
-      },
-      {
-        id: "fallback-administrasi",
-        parentId: "fallback-head",
-        name: "Nama Lengkap",
-        positionTitle: "KOORDINATOR ADMINISTRASI",
-        roleLabel: "KOORDINATOR ADMINISTRASI",
-        colorVariant: "red",
-        photoUrl: null,
-        photoAlt: null,
-        sortOrder: 2,
-        children: [
-          {
-            id: "fallback-administrasi-1",
-            parentId: "fallback-administrasi",
-            name: "Staff 1",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "red",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 1,
-            children: [],
-          },
-          {
-            id: "fallback-administrasi-2",
-            parentId: "fallback-administrasi",
-            name: "Staff 2",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "red",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 2,
-            children: [],
-          },
-        ],
-      },
-      {
-        id: "fallback-teknik",
-        parentId: "fallback-head",
-        name: "Nama Lengkap",
-        positionTitle: "KOORDINATOR TEKNIK",
-        roleLabel: "KOORDINATOR TEKNIK",
-        colorVariant: "amber",
-        photoUrl: null,
-        photoAlt: null,
-        sortOrder: 3,
-        children: [
-          {
-            id: "fallback-teknik-1",
-            parentId: "fallback-teknik",
-            name: "Staff 1",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "amber",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 1,
-            children: [],
-          },
-          {
-            id: "fallback-teknik-2",
-            parentId: "fallback-teknik",
-            name: "Staff 2",
-            positionTitle: "Staff",
-            roleLabel: null,
-            colorVariant: "amber",
-            photoUrl: null,
-            photoAlt: null,
-            sortOrder: 2,
-            children: [],
-          },
-        ],
-      },
-    ],
+const defaultStructureState: ProfileStructureState = {
+  settings: {
+    title: "Struktur Organisasi ULT",
+    subtitle: "Sinergi kepemimpinan dan eksekusi layanan yang tertata.",
   },
-];
+  tree: [],
+  loaded: false,
+};
 
 const fallbackLocation: ProfileLocationData = {
   eyebrow: "Location & Access",
@@ -202,264 +87,12 @@ const fallbackLocation: ProfileLocationData = {
   ],
 };
 
-const orgColorClass = {
-  emerald: {
-    border: "border-emerald-500/75",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    dot: "bg-emerald-500",
-  },
-  red: {
-    border: "border-rose-400/80",
-    bg: "bg-red-50",
-    text: "text-rose-600",
-    dot: "bg-rose-400",
-  },
-  amber: {
-    border: "border-amber-400/85",
-    bg: "bg-amber-50",
-    text: "text-amber-600",
-    dot: "bg-amber-400",
-  },
-} as const;
-
-const orgLineClass = "bg-[#d2b16d]";
-
-type OrgColor = keyof typeof orgColorClass;
-
-function OrgAvatar({
-  name,
-  photo,
-  color,
-  size = "md",
-}: {
-  name: string;
-  photo?: string;
-  color: OrgColor;
-  size?: "sm" | "md" | "lg";
-}) {
-  const sizeClass = {
-    sm: "size-16",
-    md: "size-20",
-    lg: "size-28",
-  };
-
-  return (
-    <div
-      className={`group relative mx-auto ${sizeClass[size]} rounded-full border-[3px] bg-white p-1.5 shadow-lg shadow-black/10 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/15 ${orgColorClass[color].border}`}
-    >
-      <div className="h-full w-full overflow-hidden rounded-full bg-neutral-100">
-        {photo ? (
-          <Image
-            src={photo}
-            alt={name}
-            fill
-            sizes="112px"
-            unoptimized
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <UserRound className="size-1/2 text-neutral-300 transition duration-300 group-hover:scale-110" />
-          </div>
-        )}
-      </div>
-      <span
-        className={`absolute bottom-0 left-1/2 size-3 -translate-x-1/2 translate-y-1/2 rounded-full ring-2 ring-white ${orgColorClass[color].dot}`}
-      />
-    </div>
-  );
-}
-
-function normalizeOrganizationNode(node: ProfileOrganizationNode): ProfileOrganizationNode {
-  const colorVariant = orgColorClass[node.colorVariant] ? node.colorVariant : "emerald";
-
-  return {
-    ...node,
-    colorVariant,
-    children: (node.children ?? []).map(normalizeOrganizationNode),
-  };
-}
-
-function OrgNodeCard({
-  node,
-  size,
-  revealClass,
-  delay,
-}: {
-  node: ProfileOrganizationNode;
-  size: "sm" | "md" | "lg";
-  revealClass: string;
-  delay: number;
-}) {
-  const color = orgColorClass[node.colorVariant];
-
-  return (
-    <div
-      className={`relative z-10 text-center ${revealClass}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <OrgAvatar
-        name={node.name}
-        photo={node.photoUrl ?? undefined}
-        color={node.colorVariant}
-        size={size}
-      />
-      <h3 className="mt-3 text-xs font-black text-neutral-900 sm:text-sm">
-        {node.name}
-      </h3>
-      <span
-        className={`mt-1 inline-flex max-w-full justify-center rounded-sm border px-3 py-1 text-[9px] font-black uppercase leading-snug tracking-normal ${color.bg} ${color.text} ${color.border}`}
-      >
-        {node.roleLabel ?? node.positionTitle}
-      </span>
-    </div>
-  );
-}
-
-function OrganizationSubtree({
-  node,
-  revealClass,
-  linesVisible,
-  depth = 0,
-  index = 0,
-}: {
-  node: ProfileOrganizationNode;
-  revealClass: string;
-  linesVisible: boolean;
-  depth?: number;
-  index?: number;
-}) {
-  const branchDelay = 1080 + index * 180 + depth * 220;
-  const hasChildren = node.children.length > 0;
-
-  return (
-    <div className="relative flex min-w-max flex-col items-center">
-      <OrgNodeCard
-        node={node}
-        size={depth === 0 ? "md" : "sm"}
-        revealClass={revealClass}
-        delay={branchDelay + 180}
-      />
-
-      {hasChildren ? (
-        <>
-          <div
-            className={`org-parent-stem mt-4 h-7 w-px ${orgLineClass}`}
-            data-visible={linesVisible ? "true" : "false"}
-            style={{ animationDelay: `${branchDelay + 440}ms` }}
-          />
-          <ul
-            className="org-tree-children"
-            data-visible={linesVisible ? "true" : "false"}
-            style={{ "--org-line-delay": `${branchDelay + 600}ms` } as CSSProperties}
-          >
-            {node.children.map((child, childIndex) => (
-              <li key={child.id} className="org-tree-item">
-                <span aria-hidden="true" className="org-item-stem" />
-                <OrganizationSubtree
-                  node={child}
-                  revealClass={revealClass}
-                  linesVisible={linesVisible}
-                  depth={depth + 1}
-                  index={childIndex}
-                />
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-    </div>
-  );
-}
-
-function MobileOrganizationBranch({
-  nodes,
-  revealClass,
-  depth = 0,
-}: {
-  nodes: ProfileOrganizationNode[];
-  revealClass: string;
-  depth?: number;
-}) {
-  return (
-    <ul
-      className={
-        depth === 0
-          ? "ml-5 mt-4 space-y-3 border-l border-[#d2b16d] pl-5"
-          : "ml-5 mt-3 space-y-3 border-l border-[#d2b16d] pl-5"
-      }
-    >
-      {nodes.map((node, index) => (
-        <li key={node.id} className="relative">
-          <span
-            aria-hidden="true"
-            className="absolute -left-5 top-8 h-px w-5 bg-[#d2b16d]"
-          />
-          <MobileOrgNodeCard
-            node={node}
-            revealClass={revealClass}
-            delay={420 + depth * 180 + index * 120}
-          />
-          {node.children.length > 0 ? (
-            <MobileOrganizationBranch
-              nodes={node.children}
-              revealClass={revealClass}
-              depth={depth + 1}
-            />
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function MobileOrgNodeCard({
-  node,
-  revealClass,
-  delay,
-}: {
-  node: ProfileOrganizationNode;
-  revealClass: string;
-  delay: number;
-}) {
-  const color = orgColorClass[node.colorVariant];
-
-  return (
-    <div
-      className={`flex min-w-0 items-center gap-3 rounded-2xl border border-black/[0.06] bg-white/85 p-3 text-left shadow-md shadow-black/[0.05] ${revealClass}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="w-16 shrink-0">
-        <OrgAvatar
-          name={node.name}
-          photo={node.photoUrl ?? undefined}
-          color={node.colorVariant}
-          size="sm"
-        />
-      </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="break-words text-sm font-black leading-tight text-neutral-900">
-          {node.name}
-        </h3>
-        <span
-          className={`mt-1.5 inline-flex max-w-full rounded-md border px-2 py-1 text-[8px] font-black uppercase leading-snug ${color.bg} ${color.text} ${color.border}`}
-        >
-          {node.roleLabel ?? node.positionTitle}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function ProfilPage() {
   const organizationRef = useRef<HTMLElement | null>(null);
   const aboutHeadingRef = useRef<HTMLDivElement | null>(null);
   const [isOrganizationVisible, setIsOrganizationVisible] = useState(false);
   const [isAboutHeadingVisible, setIsAboutHeadingVisible] = useState(false);
-  const [, setOrganizationTree] = useState<ProfileOrganizationNode[]>(
-    fallbackOrganizationTree
-  );
+  const [structure, setStructure] = useState<ProfileStructureState>(defaultStructureState);
   const [location, setLocation] = useState<ProfileLocationData>(fallbackLocation);
 
   useEffect(() => {
@@ -517,19 +150,27 @@ export default function ProfilPage() {
 
     async function loadProfileContent() {
       try {
-        const [organizationResponse, locationResponse] = await Promise.all([
-          fetch("/api/profile/organization", { cache: "no-store" }),
+        const [structureResponse, locationResponse] = await Promise.all([
+          fetch("/api/profile/structure", { cache: "no-store" }),
           fetch("/api/profile/location", { cache: "no-store" }),
         ]);
 
-        if (organizationResponse.ok) {
-          const body = (await organizationResponse.json().catch(() => null)) as {
-            data?: ProfileOrganizationNode[];
+        if (structureResponse.ok) {
+          const body = (await structureResponse.json().catch(() => null)) as {
+            data?: ProfileStructureApiResponse;
           } | null;
 
-          if (isMounted && body?.data && body.data.length > 0) {
-            setOrganizationTree(body.data.map(normalizeOrganizationNode));
+          if (isMounted && body?.data) {
+            setStructure({
+              settings: body.data.settings ?? defaultStructureState.settings,
+              tree: body.data.tree ?? [],
+              loaded: true,
+            });
           }
+        } else if (isMounted) {
+          // API reachable but failed: surface the neutral empty state
+          // instead of quietly showing stale/fake data.
+          setStructure((current) => ({ ...current, loaded: true }));
         }
 
         if (locationResponse.ok) {
@@ -547,7 +188,9 @@ export default function ProfilPage() {
           }
         }
       } catch {
-        // Keep static fallback if public CMS APIs are unavailable.
+        if (isMounted) {
+          setStructure((current) => ({ ...current, loaded: true }));
+        }
       }
     }
 
@@ -1094,126 +737,47 @@ export default function ProfilPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-24 bg-gradient-to-b from-transparent via-[#FAF9F6]/20 to-[#FAF9F6]" />
         <div className="relative z-10 mx-auto max-w-7xl">
           <Reveal className="text-center">
-            <h2 aria-label="Struktur Organisasi ULT" className="relative isolate inline-block text-3xl font-black tracking-normal text-neutral-900 sm:text-4xl lg:text-5xl">
+            <h2 aria-label={structure.settings.title} className="relative isolate inline-block text-3xl font-black tracking-normal text-neutral-900 sm:text-4xl lg:text-5xl">
               <span
                 data-visible={isOrganizationVisible ? "true" : "false"}
                 className="org-title-highlight rounded-sm"
               >
-              <span className="inline-block">
-                {Array.from("Struktur").map((character, index) => (
-                  <span
-                    key={`${character}-${index}`}
-                    aria-hidden="true"
-                    data-visible={isOrganizationVisible ? "true" : "false"}
-                    className="org-title-letter inline-block opacity-0"
-                    style={{ animationDelay: `${index * 48}ms` }}
-                  >
-                    {character}
+                {structure.settings.title.split(" ").map((word, wordIndex, words) => (
+                  <span key={`${word}-${wordIndex}`} className="inline-block">
+                    {Array.from(word).map((character, index) => (
+                      <span
+                        key={`${character}-${index}`}
+                        aria-hidden="true"
+                        data-visible={isOrganizationVisible ? "true" : "false"}
+                        className="org-title-letter inline-block opacity-0"
+                        style={{ animationDelay: `${(wordIndex * 9 + index) * 48}ms` }}
+                      >
+                        {character}
+                      </span>
+                    ))}
+                    {wordIndex < words.length - 1 ? " " : null}
                   </span>
                 ))}
-              </span>{" "}
-              <span className="inline-block">
-                {Array.from("Organisasi").map((character, index) => (
-                  <span
-                    key={`${character}-${index}`}
-                    aria-hidden="true"
-                    data-visible={isOrganizationVisible ? "true" : "false"}
-                    className="org-title-letter inline-block opacity-0"
-                    style={{ animationDelay: `${(index + 9) * 48}ms` }}
-                  >
-                    {character}
-                  </span>
-                ))}
-              </span>{" "}
-              <span className="inline-block">
-                {Array.from("ULT").map((character, index) => (
-                  <span
-                    key={`${character}-${index}`}
-                    aria-hidden="true"
-                    data-visible={isOrganizationVisible ? "true" : "false"}
-                    className="org-title-letter inline-block opacity-0"
-                    style={{ animationDelay: `${(index + 20) * 48}ms` }}
-                  >
-                    {character}
-                  </span>
-                ))}
-              </span>
               </span>
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-sm font-medium text-neutral-500 sm:text-base">
-              Sinergi kepemimpinan dan eksekusi layanan yang tertata.
-            </p>
+            {structure.settings.subtitle ? (
+              <p className="mx-auto mt-4 max-w-2xl text-sm font-medium text-neutral-500 sm:text-base">
+                {structure.settings.subtitle}
+              </p>
+            ) : null}
           </Reveal>
 
           <Reveal
             className="relative mx-auto mt-12 max-w-5xl lg:mt-16"
             delay={120}
           >
-            <div className="mx-auto flex max-w-5xl flex-col items-center">
-              <div className="org-chart-level relative mt-5 w-full max-w-2xl rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8] sm:px-9" style={{ animationDelay: "100ms" }}>
-                <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-6 py-2.5 text-center text-xs font-black uppercase tracking-[0.2em] text-white shadow-[4px_4px_0_#DDD5C3]">Tim Pembina</h3>
-                <div className="mt-4 space-y-2 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">
-                  <p>Dekan Fakultas MIPA</p>
-                  <p>Wakil Dekan Bidang Akademik, Kemahasiswaan dan Riset</p>
-                  <p>Wakil Dekan Bidang Sumber Daya dan Organisasi</p>
-                </div>
-              </div>
-
-              <span className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
-
-              <div className="relative w-full max-w-4xl sm:pt-9">
-                <span className="absolute left-[calc(25%_-_0.5rem)] right-[calc(25%_-_0.5rem)] top-0 hidden h-px bg-[#C9BFA8] sm:block" aria-hidden="true" />
-                <div className="grid gap-5 sm:grid-cols-2 sm:gap-8">
-                  <div className="relative sm:pt-0">
-                    <span className="absolute left-1/2 -top-9 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
-                    <div className="org-chart-level mt-5 h-[calc(100%-1.25rem)] rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "280ms" }}>
-                      <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Penanggung Jawab Harian</h3>
-                      <div className="mt-4 space-y-2 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">
-                        <p>Manajer Akademik dan Kemahasiswaan</p>
-                        <p>Manajer Sumber Daya, Perencanaan, dan Informasi</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative sm:pt-0">
-                    <span className="absolute left-1/2 -top-9 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
-                    <div className="org-chart-level mt-5 h-[calc(100%-1.25rem)] rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "380ms" }}>
-                      <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Koordinator Pelaksana</h3>
-                      <p className="mt-4 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">Koordinator Urusan Akademik dan Kemahasiswaan</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <span className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
-
-              <div className="org-chart-level relative mt-5 w-full max-w-md rounded-[1.5rem] border-2 border-[#18130E] bg-[#FEFDF9] px-7 py-7 shadow-[7px_7px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0_#C9BFA8]" style={{ animationDelay: "640ms" }}>
-                <h3 className="mx-auto -mt-12 w-fit rounded-2xl bg-[#18130E] px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_#DDD5C3]">Staf Pelaksana</h3>
-                <p className="mt-4 text-center text-sm leading-6 text-[#6B5E52] sm:text-base">Tim Adhoc ULT</p>
-              </div>
-
-              <div className="h-9 w-px bg-[#C9BFA8]" aria-hidden="true" />
-              <div className="relative hidden h-px w-full sm:block" aria-hidden="true">
-                <span className="absolute left-[calc(10%_-_0.4rem)] right-[calc(10%_-_0.4rem)] top-0 h-px bg-[#C9BFA8]" />
-              </div>
-
-              <div className="grid w-full gap-3 sm:grid-cols-5 sm:gap-4">
-                {[
-                  "Urusan Akademik",
-                  "Urusan Kemahasiswaan",
-                  "Urusan Perencanaan dan Keuangan",
-                  "Urusan Kehumasan",
-                  "Urusan Sarana Prasarana",
-                ].map((item, index) => (
-                  <div key={item} className="relative flex pt-3 sm:pt-9">
-                    <span className="absolute left-1/2 top-0 hidden h-9 w-px -translate-x-1/2 bg-[#C9BFA8] sm:block" aria-hidden="true" />
-                    <div className="org-chart-level flex min-h-20 w-full items-center justify-center rounded-xl border-2 border-[#18130E] bg-[#FEFDF9] px-4 py-4 text-center text-xs font-bold leading-5 text-[#18130E] shadow-[4px_4px_0_#DDD5C3] transition duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0_#C9BFA8]" style={{ animationDelay: `${820 + index * 100}ms` }}>
-                      <span>{item}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {structure.tree.length > 0 ? (
+              <OrganizationStructureTree roots={structure.tree} />
+            ) : structure.loaded ? (
+              <p className="mx-auto max-w-md rounded-2xl border border-[#E5E2DB] bg-white/70 px-6 py-8 text-center text-sm text-[#8A7A6E]">
+                Struktur organisasi belum tersedia.
+              </p>
+            ) : null}
           </Reveal>
         </div>
       </section>

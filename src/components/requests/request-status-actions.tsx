@@ -122,9 +122,12 @@ export function RequestStatusActions({
 
     setPendingAction(null);
     if (action === "complete") {
+      // Defer refresh until the completion dialog is closed so the dialog
+      // isn't cut short by a re-render triggered mid-interaction.
       setEmailDialogSignal((value) => value + 1);
+    } else {
+      router.refresh();
     }
-    router.refresh();
   }
 
   return (
@@ -134,6 +137,7 @@ export function RequestStatusActions({
         id={id}
         mode="completion-dialog"
         openSignal={emailDialogSignal}
+        onClose={() => router.refresh()}
       />
       <div>
         <p className="text-sm font-medium">Update Status</p>

@@ -71,25 +71,35 @@ export async function saveRequestAttachmentMetadata({
   file,
 }: SaveAttachmentInput) {
   if (!ensureWhitelistedService(serviceSlug, sourceTable)) {
+    if (file?.storagePath) {
+      await deleteUploadedFile(file.storagePath).catch(() => {});
+    }
     throw new Error("Layanan lampiran tidak valid.");
   }
 
-  const created = await prisma.ult_request_attachments.create({
-    data: {
-      SERVICE_SLUG: serviceSlug,
-      SOURCE_TABLE: sourceTable,
-      REQUEST_ID: toBigIntId(requestId),
-      ORIGINAL_NAME: file.originalName,
-      STORED_NAME: file.storedName,
-      MIME_TYPE: file.mimeType,
-      SIZE_BYTES: file.sizeBytes,
-      STORAGE_PATH: file.storagePath,
-      UPLOADED_BY: uploadedBy,
-      ATTACHMENT_TYPE: attachmentType ?? null,
-    },
-  });
+  try {
+    const created = await prisma.ult_request_attachments.create({
+      data: {
+        SERVICE_SLUG: serviceSlug,
+        SOURCE_TABLE: sourceTable,
+        REQUEST_ID: toBigIntId(requestId),
+        ORIGINAL_NAME: file.originalName,
+        STORED_NAME: file.storedName,
+        MIME_TYPE: file.mimeType,
+        SIZE_BYTES: file.sizeBytes,
+        STORAGE_PATH: file.storagePath,
+        UPLOADED_BY: uploadedBy,
+        ATTACHMENT_TYPE: attachmentType ?? null,
+      },
+    });
 
-  return toAttachment(created);
+    return toAttachment(created);
+  } catch (error) {
+    if (file?.storagePath) {
+      await deleteUploadedFile(file.storagePath).catch(() => {});
+    }
+    throw error;
+  }
 }
 
 export async function getRequestAttachments(

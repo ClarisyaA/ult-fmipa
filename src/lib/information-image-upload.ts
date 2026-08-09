@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto";
-import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { deleteObject, uploadObject } from "@/lib/minio-storage";
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
 import {
-  getStorageDirectory,
+  extractStoredName,
   getStorageReference,
-  resolveStoredFilePath,
+  resolveObjectKey,
 } from "@/lib/storage-paths";
 
 export type SavedInformationImageMetadata = {
@@ -17,7 +17,6 @@ export type SavedInformationImageMetadata = {
   storagePath: string;
 };
 
-const informationImageDir = getStorageDirectory("information");
 const maxImageSizeBytes = 2 * 1024 * 1024;
 const allowedMimeTypes = new Set([
   "image/webp",
@@ -70,41 +69,34 @@ export async function saveInformationImage(
   file: File
 ): Promise<SavedInformationImageMetadata> {
   validateInformationImage(file);
-  await mkdir(informationImageDir, { recursive: true });
 
   const originalName = sanitizeFilename(file.name || "gambar-informasi");
   const extension = extensionByMimeType[file.type] ?? getExtension(originalName);
   const storedName = `${randomUUID()}${extension}`;
-  const absolutePath = path.join(informationImageDir, storedName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (file.type === "image/svg+xml" && !validateSafeSvgBuffer(buffer)) {
     throw new InformationImageUploadError("File SVG mengandung konten yang tidak aman.");
   }
 
-  await writeFile(absolutePath, buffer);
+  const objectKey = getStorageReference("information", storedName);
+  await uploadObject(objectKey, buffer, file.type);
 
   return {
     originalName,
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: getStorageReference("information", storedName),
+    storagePath: objectKey,
   };
 }
 
 export async function deleteInformationImageFile(storagePath: string) {
-  const storedName = path.basename(storagePath);
+  const objectKey = resolveObjectKey("information", extractStoredName(storagePath));
 
-  if (!storedName) {
+  if (!objectKey) {
     return;
   }
 
-  const absolutePath = resolveStoredFilePath("information", storedName);
-
-  if (!absolutePath) {
-    return;
-  }
-
-  await rm(absolutePath, { force: true });
+  await deleteObject(objectKey);
 }

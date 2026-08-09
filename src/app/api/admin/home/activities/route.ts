@@ -11,7 +11,7 @@ import {
   assertValidHomeActivityInput,
   createHomeActivity,
   ensureHomeActivitiesTableAvailable,
-  getAdminHomeActivities,
+  getAdminHomeActivitiesWithImages,
 } from "@/lib/home-activities";
 import { saveHomeActivityImage } from "@/lib/home-activity-image-upload";
 
@@ -31,7 +31,7 @@ export async function GET() {
   }
 
   try {
-    const activities = await getAdminHomeActivities();
+    const activities = await getAdminHomeActivitiesWithImages();
 
     return NextResponse.json({ data: activities });
   } catch (error) {

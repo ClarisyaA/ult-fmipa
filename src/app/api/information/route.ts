@@ -22,32 +22,7 @@ type PublicInformationResponse = {
   } | null;
 };
 
-const CACHE_TTL_MS = 60_000;
-let cachedPayload:
-  | {
-      expiresAt: number;
-      data: PublicInformationResponse[];
-    }
-  | null = null;
-
-function jsonResponse(data: PublicInformationResponse[]) {
-  return NextResponse.json(
-    { data },
-    {
-      headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-      },
-    }
-  );
-}
-
 export async function GET() {
-  const now = Date.now();
-
-  if (cachedPayload && cachedPayload.expiresAt > now) {
-    return jsonResponse(cachedPayload.data);
-  }
-
   const posts = await getPublishedInformationPosts();
   const coverImages = await getAvailableInformationPostCoverImages(
     posts.map((post) => post.id)
@@ -74,10 +49,12 @@ export async function GET() {
     };
   });
 
-  cachedPayload = {
-    expiresAt: now + CACHE_TTL_MS,
-    data,
-  };
-
-  return jsonResponse(data);
+  return NextResponse.json(
+    { data },
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    }
+  );
 }

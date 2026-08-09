@@ -390,67 +390,27 @@ const homeActivityFormSteps: TutorialStep[] = [
 const structureSteps: TutorialStep[] = [
   {
     title: "Struktur Organisasi",
-    body: "Halaman ini membangun tree organisasi ULT yang muncul di profil publik. Kamu akan mengisi node satu per satu: root, koordinator, lalu staff di bawah parent yang sesuai.",
+    body: "Halaman ini mengatur seluruh bagian Struktur Organisasi ULT di profil publik: judul section, subjudul, seluruh node/kotak beserta hierarkinya, dan isian di dalam tiap node. Tampilan/desainnya tetap, hanya datanya yang berasal dari sini.",
   },
   {
-    title: "Daftar Struktur",
-    body: "Daftar ini memperlihatkan node struktur yang sudah ada. Klik Edit untuk mengubah node atau atur aktif/nonaktif sesuai kebutuhan publik.",
+    title: "Pengaturan Section",
+    body: "Ubah Judul Section (contoh: Struktur Organisasi ULT) dan Subjudul Section (contoh: Sinergi kepemimpinan dan eksekusi layanan yang tertata), lalu klik Simpan Pengaturan.",
+    target: "admin-profile-structure-settings",
+  },
+  {
+    title: "Daftar Node Struktur",
+    body: "Daftar ini menampilkan seluruh node secara hierarkis: label, parent, jenis tampilan, urutan, jumlah isian, dan status aktif. Gunakan Kelola Isian untuk mengatur baris teks di dalam node, Edit untuk mengubah node, Tambah Child untuk menambah node turunan, atau Hapus untuk menghapus node.",
     target: "admin-profile-structure-list",
   },
   {
-    title: "Tambah Node Struktur",
-    body: "Mulai dari panel kanan ini. Untuk membuat tree yang rapi: buat node paling atas sebagai Root, lalu buat node koordinator dengan parent Root, lalu buat staff dengan parent koordinator.",
+    title: "Form Tambah/Edit Node",
+    body: "Isi Label Node, pilih Parent (Root untuk node paling atas), pilih Jenis/Layout (Utama, Menengah, atau Kecil/Leaf) untuk menjaga tampilan tetap rapi, atur Urutan, dan centang Aktif jika node siap tampil di publik.",
     target: "admin-profile-structure-form",
   },
   {
-    title: "Step 1: Nama Orang",
-    body: "Isi nama orang yang menempati posisi ini. Contoh: Prof. Dr. Nama Lengkap untuk pejabat, atau Nama Staff untuk anggota tim. Field ini wajib karena menjadi label utama node.",
-    target: "admin-profile-structure-name",
-  },
-  {
-    title: "Step 2: Jabatan",
-    body: "Isi jabatan persis seperti yang ingin tampil di profil publik, misalnya KEPALA ULT, KOORDINATOR OPERASIONAL, atau Staff. Saat field ini diketik, Label Role akan ikut terisi otomatis.",
-    target: "admin-profile-structure-position",
-  },
-  {
-    title: "Step 3: Cek Label Role",
-    body: "Label Role otomatis mengikuti Jabatan / Position Title dan tidak perlu diketik manual. Cukup cek apakah isinya sudah sama dengan jabatan.",
-    target: "admin-profile-structure-role",
-  },
-  {
-    title: "Step 4: Parent / Atasan",
-    body: "Pilih Tidak ada atasan / Root untuk node paling atas seperti KEPALA ULT. Untuk koordinator, pilih Kepala ULT sebagai parent. Untuk staff, pilih koordinator yang membawahi staff tersebut.",
-    target: "admin-profile-structure-parent",
-  },
-  {
-    title: "Step 5: Urutan",
-    body: "Urutan menentukan posisi node dalam parent yang sama. Gunakan 1 untuk tampil lebih dulu, 2 untuk setelahnya, dan seterusnya. Untuk root tunggal, angka 1 atau 0 tetap aman.",
-    target: "admin-profile-structure-order",
-  },
-  {
-    title: "Step 6: Warna Cabang",
-    body: "Pilih warna cabang agar kelompok struktur mudah dibaca. Gunakan warna yang sama untuk cabang yang masih satu kelompok, atau beda warna untuk membedakan divisi.",
-    target: "admin-profile-structure-color",
-  },
-  {
-    title: "Step 7: Status Aktif",
-    body: "Centang Aktif tampil di publik jika node sudah siap ditayangkan. Jika masih draft atau datanya belum valid, matikan dulu agar tidak muncul di profil publik.",
-    target: "admin-profile-structure-active",
-  },
-  {
-    title: "Step 8: Alt Foto",
-    body: "Alt Foto menjelaskan isi foto untuk aksesibilitas dan fallback. Contoh: Foto Kepala ULT atau Foto Koordinator Operasional. Boleh dikosongkan jika belum ada foto.",
-    target: "admin-profile-structure-photo-alt",
-  },
-  {
-    title: "Step 9: Upload Foto",
-    body: "Klik area upload atau drag foto. Gunakan foto formal yang ringan dan jelas. Node tetap bisa disimpan tanpa foto, nanti akan memakai ikon placeholder.",
-    target: "admin-profile-structure-photo",
-  },
-  {
-    title: "Step 10: Simpan Node",
-    body: "Klik Tambah Node untuk menyimpan. Setelah tersimpan, node akan muncul di Daftar Struktur; cek parent dan urutannya, lalu lanjut tambah node berikutnya.",
-    target: "admin-profile-structure-save",
+    title: "Kelola Isian Node",
+    body: "Setiap node dapat memiliki beberapa baris isi. Tambah baris baru lewat form di bawah, atau Edit/Nonaktifkan/Hapus baris yang sudah ada.",
+    target: "admin-profile-structure-items",
   },
 ];
 

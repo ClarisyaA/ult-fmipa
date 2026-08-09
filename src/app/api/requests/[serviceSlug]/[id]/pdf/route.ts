@@ -49,11 +49,57 @@ async function streamToBuffer(stream: NodeJS.ReadableStream) {
   return Buffer.concat(chunks);
 }
 
-function errorResponse(request: Request, message: string, status: number) {
+function errorResponse(
+  request: Request,
+  message: string,
+  status: number,
+  serviceSlug?: string,
+  id?: string,
+) {
   const accept = request.headers.get("accept") ?? "";
 
   if (accept.includes("application/json")) {
     return NextResponse.json({ success: false, error: message }, { status });
+  }
+
+  if (accept.includes("text/html") && serviceSlug && id) {
+    const referer = request.headers.get("referer") ?? "";
+    const rolePrefix = referer.includes("/staff/") ? "staff" : "admin";
+    const editUrl = `/${rolePrefix}/requests/${serviceSlug}/${id}`;
+
+    return new NextResponse(
+      `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Surat Belum Lengkap - ULT FMIPA</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f2fb; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; box-sizing: border-box; }
+    .card { background: white; border-radius: 12px; border: 1px solid #e8dfd0; padding: 2rem; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    h1 { color: #173d2d; font-size: 1.25rem; margin-top: 0; font-weight: 700; }
+    p { color: #5f5a54; font-size: 0.925rem; line-height: 1.6; margin-bottom: 1.75rem; }
+    a { display: inline-flex; align-items: center; justify-content: center; background: #00669b; color: white; padding: 0.65rem 1.4rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.875rem; transition: background 0.15s ease; }
+    a:hover { background: #00547f; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Data Surat Belum Lengkap</h1>
+    <p>${message}</p>
+    <a href="${editUrl}">Lengkapi Data Surat Sekarang &rarr;</a>
+  </div>
+</body>
+</html>`,
+      {
+        status,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      },
+    );
   }
 
   return new NextResponse(message, {
@@ -220,8 +266,9 @@ export async function GET(request: Request, { params }: PdfRouteProps) {
       },
     });
   } catch (error) {
+    const { serviceSlug, id } = await params.catch(() => ({ serviceSlug: "", id: "" }));
     if (error instanceof LetterDataError) {
-      return errorResponse(request, error.message, error.statusCode);
+      return errorResponse(request, error.message, error.statusCode, serviceSlug, id);
     }
 
     return jsonApiError(

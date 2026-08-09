@@ -4,8 +4,16 @@ import {
   deleteHomeActivityImageFile,
   type SavedHomeActivityImageMetadata,
 } from "@/lib/home-activity-image-upload";
-import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
-import { storedFileExists } from "@/lib/storage-paths";
+import {
+  deleteHomeActivityImagesForActivity,
+  getAvailableHomeActivityImages,
+  getHomeActivityImages,
+  type HomeActivityImage,
+} from "@/lib/home-activity-images";
+import {
+  getHomeActivityImageFileSrc,
+  getHomeActivityImageSrc,
+} from "@/lib/home-activity-image-url";
 
 export type HomeActivity = {
   id: string;
@@ -27,6 +35,15 @@ export type HomeActivity = {
   updatedBy: string | null;
 };
 
+export type PublicHomeActivityImage = {
+  id: string;
+  url: string;
+  altText: string;
+  imageFit: HomeActivityImageFit;
+  isCover: boolean;
+  sortOrder: number;
+};
+
 export type PublicHomeActivity = {
   id: string;
   title: string;
@@ -35,6 +52,8 @@ export type PublicHomeActivity = {
   image: string | null;
   imageAlt: string;
   imageFit: HomeActivityImageFit;
+  coverImage: PublicHomeActivityImage | null;
+  images: PublicHomeActivityImage[];
   sortOrder: number;
 };
 
@@ -116,35 +135,61 @@ function toActivity(record: HomeActivityRecord): HomeActivity {
   };
 }
 
-function toPublicActivity(activity: HomeActivity): PublicHomeActivity {
+function toPublicImage(image: HomeActivityImage, activityTitle: string): PublicHomeActivityImage {
+  return {
+    id: image.id,
+    url: getHomeActivityImageFileSrc(image),
+    altText: image.imageAlt ?? activityTitle,
+    imageFit: image.imageFit,
+    isCover: image.isCover,
+    sortOrder: image.sortOrder,
+  };
+}
+
+function toLegacySyntheticImage(activity: HomeActivity): PublicHomeActivityImage | null {
+  if (!activity.imagePath) {
+    return null;
+  }
+
+  return {
+    id: `legacy-${activity.id}`,
+    url: getHomeActivityImageSrc(activity),
+    altText: activity.imageAlt ?? activity.title,
+    imageFit: activity.imageFit,
+    isCover: true,
+    sortOrder: 0,
+  };
+}
+
+async function toPublicActivityWithImages(activity: HomeActivity): Promise<PublicHomeActivity> {
+  const childImages = await getAvailableHomeActivityImages(activity.id);
+
+  // Child table is the source of truth once populated (migration 011 has
+  // run and backfilled). Until then — or for any activity that somehow
+  // has zero child rows — fall back to the legacy single-image columns on
+  // the parent row so the page never renders empty for pre-migration data.
+  const images =
+    childImages.length > 0
+      ? childImages.map((image) => toPublicImage(image, activity.title))
+      : (() => {
+          const legacy = toLegacySyntheticImage(activity);
+          return legacy ? [legacy] : [];
+        })();
+
+  const cover = images.find((image) => image.isCover) ?? images[0] ?? null;
+
   return {
     id: activity.id,
     title: activity.title,
     eyebrow: activity.eyebrow,
     description: activity.description,
-    image: activity.imagePath ? getHomeActivityImageSrc(activity) : null,
-    imageAlt: activity.imageAlt ?? activity.title,
-    imageFit: activity.imageFit,
+    image: cover?.url ?? null,
+    imageAlt: cover?.altText ?? activity.imageAlt ?? activity.title,
+    imageFit: cover?.imageFit ?? activity.imageFit,
+    coverImage: cover,
+    images,
     sortOrder: activity.sortOrder,
   };
-}
-
-async function toPublicActivityWithAvailableImage(
-  activity: HomeActivity
-): Promise<PublicHomeActivity> {
-  const publicActivity = toPublicActivity(activity);
-
-  if (
-    activity.imageStoredName &&
-    !(await storedFileExists("homeActivities", activity.imageStoredName))
-  ) {
-    return {
-      ...publicActivity,
-      image: null,
-    };
-  }
-
-  return publicActivity;
 }
 
 function isMissingHomeActivitiesTableError(error: unknown) {
@@ -341,7 +386,7 @@ export async function getPublicHomeActivities() {
       ORDER BY SORT_ORDER ASC, CREATED_AT DESC, ID DESC
     `;
 
-    return Promise.all(rows.map(toActivity).map(toPublicActivityWithAvailableImage));
+    return Promise.all(rows.map(toActivity).map(toPublicActivityWithImages));
   } catch (error) {
     handleReadError(error);
     return [];
@@ -384,6 +429,19 @@ export async function getAdminHomeActivities() {
   }
 }
 
+export type HomeActivityWithImages = HomeActivity & { images: HomeActivityImage[] };
+
+export async function getAdminHomeActivitiesWithImages(): Promise<HomeActivityWithImages[]> {
+  const activities = await getAdminHomeActivities();
+
+  return Promise.all(
+    activities.map(async (activity) => ({
+      ...activity,
+      images: await getHomeActivityImages(activity.id),
+    }))
+  );
+}
+
 export async function getAdminHomeActivitiesState() {
   const tableAvailable = await hasHomeActivitiesTable();
 
@@ -395,7 +453,7 @@ export async function getAdminHomeActivitiesState() {
   }
 
   return {
-    activities: await getAdminHomeActivities(),
+    activities: await getAdminHomeActivitiesWithImages(),
     unavailable: false,
   };
 }
@@ -583,6 +641,12 @@ export async function deleteHomeActivity(id: string) {
   }
 
   try {
+    // Clean up child image rows + their MinIO objects first: FK cascade
+    // would remove the DB rows automatically, but only this call actually
+    // deletes the underlying MinIO objects, so it must run before the
+    // parent row (and its rows) are gone.
+    await deleteHomeActivityImagesForActivity(id);
+
     await prisma.$executeRaw`
       DELETE FROM ult_home_activities
       WHERE ID = ${BigInt(id)}

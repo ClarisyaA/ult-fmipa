@@ -67,7 +67,7 @@ export function RequestAttachmentsList({
           Lampiran
         </h3>
         <p className="mt-1 text-sm text-[#7A6A5C]">
-          Metadata lampiran pengajuan. Path storage lokal tidak ditampilkan.
+          Metadata lampiran pengajuan. Lokasi penyimpanan file tidak ditampilkan.
         </p>
       </div>
       <div className="px-5 pb-4 sm:px-6 sm:pb-5">

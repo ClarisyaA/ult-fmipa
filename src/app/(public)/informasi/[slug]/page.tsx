@@ -124,7 +124,7 @@ export default async function InformationDetailPage({
                   unoptimized
                   sizes="(max-width: 1024px) 90vw, 896px"
                   className={headerImageClass}
-                  fallbackTitle="Gambar informasi tidak tersedia di storage lokal."
+                  fallbackTitle="Gambar informasi belum tersedia."
                   fallbackClassName="flex h-full w-full items-center justify-center bg-[#f7f3ea] p-6 text-center text-[#7a6a5c]"
                 />
                 <div

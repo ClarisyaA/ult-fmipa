@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { RouteLoadingBar } from "@/components/layout/route-loading-bar";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
+import { SurveyGate } from "@/components/student/survey-gate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,9 @@ export default function RootLayout({
         {children}
         <Toaster position="top-right" richColors closeButton />
         <ScrollToTop />
+        <Suspense fallback={null}>
+          <SurveyGate />
+        </Suspense>
       </body>
     </html>
   );

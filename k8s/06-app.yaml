@@ -25,9 +25,6 @@ spec:
                 name: ult-fmipa-app-config
             - secretRef:
                 name: ult-fmipa-app-secret
-          volumeMounts:
-            - name: storage
-              mountPath: /app/storage
           readinessProbe:
             httpGet:
               path: /api/health
@@ -40,10 +37,6 @@ spec:
               port: http
             initialDelaySeconds: 60
             periodSeconds: 20
-      volumes:
-        - name: storage
-          persistentVolumeClaim:
-            claimName: ult-fmipa-storage
 ---
 apiVersion: v1
 kind: Service

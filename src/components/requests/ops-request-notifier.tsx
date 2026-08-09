@@ -75,7 +75,7 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
+export function OpsRequestNotifier({ role, inline }: { role: RolePrefix; inline?: boolean }) {
   const [snapshot, setSnapshot] = useState<RequestNotificationSnapshot | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -260,7 +260,7 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 sm:bottom-auto sm:right-6 sm:top-5">
+    <div className={inline ? "relative" : "fixed bottom-4 right-4 z-50 sm:bottom-auto sm:right-6 sm:top-5"}>
       <div className="relative">
         <Button
           type="button"
@@ -287,7 +287,7 @@ export function OpsRequestNotifier({ role }: { role: RolePrefix }) {
         </Button>
 
         {isOpen ? (
-          <div className="absolute bottom-full right-0 mb-3 w-[min(92vw,380px)] rounded-lg border border-[#dde4d9] bg-white p-3 shadow-[0_18px_44px_rgba(18,53,39,0.18)] sm:bottom-auto sm:mb-0 sm:mt-3">
+          <div className={`absolute right-0 w-[min(92vw,380px)] rounded-lg border border-[#dde4d9] bg-white p-3 shadow-[0_18px_44px_rgba(18,53,39,0.18)] ${inline ? "top-full mt-2 z-50" : "bottom-full mb-3 sm:bottom-auto sm:mb-0 sm:top-full sm:mt-3"}`}>
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-[#173d2d]">

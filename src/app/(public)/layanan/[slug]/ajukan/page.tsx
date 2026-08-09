@@ -19,7 +19,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { isSubmissionSupported } from "@/lib/legacy-request-submit";
 import {
-  getLatestSikRequestForStudentOrNull,
+  getLatestUnfinishedSikRequestForStudentOrNull,
   isSikDatabaseUnavailableError,
   sikServiceSlug,
 } from "@/lib/sik-requests";
@@ -64,7 +64,7 @@ export default async function SubmitServiceRequestPage({
   const templateLinks = await getPublicServiceTemplateLinks(service.slug);
   const latestSikRecord =
     service.slug === sikServiceSlug && user.npm
-      ? await getLatestSikRequestForStudentOrNull(user.npm)
+      ? await getLatestUnfinishedSikRequestForStudentOrNull(user.npm)
       : null;
   const latestSikDetail =
     service.slug === sikServiceSlug && user.npm && latestSikRecord

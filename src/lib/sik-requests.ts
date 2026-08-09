@@ -190,6 +190,45 @@ export async function getLatestSikRequestForStudentOrNull(npm: string) {
   }
 }
 
+/**
+ * Same as `getLatestSikRequestForStudent`, but excludes requests that have
+ * already finished the SIK cycle (`FINAL_SUBMITTED_TGL` set). A finished
+ * request must never be treated as "the" request a student resumes when
+ * opening the ajukan page — it stays visible in history, but a new request
+ * should start fresh instead. Used for "should I show a fresh form or
+ * resume a draft" decisions; `getLatestSikRequestForStudent` (unfiltered)
+ * remains the right choice for `createSikApprovalProofRequest`'s own
+ * create/reuse/block decision.
+ */
+export async function getLatestUnfinishedSikRequestForStudent(npm: string) {
+  try {
+    return await prisma.surat_izin_kegiatan.findFirst({
+      where: {
+        NPM: npm,
+        FINAL_SUBMITTED_TGL: null,
+      },
+      orderBy: [{ PERMINTAAN_TGL: "desc" }, { ID: "desc" }],
+    });
+  } catch (error) {
+    throwIfSikDatabaseUnavailable(error);
+  }
+}
+
+export async function getLatestUnfinishedSikRequestForStudentOrNull(npm: string) {
+  try {
+    return await getLatestUnfinishedSikRequestForStudent(npm);
+  } catch (error) {
+    if (error instanceof SikRequestError && error.statusCode === 503) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(error.message);
+      }
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 export async function createSikApprovalProofRequest(input: {
   npm: string;
   uploadedBy: string | null;

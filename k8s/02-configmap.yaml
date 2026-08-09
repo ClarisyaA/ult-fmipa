@@ -8,6 +8,10 @@ data:
   DB_PORT: "3306"
   DB_NAME: fmipa_sbpk
   NEXTAUTH_URL: https://ult-fmipa.example.com
+  MINIO_ENDPOINT: ult-fmipa-minio
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "false"
+  MINIO_BUCKET: ult-fmipa
   PAUS_MODE: modern
   PAUS_AUTHORIZATION_URL: https://paus.unpad.ac.id/oauth
   PAUS_TOKEN_URL: https://paus.unpad.ac.id/oauth/access-token

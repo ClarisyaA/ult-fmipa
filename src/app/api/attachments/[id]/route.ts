@@ -1,19 +1,35 @@
-import { readFile, stat } from "fs/promises";
+import { Readable } from "stream";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
-import { jsonApiError } from "@/lib/error-utils";
-import { getAttachmentRecordById } from "@/lib/request-attachments";
-import { resolveStoredFilePath } from "@/lib/storage-paths";
-import { getStudentRequestDetail } from "@/lib/student-request-history";
+import { authorizeAttachmentAccess } from "@/lib/attachment-authorization";
+import { getObjectStream, isObjectNotFoundError } from "@/lib/minio-storage";
+import { resolveObjectKey } from "@/lib/storage-paths";
+
+export const runtime = "nodejs";
 
 type AttachmentRouteProps = {
   params: Promise<{ id: string }>;
 };
 
-function contentDisposition(filename: string) {
-  return `inline; filename*=UTF-8''${encodeURIComponent(filename)}`;
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "Cache-Control": "private, no-store, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
+function safeContentDisposition(filename: string, mimeType: string) {
+  const asciiSafeName = filename
+    .replace(/[\r\n"']/g, "_")
+    .replace(/[^\x20-\x7E]/g, "_");
+  const encodedName = encodeURIComponent(filename);
+  const isInlineAllowed =
+    mimeType === "application/pdf" || mimeType.startsWith("image/");
+  const dispositionType = isInlineAllowed ? "inline" : "attachment";
+
+  return `${dispositionType}; filename="${asciiSafeName}"; filename*=UTF-8''${encodedName}`;
 }
 
 export async function GET(
@@ -22,73 +38,73 @@ export async function GET(
 ) {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  let attachment;
-
-  try {
-    attachment = await getAttachmentRecordById(id);
-  } catch (error) {
-    return jsonApiError(
-      error,
-      "api:attachments:get",
-      "Lampiran gagal dimuat."
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: SECURITY_HEADERS }
     );
   }
 
-  if (!attachment) {
-    return NextResponse.json({ error: "Lampiran tidak ditemukan." }, { status: 404 });
-  }
+  const { id } = await params;
+  const decision = await authorizeAttachmentAccess(session.user, id);
 
-  if (session.user.role === "MAHASISWA") {
-    if (!session.user.npm) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    let detail;
-
-    try {
-      detail = await getStudentRequestDetail(
-        session.user.npm,
-        attachment.SERVICE_SLUG,
-        String(attachment.REQUEST_ID)
-      );
-    } catch (error) {
-      return jsonApiError(
-        error,
-        "api:attachments:student-detail:get",
-        "Lampiran gagal dimuat."
+  if (!decision.allowed) {
+    if (decision.reason === "UNAUTHORIZED") {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401, headers: SECURITY_HEADERS }
       );
     }
 
-    if (!detail || detail.sourceTable !== attachment.SOURCE_TABLE) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (decision.reason === "FORBIDDEN") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: SECURITY_HEADERS }
+      );
     }
-  } else if (!["ADMIN", "STAFF"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    return NextResponse.json(
+      { error: "Lampiran tidak ditemukan." },
+      { status: 404, headers: SECURITY_HEADERS }
+    );
   }
 
-  const absolutePath = resolveStoredFilePath("uploads", attachment.STORED_NAME);
+  const { attachment } = decision;
+  const objectKey = resolveObjectKey("uploads", attachment.STORED_NAME);
 
-  if (!absolutePath) {
-    return NextResponse.json({ error: "Lampiran tidak ditemukan." }, { status: 404 });
+  if (!objectKey) {
+    return NextResponse.json(
+      { error: "Lampiran tidak ditemukan." },
+      { status: 404, headers: SECURITY_HEADERS }
+    );
   }
 
   try {
-    const fileStat = await stat(absolutePath);
-    const file = await readFile(absolutePath);
+    const nodeStream = await getObjectStream(objectKey);
+    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
-    return new Response(file, {
+    return new Response(webStream, {
       headers: {
+        ...SECURITY_HEADERS,
         "Content-Type": attachment.MIME_TYPE,
-        "Content-Length": String(fileStat.size),
-        "Content-Disposition": contentDisposition(attachment.ORIGINAL_NAME),
+        "Content-Length": String(attachment.SIZE_BYTES),
+        "Content-Disposition": safeContentDisposition(
+          attachment.ORIGINAL_NAME,
+          attachment.MIME_TYPE
+        ),
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Lampiran tidak ditemukan." }, { status: 404 });
+  } catch (error) {
+    if (isObjectNotFoundError(error)) {
+      return NextResponse.json(
+        { error: "Lampiran tidak ditemukan." },
+        { status: 404, headers: SECURITY_HEADERS }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Gagal mengambil lampiran dari storage." },
+      { status: 503, headers: SECURITY_HEADERS }
+    );
   }
 }

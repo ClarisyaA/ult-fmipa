@@ -1,4 +1,4 @@
-import { readFile, stat } from "fs/promises";
+import { Readable } from "stream";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -8,7 +8,10 @@ import {
   isInformationPostCurrentlyVisible,
 } from "@/lib/information-posts";
 import { getInformationPostImageRecord } from "@/lib/information-post-images";
-import { resolveStoredFilePath } from "@/lib/storage-paths";
+import { getObjectStream, isObjectNotFoundError } from "@/lib/minio-storage";
+import { resolveObjectKey } from "@/lib/storage-paths";
+
+export const runtime = "nodejs";
 
 type ImageRouteProps = {
   params: Promise<{ imageId: string }>;
@@ -36,20 +39,20 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
     }
   }
 
-  const absolutePath = resolveStoredFilePath("information", image.STORED_NAME);
+  const objectKey = resolveObjectKey("information", image.STORED_NAME);
 
-  if (!absolutePath) {
+  if (!objectKey) {
     return NextResponse.json({ error: "Gambar tidak ditemukan." }, { status: 404 });
   }
 
   try {
-    const fileStat = await stat(absolutePath);
-    const file = await readFile(absolutePath);
+    const nodeStream = await getObjectStream(objectKey);
+    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
-    return new Response(file, {
+    return new Response(webStream, {
       headers: {
         "Content-Type": image.MIME_TYPE,
-        "Content-Length": String(fileStat.size),
+        "Content-Length": String(image.SIZE_BYTES),
         "Cache-Control": "private, max-age=300",
         "Content-Security-Policy":
           image.MIME_TYPE === "image/svg+xml"
@@ -58,10 +61,17 @@ export async function GET(_request: Request, { params }: ImageRouteProps) {
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch {
+  } catch (error) {
+    if (isObjectNotFoundError(error)) {
+      return NextResponse.json(
+        { error: "Gambar tidak ditemukan." },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(
-      { error: "File gambar tidak tersedia di storage lokal." },
-      { status: 404 },
+      { error: "Gagal mengambil gambar dari storage." },
+      { status: 503 },
     );
   }
 }

@@ -13,8 +13,14 @@ import {
   validateUploadedFile,
 } from "@/lib/file-upload";
 import { getPublicServiceBySlug } from "@/lib/legacy-services";
+import {
+  defaultUploadRateLimitConfig,
+  getClientIp,
+  uploadRateLimiter,
+} from "@/lib/rate-limit";
 import { saveRequestAttachmentMetadata } from "@/lib/request-attachments";
 import { createServiceRequestSchema } from "@/lib/service-request-validation";
+import { getCompletedUnsurveyedRequestsForStudent } from "@/lib/service-surveys";
 import { getServiceUploadRule } from "@/lib/service-upload-config";
 import {
   createSikApprovalProofRequest,
@@ -63,6 +69,41 @@ export async function POST(
           error: "Hanya mahasiswa yang dapat mengajukan layanan.",
         },
         { status: 403 }
+      );
+    }
+
+    if (session.user.npm) {
+      const pendingSurvey = await getCompletedUnsurveyedRequestsForStudent(
+        session.user.npm
+      );
+
+      if (pendingSurvey) {
+        return NextResponse.json(
+          {
+            error:
+              "Selesaikan survei layanan sebelumnya sebelum mengajukan layanan baru.",
+            code: "PENDING_SURVEY_REQUIRED",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    const ip = getClientIp(request);
+    const userId = session.user.id || session.user.npm || session.user.email || ip;
+    const rateLimitKey = `upload:${userId}:${ip}`;
+    const rateLimitCheck = uploadRateLimiter.check(
+      rateLimitKey,
+      defaultUploadRateLimitConfig
+    );
+
+    if (!rateLimitCheck.success) {
+      return NextResponse.json(
+        {
+          error:
+            "Terlalu banyak permintaan unggah file. Silakan tunggu beberapa saat.",
+        },
+        { status: 429 }
       );
     }
 

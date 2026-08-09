@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Globe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AdminTutorialButton } from "@/components/tutorial/admin-tutorial-button";
 
 export function AdminDashboardTutorialButton() {
   return (
@@ -19,6 +20,9 @@ export function AdminDashboardTutorialButton() {
           Website Publik
         </Link>
       </Button>
+      <div className="hidden md:block">
+        <AdminTutorialButton />
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   updateHomeActivity,
 } from "@/lib/home-activities";
 import { saveHomeActivityImage } from "@/lib/home-activity-image-upload";
+import { getHomeActivityImages } from "@/lib/home-activity-images";
 
 type HomeActivityRouteProps = {
   params: Promise<{ id: string }>;
@@ -56,7 +57,9 @@ export async function GET(_request: Request, { params }: HomeActivityRouteProps)
       );
     }
 
-    return NextResponse.json({ data: activity });
+    const images = await getHomeActivityImages(id);
+
+    return NextResponse.json({ data: { ...activity, images } });
   } catch (error) {
     const apiError = getHomeActivityApiErrorStatus(error);
 

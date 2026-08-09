@@ -1,5 +1,4 @@
-import path from "path";
-import { stat } from "fs/promises";
+import { objectExists } from "@/lib/minio-storage";
 
 export type StorageArea =
   | "uploads"
@@ -8,97 +7,136 @@ export type StorageArea =
   | "profileOrganization"
   | "profileLocation";
 
-export function getStorageRoot() {
-  return process.env.STORAGE_ROOT ? path.resolve(process.env.STORAGE_ROOT) : null;
+/**
+ * MinIO object key prefix for each storage area. Mirrors the folder layout
+ * that used to live under the local `storage/` directory, minus the
+ * `storage/` prefix itself (that prefix is now implicit in the bucket).
+ */
+const AREA_PREFIXES: Record<StorageArea, string> = {
+  uploads: "uploads",
+  information: "information",
+  homeActivities: "home-activities",
+  profileOrganization: "profile/organization",
+  profileLocation: "profile/location",
+};
+
+export function getStorageAreaPrefix(area: StorageArea): string {
+  return AREA_PREFIXES[area];
 }
 
-export function getStorageDirectory(area: StorageArea) {
-  const configuredRoot = getStorageRoot();
-
-  if (configuredRoot) {
-    switch (area) {
-      case "uploads":
-        return path.join(configuredRoot, "uploads");
-      case "information":
-        return path.join(configuredRoot, "information");
-      case "homeActivities":
-        return path.join(configuredRoot, "home-activities");
-      case "profileOrganization":
-        return path.join(configuredRoot, "profile", "organization");
-      case "profileLocation":
-        return path.join(configuredRoot, "profile", "location");
-    }
-  }
-
-  switch (area) {
-    case "uploads":
-      return path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "uploads");
-    case "information":
-      return path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "information");
-    case "homeActivities":
-      return path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "home-activities");
-    case "profileOrganization":
-      return path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "profile", "organization");
-    case "profileLocation":
-      return path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "profile", "location");
-  }
-}
-
-export function getStorageReference(area: StorageArea, storedName: string) {
-  switch (area) {
-    case "uploads":
-      return `storage/uploads/${storedName}`;
-    case "information":
-      return `storage/information/${storedName}`;
-    case "homeActivities":
-      return `storage/home-activities/${storedName}`;
-    case "profileOrganization":
-      return `storage/profile/organization/${storedName}`;
-    case "profileLocation":
-      return `storage/profile/location/${storedName}`;
-  }
-}
-
-export function getStorageAreaForProfileType(type: "organization" | "location") {
+export function getStorageAreaForProfileType(
+  type: "organization" | "location"
+): StorageArea {
   return type === "organization" ? "profileOrganization" : "profileLocation";
 }
 
-export function resolveStoredFilePath(area: StorageArea, storedName: string | null) {
-  if (!storedName || path.isAbsolute(storedName)) {
-    return null;
-  }
-
-  if (
-    storedName.includes("/") ||
-    storedName.includes("\\") ||
-    storedName !== path.basename(storedName)
-  ) {
-    return null;
-  }
-
-  const storageDir = getStorageDirectory(area);
-  const absolutePath = path.resolve(storageDir, storedName);
-
-  if (
-    absolutePath === storageDir ||
-    !absolutePath.startsWith(`${storageDir}${path.sep}`)
-  ) {
-    return null;
-  }
-
-  return absolutePath;
+/**
+ * Builds the object key that gets persisted in the database for a freshly
+ * stored file, e.g. `information/<uuid>.webp`. Always uses `/` regardless
+ * of OS, since this is an object key, not a filesystem path.
+ */
+export function getStorageReference(area: StorageArea, storedName: string): string {
+  return `${getStorageAreaPrefix(area)}/${storedName}`;
 }
 
-export async function storedFileExists(area: StorageArea, storedName: string | null) {
-  const absolutePath = resolveStoredFilePath(area, storedName);
+/**
+ * Extracts a bare stored-file name (basename) out of any legacy or current
+ * reference string, tolerating the shapes that existed before this
+ * migration: a leading slash, a `storage/` prefix, Windows backslashes, or
+ * a full legacy absolute path. Only the final path segment is ever trusted;
+ * everything before it is discarded rather than interpreted.
+ *
+ * Returns null for empty/unsafe input (null bytes, `.`/`..` as the final
+ * segment).
+ */
+export function extractStoredName(reference: string | null | undefined): string | null {
+  if (!reference) {
+    return null;
+  }
 
-  if (!absolutePath) {
+  if (reference.includes("\0")) {
+    return null;
+  }
+
+  const normalized = reference.replace(/\\/g, "/");
+  const segments = normalized.split("/").filter((segment) => segment.length > 0);
+  const last = segments[segments.length - 1];
+
+  if (!last || last === "." || last === "..") {
+    return null;
+  }
+
+  return last;
+}
+
+/**
+ * Validates a stored file name and resolves it to a safe object key inside
+ * the given storage area. Rejects anything that isn't a bare file name:
+ * empty values, null bytes, `..` traversal, absolute POSIX/Windows paths,
+ * drive letters, or any embedded path separator.
+ */
+export function resolveObjectKey(
+  area: StorageArea,
+  storedName: string | null | undefined
+): string | null {
+  if (!storedName) {
+    return null;
+  }
+
+  if (storedName.includes("\0")) {
+    return null;
+  }
+
+  if (storedName.startsWith("/") || storedName.startsWith("\\")) {
+    return null;
+  }
+
+  if (/^[a-zA-Z]:/.test(storedName)) {
+    return null;
+  }
+
+  const normalized = storedName.replace(/\\/g, "/");
+  const segments = normalized.split("/");
+
+  if (segments.length !== 1) {
+    return null;
+  }
+
+  const name = segments[0];
+
+  if (!name || name === "." || name === "..") {
+    return null;
+  }
+
+  return getStorageReference(area, name);
+}
+
+/**
+ * Normalizes a possibly-legacy database reference (old local filesystem
+ * path, old relative reference, or current object key) down to a safe
+ * object key inside the given area. Use this whenever reading a
+ * `STORAGE_PATH`/`IMAGE_PATH`-style column that may predate the MinIO
+ * migration.
+ */
+export function normalizeStorageReference(
+  area: StorageArea,
+  reference: string | null | undefined
+): string | null {
+  return resolveObjectKey(area, extractStoredName(reference));
+}
+
+export async function storedFileExists(
+  area: StorageArea,
+  storedName: string | null | undefined
+): Promise<boolean> {
+  const objectKey = resolveObjectKey(area, storedName ?? undefined);
+
+  if (!objectKey) {
     return false;
   }
 
   try {
-    const fileStat = await stat(absolutePath);
-    return fileStat.isFile();
+    return await objectExists(objectKey);
   } catch {
     return false;
   }

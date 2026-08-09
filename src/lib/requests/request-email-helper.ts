@@ -1,4 +1,7 @@
-import { getPrintableLetterService } from "@/lib/letters/letter-data";
+import {
+  getPrintableLetterService,
+} from "@/lib/letters/letter-data";
+import { getLetterMetadata } from "@/lib/letters/letter-metadata";
 import { getRequestDetail } from "@/lib/legacy-request-detail";
 import { prisma } from "@/lib/prisma";
 import type { ServiceRequestDetail } from "@/types/request-detail";
@@ -21,6 +24,8 @@ export type RequestEmailDraft = {
   serviceTitle: string;
   supportsGeneratedPdf: boolean;
   pdfUrl: string | null;
+  isPdfReady: boolean;
+  pdfNotReadyMessage: string | null;
   attachmentInstruction: string;
 };
 
@@ -151,6 +156,22 @@ export async function buildRequestEmailDraft(
     ? `/api/requests/${detail.serviceSlug}/${detail.id}/pdf`
     : null;
 
+  let isPdfReady = true;
+  let pdfNotReadyMessage: string | null = null;
+
+  if (printableService) {
+    try {
+      const metadata = await getLetterMetadata(detail.serviceSlug, detail.id);
+      if (metadata.readiness) {
+        isPdfReady = metadata.readiness.isReady;
+        pdfNotReadyMessage = metadata.readiness.message;
+      }
+    } catch {
+      isPdfReady = false;
+      pdfNotReadyMessage = "Data surat belum lengkap.";
+    }
+  }
+
   return {
     recipientEmail,
     hasRecipientEmail: Boolean(recipientEmail),
@@ -160,6 +181,8 @@ export async function buildRequestEmailDraft(
     serviceTitle: detail.serviceTitle,
     supportsGeneratedPdf: Boolean(printableService),
     pdfUrl,
+    isPdfReady,
+    pdfNotReadyMessage,
     attachmentInstruction: EMAIL_ATTACHMENT_INSTRUCTION,
   };
 }

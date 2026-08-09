@@ -12,3 +12,17 @@ export function getHomeActivityImageSrc(activity: HomeActivityImageUrlSource) {
 
   return version ? `${baseUrl}?v=${encodeURIComponent(version)}` : baseUrl;
 }
+
+type HomeActivityImageFileUrlSource = {
+  id: string;
+  imageStoredName?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+};
+
+export function getHomeActivityImageFileSrc(image: HomeActivityImageFileUrlSource) {
+  const version = image.imageStoredName ?? image.updatedAt ?? image.createdAt ?? null;
+  const baseUrl = `/api/home/activities/image/${image.id}`;
+
+  return version ? `${baseUrl}?v=${encodeURIComponent(version)}` : baseUrl;
+}

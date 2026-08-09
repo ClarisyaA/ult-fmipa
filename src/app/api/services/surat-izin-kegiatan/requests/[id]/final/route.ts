@@ -18,6 +18,12 @@ import {
   submitSikFinalForm,
 } from "@/lib/sik-requests";
 
+import {
+  defaultUploadRateLimitConfig,
+  getClientIp,
+  uploadRateLimiter,
+} from "@/lib/rate-limit";
+
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
 
@@ -48,6 +54,24 @@ export async function PATCH(
     return NextResponse.json(
       { error: "NPM mahasiswa tidak tersedia di session." },
       { status: 400 }
+    );
+  }
+
+  const ip = getClientIp(request);
+  const userId = session.user.id || session.user.npm || session.user.email || ip;
+  const rateLimitKey = `upload:${userId}:${ip}`;
+  const rateLimitCheck = uploadRateLimiter.check(
+    rateLimitKey,
+    defaultUploadRateLimitConfig
+  );
+
+  if (!rateLimitCheck.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Terlalu banyak permintaan unggah file. Silakan tunggu beberapa saat.",
+      },
+      { status: 429 }
     );
   }
 

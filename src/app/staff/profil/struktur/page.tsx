@@ -1,31 +1,32 @@
-import { ProfileOrganizationManager } from "@/components/profile/profile-organization-manager";
+import { ProfileStructureManager } from "@/components/profile/profile-structure-manager";
 import {
   AdminPageHeader,
   AdminPageShell,
   AdminSectionCard,
 } from "@/components/admin/admin-ui";
-import { getAdminProfileOrganizationState } from "@/lib/profile-cms";
+import { getAdminProfileStructureState } from "@/lib/profile-structure-cms";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function StaffProfileStructurePage() {
-  const { nodes, unavailable } = await getAdminProfileOrganizationState();
+  const { settings, nodes, unavailable } = await getAdminProfileStructureState();
 
   return (
     <AdminPageShell wide>
       <AdminPageHeader
         title="Profil - Struktur Organisasi"
-        description="Kelola node organisasi, foto, atasan, cabang, urutan, dan status aktif."
+        description="Kelola judul, subjudul, node, hierarki, dan isian pada bagian Struktur Organisasi ULT di halaman Profil."
       />
 
       <AdminSectionCard
         title="CMS Struktur Organisasi"
-        description="Parent root berarti node berada di level paling atas."
+        description="Tambah, ubah, hapus, dan urutkan node beserta isinya. Tampilan halaman publik tetap mengikuti desain yang sama."
         className="min-w-0"
       >
-        <ProfileOrganizationManager
+        <ProfileStructureManager
           rolePrefix="staff"
+          initialSettings={settings}
           initialNodes={nodes}
           unavailable={unavailable}
         />

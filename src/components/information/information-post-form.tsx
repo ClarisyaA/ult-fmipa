@@ -790,7 +790,7 @@ export function InformationPostForm({
                     unoptimized
                     className={getPreviewImageClass(imageFitDrafts[image.id] ?? "cover")}
                     fallbackTitle="File hilang"
-                    fallbackDescription="File gambar saat ini tidak ditemukan di storage lokal. Unggah gambar baru untuk menggantinya."
+                    fallbackDescription="File gambar saat ini tidak ditemukan. Unggah gambar baru untuk menggantinya."
                     fallbackClassName="grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
                   />
                   <div className="flex items-start justify-between gap-2">

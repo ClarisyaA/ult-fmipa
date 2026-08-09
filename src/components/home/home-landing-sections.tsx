@@ -15,6 +15,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
+import { HomeActivityImageCarousel } from "@/components/home-activities/home-activity-image-carousel";
 import { InformationImage } from "@/components/information/information-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,15 @@ function useReducedMotion() {
 
 // ─── Data ───────────────────────────────────────────────────────────────────
 
+type HomeActivityImageSlide = {
+  id: string;
+  url: string;
+  altText: string;
+  imageFit: "cover" | "contain";
+  isCover: boolean;
+  sortOrder: number;
+};
+
 type HomeActivitySlide = {
   id: string;
   title: string;
@@ -52,6 +62,7 @@ type HomeActivitySlide = {
   image: string;
   imageAlt: string;
   imageFit: "cover" | "contain";
+  images: HomeActivityImageSlide[];
 };
 
 type HomeActivityApiItem = {
@@ -62,6 +73,7 @@ type HomeActivityApiItem = {
   image: string | null;
   imageAlt: string;
   imageFit?: "cover" | "contain" | string | null;
+  images?: HomeActivityImageSlide[];
 };
 
 const marqueeItems = [
@@ -672,6 +684,7 @@ export function HomeLandingSections() {
             image: activity.image ?? HOME_GEDUNG_IMAGE,
             imageAlt: activity.imageAlt ?? activity.title,
             imageFit: activity.imageFit === "contain" ? "contain" : "cover",
+            images: activity.images ?? [],
           })) ?? [];
 
         if (!cancelled) {
@@ -1452,16 +1465,23 @@ export function HomeLandingSections() {
                         <div
                           className={`relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-[#DDD5C3] bg-[#F5F0E8] sm:aspect-[16/10] sm:rounded-3xl ${idx % 2 === 0 ? "md:order-1" : "md:order-2"}`}
                         >
-                          <HomeActivityImage
-                            src={act.image}
-                            alt={act.imageAlt}
-                            fill
-                            unoptimized
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className={imageFitClass}
-                            fallbackClassName="absolute inset-0 grid place-items-center bg-[#F5F0E8] p-6 text-center text-[#6B5E52]"
-                            fallbackDescription="File gambar belum tersedia di storage lokal."
-                          />
+                          {act.images.length > 0 ? (
+                            <HomeActivityImageCarousel
+                              images={act.images}
+                              fallbackClassName="absolute inset-0 grid place-items-center bg-[#F5F0E8] p-6 text-center text-[#6B5E52]"
+                            />
+                          ) : (
+                            <HomeActivityImage
+                              src={act.image}
+                              alt={act.imageAlt}
+                              fill
+                              unoptimized
+                              sizes="(max-width: 768px) 100vw, 50vw"
+                              className={imageFitClass}
+                              fallbackClassName="absolute inset-0 grid place-items-center bg-[#F5F0E8] p-6 text-center text-[#6B5E52]"
+                              fallbackDescription="File gambar belum tersedia."
+                            />
+                          )}
                           {/* Eyebrow number badge */}
                           <div className="absolute left-3 top-3 flex size-10 items-center justify-center rounded-xl bg-[#18130E] text-sm font-black text-white sm:left-4 sm:top-4">
                             {displayNumber}

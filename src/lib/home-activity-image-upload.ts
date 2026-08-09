@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto";
-import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 
+import { deleteObject, uploadObject } from "@/lib/minio-storage";
 import { validateSafeSvgBuffer } from "@/lib/safe-svg";
 import {
-  getStorageDirectory,
+  extractStoredName,
   getStorageReference,
-  resolveStoredFilePath,
+  resolveObjectKey,
 } from "@/lib/storage-paths";
 
 export type SavedHomeActivityImageMetadata = {
@@ -17,7 +17,6 @@ export type SavedHomeActivityImageMetadata = {
   storagePath: string;
 };
 
-const activityImageDir = getStorageDirectory("homeActivities");
 const maxImageSizeBytes = 2 * 1024 * 1024;
 const allowedMimeTypes = new Set([
   "image/webp",
@@ -70,26 +69,25 @@ export async function saveHomeActivityImage(
   file: File
 ): Promise<SavedHomeActivityImageMetadata> {
   validateHomeActivityImage(file);
-  await mkdir(activityImageDir, { recursive: true });
 
   const originalName = sanitizeFilename(file.name || "gambar-kegiatan");
   const extension = extensionByMimeType[file.type] ?? getExtension(originalName);
   const storedName = `${randomUUID()}${extension}`;
-  const absolutePath = path.join(activityImageDir, storedName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (file.type === "image/svg+xml" && !validateSafeSvgBuffer(buffer)) {
     throw new HomeActivityImageUploadError("File SVG mengandung konten yang tidak aman.");
   }
 
-  await writeFile(absolutePath, buffer);
+  const objectKey = getStorageReference("homeActivities", storedName);
+  await uploadObject(objectKey, buffer, file.type);
 
   return {
     originalName,
     storedName,
     mimeType: file.type,
     sizeBytes: file.size,
-    storagePath: getStorageReference("homeActivities", storedName),
+    storagePath: objectKey,
   };
 }
 
@@ -98,17 +96,11 @@ export async function deleteHomeActivityImageFile(storagePath: string | null) {
     return;
   }
 
-  const storedName = path.basename(storagePath);
+  const objectKey = resolveObjectKey("homeActivities", extractStoredName(storagePath));
 
-  if (!storedName) {
+  if (!objectKey) {
     return;
   }
 
-  const absolutePath = resolveStoredFilePath("homeActivities", storedName);
-
-  if (!absolutePath) {
-    return;
-  }
-
-  await rm(absolutePath, { force: true });
+  await deleteObject(objectKey);
 }

@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getHomeActivityById } from "@/lib/home-activities";
+import { getHomeActivityImages } from "@/lib/home-activity-images";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,6 +30,8 @@ export default async function StaffEditHomeActivityPage({
   if (!activity) {
     notFound();
   }
+
+  const images = await getHomeActivityImages(id);
 
   return (
     <div className="grid min-w-0 content-start gap-6">
@@ -49,7 +52,7 @@ export default async function StaffEditHomeActivityPage({
           <HomeActivityForm
             rolePrefix="staff"
             mode="edit"
-            initialActivity={activity}
+            initialActivity={{ ...activity, images }}
           />
         </CardContent>
       </Card>

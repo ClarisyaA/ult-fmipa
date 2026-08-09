@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AlertTriangle, FileText, Mail, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +32,8 @@ type EmailDraft = {
   serviceTitle: string;
   supportsGeneratedPdf: boolean;
   pdfUrl: string | null;
+  isPdfReady: boolean;
+  pdfNotReadyMessage: string | null;
   attachmentInstruction: string;
 };
 
@@ -53,10 +57,39 @@ function fieldValue(value: string | null | undefined, fallback = "-") {
   return value?.trim() ? value : fallback;
 }
 
-function DraftContent({ draft }: { draft: EmailDraft }) {
+function DraftContent({
+  draft,
+  serviceSlug,
+  id,
+}: {
+  draft: EmailDraft;
+  serviceSlug: string;
+  id: string;
+}) {
+  const pathname = usePathname();
+  const rolePrefix = pathname.startsWith("/staff") ? "staff" : "admin";
   const helperText = draft.supportsGeneratedPdf
     ? "Buka atau unduh PDF Surat, lalu lampirkan secara manual di Gmail sebelum mengirim email."
     : "Layanan ini belum memiliki PDF otomatis. Lampirkan file hasil layanan secara manual di Gmail sebelum mengirim email.";
+
+  const handleOpenPdfClick = (e: React.MouseEvent) => {
+    if (!draft.isPdfReady) {
+      e.preventDefault();
+      const editUrl = `/${rolePrefix}/requests/${serviceSlug}/${id}`;
+
+      toast.error("Data surat belum lengkap", {
+        description:
+          draft.pdfNotReadyMessage ??
+          "Lengkapi nomor surat, tanggal surat, dan penandatangan terlebih dahulu.",
+        action: {
+          label: "Lengkapi Data Surat",
+          onClick: () => {
+            window.location.href = `${editUrl}#data-surat`;
+          },
+        },
+      });
+    }
+  };
 
   return (
     <div className="grid gap-4" data-tour="admin-request-email-helper">
@@ -105,7 +138,12 @@ function DraftContent({ draft }: { draft: EmailDraft }) {
         </Button>
         {draft.supportsGeneratedPdf && draft.pdfUrl ? (
           <Button asChild size="sm" variant="outline">
-            <a href={draft.pdfUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={draft.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleOpenPdfClick}
+            >
               <FileText className="size-4" />
               Buka PDF Surat
             </a>
@@ -207,7 +245,7 @@ export function RequestEmailHelper({
               {error}
             </p>
           ) : draft ? (
-            <DraftContent draft={draft} />
+            <DraftContent draft={draft} serviceSlug={serviceSlug} id={id} />
           ) : null}
           <DialogFooter>
             <DialogClose asChild>
@@ -249,7 +287,7 @@ export function RequestEmailHelper({
             {error}
           </p>
         ) : draft ? (
-          <DraftContent draft={draft} />
+          <DraftContent draft={draft} serviceSlug={serviceSlug} id={id} />
         ) : null}
       </CardContent>
     </Card>

@@ -38,8 +38,6 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-RUN mkdir -p /app/storage/uploads /app/storage/information /app/storage/home-activities /app/storage/profile/organization /app/storage/profile/location
-
 EXPOSE 3000
 
 CMD ["node", "server.js"]

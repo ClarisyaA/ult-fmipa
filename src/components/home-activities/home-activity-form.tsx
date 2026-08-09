@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ImageIcon, Trash2, Upload } from "lucide-react";
+import { Edit, Star, Trash2, Upload } from "lucide-react";
 
 import { HomeActivityImage } from "@/components/home-activities/home-activity-image";
 import { Button } from "@/components/ui/button";
@@ -24,15 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getHomeActivityImageSrc } from "@/lib/home-activity-image-url";
-import type { HomeActivity, HomeActivityImageFit } from "@/lib/home-activities";
+import { confirmToast } from "@/lib/confirm-toast";
+import { getHomeActivityImageFileSrc } from "@/lib/home-activity-image-url";
+import type { HomeActivity } from "@/lib/home-activities";
+import type { HomeActivityImage as HomeActivityImageRecord, HomeActivityImageFit } from "@/lib/home-activity-images";
 
 type HomeActivityFormProps = {
   rolePrefix: "admin" | "staff";
   mode: "create" | "edit";
-  initialActivity?: HomeActivity | null;
+  initialActivity?: (HomeActivity & { images?: HomeActivityImageRecord[] }) | null;
 };
 
+const MAX_IMAGES = 10;
 const maxImageSize = 2 * 1024 * 1024;
 const allowedImageTypes = new Set([
   "image/webp",
@@ -42,9 +45,17 @@ const allowedImageTypes = new Set([
 ]);
 const allowedImageExtensions = [".webp", ".png", ".jpg", ".jpeg", ".svg"];
 
+type PendingImage = {
+  tempId: string;
+  file: File;
+  previewUrl: string;
+  altText: string;
+  imageFit: HomeActivityImageFit;
+  isCover: boolean;
+};
+
 function hasAllowedExtension(fileName: string) {
   const lowerName = fileName.toLowerCase();
-
   return allowedImageExtensions.some((extension) => lowerName.endsWith(extension));
 }
 
@@ -53,12 +64,17 @@ function formatSize(bytes: number) {
 }
 
 function getImagePreviewClass(imageFit: HomeActivityImageFit) {
-  const baseClass =
-    "aspect-video w-full rounded-md border border-[#edf0e9] object-center";
+  const baseClass = "aspect-video w-full rounded-md border border-[#edf0e9] object-center";
 
   return imageFit === "contain"
     ? `${baseClass} bg-[#f7f3ea] object-contain p-2`
     : `${baseClass} bg-[#f7f3ea] object-cover`;
+}
+
+function makeTempId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function HomeActivityForm({
@@ -70,83 +86,104 @@ export function HomeActivityForm({
   const [title, setTitle] = useState(initialActivity?.title ?? "");
   const [eyebrow, setEyebrow] = useState(initialActivity?.eyebrow ?? "");
   const [description, setDescription] = useState(initialActivity?.description ?? "");
-  const [imageAlt, setImageAlt] = useState(initialActivity?.imageAlt ?? "");
-  const [imageFit, setImageFit] = useState<HomeActivityImageFit>(
-    initialActivity?.imageFit ?? "cover"
-  );
   const [isActive, setIsActive] = useState(initialActivity?.isActive ?? true);
   const [sortOrder, setSortOrder] = useState(String(initialActivity?.sortOrder ?? 0));
-  const [pendingImage, setPendingImage] = useState<{
-    file: File;
-    previewUrl: string;
-  } | null>(null);
+
+  const [existingImages, setExistingImages] = useState<HomeActivityImageRecord[]>(
+    initialActivity?.images ?? []
+  );
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const pendingImagesRef = useRef<PendingImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingImageRef = useRef<typeof pendingImage>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
-  const [storedImageMissingForId, setStoredImageMissingForId] = useState<
-    HomeActivity["id"] | null
-  >(null);
-  const storedImageMissing =
-    Boolean(initialActivity) && storedImageMissingForId === initialActivity?.id;
+  const [busyImageId, setBusyImageId] = useState<string | null>(null);
+  const [editingExistingId, setEditingExistingId] = useState<string | null>(null);
+
+  const totalImageCount = existingImages.length + pendingImages.length;
 
   useEffect(() => {
-    pendingImageRef.current = pendingImage;
-  }, [pendingImage]);
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
 
   useEffect(() => {
     return () => {
-      if (pendingImageRef.current) {
-        URL.revokeObjectURL(pendingImageRef.current.previewUrl);
-      }
+      pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     };
   }, []);
 
-  function selectImageFile(file: File | null) {
-    setError("");
+  async function refreshExistingImages() {
+    if (mode !== "edit" || !initialActivity) return;
 
-    if (!file) {
-      return;
+    const response = await fetch(
+      `/api/${rolePrefix}/home/activities/${initialActivity.id}/images`,
+      { cache: "no-store" }
+    );
+    const body = (await response.json().catch(() => null)) as {
+      data?: HomeActivityImageRecord[];
+    } | null;
+
+    if (response.ok && body?.data) {
+      setExistingImages(body.data);
     }
-
-    if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
-      setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
-      return;
-    }
-
-    if (file.size > maxImageSize) {
-      setError(`Gambar ${file.name} melebihi 2 MB.`);
-      return;
-    }
-
-    if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
-      setImageFit("contain");
-    }
-
-    setStoredImageMissingForId(null);
-
-    setPendingImage((current) => {
-      if (current) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-
-      return {
-        file,
-        previewUrl: URL.createObjectURL(file),
-      };
-    });
   }
 
-  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
-    selectImageFile(event.currentTarget.files?.[0] ?? null);
+  function addFiles(files: File[]) {
+    setError("");
+
+    if (files.length === 0) return;
+
+    const availableSlots = MAX_IMAGES - totalImageCount;
+
+    if (availableSlots <= 0) {
+      setError(`Maksimal ${MAX_IMAGES} gambar per kegiatan.`);
+      return;
+    }
+
+    const accepted: PendingImage[] = [];
+
+    for (const file of files.slice(0, availableSlots)) {
+      if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
+        setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
+        continue;
+      }
+
+      if (file.size > maxImageSize) {
+        setError(`Gambar ${file.name} melebihi 2 MB.`);
+        continue;
+      }
+
+      const isSvg = file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg");
+
+      accepted.push({
+        tempId: makeTempId(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        altText: "",
+        imageFit: isSvg ? "contain" : "cover",
+        isCover: false,
+      });
+    }
+
+    if (files.length > availableSlots) {
+      setError(`Hanya ${availableSlots} gambar yang ditambahkan (batas ${MAX_IMAGES} gambar per kegiatan).`);
+    }
+
+    if (accepted.length > 0) {
+      setPendingImages((current) => [...current, ...accepted]);
+    }
+  }
+
+  function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
+    addFiles(Array.from(event.currentTarget.files ?? []));
     event.currentTarget.value = "";
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDragging(false);
-    selectImageFile(event.dataTransfer.files?.[0] ?? null);
+    addFiles(Array.from(event.dataTransfer.files ?? []));
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -167,14 +204,47 @@ export function HomeActivityForm({
     }
   }
 
-  function removePendingImage() {
-    setPendingImage((current) => {
-      if (current) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-
-      return null;
+  function removePendingImage(tempId: string) {
+    setPendingImages((current) => {
+      const target = current.find((image) => image.tempId === tempId);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((image) => image.tempId !== tempId);
     });
+  }
+
+  function updatePendingImage(tempId: string, patch: Partial<PendingImage>) {
+    setPendingImages((current) =>
+      current.map((image) => (image.tempId === tempId ? { ...image, ...patch } : image))
+    );
+  }
+
+  function setPendingCover(tempId: string) {
+    setPendingImages((current) =>
+      current.map((image) => ({ ...image, isCover: image.tempId === tempId }))
+    );
+  }
+
+  async function uploadPendingImages(activityId: string) {
+    if (pendingImages.length === 0) return;
+
+    const formData = new FormData();
+
+    for (const image of pendingImages) {
+      formData.append("images", image.file);
+      formData.append("imageAlts", image.altText);
+      formData.append("imageFits", image.imageFit);
+      formData.append("isCovers", String(image.isCover));
+    }
+
+    const response = await fetch(`/api/${rolePrefix}/home/activities/${activityId}/images`, {
+      method: "POST",
+      body: formData,
+    });
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+    if (!response.ok) {
+      throw new Error(body?.error ?? "Gambar gagal diunggah.");
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -191,20 +261,15 @@ export function HomeActivityForm({
       formData.append("title", title);
       formData.append("eyebrow", eyebrow);
       formData.append("description", description);
-      formData.append("imageAlt", imageAlt);
-      formData.append("imageFit", imageFit);
       formData.append("isActive", String(isActive));
       formData.append("sortOrder", sortOrder);
-
-      if (pendingImage) {
-        formData.append("image", pendingImage.file);
-      }
 
       const response = await fetch(endpoint, {
         method: mode === "edit" ? "PATCH" : "POST",
         body: formData,
       });
       const body = (await response.json().catch(() => null)) as {
+        data?: { id: string };
         error?: string;
       } | null;
 
@@ -213,10 +278,152 @@ export function HomeActivityForm({
         return;
       }
 
+      const activityId = mode === "edit" ? initialActivity?.id : body?.data?.id;
+
+      if (activityId && pendingImages.length > 0) {
+        try {
+          await uploadPendingImages(activityId);
+        } catch (uploadError) {
+          setError(
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Kegiatan tersimpan, tetapi sebagian gambar gagal diunggah."
+          );
+          return;
+        }
+      }
+
       router.push(`/${rolePrefix}/beranda/kegiatan`);
       router.refresh();
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function saveExistingMetadata(image: HomeActivityImageRecord, altText: string, imageFit: HomeActivityImageFit) {
+    if (!initialActivity) return;
+    setBusyImageId(image.id);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/${rolePrefix}/home/activities/${initialActivity.id}/images/${image.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageAlt: altText, imageFit }),
+        }
+      );
+      const responseBody = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setError(responseBody?.error ?? "Gambar gagal diperbarui.");
+        return;
+      }
+
+      setEditingExistingId(null);
+      await refreshExistingImages();
+      router.refresh();
+    } finally {
+      setBusyImageId(null);
+    }
+  }
+
+  async function setExistingCover(image: HomeActivityImageRecord) {
+    if (!initialActivity) return;
+    setBusyImageId(image.id);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/${rolePrefix}/home/activities/${initialActivity.id}/images/${image.id}/cover`,
+        { method: "POST" }
+      );
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setError(body?.error ?? "Cover gagal diperbarui.");
+        return;
+      }
+
+      await refreshExistingImages();
+      router.refresh();
+    } finally {
+      setBusyImageId(null);
+    }
+  }
+
+  async function replaceExistingImage(image: HomeActivityImageRecord, file: File) {
+    if (!initialActivity) return;
+
+    if (!allowedImageTypes.has(file.type) || !hasAllowedExtension(file.name)) {
+      setError("Format gambar tidak didukung. Gunakan WEBP, PNG, JPG, JPEG, atau SVG.");
+      return;
+    }
+
+    if (file.size > maxImageSize) {
+      setError(`Gambar ${file.name} melebihi 2 MB.`);
+      return;
+    }
+
+    setBusyImageId(image.id);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(
+        `/api/${rolePrefix}/home/activities/${initialActivity.id}/images/${image.id}`,
+        { method: "PATCH", body: formData }
+      );
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setError(body?.error ?? "Gambar gagal diganti.");
+        return;
+      }
+
+      await refreshExistingImages();
+      router.refresh();
+    } finally {
+      setBusyImageId(null);
+    }
+  }
+
+  async function deleteExistingImage(image: HomeActivityImageRecord) {
+    if (!initialActivity) return;
+
+    if (
+      !(await confirmToast({
+        title: "Hapus gambar?",
+        description: "Gambar ini akan dihapus dari kegiatan dan storage.",
+        confirmLabel: "Hapus",
+        variant: "destructive",
+      }))
+    ) {
+      return;
+    }
+
+    setBusyImageId(image.id);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/${rolePrefix}/home/activities/${initialActivity.id}/images/${image.id}`,
+        { method: "DELETE" }
+      );
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        setError(body?.error ?? "Gambar gagal dihapus.");
+        return;
+      }
+
+      await refreshExistingImages();
+      router.refresh();
+    } finally {
+      setBusyImageId(null);
     }
   }
 
@@ -282,10 +489,7 @@ export function HomeActivityForm({
       </label>
 
       <div className="grid gap-2">
-        <Label
-          htmlFor="description"
-          className="text-xs font-semibold text-[#39433c]"
-        >
+        <Label htmlFor="description" className="text-xs font-semibold text-[#39433c]">
           Deskripsi
         </Label>
         <Textarea
@@ -298,183 +502,250 @@ export function HomeActivityForm({
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="imageAlt" className="text-xs font-semibold text-[#39433c]">
-          Alt gambar
-        </Label>
-        <Input
-          id="imageAlt"
-          maxLength={150}
-          className="h-10 rounded-md border-[#e1d8ca] text-sm focus-visible:ring-[#0f5b45]"
-          value={imageAlt}
-          onChange={(event) => setImageAlt(event.currentTarget.value)}
-          placeholder="Deskripsi singkat gambar"
-          data-tour="admin-activity-alt"
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="imageFit" className="text-xs font-semibold text-[#39433c]">
-          Tampilan Gambar
-        </Label>
-        <Select
-          value={imageFit}
-          onValueChange={(value) => setImageFit(value as HomeActivityImageFit)}
-        >
-          <SelectTrigger
-            id="imageFit"
-            className="h-10 w-full rounded-md border-[#e1d8ca] bg-white text-sm focus-visible:ring-[#0f5b45]"
-            data-tour="admin-activity-image-fit"
-          >
-            <SelectValue placeholder="Pilih tampilan gambar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cover">Penuhi Card</SelectItem>
-            <SelectItem value="contain">Tampilkan Utuh</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs leading-relaxed text-[#7a7166]">
-          Gunakan Penuhi Card untuk foto biasa. Gunakan Tampilkan Utuh untuk logo, SVG,
-          poster, atau gambar yang tidak boleh terpotong.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        <div className="grid gap-2">
-          <Label htmlFor="image" className="text-xs font-semibold text-[#39433c]">
-            Gambar kegiatan
-          </Label>
-          <Input
-            ref={fileInputRef}
-            id="image"
-            name="image"
-            type="file"
-            accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
-            className="sr-only"
-            onChange={handleImageSelection}
-          />
-          <div
-            role="button"
-            tabIndex={0}
-            data-tour="admin-activity-image"
-            className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-8 text-center transition-colors ${
-              isDragging
-                ? "border-[#0f5b45] bg-[#eef9f1] text-[#0f3d2e]"
-                : "border-[#d8d4c8] bg-[#fffdf9] text-[#7a7166] hover:border-[#0f5b45]/55 hover:bg-[#fbfdf9]"
-            }`}
-            onClick={() => fileInputRef.current?.click()}
-            onDragEnter={handleDragOver}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onKeyDown={handleDropZoneKeyDown}
-          >
-            <div className="grid justify-items-center gap-2">
-              <span className="grid size-10 place-items-center rounded-full bg-[#0f3d2e] text-white">
-                <Upload className="size-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-[#303b34]">
-                  Drop gambar di sini atau klik untuk memilih
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-[#7a7166]">
-                  WEBP, PNG, JPG, JPEG, atau SVG. Maksimal 2 MB.
-                </p>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs leading-relaxed text-[#7a7166]">
-            Jika memilih file baru saat edit, gambar lama akan diganti setelah disimpan.
+      <div className="grid gap-3 border-t border-[#eee6d9] pt-4">
+        <div>
+          <p className="text-xs font-semibold text-[#39433c]">
+            Gambar kegiatan ({totalImageCount}/{MAX_IMAGES})
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[#7a7166]">
+            Tambahkan hingga {MAX_IMAGES} gambar. Setiap gambar punya Alt dan Tampilan Gambar
+            sendiri. Tandai satu gambar sebagai cover; jika tidak ditandai, gambar pertama akan
+            otomatis menjadi cover.
           </p>
         </div>
 
-        {initialActivity?.imagePath && !pendingImage ? (
-          <div className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
-            <HomeActivityImage
-              src={getHomeActivityImageSrc(initialActivity)}
-              alt={initialActivity.imageAlt ?? initialActivity.title}
-              width={640}
-              height={360}
-              unoptimized
-              className={getImagePreviewClass(imageFit)}
-              fallbackClassName="grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
-              onMissing={() => setStoredImageMissingForId(initialActivity.id)}
-            />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#303b34]">Gambar tersimpan</p>
-              <p className="mt-1 truncate text-xs text-[#7a7166]">
-                {initialActivity.imageOriginalName ?? "Gambar kegiatan"}
-              </p>
-              {initialActivity.imageSizeBytes ? (
-                <p className="mt-1 text-xs text-[#7a7166]">
-                  {formatSize(initialActivity.imageSizeBytes)}
-                </p>
-              ) : null}
-              {storedImageMissing ? (
-                <p className="mt-3 rounded-md border border-[#f0d6b6] bg-[#fff8ec] px-3 py-2 text-xs leading-relaxed text-[#8a5a1f]">
-                  File gambar saat ini tidak ditemukan di storage lokal. Unggah
-                  gambar baru untuk menggantinya.
-                </p>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-3 w-fit border-[#e1d8ca] bg-white text-[#39433c] hover:bg-[#f6f1e8]"
-                onClick={() => fileInputRef.current?.click()}
+        {existingImages.length > 0 ? (
+          <div className="grid gap-2" data-tour="admin-activity-existing-images">
+            {existingImages.map((image) => (
+              <div
+                key={image.id}
+                className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[180px_1fr]"
               >
-                <Upload className="size-4" />
-                Ganti Gambar
-              </Button>
-            </div>
+                <HomeActivityImage
+                  src={getHomeActivityImageFileSrc(image)}
+                  alt={image.imageAlt ?? title}
+                  width={480}
+                  height={270}
+                  unoptimized
+                  className={getImagePreviewClass(image.imageFit)}
+                  fallbackClassName="grid aspect-video w-full place-items-center rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] p-3 text-center text-[#7a7166]"
+                />
+                <div className="min-w-0">
+                  {editingExistingId === image.id ? (
+                    <ExistingImageEditForm
+                      image={image}
+                      disabled={busyImageId === image.id}
+                      onCancel={() => setEditingExistingId(null)}
+                      onSave={(altText, imageFit) => saveExistingMetadata(image, altText, imageFit)}
+                    />
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-[#303b34]">
+                          {image.imageAlt || "(tanpa alt)"}
+                        </p>
+                        {image.isCover ? (
+                          <span className="rounded-sm border border-[#cce3d3] bg-[#eef9f1] px-2 py-0.5 text-[10px] font-semibold text-[#2f6b44]">
+                            Cover
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs text-[#7a7166]">
+                        {image.imageFit === "contain" ? "Tampilkan Utuh" : "Penuhi Card"} · Urutan{" "}
+                        {image.sortOrder}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 border-[#e1d8ca] text-[11px] text-[#39433c] hover:bg-[#f6f1e8]"
+                          onClick={() => setEditingExistingId(image.id)}
+                        >
+                          <Edit className="size-3.5" />
+                          Edit
+                        </Button>
+                        {!image.isCover ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 border-[#e1d8ca] text-[11px] text-[#39433c] hover:bg-[#f6f1e8]"
+                            disabled={busyImageId === image.id}
+                            onClick={() => setExistingCover(image)}
+                          >
+                            <Star className="size-3.5" />
+                            Jadikan Cover
+                          </Button>
+                        ) : null}
+                        <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-[#e1d8ca] bg-white px-3 text-[11px] font-semibold text-[#39433c] hover:bg-[#f6f1e8]">
+                          <Upload className="size-3.5" />
+                          Ganti File
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
+                            disabled={busyImageId === image.id}
+                            onChange={(event) => {
+                              const file = event.currentTarget.files?.[0];
+                              event.currentTarget.value = "";
+                              if (file) replaceExistingImage(image, file);
+                            }}
+                          />
+                        </label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 text-[11px]"
+                          disabled={busyImageId === image.id}
+                          onClick={() => deleteExistingImage(image)}
+                        >
+                          <Trash2 className="size-3.5" />
+                          Hapus
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : null}
 
-        {pendingImage ? (
-          <div className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[220px_1fr]">
-            <HomeActivityImage
-              src={pendingImage.previewUrl}
-              alt={pendingImage.file.name}
-              width={640}
-              height={360}
-              unoptimized
-              className={getImagePreviewClass(imageFit)}
-              fallbackDescription=""
-            />
-            <div className="flex min-w-0 flex-col justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[#303b34]">Gambar baru</p>
-                <p className="mt-1 truncate text-xs text-[#7a7166]">
-                  {pendingImage.file.name}
-                </p>
-                <p className="mt-1 text-xs text-[#7a7166]">
-                  {formatSize(pendingImage.file.size)}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-fit border-[#edd2c5] bg-white text-[#8a3d23] hover:bg-[#fff7f2]"
-                onClick={removePendingImage}
-              >
-                <Trash2 className="size-4" />
-                Hapus pilihan
-              </Button>
+        <Input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".webp,.png,.jpg,.jpeg,.svg,image/webp,image/png,image/jpeg,image/svg+xml"
+          className="sr-only"
+          onChange={handleFileInputChange}
+        />
+        <div
+          role="button"
+          tabIndex={0}
+          data-tour="admin-activity-image"
+          className={`grid cursor-pointer place-items-center rounded-lg border border-dashed px-4 py-8 text-center transition-colors ${
+            isDragging
+              ? "border-[#0f5b45] bg-[#eef9f1] text-[#0f3d2e]"
+              : "border-[#d8d4c8] bg-[#fffdf9] text-[#7a7166] hover:border-[#0f5b45]/55 hover:bg-[#fbfdf9]"
+          } ${totalImageCount >= MAX_IMAGES ? "pointer-events-none opacity-50" : ""}`}
+          onClick={() => fileInputRef.current?.click()}
+          onDragEnter={handleDragOver}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onKeyDown={handleDropZoneKeyDown}
+        >
+          <div className="grid justify-items-center gap-2">
+            <span className="grid size-10 place-items-center rounded-full bg-[#0f3d2e] text-white">
+              <Upload className="size-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-[#303b34]">
+                Drop beberapa gambar di sini atau klik untuk memilih
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-[#7a7166]">
+                WEBP, PNG, JPG, JPEG, atau SVG. Maksimal 2 MB per gambar, {MAX_IMAGES} gambar per
+                kegiatan.
+              </p>
             </div>
           </div>
-        ) : (
-          <div className="flex items-center gap-2 rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] px-3 py-4 text-sm text-[#7a7166]">
-            {mode === "edit" ? (
-              <ImageIcon className="size-4 shrink-0" />
-            ) : (
-              <Upload className="size-4 shrink-0" />
-            )}
-            {mode === "edit"
-              ? "Pilih gambar baru jika ingin mengganti gambar tersimpan."
-              : "Belum ada gambar yang dipilih."}
+        </div>
+
+        {pendingImages.length > 0 ? (
+          <div className="grid gap-2">
+            {pendingImages.map((image) => (
+              <div
+                key={image.tempId}
+                className="grid gap-2 rounded-md border border-[#e3d9ca] bg-white p-3 md:grid-cols-[180px_1fr]"
+              >
+                <HomeActivityImage
+                  src={image.previewUrl}
+                  alt={image.file.name}
+                  width={480}
+                  height={270}
+                  unoptimized
+                  className={getImagePreviewClass(image.imageFit)}
+                  fallbackDescription=""
+                />
+                <div className="grid min-w-0 gap-2">
+                  <p className="truncate text-sm font-semibold text-[#303b34]">
+                    Gambar baru: {image.file.name}
+                  </p>
+                  <p className="text-xs text-[#7a7166]">{formatSize(image.file.size)}</p>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-1">
+                      <Label className="text-[11px] font-semibold text-[#39433c]">
+                        Alt gambar
+                      </Label>
+                      <Input
+                        className="h-9 rounded-md border-[#e1d8ca] text-xs"
+                        value={image.altText}
+                        onChange={(event) =>
+                          updatePendingImage(image.tempId, { altText: event.currentTarget.value })
+                        }
+                        maxLength={150}
+                      />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label className="text-[11px] font-semibold text-[#39433c]">
+                        Tampilan Gambar
+                      </Label>
+                      <Select
+                        value={image.imageFit}
+                        onValueChange={(value) =>
+                          updatePendingImage(image.tempId, {
+                            imageFit: value as HomeActivityImageFit,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-9 w-full rounded-md border-[#e1d8ca] bg-white text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cover">Penuhi Card</SelectItem>
+                          <SelectItem value="contain">Tampilkan Utuh</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex items-center gap-1.5 text-xs text-[#39433c]">
+                      <input
+                        type="radio"
+                        name="pending-cover"
+                        className="size-3.5 accent-[#0f5b45]"
+                        checked={image.isCover}
+                        onChange={() => setPendingCover(image.tempId)}
+                      />
+                      Jadikan Cover
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 border-[#edd2c5] bg-white text-[11px] text-[#8a3d23] hover:bg-[#fff7f2]"
+                      onClick={() => removePendingImage(image.tempId)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Hapus pilihan
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        ) : null}
+
+        {existingImages.length === 0 && pendingImages.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-md border border-dashed border-[#d8d4c8] bg-[#fffdf9] px-3 py-4 text-sm text-[#7a7166]">
+            <Upload className="size-4 shrink-0" />
+            Belum ada gambar yang dipilih. Gambar bersifat opsional.
+          </div>
+        ) : null}
       </div>
 
       {error ? (
@@ -494,5 +765,60 @@ export function HomeActivityForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function ExistingImageEditForm({
+  image,
+  disabled,
+  onCancel,
+  onSave,
+}: {
+  image: HomeActivityImageRecord;
+  disabled: boolean;
+  onCancel: () => void;
+  onSave: (altText: string, imageFit: HomeActivityImageFit) => void;
+}) {
+  const [altText, setAltText] = useState(image.imageAlt ?? "");
+  const [imageFit, setImageFit] = useState<HomeActivityImageFit>(image.imageFit);
+
+  return (
+    <div className="grid gap-2">
+      <div className="grid gap-1">
+        <Label className="text-[11px] font-semibold text-[#39433c]">Alt gambar</Label>
+        <Input
+          className="h-9 rounded-md border-[#e1d8ca] text-xs"
+          value={altText}
+          onChange={(event) => setAltText(event.currentTarget.value)}
+          maxLength={150}
+        />
+      </div>
+      <div className="grid gap-1">
+        <Label className="text-[11px] font-semibold text-[#39433c]">Tampilan Gambar</Label>
+        <Select value={imageFit} onValueChange={(value) => setImageFit(value as HomeActivityImageFit)}>
+          <SelectTrigger className="h-9 w-full rounded-md border-[#e1d8ca] bg-white text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cover">Penuhi Card</SelectItem>
+            <SelectItem value="contain">Tampilkan Utuh</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 text-[11px]"
+          disabled={disabled}
+          onClick={() => onSave(altText, imageFit)}
+        >
+          Simpan
+        </Button>
+        <Button type="button" size="sm" variant="outline" className="h-8 text-[11px]" onClick={onCancel}>
+          Batal
+        </Button>
+      </div>
+    </div>
   );
 }

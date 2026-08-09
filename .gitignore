@@ -65,3 +65,5 @@ storage/profile/organization/*
 !storage/profile/organization/.gitkeep
 storage/profile/location/*
 !storage/profile/location/.gitkeep
+
+storage-audit-backup/

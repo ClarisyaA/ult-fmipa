@@ -331,13 +331,20 @@ export function SikRequestWorkflow({
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isRejected = latestRequest?.status === "sikApprovalRejected";
-  const canUploadProof = !latestRequest || isRejected;
+  const isFinishedCycle =
+    latestRequest?.status === "delivered" ||
+    latestRequest?.status === "completed" ||
+    Boolean(latestRequest?.finalSubmittedDate);
+  const canUploadProof = !latestRequest || isRejected || isFinishedCycle;
   const canSubmitFinal =
     latestRequest?.status === "sikApprovalVerified" &&
     !latestRequest.finalSubmittedDate;
   const isFinalSubmitted = Boolean(latestRequest?.finalSubmittedDate);
-  const activeStep = getActiveStep(latestRequest);
-  const stateCopy = getStateCopy(latestRequest);
+  // A finished cycle is never "the" current request for step/state display —
+  // it stays visible in history, but this workflow should present as a
+  // fresh request (matching canUploadProof above).
+  const activeStep = getActiveStep(isFinishedCycle ? null : latestRequest);
+  const stateCopy = getStateCopy(isFinishedCycle ? null : latestRequest);
 
   function setAttachmentError(key: string, message: string) {
     setFieldErrors((current) => ({
@@ -594,9 +601,14 @@ export function SikRequestWorkflow({
         </p>
       ) : null}
 
-      <Button asChild variant="outline" className="w-full">
-        <Link href="/mahasiswa/riwayat">Lihat Riwayat Pengajuan</Link>
-      </Button>
+      <div className="flex flex-wrap gap-3">
+        <Button asChild variant="outline" className="flex-1">
+          <Link href="/mahasiswa/riwayat">Lihat Riwayat Pengajuan</Link>
+        </Button>
+        <Button asChild variant="outline" className="flex-1">
+          <Link href="/layanan">Ajukan Layanan Lain</Link>
+        </Button>
+      </div>
     </div>
   );
 }

@@ -144,9 +144,9 @@ const heroHotspots = [
     imageWidth: 2897,
     imageHeight: 3769,
     imageSizes: "(max-width: 640px) 48px, (max-width: 1023px) 56px, 62px",
-    style: { left: 1272, bottom: 238, width: 56, height: 74 },
+    style: { left: 784, bottom: 238, width: 56, height: 74 },
     arrowStyle: { left: 16, top: -36, width: 40, height: 40 },
-    popoverClassName: "right-6 bottom-[calc(100%+16px)]",
+    popoverClassName: "left-1/2 bottom-[calc(100%+16px)] -translate-x-1/2",
     title: "Mampir ke Mipa Corner",
     description:
       "Nikmati pilihan kopi, minuman, dan bakery dari Mipa Corner FMIPA Unpad.",
@@ -166,9 +166,9 @@ const heroHotspots = [
     imageWidth: 2659,
     imageHeight: 3988,
     imageSizes: "(max-width: 640px) 62px, (max-width: 1023px) 74px, 90px",
-    style: { left: 784, bottom: 238, width: 76, height: 114 },
+    style: { left: 1265, bottom: 232, width: 76, height: 100 },
     arrowStyle: { left: 26, top: -40, width: 44, height: 44 },
-    popoverClassName: "left-1/2 bottom-[calc(100%+16px)] -translate-x-1/2",
+    popoverClassName: "right-6 bottom-[calc(100%+16px)]",
     title: "Jelajahi Laboratorium FMIPA",
     description:
       "Lihat fasilitas dan katalog laboratorium FMIPA Universitas Padjadjaran.",
@@ -281,13 +281,21 @@ function useIsDesktopViewport() {
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
-    const update = () => setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT);
+    // Desktop hover preview should only ever engage for pointer devices
+    // that can actually hover (mouse/trackpad) — a touch device that
+    // happens to be >=1024px wide (large tablet, split-screen) should
+    // still fall back to the tap-friendly mobile dialog.
+    const hoverQuery = window.matchMedia("(hover: hover)");
+    const update = () =>
+      setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT && hoverQuery.matches);
     update();
     window.addEventListener("resize", update);
     window.visualViewport?.addEventListener("resize", update);
+    hoverQuery.addEventListener("change", update);
     return () => {
       window.removeEventListener("resize", update);
       window.visualViewport?.removeEventListener("resize", update);
+      hoverQuery.removeEventListener("change", update);
     };
   }, []);
 
@@ -507,7 +515,14 @@ function HotspotContent({
   );
 }
 
-function HotspotPreviewPortal({
+/**
+ * Combined, viewport-centered preview for hotspots that carry a
+ * `supportingImage` (currently only Mipa Corner's WhatsApp QR). Renders the
+ * title/description/CTA together with the image in one centered card,
+ * instead of showing the near-hotspot text popover and this image preview
+ * as two separate, overlapping popups.
+ */
+function HotspotCenteredPreview({
   hotspot,
   isOpen,
   onMouseEnter,
@@ -538,7 +553,7 @@ function HotspotPreviewPortal({
 
   return createPortal(
     <div
-      className={`fixed left-1/2 top-1/2 z-[2147483647] max-h-[80vh] w-[clamp(360px,32vw,520px)] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/80 bg-white/95 p-4 shadow-2xl shadow-[#5c3a21]/25 ring-1 ring-red-100/80 backdrop-blur transition duration-200 ${
+      className={`fixed left-1/2 top-1/2 z-[2147483647] flex max-h-[85vh] w-[clamp(320px,32vw,420px)] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 overflow-y-auto rounded-xl border border-white/80 bg-white/95 p-5 text-center shadow-2xl shadow-[#5c3a21]/25 ring-1 ring-red-100/80 backdrop-blur transition duration-200 ${
         isOpen
           ? "pointer-events-auto scale-100 opacity-100"
           : "pointer-events-none scale-95 opacity-0"
@@ -547,6 +562,17 @@ function HotspotPreviewPortal({
       onMouseLeave={onMouseLeave}
       aria-hidden={!isOpen}
     >
+      <h3 className="text-base font-bold text-[#18130E]">{hotspot.title}</h3>
+      <p className="text-sm leading-[1.7] text-[#6B5E52]">{hotspot.description}</p>
+      <a
+        href={hotspot.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex w-fit items-center justify-center gap-2 rounded-md bg-[#EE1C25] px-4 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/10 transition hover:bg-[#c9161e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+      >
+        {hotspot.ctaLabel}
+        <ExternalLink className="size-4" aria-hidden="true" />
+      </a>
       <Image
         src={hotspot.supportingImage.src}
         alt={hotspot.supportingImage.alt}
@@ -554,8 +580,8 @@ function HotspotPreviewPortal({
         height={hotspot.supportingImage.height}
         loading="eager"
         fetchPriority="high"
-        sizes="(max-width: 1280px) 360px, (max-width: 1920px) 32vw, 520px"
-        className="max-h-[calc(80vh-2rem)] w-full object-contain"
+        sizes="(max-width: 1280px) 300px, (max-width: 1920px) 28vw, 380px"
+        className="w-full max-w-[280px] object-contain"
       />
     </div>,
     document.body,
@@ -642,7 +668,7 @@ function HeroHotspot({
         <ArrowDown className="size-7" strokeWidth={3} aria-hidden="true" />
       </button>
 
-      {isDesktopViewport && (
+      {isDesktopViewport && !hotspot.supportingImage && (
         <div
           className={`absolute z-50 w-[min(300px,calc(100vw-32px))] rounded-lg border border-red-100 bg-white/95 px-5 py-4 text-left shadow-xl shadow-red-950/10 transition duration-200 ${
             isOpen
@@ -655,7 +681,7 @@ function HeroHotspot({
       )}
 
       {isDesktopViewport && (
-        <HotspotPreviewPortal
+        <HotspotCenteredPreview
           hotspot={hotspot}
           isOpen={isOpen}
           onMouseEnter={openPreview}
@@ -666,10 +692,17 @@ function HeroHotspot({
   );
 }
 
-function TurahPatrol({ reducedMotion }: { reducedMotion: boolean }) {
+function TurahPatrol({
+  reducedMotion,
+  isPaused = false,
+}: {
+  reducedMotion: boolean;
+  isPaused?: boolean;
+}) {
   const laneRef = useRef<HTMLDivElement | null>(null);
   const turahRef = useRef<HTMLDivElement | null>(null);
   const spriteRef = useRef<HTMLDivElement | null>(null);
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
   useLayoutEffect(() => {
     const lane = laneRef.current;
@@ -686,17 +719,15 @@ function TurahPatrol({ reducedMotion }: { reducedMotion: boolean }) {
     }
 
     const ctx = gsap.context(() => {
-      let timeline: gsap.core.Timeline | null = null;
-
       const createAnimation = () => {
         const distance = Math.max(0, lane.clientWidth - turah.clientWidth);
-        timeline?.kill();
+        timelineRef.current?.kill();
         gsap.killTweensOf(turah);
         gsap.set(turah, { x: 0 });
         gsap.set(sprite, { scaleX: 1, transformOrigin: "center bottom" });
 
-        timeline = gsap
-          .timeline({ repeat: -1 })
+        timelineRef.current = gsap
+          .timeline({ repeat: -1, paused: isPaused })
           .to(turah, {
             x: distance,
             duration: 12,
@@ -719,12 +750,26 @@ function TurahPatrol({ reducedMotion }: { reducedMotion: boolean }) {
 
       return () => {
         resizeObserver.disconnect();
-        timeline?.kill();
+        timelineRef.current?.kill();
+        timelineRef.current = null;
       };
     }, lane);
 
     return () => ctx.revert();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
+
+  // Freeze the walking/mirroring sprite exactly where it is — not reset,
+  // not killed — whenever a hotspot dialog is open on mobile, so nothing
+  // keeps moving or mirroring behind the dialog's overlay. Resumes from
+  // the same spot once the dialog closes, so the hero never visibly jumps.
+  useEffect(() => {
+    if (isPaused) {
+      timelineRef.current?.pause();
+    } else {
+      timelineRef.current?.resume();
+    }
+  }, [isPaused]);
 
   return (
     <div
@@ -990,6 +1035,9 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
     >
       <div
         ref={heroRef}
+        className={`transition-[filter] duration-200 ease-out ${
+          activeHotspotDialog !== null ? "blur-sm" : ""
+        }`}
         style={{
           position: "relative",
           width: sceneSize.width,
@@ -1012,7 +1060,10 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         <div className="absolute inset-x-0 top-0 z-[1] h-24 bg-gradient-to-b from-[#fffaf2]/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-t from-[#fffaf2]/55 to-transparent" />
 
-        <TurahPatrol reducedMotion={reducedMotion} />
+        <TurahPatrol
+          reducedMotion={reducedMotion}
+          isPaused={activeHotspotDialog !== null}
+        />
 
         <Link
           href="/profil"
@@ -1149,7 +1200,8 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
         {activeDialogHotspot && (
           <DialogContent
             aria-label={activeDialogHotspot.title}
-            className="max-w-[calc(100%-2rem)] sm:max-w-sm"
+            overlayClassName="bg-black/50"
+            className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[min(calc(100vw-2rem),380px)] overflow-y-auto sm:max-w-sm"
           >
             <HotspotContent hotspot={activeDialogHotspot} useDialogSemantics />
           </DialogContent>

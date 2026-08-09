@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { RequestEmailHelper } from "@/components/requests/request-email-helper";
-import { confirmToast } from "@/lib/confirm-toast";
 import type { RequestStatusAction } from "@/types/request-action";
 import type { RequestStatus } from "@/types/request";
 
@@ -172,16 +171,6 @@ export function InlineStatusAction({
   }
 
   async function handleClick(config: ActionConfig) {
-    if (
-      !(await confirmToast({
-        title: "Perbarui status permohonan?",
-        description: config.confirmation,
-        confirmLabel: config.label,
-      }))
-    ) {
-      return;
-    }
-
     setSubmittingAction(config.action);
     setMessage("");
     setIsError(false);
@@ -213,9 +202,15 @@ export function InlineStatusAction({
       setMessage(config.successMessage);
       setOptimisticStatus(nextStatusByAction[config.action]);
       if (config.action === "complete") {
+        // Defer the refresh until the completion dialog is closed. If this
+        // row lives in a status-filtered list (e.g. "Diproses" tab),
+        // router.refresh() would re-fetch the now-completed request out of
+        // the filtered results immediately, unmounting this row — and the
+        // dialog inside it — before the admin/staff can use it.
         setEmailDialogSignal((value) => value + 1);
+      } else {
+        router.refresh();
       }
-      router.refresh();
     } finally {
       setSubmittingAction(null);
     }
@@ -228,6 +223,7 @@ export function InlineStatusAction({
         id={id}
         mode="completion-dialog"
         openSignal={emailDialogSignal}
+        onClose={() => router.refresh()}
       />
       <div
         className={
@@ -318,14 +314,7 @@ export function RequestStatusActionButton({
     : getDisabledTitle(config.action, currentStatus, supported);
 
   async function handleClick() {
-    if (
-      !config ||
-      !(await confirmToast({
-        title: "Perbarui status permohonan?",
-        description: config.confirmation,
-        confirmLabel: config.label,
-      }))
-    ) {
+    if (!config) {
       return;
     }
 
@@ -353,9 +342,13 @@ export function RequestStatusActionButton({
 
       setOptimisticStatus(nextStatusByAction[config.action]);
       if (config.action === "complete") {
+        // Same reasoning as InlineStatusAction: don't refresh yet, or a
+        // status-filtered list can unmount this row (and its dialog)
+        // immediately after opening it.
         setEmailDialogSignal((value) => value + 1);
+      } else {
+        router.refresh();
       }
-      router.refresh();
     } finally {
       setSubmittingAction(null);
     }
@@ -368,6 +361,7 @@ export function RequestStatusActionButton({
         id={id}
         mode="completion-dialog"
         openSignal={emailDialogSignal}
+        onClose={() => router.refresh()}
       />
     <Button
       type="button"
