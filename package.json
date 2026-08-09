@@ -25,6 +25,15 @@
     "db:generate": "prisma generate",
     "db:prisma-migrate": "node scripts/deploy-prisma-migrations.mjs",
     "db:support-migrate": "node scripts/run-support-migrations.mjs",
+    "staging:local:config": "node scripts/staging-local/config.mjs",
+    "staging:local:up": "node scripts/staging-local/up.mjs",
+    "staging:local:ps": "node scripts/staging-local/ps.mjs",
+    "staging:local:migrate": "node scripts/staging-local/migrate.mjs",
+    "staging:local:bootstrap-admin": "node scripts/staging-local/bootstrap-admin.mjs",
+    "staging:local:audit": "node scripts/staging-local/audit.mjs",
+    "staging:local:logs": "node scripts/staging-local/logs.mjs",
+    "staging:local:down": "node scripts/staging-local/down.mjs",
+    "staging:local:import-baseline": "node scripts/staging-local/import-baseline.mjs",
     "prepare": "husky"
   },
   "dependencies": {

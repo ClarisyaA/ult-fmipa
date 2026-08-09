@@ -593,6 +593,15 @@ berjalan (lihat juga bagian 17 dan `k8s/README.md`):
 - Client ID/secret PAUS untuk staging dan production, plus redirect URI yang
   didaftarkan ke tim PAUS Unpad.
 
+Untuk rehearsal sebelum deploy ke VPS staging, jalankan dulu **local staging
+rehearsal** - stack terisolasi yang memakai production build/container,
+database (`fmipa_sbpk_staging_local`) dan bucket
+(`ult-fmipa-staging-local`) terpisah dari local development, tanpa
+bergantung pada `DEV_ADMIN_*`/`DEV_STAFF_*`. Lihat
+[`docs/local-staging-rehearsal.md`](docs/local-staging-rehearsal.md) untuk
+command lengkap (`pnpm staging:local:*`) dan daftar delta saat pindah ke VPS
+staging asli.
+
 Detail arsitektur deployment (Docker Compose penuh, Kubernetes, VPS) ada di:
 
 - [`k8s/README.md`](k8s/README.md) - apply order manifest Kubernetes.

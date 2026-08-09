@@ -1,0 +1,137 @@
+# Local staging rehearsal overlay.
+#
+# Always combine this with the base compose file and run under a dedicated
+# Compose project name so nothing collides with the local development stack:
+#
+#   docker compose -p ult-fmipa-staging-local --env-file staging-local.env \
+#     -f docker-compose.yml -f docker-compose.staging-local.yml <command>
+#
+# Prefer the wrapper: `pnpm staging:local:up` (see scripts/staging-local/).
+#
+# This file only overrides what needs to differ from docker-compose.yml:
+# container names, ports, volumes, database/bucket names, and
+# production-like auth env vars (DEV_* blanked out). It intentionally does
+# NOT bind-mount source code, so the app always runs from the image built by
+# the Dockerfile's production `runner` stage (next build + `node server.js`).
+services:
+  app:
+    container_name: ult-fmipa-staging-local-app
+    environment:
+      NODE_ENV: production
+      STAGING_LOCAL: "true"
+      AUTH_DEBUG: "false"
+      PRISMA_QUERY_LOG: "false"
+
+      DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@db:3306/fmipa_sbpk_staging_local
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: fmipa_sbpk_staging_local
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
+
+      NEXTAUTH_URL: http://localhost:3100
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+      # Production-like auth: DEV_* credentials are hard-disabled in this
+      # overlay regardless of what is set on the host shell or in
+      # staging-local.env, so they can never become a login mechanism here.
+      DEV_ADMIN_EMAIL: ""
+      DEV_ADMIN_PASSWORD: ""
+      DEV_STAFF_EMAIL: ""
+      DEV_STAFF_PASSWORD: ""
+      DEV_STUDENT_EMAIL: ""
+      DEV_STUDENT_PASSWORD: ""
+      DEV_STUDENT_NAME: ""
+      DEV_STUDENT_NPM: ""
+      DEV_STUDENT_PHONE: ""
+
+      # PAUS stays whatever staging-local.env provides (empty by default).
+      # hasPausOAuthConfig() in src/lib/auth.ts only registers the PAUS
+      # provider when PAUS_CLIENT_ID and PAUS_CLIENT_SECRET are both set, so
+      # leaving them empty is safe and does not crash the app.
+      PAUS_CLIENT_ID: ${PAUS_CLIENT_ID:-}
+      PAUS_CLIENT_SECRET: ${PAUS_CLIENT_SECRET:-}
+      PAUS_ISSUER: ${PAUS_ISSUER:-}
+      PAUS_LEGACY_LOGIN_URL: ${PAUS_LEGACY_LOGIN_URL:-}
+      PAUS_BRIDGE_SECRET: ${PAUS_BRIDGE_SECRET}
+
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ult-fmipa-staging-local
+
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
+    # `!override` replaces the base service's ports list instead of the
+    # default Compose merge behavior, which concatenates sequences (that
+    # would otherwise leave the base's 3000:3000 mapping in place too).
+    ports: !override
+      - "3100:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  db:
+    container_name: ult-fmipa-staging-local-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: fmipa_sbpk_staging_local
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports: !override
+      - "127.0.0.1:23306:3306"
+    volumes: !override
+      - ult_fmipa_staging_local_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  adminer:
+    container_name: ult-fmipa-staging-local-adminer
+    ports: !override
+      - "127.0.0.1:8181:8080"
+
+  minio:
+    container_name: ult-fmipa-staging-local-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports: !override
+      - "127.0.0.1:19000:9000"
+      - "127.0.0.1:19001:9001"
+    volumes: !override
+      - ult_fmipa_staging_local_minio_data:/data
+
+  minio-init:
+    container_name: ult-fmipa-staging-local-minio-init
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ult-fmipa-staging-local
+
+volumes:
+  ult_fmipa_staging_local_db_data:
+    name: ult_fmipa_staging_local_db_data
+  ult_fmipa_staging_local_minio_data:
+    name: ult_fmipa_staging_local_minio_data
