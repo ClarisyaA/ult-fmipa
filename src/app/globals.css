@@ -2,13 +2,31 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@font-face {
+  font-family: "Unpad Sans";
+  src: url("/fonts/Unpad%20Sans%20Reguler/Woff/UnpadSans-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Unpad Sans";
+  src: url("/fonts/Unpad%20Sans%20Bold/Woff/UnpadSans-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Unpad Sans", Arial, Helvetica, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -73,6 +91,13 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  --ult-white: #FFFFFF;
+  --ult-cream: #EAE4CA;
+  --ult-yellow: #FCB71B;
+  --ult-green: #03B36B;
+  --ult-red: #EE1C25;
+  --ult-dark: #1f1b16;
+  --ult-brown: #4a3324;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -121,10 +146,297 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    @apply font-sans;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  button,
+  input,
+  select,
+  textarea,
+  option,
+  optgroup,
+  dialog,
+  table {
+    font-family: inherit;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    line-height: 1.35;
+  }
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+@layer utilities {
+  .admin-action-cell {
+    min-width: 14rem;
+    width: 14rem;
+  }
+
+  .admin-action-cell-wide {
+    min-width: 16rem;
+    width: 16rem;
+  }
+
+  .admin-action-group {
+    display: flex;
+    width: max-content;
+    min-width: max-content;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .admin-action-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .login-field:-webkit-autofill,
+  .login-field:-webkit-autofill:hover,
+  .login-field:-webkit-autofill:focus,
+  .login-field:-webkit-autofill:active {
+    -webkit-text-fill-color: white;
+    caret-color: white;
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  @keyframes login-media-in {
+    from {
+      opacity: 0;
+      transform: scale(1.035);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes login-panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes login-content-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-login-media-in {
+    animation: login-media-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-login-panel-in {
+    animation: login-panel-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-login-content-in {
+    animation: login-content-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-root:has([data-login-mode="select"]),
+  .login-root:has([data-login-mode="administrator"]) {
+    position: relative;
+    background-image:
+      linear-gradient(rgba(15, 23, 42, 0.66), rgba(15, 23, 42, 0.8)),
+      url("/Beranda-Section1/gedung-fmipa.webp");
+    background-position: 110% center;
+    background-size: cover;
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-panel,
+  .login-root:has([data-login-mode="administrator"]) .login-panel {
+    position: relative;
+    width: 100%;
+    max-width: none;
+    background-color: transparent;
+  }
+
+  .login-glass-panel {
+    border: 1px solid rgb(255 255 255 / 0.3);
+    background:
+      linear-gradient(
+        135deg,
+        rgb(8 17 34 / 0.92),
+        rgb(15 23 42 / 0.84) 52%,
+        rgb(20 31 51 / 0.8)
+      );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.24),
+      0 28px 80px rgb(2 6 23 / 0.48);
+    -webkit-backdrop-filter: blur(24px) saturate(125%);
+    backdrop-filter: blur(24px) saturate(125%);
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-access-glass {
+    isolation: isolate;
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-access-glass::before {
+    position: absolute;
+    z-index: -1;
+    inset: 1px;
+    border-radius: inherit;
+    background:
+      radial-gradient(
+        circle at 15% 0%,
+        rgb(255 255 255 / 0.08),
+        transparent 34%
+      ),
+      linear-gradient(180deg, rgb(255 255 255 / 0.04), transparent 35%);
+    pointer-events: none;
+    content: "";
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-access-card {
+    border: 1px solid rgb(255 255 255 / 0.24);
+    background: rgb(2 6 23 / 0.5);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      0 12px 35px rgb(15 23 42 / 0.14);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    backdrop-filter: blur(12px) saturate(125%);
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-access-card:hover {
+    border-color: rgb(255 255 255 / 0.42);
+    background: rgb(15 23 42 / 0.72);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 24px 70px rgb(15 23 42 / 0.2);
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-back-link {
+    border: 1px solid rgb(255 255 255 / 0.48);
+    background: rgb(15 23 42 / 0.58);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      0 8px 24px rgb(2 6 23 / 0.24);
+    text-shadow: 0 1px 4px rgb(2 6 23 / 0.8);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-back-link:hover {
+    border-color: rgb(255 255 255 / 0.7);
+    background: rgb(30 41 59 / 0.72);
+  }
+
+  .login-root:has([data-login-mode="select"]) .login-copyright,
+  .login-root:has([data-login-mode="administrator"]) .login-copyright {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .login-root:has([data-login-mode="select"]),
+    .login-root:has([data-login-mode="administrator"]) {
+      display: block;
+    }
+
+    .login-root:has([data-login-mode="select"]) .login-media,
+    .login-root:has([data-login-mode="administrator"]) .login-media {
+      display: none;
+    }
+
+    .login-root:has([data-login-mode="select"]) .login-panel,
+    .login-root:has([data-login-mode="administrator"]) .login-panel {
+      width: min(30rem, calc(100% - 24px));
+      height: 100dvh;
+      min-height: 0;
+      padding: 0;
+      margin-top: 0;
+      margin-right: 50px;
+      margin-bottom: 0;
+      margin-left: auto;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .login-root:has([data-login-mode="select"]) .login-content-shell,
+    .login-root:has([data-login-mode="administrator"]) .login-content-shell {
+      flex: 1 1 0%;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  @keyframes hero-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes hero-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes hero-soft-pulse {
+    0%,
+    100% {
+      opacity: 0.82;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-hero-fade-up {
+    animation: hero-fade-up 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-hero-float {
+    animation: hero-float 4.5s ease-in-out infinite;
+  }
+
+  .animate-hero-soft-pulse {
+    animation: hero-soft-pulse 3.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-hero-fade-up,
+    .animate-hero-float,
+    .animate-hero-soft-pulse {
+      animation: none;
+    }
   }
 }

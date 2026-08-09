@@ -1,0 +1,593 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
+import { ArrowLeft, FileText } from "lucide-react";
+
+import { LetterMetadataEditor } from "@/components/requests/letter-metadata-editor";
+import { RequestAttachmentsList } from "@/components/requests/request-attachments-list";
+import { RequestEmailHelper } from "@/components/requests/request-email-helper";
+import { RequestStatusCancelButton } from "@/components/requests/request-status-cancel-button";
+import { RequestStatusActions } from "@/components/requests/request-status-actions";
+import { SikApprovalActions } from "@/components/requests/sik-approval-actions";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  getPrintableLetterService,
+  PRINTABLE_LETTER_SERVICES,
+} from "@/lib/letters/letter-data";
+import type { KeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getKeteranganLulusPrintReadiness } from "@/lib/letters/keterangan-lulus-data";
+import { getMagangPrintReadiness } from "@/lib/letters/magang-letter-data";
+import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
+import { getRequestDetail } from "@/lib/legacy-request-detail";
+import { getRequestAttachments } from "@/lib/request-attachments";
+import type { RequestStatusAction } from "@/types/request-action";
+import type { ServiceRequestDetail } from "@/types/request-detail";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type RequestDetailPageProps = {
+  params: Promise<{ serviceSlug: string; id: string }>;
+};
+
+function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function DetailField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-[#7a7166]">{label}</p>
+      <p className="mt-1 text-sm font-medium text-[#28352c]">{value}</p>
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-3 rounded-lg border border-[#E7DED0] bg-white p-4">
+      <p className="text-sm font-semibold text-[#18130E]">{title}</p>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </div>
+  );
+}
+
+function formatLanguage(value: string | null | undefined) {
+  if (value === "en") {
+    return "Bahasa Inggris";
+  }
+
+  if (value === "id") {
+    return "Bahasa Indonesia";
+  }
+
+  return value ?? null;
+}
+
+function OptionalDetails({ detail }: { detail: ServiceRequestDetail }) {
+  if (detail.sourceTable === "permohonan_magang") {
+    return (
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+          <CardTitle>Detail Pengajuan Magang/KP/TA</CardTitle>
+          <CardDescription>
+            Data pengajuan dikelompokkan sesuai kebutuhan proses layanan.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 p-4">
+          <DetailSection title="Data Mahasiswa">
+            <DetailField label="Nama" value={detail.requesterName} />
+            <DetailField label="NPM" value={detail.npm} />
+            <DetailField label="Prodi" value={detail.requesterProgram} />
+            <DetailField label="Email" value={detail.requesterEmail} />
+            <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
+          </DetailSection>
+          <DetailSection title="Jenis Pengajuan">
+            <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
+            <DetailField
+              label="Tanggal Mulai"
+              value={detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null}
+            />
+            <DetailField
+              label="Tanggal Selesai"
+              value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
+            />
+          </DetailSection>
+          <DetailSection title="Detail Instansi">
+            <DetailField label="Tempat Pelaksanaan" value={detail.tempatPelaksanaan} />
+            <DetailField label="Kontak Person" value={detail.kontakPerson} />
+            <DetailField label="Tujuan Surat" value={detail.tujuanSurat} />
+            <DetailField label="Alamat Surat" value={detail.alamatSurat} />
+            <DetailField label="Kecamatan dan Kabupaten" value={detail.kecamatanKabupaten} />
+            <DetailField label="Kota / Kabupaten" value={detail.kotaKabupaten} />
+            <DetailField label="Provinsi" value={detail.provinsi} />
+          </DetailSection>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (detail.sourceTable === "surat_izin_kegiatan") {
+    return (
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+          <CardTitle>Detail Surat Izin Kegiatan</CardTitle>
+          <CardDescription>
+            Tahap verifikasi, form final, dan pemrosesan surat dipisahkan agar mudah ditindaklanjuti.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 p-4">
+          <DetailSection title="Tahap Verifikasi ACC">
+            <DetailField label="Status Verifikasi" value={detail.approvalStatus} />
+            <DetailField
+              label="Tanggal Verifikasi"
+              value={
+                detail.approvalVerificationDate
+                  ? formatDate(detail.approvalVerificationDate)
+                  : null
+              }
+            />
+            <DetailField label="Verifikator" value={detail.approvalVerificationStaff} />
+            <DetailField label="Alasan Penolakan" value={detail.approvalRejectReason} />
+          </DetailSection>
+          <DetailSection title="Form Final SIK">
+            <DetailField label="Nama Himpunan" value={detail.namaHimpunan} />
+            <DetailField label="Nama Kegiatan" value={detail.namaKegiatan} />
+            <DetailField
+              label="Tanggal Kegiatan"
+              value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
+            />
+            <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+            <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
+            <DetailField label="No HP WA" value={detail.noHpWa} />
+            <DetailField
+              label="Tanggal Form Final"
+              value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+            />
+          </DetailSection>
+          <DetailSection title="Riwayat Singkat">
+            <DetailField label="Bukti Diunggah" value={formatDate(detail.requestDate)} />
+            <DetailField
+              label="Verifikasi"
+              value={
+                detail.approvalVerificationDate
+                  ? formatDate(detail.approvalVerificationDate)
+                  : null
+              }
+            />
+            <DetailField
+              label="Form Final"
+              value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+            />
+            <DetailField label="Diproses" value={formatDate(detail.processDate)} />
+            <DetailField label="Selesai" value={formatDate(detail.completedDate)} />
+            <DetailField label="Dikirim" value={formatDate(detail.deliveredDate)} />
+          </DetailSection>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+      <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+        <CardTitle>Detail Pengajuan</CardTitle>
+        <CardDescription>
+          Field yang ditampilkan sudah dibatasi untuk kebutuhan operasional.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
+        <DetailField label="NPM" value={detail.npm} />
+        <DetailField label="Email" value={detail.requesterEmail} />
+        <DetailField label="Bahasa Surat" value={formatLanguage(detail.bahasaSurat)} />
+        <DetailField label="Tanggal Pengajuan" value={formatDate(detail.requestDate)} />
+        <DetailField label="Keperluan" value={detail.keperluan} />
+        <DetailField label="Keterangan" value={detail.keterangan} />
+        <DetailField label="Entry" value={detail.requestEntry} />
+        <DetailField label="Beasiswa" value={detail.beasiswa} />
+        <DetailField label="Pengantar" value={detail.pengantar} />
+        <DetailField label="Ditujukan" value={detail.ditujukan} />
+        <DetailField label="Jenis Permohonan" value={detail.jenisPermohonan} />
+        <DetailField label="Kontak Person" value={detail.kontakPerson} />
+        <DetailField label="Tempat Pelaksanaan" value={detail.tempatPelaksanaan} />
+        <DetailField label="Tujuan Surat" value={detail.tujuanSurat} />
+        <DetailField label="Alamat Surat" value={detail.alamatSurat} />
+        <DetailField label="Kecamatan dan Kabupaten" value={detail.kecamatanKabupaten} />
+        <DetailField label="Kota / Kabupaten" value={detail.kotaKabupaten} />
+        <DetailField label="Provinsi" value={detail.provinsi} />
+        <DetailField
+          label="Tanggal Mulai"
+          value={detail.tanggalMulai ? formatDate(detail.tanggalMulai) : null}
+        />
+        <DetailField
+          label="Tanggal Selesai"
+          value={detail.tanggalSelesai ? formatDate(detail.tanggalSelesai) : null}
+        />
+        <DetailField label="Status Verifikasi SIK" value={detail.approvalStatus} />
+        <DetailField
+          label="Tanggal Verifikasi SIK"
+          value={
+            detail.approvalVerificationDate
+              ? formatDate(detail.approvalVerificationDate)
+              : null
+          }
+        />
+        <DetailField label="Verifikator SIK" value={detail.approvalVerificationStaff} />
+        <DetailField label="Alasan Penolakan" value={detail.approvalRejectReason} />
+        <DetailField
+          label="Tanggal Form Final"
+          value={detail.finalSubmittedDate ? formatDate(detail.finalSubmittedDate) : null}
+        />
+        <DetailField label="Nama Himpunan" value={detail.namaHimpunan} />
+        <DetailField label="Nama Kegiatan" value={detail.namaKegiatan} />
+        <DetailField
+          label="Tanggal Kegiatan"
+          value={detail.tanggalKegiatan ? formatDate(detail.tanggalKegiatan) : null}
+        />
+        <DetailField label="Email Pengiriman SIK" value={detail.emailPengiriman} />
+        <DetailField label="No HP WA Contact Person" value={detail.noHpWa} />
+        <DetailField label="Jumlah Ijazah" value={detail.jumlahIjazah} />
+        <DetailField label="Jumlah Transkrip" value={detail.jumlahTranskrip} />
+        <DetailField label="Jumlah Translate" value={detail.jumlahTranslate} />
+      </CardContent>
+    </Card>
+  );
+}
+
+type PrintableRequestInfo = {
+  serviceSlug: keyof typeof PRINTABLE_LETTER_SERVICES;
+  template: (typeof PRINTABLE_LETTER_SERVICES)[keyof typeof PRINTABLE_LETTER_SERVICES]["template"];
+};
+
+function getPrintableRequestInfo(
+  serviceSlug: string,
+  detail: ServiceRequestDetail,
+): PrintableRequestInfo | null {
+  const direct = getPrintableLetterService(detail.serviceSlug);
+
+  if (direct) {
+    return {
+      serviceSlug: detail.serviceSlug as keyof typeof PRINTABLE_LETTER_SERVICES,
+      template: direct.template,
+    };
+  }
+
+  const fromParam = getPrintableLetterService(serviceSlug);
+
+  if (fromParam && fromParam.sourceTable === detail.sourceTable) {
+    return {
+      serviceSlug: serviceSlug as keyof typeof PRINTABLE_LETTER_SERVICES,
+      template: fromParam.template,
+    };
+  }
+
+  const byTable = Object.entries(PRINTABLE_LETTER_SERVICES).find(
+    ([, service]) => service.sourceTable === detail.sourceTable,
+  );
+
+  if (!byTable) {
+    return null;
+  }
+
+  return {
+    serviceSlug: byTable[0] as keyof typeof PRINTABLE_LETTER_SERVICES,
+    template: byTable[1].template,
+  };
+}
+
+function PrintLetterButton({
+  detail,
+  printableInfo,
+}: {
+  detail: ServiceRequestDetail;
+  printableInfo: PrintableRequestInfo | null;
+}) {
+  if (!printableInfo) {
+    return null;
+  }
+
+  return (
+    <div className="grid w-full gap-2 text-left sm:w-auto sm:gap-1 sm:text-right">
+      <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap sm:justify-end">
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 w-full justify-center border-[#ddd4c6] bg-white text-xs text-[#173d2d] shadow-sm hover:bg-[#f6f1e8] sm:w-auto"
+        >
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=id`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Indonesia di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Indo
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 w-full justify-center border-[#ddd4c6] bg-white text-xs text-[#173d2d] shadow-sm hover:bg-[#f6f1e8] sm:w-auto"
+        >
+          <Link
+            href={`/api/requests/${printableInfo.serviceSlug}/${detail.id}/pdf?lang=en`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buka PDF surat Bahasa Inggris di tab baru"
+          >
+            <FileText className="size-4" />
+            Cetak Surat Inggris
+          </Link>
+        </Button>
+      </div>
+      <p className="text-[11px] leading-relaxed text-[#7a7166] sm:max-w-[300px]">
+        Pastikan Data Surat sudah lengkap sebelum mencetak PDF resmi.
+      </p>
+    </div>
+  );
+}
+
+function PrintReadinessNotice({
+  readiness,
+}: {
+  readiness: KeteranganLulusPrintReadiness | null;
+}) {
+  if (!readiness) {
+    return null;
+  }
+
+  return (
+    <p
+      className={
+        readiness.isReady
+          ? "mt-1 text-sm text-[#0f5b45]"
+          : "mt-1 text-sm text-[#9a3412]"
+      }
+    >
+      {readiness.message}
+    </p>
+  );
+}
+
+function getWorkflowCancelAction(label: string): {
+  action: Extract<
+    RequestStatusAction,
+    "cancelProcess" | "cancelComplete" | "cancelDeliver"
+  >;
+  label: string;
+  confirmation: string;
+} | null {
+  if (label === "Diproses") {
+    return {
+      action: "cancelProcess",
+      label: "Batalkan Proses",
+      confirmation:
+        "Batalkan status diproses? Status selesai dan diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Selesai") {
+    return {
+      action: "cancelComplete",
+      label: "Batalkan Selesai",
+      confirmation:
+        "Batalkan status selesai? Status diambil/dikirim juga akan dikosongkan.",
+    };
+  }
+
+  if (label === "Diambil/Dikirim") {
+    return {
+      action: "cancelDeliver",
+      label: "Batalkan Diambil/Dikirim",
+      confirmation: "Batalkan status diambil/dikirim untuk pengajuan ini?",
+    };
+  }
+
+  return null;
+}
+
+async function getPrintReadiness(
+  printableInfo: PrintableRequestInfo | null,
+  id: string,
+) {
+  if (!printableInfo) return null;
+  const { template } = printableInfo;
+
+  if (template === "keterangan-lulus") {
+    return getKeteranganLulusPrintReadiness(id);
+  }
+
+  if (template === "magang") {
+    return getMagangPrintReadiness(id);
+  }
+
+  return getOfficialPrintReadiness(template, id);
+}
+
+export default async function StaffRequestDetailPage({
+  params,
+}: RequestDetailPageProps) {
+  const { serviceSlug, id } = await params;
+  const detail = await getRequestDetail(serviceSlug, id);
+  const user = await getCurrentUser();
+
+  if (!detail) {
+    notFound();
+  }
+
+  const attachments = await getRequestAttachments(
+    detail.serviceSlug,
+    detail.sourceTable,
+    detail.id
+  );
+  const printableInfo = getPrintableRequestInfo(serviceSlug, detail);
+  const printReadiness = await getPrintReadiness(printableInfo, detail.id);
+
+  return (
+    <div
+      className="-m-4 min-h-[calc(100%+2rem)] bg-[#f8f2ea] text-[#1f2922] sm:-m-5 sm:min-h-[calc(100%+2.5rem)] lg:-m-6 lg:min-h-[calc(100%+3rem)]"
+      style={{
+        backgroundImage: [
+          "radial-gradient(ellipse 72% 30% at 55% -8%, transparent 67%, rgba(198,184,160,0.20) 67.15%, transparent 67.45%)",
+          "radial-gradient(circle at 74% 12%, rgba(247,238,224,0.92), transparent 34%)",
+          "linear-gradient(180deg, #fbf8f2 0%, #f8f2ea 38%, #f5ecdf 100%)",
+        ].join(", "),
+        backgroundAttachment: "fixed",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+      }}
+    >
+      <div className="px-5 pb-10 pt-5 sm:px-7 lg:px-8">
+        <div className="mx-auto max-w-[1320px]">
+          <Button
+            asChild
+            variant="ghost"
+            className="-ml-2 mb-4 h-8 rounded-md px-2 text-[11px] font-semibold text-[#536058] hover:bg-white/60 hover:text-[#0f3d2e]"
+          >
+            <Link href="/staff/requests">
+              <ArrowLeft className="size-3.5" />
+              Kembali ke Pengajuan
+            </Link>
+          </Button>
+          <div className="grid gap-4 sm:flex sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg font-semibold tracking-normal text-[#173d2d] sm:text-xl">
+                  {detail.serviceTitle}
+                </h1>
+              </div>
+              <p className="mt-2 max-w-xl text-xs leading-relaxed text-[#566258]">
+                Mode terbatas. Hanya update status workflow yang diaktifkan.
+              </p>
+            </div>
+            <PrintLetterButton detail={detail} printableInfo={printableInfo} />
+          </div>
+          <PrintReadinessNotice readiness={printReadiness} />
+        </div>
+      </div>
+
+      <div className="relative z-10 mx-auto -mt-6 grid max-w-[1320px] gap-4 px-4 pb-6 sm:px-6 lg:px-7">
+
+      {detail.sourceTable === "surat_izin_kegiatan" ? (
+        <SikApprovalActions
+          rolePrefix="staff"
+          id={detail.id}
+          approvalStatus={detail.approvalStatus}
+          finalSubmitted={Boolean(detail.finalSubmittedDate)}
+        />
+      ) : null}
+
+      {detail.sourceTable !== "surat_izin_kegiatan" ||
+      detail.finalSubmittedDate ? (
+        <RequestStatusActions
+          serviceSlug={detail.serviceSlug}
+          id={detail.id}
+          currentStatus={detail.status}
+          rolePrefix="staff"
+          staffName={user?.name ?? "Staff ULT"}
+        />
+      ) : (
+        <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+          Form final SIK belum dikirim oleh mahasiswa.
+        </div>
+      )}
+
+      <RequestEmailHelper serviceSlug={detail.serviceSlug} id={detail.id} />
+
+      {printableInfo ? (
+        <LetterMetadataEditor
+          serviceSlug={printableInfo.serviceSlug}
+          id={detail.id}
+          initialReadiness={printReadiness}
+        />
+      ) : null}
+
+      <OptionalDetails detail={detail} />
+
+      <RequestAttachmentsList attachments={attachments} />
+
+      <Card className="gap-0 overflow-hidden rounded-lg border-[#e3d9ca] bg-white py-0 shadow-[0_2px_10px_rgba(47,38,20,0.08)]">
+        <CardHeader className="border-b border-[#eee6d9] bg-[#fffdf9] px-5 py-4">
+          <CardTitle>Alur Status</CardTitle>
+          <CardDescription>
+            Timeline berdasarkan kolom workflow tabel legacy. Status yang sudah
+            terisi dapat dibatalkan jika perlu koreksi.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 p-4">
+          {detail.workflow.map((item) => {
+            const cancelAction = item.done
+              ? getWorkflowCancelAction(item.label)
+              : null;
+
+            return (
+              <div key={item.label} className="flex gap-3">
+                <div
+                  className={
+                    item.done
+                      ? "mt-1 size-3 rounded-full bg-primary"
+                      : "mt-1 size-3 rounded-full border"
+                  }
+                />
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(item.date)}
+                    {item.staff ? ` - ${item.staff}` : ""}
+                  </p>
+                  {cancelAction ? (
+                    <RequestStatusCancelButton
+                      serviceSlug={detail.serviceSlug}
+                      id={detail.id}
+                      rolePrefix="staff"
+                      staffName={user?.name ?? "Staff ULT"}
+                      action={cancelAction.action}
+                      label={cancelAction.label}
+                      confirmation={cancelAction.confirmation}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+      </div>
+    </div>
+  );
+}

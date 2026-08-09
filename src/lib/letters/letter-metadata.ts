@@ -1,0 +1,857 @@
+import { Prisma } from "@prisma/client";
+
+import { writeAuditLog } from "@/lib/audit-log";
+import { getPrintableLetterService } from "@/lib/letters/letter-data";
+import {
+  getKeteranganLulusPrintReadiness,
+  type KeteranganLulusPrintReadiness,
+} from "@/lib/letters/keterangan-lulus-data";
+import { getMagangPrintReadiness } from "@/lib/letters/magang-letter-data";
+import { getOfficialPrintReadiness } from "@/lib/letters/official-letter-data";
+import {
+  IPK_INVALID_MESSAGE,
+  isValidIpk,
+  isValidYudisium,
+  YUDISIUM_INVALID_MESSAGE,
+  YUDISIUM_OPTIONS,
+} from "@/lib/letters/graduation-validation";
+import { getRequestDetail } from "@/lib/legacy-request-detail";
+import type { OfficialLetterTemplate } from "@/lib/letters/letter-types";
+import { prisma } from "@/lib/prisma";
+
+type MetadataFieldType = "text" | "date" | "textarea" | "select";
+
+export type LetterMetadataField = {
+  name: string;
+  label: string;
+  type: MetadataFieldType;
+  value: string;
+  maxLength?: number;
+  options?: string[];
+};
+
+export type LetterSignerOption = {
+  id: number;
+  name: string;
+  nip: string;
+  title: string;
+  actingFor: string;
+  rank: string;
+};
+
+export type LetterMetadataPayload = {
+  serviceSlug: string;
+  requestId: string;
+  identity: LetterMetadataIdentity;
+  readiness: KeteranganLulusPrintReadiness | null;
+  duplicateNumber: LetterNumberDuplicateInfo;
+  signerPickerAvailable: boolean;
+  signerPickerMessage: string | null;
+  signers: LetterSignerOption[];
+  commonFields: LetterMetadataField[];
+  serviceFields: LetterMetadataField[];
+};
+
+export type LetterMetadataIdentity = {
+  npm: string | null;
+  name: string | null;
+  programStudy: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+export type LetterNumberDuplicateInfo = {
+  hasDuplicateNumber: boolean;
+  duplicateCount: number;
+  duplicateSamples: Array<{
+    serviceSlug: string;
+    id: string;
+    npm?: string;
+  }>;
+};
+
+type FieldConfig = {
+  name: string;
+  label: string;
+  type: MetadataFieldType;
+  maxLength?: number;
+  required?: boolean;
+  numeric?: "decimal" | "loose";
+  options?: readonly string[];
+};
+
+const LETTER_LANGUAGE_OPTIONS = ["id", "en"] as const;
+
+const LANGUAGE_FIELD: FieldConfig = {
+  name: "BAHASA_SURAT",
+  label: "Bahasa Surat",
+  type: "select",
+  maxLength: 10,
+  options: LETTER_LANGUAGE_OPTIONS,
+};
+
+type DuplicateCheckConfig = {
+  serviceSlug: MetadataServiceSlug;
+  sourceTable: ServiceMetadataConfig["sourceTable"];
+};
+
+type ServiceMetadataConfig = {
+  sourceTable:
+    | "keterangan_lulus"
+    | "masih_kuliah"
+    | "masih_kuliah_aktif"
+    | "kelakuan_baik"
+    | "permohonan_magang";
+  template: OfficialLetterTemplate;
+  commonFields: FieldConfig[];
+  serviceFields: FieldConfig[];
+};
+
+const COMMON_TTD_FIELDS: FieldConfig[] = [
+  { name: "TTD_NO_SURAT", label: "Nomor Surat", type: "text", maxLength: 30 },
+  { name: "TTD_TANGGAL", label: "Tanggal Surat", type: "date" },
+  { name: "TTD_TEMPAT", label: "Tempat Surat", type: "text", maxLength: 30 },
+  {
+    name: "TTD_PANGKAT_GOLONGAN",
+    label: "Pangkat/Golongan Penandatangan",
+    type: "text",
+    maxLength: 50,
+  },
+  {
+    name: "TTD_JABATAN",
+    label: "Jabatan Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  {
+    name: "TTD_NAMA",
+    label: "Nama Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  { name: "TTD_NIP", label: "NIP Penandatangan", type: "text", maxLength: 30 },
+];
+
+const KETERANGAN_LULUS_COMMON_FIELDS: FieldConfig[] = [
+  { name: "TTD_NO_SURAT", label: "Nomor Surat", type: "text", maxLength: 30 },
+  { name: "TTD_TANGGAL", label: "Tanggal Surat", type: "date" },
+  { name: "TTD_TEMPAT", label: "Tempat Surat", type: "text", maxLength: 30 },
+  { name: "TTD_JABATAN", label: "Jabatan Penandatangan", type: "text", maxLength: 70 },
+  { name: "TTD_NAMA", label: "Nama Penandatangan", type: "text", maxLength: 50 },
+  { name: "TTD_NIP", label: "NIP Penandatangan", type: "text", maxLength: 30 },
+];
+
+const MAGANG_TTD_FIELDS: FieldConfig[] = [
+  { name: "TTD_NO_SURAT", label: "Nomor Surat", type: "text", maxLength: 30 },
+  { name: "TTD_TANGGAL", label: "Tanggal Surat", type: "date" },
+  { name: "TTD_TEMPAT", label: "Tempat Surat", type: "text", maxLength: 30 },
+  { name: "TTD_AN", label: "Atas Nama", type: "text", maxLength: 50 },
+  {
+    name: "TTD_PANGKAT_GOLONGAN",
+    label: "Pangkat/Golongan Penandatangan",
+    type: "text",
+    maxLength: 50,
+  },
+  {
+    name: "TTD_JABATAN",
+    label: "Jabatan Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  {
+    name: "TTD_NAMA",
+    label: "Nama Penandatangan",
+    type: "text",
+    maxLength: 100,
+  },
+  { name: "TTD_NIP", label: "NIP Penandatangan", type: "text", maxLength: 30 },
+];
+
+const METADATA_CONFIG = {
+  "keterangan-lulus": {
+    sourceTable: "keterangan_lulus",
+    template: "keterangan-lulus",
+    commonFields: KETERANGAN_LULUS_COMMON_FIELDS,
+    serviceFields: [
+      LANGUAGE_FIELD,
+      { name: "TTD_TANGGAL_BERLAKU", label: "Tanggal Berlaku Surat", type: "date" },
+      { name: "TTD_AN", label: "Atas Nama", type: "text", maxLength: 50 },
+      { name: "TEMPAT_LAHIR", label: "Tempat Lahir", type: "text", maxLength: 100 },
+      { name: "TGL_LAHIR", label: "Tanggal Lahir", type: "date" },
+      { name: "TGL_LULUS", label: "Tanggal Lulus", type: "date", required: true },
+      { name: "IPK", label: "IPK", type: "text", maxLength: 5, numeric: "decimal" },
+      {
+        name: "YUDISIUM",
+        label: "Yudisium",
+        type: "select",
+        maxLength: 25,
+        options: YUDISIUM_OPTIONS,
+      },
+      { name: "DASAR_SURAT_NO", label: "Nomor Dasar Surat", type: "text", maxLength: 30 },
+      {
+        name: "DASAR_SURAT_PERIHAL",
+        label: "Perihal Dasar Surat",
+        type: "text",
+        maxLength: 100,
+      },
+      { name: "DASAR_SURAT_TGL", label: "Tanggal Dasar Surat", type: "date" },
+    ],
+  },
+  "ket-tunjangan-orang-tua": {
+    sourceTable: "masih_kuliah",
+    template: "masih-kuliah",
+    commonFields: COMMON_TTD_FIELDS,
+    serviceFields: [
+      LANGUAGE_FIELD,
+      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 25, numeric: "loose" },
+      { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 10 },
+      { name: "NAMA_ORANG_TUA", label: "Nama Orang Tua/Wali", type: "text", maxLength: 100 },
+      { name: "NIP_NRP", label: "NIP/NRP Orang Tua/Wali", type: "text", maxLength: 100 },
+      {
+        name: "PANGKAT_GOLONGAN",
+        label: "Pangkat/Golongan Orang Tua/Wali",
+        type: "text",
+        maxLength: 100,
+      },
+      { name: "INSTANSI", label: "Instansi Orang Tua/Wali", type: "text", maxLength: 100 },
+    ],
+  },
+  "keterangan-masih-kuliah": {
+    sourceTable: "masih_kuliah_aktif",
+    template: "masih-kuliah-aktif",
+    commonFields: COMMON_TTD_FIELDS,
+    serviceFields: [
+      LANGUAGE_FIELD,
+      { name: "SEMESTER", label: "Semester", type: "text", maxLength: 11, numeric: "loose" },
+      { name: "TAHUN_AKADEMIK", label: "Tahun Akademik", type: "text", maxLength: 11 },
+      { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
+      { name: "KEPERLUAN", label: "Keperluan", type: "text", maxLength: 100 },
+    ],
+  },
+  "keterangan-kelakuan-baik": {
+    sourceTable: "kelakuan_baik",
+    template: "kelakuan-baik",
+    commonFields: COMMON_TTD_FIELDS,
+    serviceFields: [
+      LANGUAGE_FIELD,
+      { name: "ALAMAT", label: "Alamat", type: "textarea", maxLength: 200 },
+      { name: "KEPERLUAN", label: "Keperluan", type: "text", maxLength: 100 },
+    ],
+  },
+  "permohonan-magang-kerja-praktek-ta": {
+    sourceTable: "permohonan_magang",
+    template: "magang",
+    commonFields: MAGANG_TTD_FIELDS,
+    serviceFields: [
+      LANGUAGE_FIELD,
+      { name: "NAMA", label: "Nama Mahasiswa", type: "text", maxLength: 100 },
+      { name: "PRODI", label: "Program Studi", type: "text", maxLength: 150 },
+      {
+        name: "JENIS_PERMOHONAN",
+        label: "Jenis Permohonan",
+        type: "text",
+        maxLength: 50,
+      },
+      {
+        name: "KONTAK_PERSON",
+        label: "Kontak Person",
+        type: "text",
+        maxLength: 150,
+      },
+      {
+        name: "TEMPAT_PELAKSANAAN",
+        label: "Tempat Pelaksanaan",
+        type: "text",
+        maxLength: 200,
+      },
+      { name: "TUJUAN_SURAT", label: "Tujuan Surat", type: "text", maxLength: 200 },
+      { name: "ALAMAT_SURAT", label: "Alamat Surat", type: "textarea", maxLength: 255 },
+      {
+        name: "KECAMATAN_KABUPATEN",
+        label: "Kecamatan/Kabupaten",
+        type: "text",
+        maxLength: 150,
+      },
+      {
+        name: "KOTA_KABUPATEN",
+        label: "Kota/Kabupaten",
+        type: "text",
+        maxLength: 100,
+      },
+      { name: "PROVINSI", label: "Provinsi", type: "text", maxLength: 100 },
+      { name: "TANGGAL_MULAI", label: "Tanggal Mulai", type: "date" },
+      { name: "TANGGAL_SELESAI", label: "Tanggal Selesai", type: "date" },
+    ],
+  },
+} satisfies Record<string, ServiceMetadataConfig>;
+
+type MetadataServiceSlug = keyof typeof METADATA_CONFIG;
+
+const DUPLICATE_CHECK_TABLES = Object.entries(METADATA_CONFIG).map(
+  ([serviceSlug, config]) => ({
+    serviceSlug: serviceSlug as MetadataServiceSlug,
+    sourceTable: config.sourceTable,
+  }),
+) satisfies DuplicateCheckConfig[];
+
+const LETTER_NUMBER_MISSING_MESSAGE =
+  "Nomor surat belum diisi. Lengkapi nomor surat sebelum mencetak PDF resmi.";
+
+const LETTER_NUMBER_DUPLICATE_READY_MESSAGE =
+  "Data surat siap dicetak, tetapi nomor surat terdeteksi pernah digunakan pada pengajuan lain.";
+
+const LETTER_NUMBER_OVERWRITE_MESSAGE =
+  "Nomor surat sudah terisi. Konfirmasi diperlukan untuk mengganti nomor surat.";
+
+export class LetterMetadataError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = "LetterMetadataError";
+    this.statusCode = statusCode;
+  }
+}
+
+function isMetadataServiceSlug(slug: string): slug is MetadataServiceSlug {
+  return slug in METADATA_CONFIG && Boolean(getPrintableLetterService(slug));
+}
+
+function assertValidRequest(serviceSlug: string, id: string) {
+  if (!isMetadataServiceSlug(serviceSlug)) {
+    throw new LetterMetadataError("Template surat tidak ditemukan.", 404);
+  }
+
+  if (!/^\d+$/.test(id)) {
+    throw new LetterMetadataError("ID pengajuan tidak valid.", 400);
+  }
+}
+
+function quoteIdentifier(identifier: string) {
+  return `\`${identifier.replaceAll("`", "``")}\``;
+}
+
+function toDateInputValue(value: Date | string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function toFieldValue(value: unknown, type: MetadataFieldType) {
+  if (type === "date") {
+    return toDateInputValue(value as Date | string | null | undefined);
+  }
+
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value);
+}
+
+function normalizeLetterNumber(value: unknown) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
+function buildFields(configs: FieldConfig[], row: Record<string, unknown>) {
+  return configs.map((field) => ({
+    name: field.name,
+    label: field.label,
+    type: field.type,
+    value: toFieldValue(row[field.name], field.type),
+    maxLength: field.maxLength,
+    options: field.options ? [...field.options] : undefined,
+  }));
+}
+
+async function getIdentity(
+  serviceSlug: MetadataServiceSlug,
+  id: string,
+): Promise<LetterMetadataIdentity> {
+  const detail = await getRequestDetail(serviceSlug, id);
+
+  return {
+    npm: detail?.npm ?? null,
+    name: detail?.requesterName ?? null,
+    programStudy: detail?.requesterProgram ?? null,
+    email: detail?.requesterEmail ?? detail?.emailPengiriman ?? null,
+    phone: detail?.requesterPhone ?? detail?.noHpWa ?? null,
+  };
+}
+
+async function getReadiness(serviceSlug: MetadataServiceSlug, id: string) {
+  const config = METADATA_CONFIG[serviceSlug];
+
+  if (config.template === "keterangan-lulus") {
+    return getKeteranganLulusPrintReadiness(id);
+  }
+
+  if (config.template === "magang") {
+    return getMagangPrintReadiness(id);
+  }
+
+  return getOfficialPrintReadiness(config.template, id);
+}
+
+function hasText(value: unknown) {
+  return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
+}
+
+function isMissingOnlyLetterNumber(
+  serviceSlug: MetadataServiceSlug,
+  row: Record<string, unknown>,
+) {
+  if (hasText(row.TTD_NO_SURAT)) {
+    return false;
+  }
+
+  const commonRequired = [
+    "TTD_TANGGAL",
+    "TTD_TEMPAT",
+    "TTD_JABATAN",
+    "TTD_NAMA",
+    "TTD_NIP",
+  ];
+  const serviceRequired: Record<MetadataServiceSlug, string[]> = {
+    "keterangan-lulus": [
+      "TGL_LULUS",
+      "IPK",
+      "YUDISIUM",
+      "TTD_TANGGAL_BERLAKU",
+    ],
+    "ket-tunjangan-orang-tua": [
+      "SEMESTER",
+      "TAHUN_AKADEMIK",
+      "NAMA_ORANG_TUA",
+      "NIP_NRP",
+      "PANGKAT_GOLONGAN",
+      "INSTANSI",
+      "TTD_PANGKAT_GOLONGAN",
+    ],
+    "keterangan-masih-kuliah": [
+      "SEMESTER",
+      "TAHUN_AKADEMIK",
+      "ALAMAT",
+      "TTD_PANGKAT_GOLONGAN",
+    ],
+    "keterangan-kelakuan-baik": ["ALAMAT", "TTD_PANGKAT_GOLONGAN"],
+    "permohonan-magang-kerja-praktek-ta": [
+      "NAMA",
+      "PRODI",
+      "JENIS_PERMOHONAN",
+      "TEMPAT_PELAKSANAAN",
+      "TUJUAN_SURAT",
+      "ALAMAT_SURAT",
+      "TANGGAL_MULAI",
+      "TANGGAL_SELESAI",
+    ],
+  };
+
+  return [...commonRequired, ...serviceRequired[serviceSlug]].every((field) =>
+    hasText(row[field]),
+  );
+}
+
+function applyNumberReadinessMessage(
+  serviceSlug: MetadataServiceSlug,
+  row: Record<string, unknown>,
+  readiness: KeteranganLulusPrintReadiness | null,
+  duplicateNumber: LetterNumberDuplicateInfo,
+) {
+  if (!readiness) {
+    return readiness;
+  }
+
+  if (!readiness.isReady && isMissingOnlyLetterNumber(serviceSlug, row)) {
+    return {
+      ...readiness,
+      message: LETTER_NUMBER_MISSING_MESSAGE,
+    };
+  }
+
+  if (readiness.isReady && duplicateNumber.hasDuplicateNumber) {
+    return {
+      ...readiness,
+      message: LETTER_NUMBER_DUPLICATE_READY_MESSAGE,
+    };
+  }
+
+  return readiness;
+}
+
+async function getMetadataRow(serviceSlug: MetadataServiceSlug, id: string) {
+  const config = METADATA_CONFIG[serviceSlug];
+  const columns = [
+    "ID",
+    ...new Set([
+      ...config.commonFields.map((field) => field.name),
+      ...config.serviceFields.map((field) => field.name),
+    ]),
+  ];
+  const selectColumns = columns
+    .map((column) => quoteIdentifier(column))
+    .join(", ");
+  const table = Prisma.raw(quoteIdentifier(config.sourceTable));
+  const select = Prisma.raw(selectColumns);
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT ${select}
+    FROM ${table}
+    WHERE \`ID\` = ${id}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getDuplicateLetterNumber(
+  serviceSlug: MetadataServiceSlug,
+  id: string,
+  letterNumber: unknown,
+): Promise<LetterNumberDuplicateInfo> {
+  const trimmed = normalizeLetterNumber(letterNumber);
+
+  if (!trimmed) {
+    return {
+      hasDuplicateNumber: false,
+      duplicateCount: 0,
+      duplicateSamples: [],
+    };
+  }
+
+  const samples: LetterNumberDuplicateInfo["duplicateSamples"] = [];
+  let duplicateCount = 0;
+
+  for (const tableConfig of DUPLICATE_CHECK_TABLES) {
+    const table = Prisma.raw(quoteIdentifier(tableConfig.sourceTable));
+    const rows = await prisma.$queryRaw<
+      Array<{ ID: bigint | number | string; NPM: string | null }>
+    >`
+      SELECT \`ID\`, \`NPM\`
+      FROM ${table}
+      WHERE TRIM(\`TTD_NO_SURAT\`) = ${trimmed}
+        AND NOT (${tableConfig.serviceSlug} = ${serviceSlug} AND \`ID\` = ${id})
+      ORDER BY \`ID\` DESC
+      LIMIT 6
+    `;
+
+    duplicateCount += rows.length;
+
+    for (const row of rows) {
+      if (samples.length >= 5) {
+        continue;
+      }
+
+      samples.push({
+        serviceSlug: tableConfig.serviceSlug,
+        id: String(row.ID),
+        npm: row.NPM ?? undefined,
+      });
+    }
+  }
+
+  return {
+    hasDuplicateNumber: duplicateCount > 0,
+    duplicateCount,
+    duplicateSamples: samples,
+  };
+}
+
+export async function getLetterSigners(): Promise<LetterSignerOption[]> {
+  const rows = await prisma.surat_ttd.findMany({
+    orderBy: [{ NAMA: "asc" }, { ID: "asc" }],
+    select: {
+      ID: true,
+      JABATAN: true,
+      JABATAN_AN: true,
+      PANGKAT_GOLONGAN: true,
+      NAMA: true,
+      NIP: true,
+    },
+  });
+
+  return rows
+    .filter((row) => row.NAMA || row.JABATAN || row.NIP)
+    .map((row) => ({
+      id: row.ID,
+      name: row.NAMA ?? "",
+      nip: row.NIP ?? "",
+      title: row.JABATAN ?? "",
+      actingFor: row.JABATAN_AN ?? "",
+      rank: row.PANGKAT_GOLONGAN ?? "",
+    }));
+}
+
+export async function getLetterMetadata(
+  serviceSlug: string,
+  id: string,
+): Promise<LetterMetadataPayload> {
+  assertValidRequest(serviceSlug, id);
+  const slug = serviceSlug as MetadataServiceSlug;
+  const config = METADATA_CONFIG[slug];
+  const row = await getMetadataRow(slug, id);
+
+  if (!row) {
+    throw new LetterMetadataError("Pengajuan tidak ditemukan.", 404);
+  }
+
+  let signers: LetterSignerOption[] = [];
+  let duplicateNumber: LetterNumberDuplicateInfo = {
+    hasDuplicateNumber: false,
+    duplicateCount: 0,
+    duplicateSamples: [],
+  };
+
+  try {
+    signers = await getLetterSigners();
+  } catch {
+    signers = [];
+  }
+
+  try {
+    duplicateNumber = await getDuplicateLetterNumber(slug, id, row.TTD_NO_SURAT);
+  } catch {
+    duplicateNumber = {
+      hasDuplicateNumber: false,
+      duplicateCount: 0,
+      duplicateSamples: [],
+    };
+  }
+
+  const readiness = applyNumberReadinessMessage(
+    slug,
+    row,
+    await getReadiness(slug, id),
+    duplicateNumber,
+  );
+
+  return {
+    serviceSlug,
+    requestId: id,
+    identity: await getIdentity(slug, id),
+    readiness,
+    duplicateNumber,
+    signerPickerAvailable: signers.length > 0,
+    signerPickerMessage:
+      signers.length > 0
+        ? null
+        : "Master penandatangan belum tersedia. Isi data penandatangan secara manual.",
+    signers,
+    commonFields: buildFields(config.commonFields, row),
+    serviceFields: buildFields(config.serviceFields, row),
+  };
+}
+
+function parseRequestDate(value: unknown, label: string) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new LetterMetadataError(`${label} tidak valid.`, 400);
+  }
+
+  const trimmed = value.trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    throw new LetterMetadataError(`${label} harus berupa tanggal valid.`, 400);
+  }
+
+  const [year, month, day] = trimmed.split("-").map(Number);
+  const date = new Date(`${trimmed}T00:00:00.000Z`);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new LetterMetadataError(`${label} harus berupa tanggal valid.`, 400);
+  }
+
+  return date;
+}
+
+function parseText(value: unknown, field: FieldConfig) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== "string" && typeof value !== "number") {
+    throw new LetterMetadataError(`${field.label} tidak valid.`, 400);
+  }
+
+  const trimmed = String(value).trim();
+
+  if (!trimmed) {
+    if (field.name === "IPK") {
+      throw new LetterMetadataError(IPK_INVALID_MESSAGE, 400);
+    }
+
+    if (field.name === "YUDISIUM") {
+      throw new LetterMetadataError(YUDISIUM_INVALID_MESSAGE, 400);
+    }
+
+    return null;
+  }
+
+  if (field.name === "TTD_NO_SURAT" && /[\r\n\t\u0000-\u001f\u007f]/.test(trimmed)) {
+    throw new LetterMetadataError(
+      "Nomor Surat tidak boleh berisi newline atau karakter kontrol.",
+      400,
+    );
+  }
+
+  if (field.maxLength && trimmed.length > field.maxLength) {
+    throw new LetterMetadataError(
+      `${field.label} maksimal ${field.maxLength} karakter.`,
+      400,
+    );
+  }
+
+  if (field.name === "IPK" && !isValidIpk(trimmed)) {
+    throw new LetterMetadataError(IPK_INVALID_MESSAGE, 400);
+  }
+
+  if (field.name === "YUDISIUM" && !isValidYudisium(trimmed)) {
+    throw new LetterMetadataError(YUDISIUM_INVALID_MESSAGE, 400);
+  }
+
+  if (field.options && !field.options.includes(trimmed)) {
+    throw new LetterMetadataError(`${field.label} tidak valid.`, 400);
+  }
+
+  if (field.numeric === "decimal" && !/^\d+(?:[.,]\d+)?$/.test(trimmed)) {
+    throw new LetterMetadataError(`${field.label} harus berupa angka.`, 400);
+  }
+
+  if (field.numeric === "loose" && !/^[0-9.,\s/-]+$/.test(trimmed)) {
+    throw new LetterMetadataError(`${field.label} harus berupa angka.`, 400);
+  }
+
+  return trimmed;
+}
+
+function parseFieldValue(value: unknown, field: FieldConfig) {
+  if (field.type === "date") {
+    return parseRequestDate(value, field.label);
+  }
+
+  return parseText(value, field);
+}
+
+export async function updateLetterMetadata({
+  serviceSlug,
+  id,
+  payload,
+  actor,
+  request,
+}: {
+  serviceSlug: string;
+  id: string;
+  payload: unknown;
+  actor?: Parameters<typeof writeAuditLog>[0]["actor"];
+  request?: Request;
+}) {
+  assertValidRequest(serviceSlug, id);
+
+  if (typeof payload !== "object" || payload === null) {
+    throw new LetterMetadataError("Payload tidak valid.", 400);
+  }
+
+  const slug = serviceSlug as MetadataServiceSlug;
+  const config = METADATA_CONFIG[slug];
+  const existing = await getMetadataRow(slug, id);
+
+  if (!existing) {
+    throw new LetterMetadataError("Pengajuan tidak ditemukan.", 404);
+  }
+
+  const input = payload as Record<string, unknown>;
+  const allowedFields = [...config.commonFields, ...config.serviceFields];
+  const allowedFieldNames = new Set(allowedFields.map((field) => field.name));
+  const controlFieldNames = new Set(["confirmNumberOverwrite"]);
+  const data: Record<string, unknown> = {};
+
+  for (const fieldName of Object.keys(input)) {
+    if (!allowedFieldNames.has(fieldName) && !controlFieldNames.has(fieldName)) {
+      throw new LetterMetadataError(`Field ${fieldName} tidak dapat diperbarui.`, 400);
+    }
+  }
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(input, field.name)) {
+      data[field.name] = parseFieldValue(input[field.name], field);
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    throw new LetterMetadataError("Tidak ada field surat yang dapat diperbarui.", 400);
+  }
+
+  const existingLetterNumber = normalizeLetterNumber(existing.TTD_NO_SURAT);
+  const incomingHasLetterNumber = Object.prototype.hasOwnProperty.call(
+    data,
+    "TTD_NO_SURAT",
+  );
+  const incomingLetterNumber = incomingHasLetterNumber
+    ? normalizeLetterNumber(data.TTD_NO_SURAT)
+    : existingLetterNumber;
+  const confirmNumberOverwrite = input.confirmNumberOverwrite === true;
+  const changesExistingNumber =
+    existingLetterNumber &&
+    incomingLetterNumber &&
+    existingLetterNumber !== incomingLetterNumber;
+
+  if (changesExistingNumber && !confirmNumberOverwrite) {
+    throw new LetterMetadataError(LETTER_NUMBER_OVERWRITE_MESSAGE, 409);
+  }
+
+  if (config.sourceTable === "keterangan_lulus") {
+    await prisma.keterangan_lulus.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  } else if (config.sourceTable === "masih_kuliah") {
+    await prisma.masih_kuliah.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  } else if (config.sourceTable === "masih_kuliah_aktif") {
+    await prisma.masih_kuliah_aktif.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  } else if (config.sourceTable === "kelakuan_baik") {
+    await prisma.kelakuan_baik.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  } else {
+    await prisma.permohonan_magang.update({
+      where: { ID: BigInt(id) },
+      data,
+    });
+  }
+
+  await writeAuditLog({
+    actor,
+    request,
+    action: changesExistingNumber
+      ? `Mengubah nomor surat ${serviceSlug} #${id}`
+      : `Memperbarui data surat ${serviceSlug} #${id}`,
+  });
+
+  return getLetterMetadata(serviceSlug, id);
+}

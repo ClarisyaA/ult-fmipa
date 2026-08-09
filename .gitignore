@@ -12,9 +12,13 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/blob-report/
 
 # next.js
 /.next/
+/.next-*/
 /out/
 
 # production
@@ -29,6 +33,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -41,3 +46,24 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+database/*.sql
+database/*.zip
+database/*.dump
+prisma/migrations/fmipa_sbpk.sql
+backup_*.sql
+backup_*.dump
+*.bak
+
+uploads/
+public/uploads/
+storage/uploads/
+storage/information/
+storage/home-activities/*
+!storage/home-activities/.gitkeep
+storage/profile/organization/*
+!storage/profile/organization/.gitkeep
+storage/profile/location/*
+!storage/profile/location/.gitkeep
+
+storage-audit-backup/

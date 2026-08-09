@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ult-fmipa-app-config
+  namespace: ult-fmipa
+data:
+  DB_HOST: ult-fmipa-mariadb
+  DB_PORT: "3306"
+  DB_NAME: fmipa_sbpk
+  NEXTAUTH_URL: https://ult-fmipa.example.com
+  MINIO_ENDPOINT: ult-fmipa-minio
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "false"
+  MINIO_BUCKET: ult-fmipa
+  PAUS_MODE: modern
+  PAUS_AUTHORIZATION_URL: https://paus.unpad.ac.id/oauth
+  PAUS_TOKEN_URL: https://paus.unpad.ac.id/oauth/access-token
+  PAUS_USERINFO_URL: https://paus.unpad.ac.id/api/
+  PAUS_SIGN_OUT_URL: https://paus.unpad.ac.id/oauth/sign-out
+  PAUS_LEGACY_LOGIN_URL: ""
+  PAUS_BRIDGE_TOKEN_TTL_SECONDS: "120"

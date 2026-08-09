@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,11 +6,663 @@ datasource db {
   provider = "mysql"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?  @unique
-  role      String   @default("USER")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model alumni {
+  id                     Int       @id @default(autoincrement())
+  nama                   String    @default("") @db.VarChar(50)
+  tmp_lhr                String?   @db.VarChar(30)
+  tgl_lhr                DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  npm                    String?   @db.VarChar(15)
+  program                String?   @db.VarChar(30)
+  prodi                  String?   @db.VarChar(45)
+  tgl_sidang             DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tgl_wisuda             DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tahun_masuk            Int?
+  tahun_lulus            Int?
+  alamat                 String?   @db.VarChar(200)
+  kota                   String?   @db.VarChar(30)
+  email                  String?   @db.VarChar(30)
+  telp                   String?   @db.VarChar(15)
+  instansi               String?   @db.VarChar(30)
+  Jabatan                String?   @db.VarChar(25)
+  alm_inst               String?   @db.VarChar(50)
+  email_inst             String?   @db.VarChar(30)
+  tlp_inst               String?   @db.VarChar(15)
+  wkt_tunggu             DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  waktu_tunggu_pekerjaan String?   @db.VarChar(30)
+  gaji                   String?   @db.VarChar(25)
+  sesuai                 String?   @db.VarChar(10)
+  tgl_entri              DateTime? @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  status_isi             Int       @default(1) @db.UnsignedInt
+}
+
+model beasiswa {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  BEASISWA         String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+}
+
+model bebas_pinjaman {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KETERANGAN       String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
+  HP_WA            String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIKIRIM_TGL      DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH     String?   @db.VarChar(100)
+}
+
+model data_access {
+  ACCESS_CODE  String @id @db.VarChar(25)
+  DESCRIPTION  String @db.VarChar(100)
+  LIST_OF_MENU String @db.VarChar(50)
+}
+
+model data_level {
+  LEVEL_DATA_ID   Int    @id
+  LEVEL_DATA_NAME String @db.VarChar(100)
+  FIELD_NAME      String @db.VarChar(25)
+}
+
+model data_unit {
+  UNIT_ID         BigInt   @id @default(autoincrement())
+  LEVEL_DATA_ID   Int
+  LEVEL_DATA_CODE String   @db.VarChar(15)
+  UNIT_NAME       String   @db.VarChar(100)
+  TIME_UPDATE     DateTime @default(now()) @db.Timestamp(0)
+  TIME_INSERT     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model data_users {
+  USER_NAME   String   @id @db.VarChar(20)
+  FULL_NAME   String   @db.VarChar(50)
+  EMAIL       String   @db.VarChar(50)
+  TELEPHONE   String?  @db.VarChar(50)
+  CONFIRMED   String   @db.VarChar(1)
+  PASSWORD    String   @db.VarChar(75)
+  UNIT_ID     Int
+  ACCESS_CODE String   @db.VarChar(25)
+  APP_ROLE    String?  @db.VarChar(25)
+  TIME_UPDATE DateTime @default(now()) @db.Timestamp(0)
+  TIME_INSERT DateTime @default(now()) @db.Timestamp(0)
+}
+
+model ijazah {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  TGL_LULUS        DateTime? @db.Date
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  VERIFIKASI_TGL   DateTime? @db.Timestamp(0)
+  VERIFIKASI_STAF  String?   @db.VarChar(100)
+  FAKULTAS_TGL     DateTime? @db.Timestamp(0)
+  FAKULTAS_STAF    String?   @db.VarChar(100)
+  UNIVERSITAS_TGL  DateTime? @db.Timestamp(0)
+  UNIVERSITAS_STAF String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+}
+
+model kelakuan_baik {
+  ID                   BigInt    @id @default(autoincrement())
+  NPM                  String?   @db.VarChar(15)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
+  KEPERLUAN            String?   @db.VarChar(100)
+  ALAMAT               String?   @db.VarChar(200)
+  PERMINTAAN_TGL       DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY     String?   @db.VarChar(100)
+  PERMINTAAN_IP        String?   @db.VarChar(20)
+  PROSES_TGL           DateTime? @db.Timestamp(0)
+  PROSES_STAF          String?   @db.VarChar(100)
+  SELESAI_TGL          DateTime? @db.Timestamp(0)
+  SELESAI_STAF         String?   @db.VarChar(100)
+  DIAMBIL_TGL          DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH         String?   @db.VarChar(100)
+  TTD_NO_SURAT         String?   @db.VarChar(30)
+  TTD_TANGGAL          DateTime? @db.Date
+  TTD_TEMPAT           String?   @db.VarChar(30)
+  TTD_PANGKAT_GOLONGAN String?   @db.VarChar(50)
+  TTD_JABATAN          String?   @db.VarChar(100)
+  TTD_NAMA             String?   @db.VarChar(100)
+  TTD_NIP              String?   @db.VarChar(30)
+}
+
+model keterangan_lulus {
+  ID                  BigInt    @id @default(autoincrement())
+  NPM                 String?   @db.VarChar(15)
+  EMAIL               String?   @db.VarChar(150)
+  BAHASA_SURAT        String    @default("id") @db.VarChar(10)
+  TEMPAT_LAHIR        String?   @db.VarChar(100)
+  TGL_LAHIR           DateTime? @db.Date
+  TGL_LULUS           DateTime? @db.Date
+  IPK                 String?   @db.VarChar(5)
+  YUDISIUM            String?   @db.VarChar(25)
+  DASAR_SURAT_NO      String?   @db.VarChar(30)
+  DASAR_SURAT_PERIHAL String?   @db.VarChar(100)
+  DASAR_SURAT_TGL     DateTime? @db.Date
+  PERMINTAAN_TGL      DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY    String?   @db.VarChar(100)
+  PERMINTAAN_IP       String?   @db.VarChar(20)
+  PROSES_TGL          DateTime? @db.Timestamp(0)
+  PROSES_STAF         String?   @db.VarChar(100)
+  SELESAI_TGL         DateTime? @db.Timestamp(0)
+  SELESAI_STAF        String?   @db.VarChar(100)
+  DIAMBIL_TGL         DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH        String?   @db.VarChar(100)
+  TTD_NO_SURAT        String?   @db.VarChar(30)
+  TTD_TANGGAL         DateTime? @db.Date
+  TTD_TANGGAL_BERLAKU DateTime? @db.Date
+  TTD_TEMPAT          String?   @db.VarChar(30)
+  TTD_AN              String?   @db.VarChar(50)
+  TTD_JABATAN         String?   @db.VarChar(70)
+  TTD_NAMA            String?   @db.VarChar(50)
+  TTD_NIP             String?   @db.VarChar(30)
+}
+
+model kks {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  NO_HP            String?   @db.VarChar(20)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KEPERLUAN        String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+}
+
+model kpa {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  NO_HP            String?   @db.VarChar(20)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KEPERLUAN        String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+}
+
+model legalisir {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  NO_SURAT         String?   @db.VarChar(30)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  JUMLAH_TRANSKRIP Int?
+  JUMLAH_IJAZAH    Int?
+  JUMLAH_TRANSLET  Int?
+  KEPERLUAN        String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+  PENGAMBIL        String?   @db.VarChar(100)
+}
+
+model log_users {
+  ID        BigInt   @id @default(autoincrement())
+  USER_NAME String   @db.VarChar(20)
+  TIME      DateTime @default(now()) @db.Timestamp(0)
+  IP        String   @db.VarChar(20)
+  BROWSER   String   @db.VarChar(100)
+  LOG       String   @db.VarChar(200)
+
+  @@index([TIME], map: "time")
+}
+
+model mahasiswa {
+  NPM           String  @id @default("") @db.VarChar(15)
+  NAMA          String? @db.VarChar(100)
+  KD_PS         String? @db.VarChar(10)
+  KD_PA         String? @db.VarChar(10)
+  PROGRAM_STUDI String? @db.VarChar(150)
+  JENJANG       String? @db.VarChar(15)
+  ANGKATAN      Int?
+  FAK           String? @db.VarChar(5)
+}
+
+model mahasiswa_sd_2015 {
+  NPM           String  @id @default("") @db.VarChar(15)
+  NAMA          String? @db.VarChar(100)
+  KD_PS         String? @db.VarChar(10)
+  KD_PA         String? @db.VarChar(10)
+  PROGRAM_STUDI String? @db.VarChar(150)
+  JENJANG       String? @db.VarChar(15)
+  ANGKATAN      Int?
+  FAK           String? @db.VarChar(5)
+}
+
+model masih_kuliah {
+  ID                   BigInt    @id @default(autoincrement())
+  NPM                  String?   @db.VarChar(15)
+  SEMESTER             String?   @db.VarChar(25)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
+  NO_HP                String?   @db.VarChar(20)
+  TAHUN_AKADEMIK       String?   @db.VarChar(10)
+  NAMA_ORANG_TUA       String?   @db.VarChar(100)
+  NIP_NRP              String?   @db.VarChar(100)
+  PANGKAT_GOLONGAN     String?   @db.VarChar(100)
+  INSTANSI             String?   @db.VarChar(100)
+  PERMINTAAN_TGL       DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY     String?   @db.VarChar(100)
+  PERMINTAAN_IP        String?   @db.VarChar(20)
+  PROSES_TGL           DateTime? @db.Timestamp(0)
+  PROSES_STAF          String?   @db.VarChar(100)
+  SELESAI_TGL          DateTime? @db.Timestamp(0)
+  SELESAI_STAF         String?   @db.VarChar(100)
+  DIAMBIL_TGL          DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH         String?   @db.VarChar(100)
+  TTD_NO_SURAT         String?   @db.VarChar(30)
+  TTD_TANGGAL          DateTime? @db.Date
+  TTD_TEMPAT           String?   @db.VarChar(30)
+  TTD_PANGKAT_GOLONGAN String?   @db.VarChar(50)
+  TTD_JABATAN          String?   @db.VarChar(100)
+  TTD_NAMA             String?   @db.VarChar(50)
+  TTD_NIP              String?   @db.VarChar(30)
+}
+
+model masih_kuliah_aktif {
+  ID                   BigInt    @id @default(autoincrement())
+  NPM                  String?   @db.VarChar(15)
+  SEMESTER             String?   @db.VarChar(11)
+  TAHUN_AKADEMIK       String?   @db.VarChar(11)
+  KEPERLUAN            String?   @db.VarChar(100)
+  ALAMAT               String?   @db.VarChar(200)
+  EMAIL                String?   @db.VarChar(150)
+  BAHASA_SURAT         String    @default("id") @db.VarChar(10)
+  NO_HP                String?   @db.VarChar(20)
+  PERMINTAAN_TGL       DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY     String?   @db.VarChar(100)
+  PERMINTAAN_IP        String?   @db.VarChar(20)
+  PROSES_TGL           DateTime? @db.Timestamp(0)
+  PROSES_STAF          String?   @db.VarChar(100)
+  SELESAI_TGL          DateTime? @db.Timestamp(0)
+  SELESAI_STAF         String?   @db.VarChar(100)
+  DIAMBIL_TGL          DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH         String?   @db.VarChar(100)
+  TTD_NO_SURAT         String?   @db.VarChar(30)
+  TTD_TANGGAL          DateTime? @db.Date
+  TTD_TEMPAT           String?   @db.VarChar(30)
+  TTD_PANGKAT_GOLONGAN String?   @db.VarChar(50)
+  TTD_JABATAN          String?   @db.VarChar(100)
+  TTD_NAMA             String?   @db.VarChar(50)
+  TTD_NIP              String?   @db.VarChar(30)
+}
+
+model permohonan_magang {
+  ID                    BigInt    @id @default(autoincrement())
+  NPM                   String?   @db.VarChar(15)
+  EMAIL                 String?   @db.VarChar(150)
+  BAHASA_SURAT          String    @default("id") @db.VarChar(10)
+  NAMA                  String?   @db.VarChar(100)
+  PRODI                 String?   @db.VarChar(150)
+  JENIS_PERMOHONAN      String?   @db.VarChar(50)
+  KONTAK_PERSON         String?   @db.VarChar(150)
+  TEMPAT_PELAKSANAAN    String?   @db.VarChar(200)
+  TUJUAN_SURAT          String?   @db.VarChar(200)
+  ALAMAT_SURAT          String?   @db.VarChar(255)
+  KECAMATAN_KABUPATEN   String?   @db.VarChar(150)
+  KOTA_KABUPATEN        String?   @db.VarChar(100)
+  PROVINSI              String?   @db.VarChar(100)
+  TANGGAL_MULAI         DateTime? @db.Date
+  TANGGAL_SELESAI       DateTime? @db.Date
+  PERMINTAAN_TGL        DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY      String?   @db.VarChar(100)
+  PERMINTAAN_IP         String?   @db.VarChar(45)
+  PROSES_TGL            DateTime? @db.Timestamp(0)
+  PROSES_STAF           String?   @db.VarChar(100)
+  SELESAI_TGL           DateTime? @db.Timestamp(0)
+  SELESAI_STAF          String?   @db.VarChar(100)
+  DIKIRIM_TGL           DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH          String?   @db.VarChar(100)
+  TTD_NO_SURAT          String?   @db.VarChar(30)
+  TTD_TANGGAL           DateTime? @db.Date
+  TTD_TEMPAT            String?   @db.VarChar(30)
+  TTD_AN                String?   @db.VarChar(50)
+  TTD_PANGKAT_GOLONGAN  String?   @db.VarChar(50)
+  TTD_JABATAN           String?   @db.VarChar(100)
+  TTD_NAMA              String?   @db.VarChar(100)
+  TTD_NIP               String?   @db.VarChar(30)
+
+  @@index([NPM], map: "idx_permohonan_magang_npm")
+  @@index([PERMINTAAN_TGL], map: "idx_permohonan_magang_permintaan_tgl")
+  @@index([JENIS_PERMOHONAN], map: "idx_permohonan_magang_jenis")
+}
+
+model plagiarisme {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KETERANGAN       String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
+  HP_WA            String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIKIRIM_TGL      DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH     String?   @db.VarChar(100)
+}
+
+model referensi {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KETERANGAN       String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
+  HP_WA            String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIKIRIM_TGL      DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH     String?   @db.VarChar(100)
+}
+
+model surat_jenis {
+  ID         Int     @id @default(autoincrement())
+  KETERANGAN String? @db.VarChar(50)
+}
+
+model surat_izin_kegiatan {
+  ID                       BigInt    @id @default(autoincrement())
+  NPM                      String?   @db.VarChar(15)
+  NAMA                     String?   @db.VarChar(100)
+  PRODI                    String?   @db.VarChar(150)
+  APPROVAL_STATUS          String?   @default("pending") @db.VarChar(20)
+  APPROVAL_VERIFIKASI_TGL  DateTime? @db.Timestamp(0)
+  APPROVAL_VERIFIKASI_STAF String?   @db.VarChar(100)
+  APPROVAL_REJECT_REASON   String?   @db.Text
+  FINAL_SUBMITTED_TGL      DateTime? @db.Timestamp(0)
+  NAMA_HIMPUNAN            String?   @db.VarChar(150)
+  NAMA_KEGIATAN            String?   @db.VarChar(200)
+  TANGGAL_KEGIATAN         DateTime? @db.Date
+  EMAIL_PENGIRIMAN         String?   @db.VarChar(150)
+  BAHASA_SURAT             String    @default("id") @db.VarChar(10)
+  NO_HP_WA                 String?   @db.VarChar(30)
+  PERMINTAAN_TGL           DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY         String?   @db.VarChar(100)
+  PERMINTAAN_IP            String?   @db.VarChar(45)
+  PROSES_TGL               DateTime? @db.Timestamp(0)
+  PROSES_STAF              String?   @db.VarChar(100)
+  SELESAI_TGL              DateTime? @db.Timestamp(0)
+  SELESAI_STAF             String?   @db.VarChar(100)
+  DIKIRIM_TGL              DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH             String?   @db.VarChar(100)
+
+  @@index([NPM], map: "idx_surat_izin_kegiatan_npm")
+  @@index([APPROVAL_STATUS], map: "idx_surat_izin_kegiatan_approval_status")
+  @@index([PERMINTAAN_TGL], map: "idx_surat_izin_kegiatan_permintaan_tgl")
+}
+
+model surat_keluar {
+  ID                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  ENTRY_TGL             DateTime? @db.Timestamp(0)
+  ENTRY_STAF            String?   @db.VarChar(50)
+  SURAT_MASUK_ID        Int?
+  SURAT_MASUK_NO        String?   @db.VarChar(50)
+  NO_SURAT              String?   @default("") @db.VarChar(50)
+  TGL_SURAT             DateTime? @db.Date
+  PENGIRIM              String?   @default("") @db.VarChar(100)
+  INSTANSI_PENGIRIM     String?   @db.VarChar(150)
+  PERIHAL               String?   @db.VarChar(200)
+  JENIS_SURAT           String?   @db.VarChar(50)
+  DITUJUKAN             String?   @db.VarChar(100)
+  LAMPIRAN              String?   @default("1") @db.VarChar(30)
+  KECEPATAN_PENYAMPAIAN String?   @db.VarChar(50)
+  SIFAT_SURAT           String?   @default("1") @db.VarChar(50)
+  TEMBUSAN              String?   @db.VarChar(250)
+  ARSIP_DIGITAL         String?   @db.VarChar(100)
+  CATATAN               String?   @db.VarChar(250)
+  PROSES_TGL            DateTime? @db.Timestamp(0)
+  PROSES_STAF           String?   @db.VarChar(50)
+  SELESAI_TGL           DateTime? @db.Timestamp(0)
+  SELESAI_STAF          String?   @db.VarChar(50)
+  DIKIRIM_TGL           DateTime? @db.Timestamp(0)
+  DIKIRIM_STAF          String?   @db.VarChar(50)
+}
+
+model surat_lain {
+  ID                  BigInt    @id @default(autoincrement())
+  NPM                 String?   @db.VarChar(15)
+  PERMINTAAN_IP       String?   @db.VarChar(20)
+  PENGANTAR           String?   @db.VarChar(150)
+  DITUJUKAN           String?   @db.VarChar(150)
+  DASAR_SURAT_NO      String?   @db.VarChar(30)
+  DASAR_SURAT_PERIHAL String?   @db.VarChar(100)
+  DASAR_SURAT_TGL     DateTime? @db.Date
+  PERMINTAAN_TGL      DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY    String?   @db.VarChar(100)
+  PROSES_TGL          DateTime? @db.Timestamp(0)
+  PROSES_STAF         String?   @db.VarChar(100)
+  SELESAI_TGL         DateTime? @db.Timestamp(0)
+  SELESAI_STAF        String?   @db.VarChar(100)
+  DIKIRIM_TGL         DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH        String?   @db.VarChar(100)
+  TTD_NO_SURAT        String?   @db.VarChar(30)
+  TTD_TANGGAL         DateTime? @db.Date
+  TTD_JABATAN         String?   @db.VarChar(50)
+  TTD_NAMA            String?   @db.VarChar(50)
+  TTD_NIP             String?   @db.VarChar(30)
+}
+
+model surat_masuk {
+  ID                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  ENTRY_TGL             DateTime? @db.Timestamp(0)
+  ENTRY_STAF            String?   @db.VarChar(50)
+  NO_AGENDA             String?   @db.VarChar(50)
+  NO_SURAT              String?   @default("") @db.VarChar(50)
+  TGL_SURAT             DateTime? @db.Date
+  PENGIRIM              String?   @default("") @db.VarChar(100)
+  INSTANSI_PENGIRIM     String?   @db.VarChar(150)
+  PERIHAL               String?   @db.VarChar(200)
+  JENIS_SURAT           String?   @db.VarChar(50)
+  DITUJUKAN             String?   @db.VarChar(100)
+  LAMPIRAN              String?   @default("1") @db.VarChar(30)
+  KECEPATAN_PENYAMPAIAN String?   @db.VarChar(50)
+  SIFAT_SURAT           String?   @default("1") @db.VarChar(50)
+  TEMBUSAN              String?   @db.VarChar(250)
+  ARSIP_DIGITAL         String?   @db.VarChar(100)
+  CATATAN               String?   @db.VarChar(250)
+  DITERIMA_TGL          DateTime? @db.Timestamp(0)
+  DITERIMA_STAF         String?   @db.VarChar(50)
+  DAFTAR_KE_LAYANAN     String?   @db.VarChar(1)
+}
+
+model surat_masuk_daftar_penerima {
+  ID             Int     @id @default(autoincrement())
+  SURAT_MASUK_ID Int?
+  PENERIMA       String? @db.VarChar(50)
+  STATUS_BACA    String? @db.VarChar(1)
+}
+
+model surat_masuk_disposisi_daftar {
+  ID                 Int       @id @default(autoincrement())
+  SURAT_MASUK_ID     Int?
+  DISPOSISI_TGL      DateTime? @db.Timestamp(0)
+  DISPOSISI_PEMBERI  String?   @db.VarChar(50)
+  DISPOSISI_TUJUAN   String?   @db.VarChar(50)
+  DISPOSISI_TINDAKAN String?   @db.VarChar(50)
+  DISPOSISI_URAIAN   String?   @default("") @db.VarChar(200)
+  STATUS_BACA        String?   @db.VarChar(1)
+}
+
+model surat_masuk_disposisi_tindakan {
+  ID     Int    @id @default(autoincrement())
+  URAIAN String @default("") @db.VarChar(50)
+}
+
+model surat_masuk_lampiran_satuan {
+  ID         Int     @id @default(autoincrement())
+  KETERANGAN String? @db.VarChar(255)
+}
+
+model surat_masuk_pim_unit {
+  ID         Int     @id @default(autoincrement())
+  KETERANGAN String? @db.VarChar(50)
+}
+
+model surat_pengantar {
+  ID                  BigInt    @id @default(autoincrement())
+  NPM                 String?   @db.VarChar(15)
+  EMAIL               String?   @db.VarChar(150)
+  BAHASA_SURAT        String    @default("id") @db.VarChar(10)
+  PERMINTAAN_IP       String?   @db.VarChar(20)
+  PENGANTAR           String?   @db.VarChar(150)
+  DITUJUKAN           String?   @db.VarChar(150)
+  DASAR_SURAT_NO      String?   @db.VarChar(30)
+  DASAR_SURAT_PERIHAL String?   @db.VarChar(100)
+  DASAR_SURAT_TGL     DateTime? @db.Date
+  PERMINTAAN_TGL      DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY    String?   @db.VarChar(100)
+  PROSES_TGL          DateTime? @db.Timestamp(0)
+  PROSES_STAF         String?   @db.VarChar(100)
+  SELESAI_TGL         DateTime? @db.Timestamp(0)
+  SELESAI_STAF        String?   @db.VarChar(100)
+  DIAMBIL_TGL         DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH        String?   @db.VarChar(100)
+  TTD_NO_SURAT        String?   @db.VarChar(30)
+  TTD_TANGGAL         DateTime? @db.Date
+  TTD_JABATAN         String?   @db.VarChar(100)
+  TTD_NAMA            String?   @db.VarChar(100)
+  TTD_NIP             String?   @db.VarChar(30)
+}
+
+model surat_sifat {
+  ID         Int     @id @default(autoincrement())
+  KETERANGAN String? @db.VarChar(50)
+}
+
+model surat_ttd {
+  ID               Int     @id @default(autoincrement())
+  JABATAN          String? @db.VarChar(70)
+  JABATAN_AN       String? @db.VarChar(50)
+  PANGKAT_GOLONGAN String? @db.VarChar(50)
+  NAMA             String? @db.VarChar(50)
+  NIP              String? @db.VarChar(30)
+}
+
+model transkrip {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  EMAIL            String?   @db.VarChar(150)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  TGL_LULUS        DateTime? @db.Date
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  VERIFIKASI_TGL   DateTime? @db.Timestamp(0)
+  VERIFIKASI_STAF  String?   @db.VarChar(100)
+  FAKULTAS_TGL     DateTime? @db.Timestamp(0)
+  FAKULTAS_STAF    String?   @db.VarChar(100)
+  UNIVERSITAS_TGL  DateTime? @db.Timestamp(0)
+  UNIVERSITAS_STAF String?   @db.VarChar(100)
+  DIAMBIL_TGL      DateTime? @db.Timestamp(0)
+  DIAMBIL_OLEH     String?   @db.VarChar(100)
+}
+
+model unggah_karya_ilmiah {
+  ID               BigInt    @id @default(autoincrement())
+  NPM              String?   @db.VarChar(15)
+  BAHASA_SURAT     String    @default("id") @db.VarChar(10)
+  PERMINTAAN_TGL   DateTime? @db.Timestamp(0)
+  PERMINTAAN_ENTRY String?   @db.VarChar(100)
+  PERMINTAAN_IP    String?   @db.VarChar(20)
+  KETERANGAN       String?   @db.VarChar(100)
+  EMAIL            String?   @db.VarChar(150)
+  HP_WA            String?   @db.VarChar(100)
+  PROSES_TGL       DateTime? @db.Timestamp(0)
+  PROSES_STAF      String?   @db.VarChar(100)
+  SELESAI_TGL      DateTime? @db.Timestamp(0)
+  SELESAI_STAF     String?   @db.VarChar(100)
+  DIKIRIM_TGL      DateTime? @db.Timestamp(0)
+  DIKIRIM_OLEH     String?   @db.VarChar(100)
+}
+
+model yudisium {
+  ID       BigInt  @id @default(autoincrement())
+  YUDISIUM String? @db.VarChar(255)
+}
+
+model ult_request_attachments {
+  ID            BigInt   @id @default(autoincrement())
+  SERVICE_SLUG  String   @db.VarChar(100)
+  SOURCE_TABLE  String   @db.VarChar(100)
+  REQUEST_ID    BigInt
+  ORIGINAL_NAME String   @db.VarChar(255)
+  STORED_NAME   String   @db.VarChar(255)
+  MIME_TYPE     String   @db.VarChar(100)
+  SIZE_BYTES    Int
+  STORAGE_PATH  String   @db.VarChar(500)
+  UPLOADED_BY   String?  @db.VarChar(100)
+  UPLOADED_AT   DateTime @default(now())
+  ATTACHMENT_TYPE String? @db.VarChar(50)
+}
+
+model ult_service_surveys {
+  ID                    BigInt    @id @default(autoincrement())
+  SERVICE_SLUG          String    @db.VarChar(100)
+  SOURCE_TABLE          String    @db.VarChar(100)
+  REQUEST_ID            BigInt
+  NPM                   String    @db.VarChar(50)
+  RATING_TANGIBILITY    Int?
+  RATING_RELIABILITY    Int?
+  RATING_RESPONSIVENESS Int?
+  RATING_ASSURANCE      Int?
+  RATING_EMPATHY        Int?
+  OVERALL_RATING        Int
+  COMMENT               String?   @db.Text
+  CREATED_AT            DateTime  @default(now()) @db.DateTime(0)
+  UPDATED_AT            DateTime? @db.DateTime(0)
+
+  @@unique([SERVICE_SLUG, SOURCE_TABLE, REQUEST_ID, NPM], map: "uniq_ult_service_surveys_request_npm")
+  @@index([SERVICE_SLUG], map: "idx_ult_service_surveys_service_slug")
+  @@index([CREATED_AT], map: "idx_ult_service_surveys_created_at")
 }
