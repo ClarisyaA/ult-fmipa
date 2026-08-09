@@ -33,6 +33,7 @@ const code = await run(process.execPath, [
   "tests/mobile-hotspot-dialog.test.mjs",
   "tests/request-completion-dialog.test.mjs",
   "tests/staging-local-rehearsal.test.mjs",
+  "tests/admin-user-pagination.test.mjs",
 ]);
 
 process.exit(code);

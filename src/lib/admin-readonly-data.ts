@@ -16,7 +16,7 @@ function safeTake(limit?: number) {
   return Math.min(Math.max(limit, 1), 50);
 }
 
-function safePage(value?: number) {
+export function safePage(value?: number) {
   if (!value || Number.isNaN(value)) {
     return 1;
   }
@@ -32,7 +32,7 @@ function safePageSize(value?: number) {
   return Math.min(Math.max(Math.floor(value), 1), MAX_PAGE_SIZE);
 }
 
-function getPaginationMeta({
+export function getPaginationMeta({
   page,
   pageSize,
   total,
@@ -361,26 +361,51 @@ export async function getUnitRows({
   }));
 }
 
-export async function getUserRows({
+export const USER_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+export const USER_DEFAULT_PAGE_SIZE = DEFAULT_LIMIT;
+
+export function sanitizeUserPageSize(value?: number) {
+  if (
+    value &&
+    (USER_PAGE_SIZE_OPTIONS as readonly number[]).includes(value)
+  ) {
+    return value;
+  }
+
+  return DEFAULT_LIMIT;
+}
+
+export async function getUserPage({
   search,
-  limit,
+  page,
+  pageSize,
 }: {
   search?: string;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 }) {
   const query = cleanSearch(search);
+  const currentPage = safePage(page);
+  const take = sanitizeUserPageSize(pageSize);
+  const where = query
+    ? {
+        OR: [
+          { USER_NAME: { contains: query } },
+          { FULL_NAME: { contains: query } },
+          { EMAIL: { contains: query } },
+          { ACCESS_CODE: { contains: query } },
+        ],
+      }
+    : undefined;
 
-  return prisma.data_users.findMany({
-    where: query
-      ? {
-          OR: [
-            { USER_NAME: { contains: query } },
-            { FULL_NAME: { contains: query } },
-            { EMAIL: { contains: query } },
-            { ACCESS_CODE: { contains: query } },
-          ],
-        }
-      : undefined,
+  const total = await prisma.data_users.count({ where });
+  const pagination = getPaginationMeta({
+    page: currentPage,
+    pageSize: take,
+    total,
+  });
+  const rows = await prisma.data_users.findMany({
+    where,
     select: {
       USER_NAME: true,
       FULL_NAME: true,
@@ -391,9 +416,15 @@ export async function getUserRows({
       APP_ROLE: true,
       UNIT_ID: true,
     },
+    // USER_NAME is data_users' primary key, so a single ascending sort is
+    // already fully deterministic - no secondary sort key is needed for
+    // stable pagination across pages.
     orderBy: { USER_NAME: "asc" },
-    take: safeTake(limit),
+    skip: (pagination.page - 1) * take,
+    take,
   });
+
+  return { rows, pagination };
 }
 
 export async function getUnitOptions() {
