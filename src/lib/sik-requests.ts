@@ -194,7 +194,7 @@ export async function getLatestSikRequestForStudentOrNull(npm: string) {
  * Same as `getLatestSikRequestForStudent`, but excludes requests that have
  * already finished the SIK cycle (`FINAL_SUBMITTED_TGL` set). A finished
  * request must never be treated as "the" request a student resumes when
- * opening the ajukan page — it stays visible in history, but a new request
+ * opening the ajukan page - it stays visible in history, but a new request
  * should start fresh instead. Used for "should I show a fresh form or
  * resume a draft" decisions; `getLatestSikRequestForStudent` (unfiltered)
  * remains the right choice for `createSikApprovalProofRequest`'s own

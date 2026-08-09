@@ -28,9 +28,12 @@ Setiap item mendukung field berikut:
 
 ## Gambar
 
-Upload gambar memakai storage lokal `storage/home-activities` dan disajikan lewat API aman:
+Upload gambar tersimpan di MinIO (object storage privat, prefix
+`home-activities/`) dan disajikan lewat API aman - bukan filesystem lokal.
+Lihat `docs/minio-storage-deployment.md`.
 
-- `/api/home/activities/images/[id]`
+- `/api/home/activities/images/[id]` (legacy single-image route)
+- `/api/home/activities/image/[imageId]` (route per-gambar untuk multi-gambar)
 
 Format yang didukung:
 
@@ -41,7 +44,7 @@ Format yang didukung:
 
 Batas ukuran mengikuti konvensi upload informasi saat ini: maksimal 2 MB per gambar.
 Form gambar mendukung klik untuk memilih file atau drag-and-drop ke area upload.
-File upload asli disimpan di `storage/home-activities` dan tidak boleh ikut commit. Folder ini di-ignore kecuali `.gitkeep`.
+File upload asli disimpan sebagai object MinIO, bukan di repository - tidak ada folder lokal yang perlu diabaikan untuk fitur ini.
 SVG hanya didukung untuk upload gambar CMS, bukan lampiran dokumen resmi. SVG yang mengandung konten tidak aman seperti script, event handler, `javascript:`, `foreignObject`, atau referensi remote akan ditolak.
 
 Field **Tampilan Gambar** mengatur cara gambar ditampilkan di carousel homepage dan preview admin/staff:

@@ -14,7 +14,7 @@ test("mobile hotspot dialog does not use hotspot imageSrc or supportingImage as 
   const dialogBlock = content.slice(dialogStart, dialogEnd);
 
   // hotspot.imageSrc (the on-scene sprite) must never be referenced inside
-  // the popup/dialog rendering path — only the config array and the
+  // the popup/dialog rendering path - only the config array and the
   // on-scene sprite button (elsewhere in the file) should mention it.
   assert.doesNotMatch(dialogBlock, /backgroundImage/);
   assert.doesNotMatch(dialogBlock, /bg-\[url\(/);
@@ -29,12 +29,12 @@ test("mobile dialog overlay uses a neutral dark overlay, not an image", async ()
 test("the hero itself is blurred directly (filter), not sampled through backdrop-filter over the scrollable wide scene", async () => {
   const content = await source("src/components/home/home-hero.tsx");
   // backdrop-filter compositing a horizontally-overflowing wide scene is
-  // what produced the mirrored/tiled artifact reported by QA — blurring the
+  // what produced the mirrored/tiled artifact reported by QA - blurring the
   // hero's own rendered pixels in place (CSS `filter`) is WYSIWYG and can't
   // duplicate/mirror anything, since it never samples across the
   // overflow-x-auto scroll boundary.
   assert.match(content, /activeHotspotDialog !== null \? "blur-sm" : ""/);
-  // Only the mobile Dialog's own overlayClassName must avoid backdrop-blur —
+  // Only the mobile Dialog's own overlayClassName must avoid backdrop-blur -
   // the unrelated desktop HotspotCenteredPreview card is free to keep its
   // own `backdrop-blur` on its white card background.
   const overlayLine = content.match(/overlayClassName="[^"]*"/);
@@ -124,7 +124,7 @@ test("the walking hero sprite (TurahPatrol) freezes in place while a hotspot dia
     /<TurahPatrol\s*\n\s*reducedMotion=\{reducedMotion\}\s*\n\s*isPaused=\{activeHotspotDialog !== null\}/
   );
   // Pausing must not reset/kill the timeline (that would itself cause a
-  // visible jump) — only the create/resize path is allowed to kill it.
+  // visible jump) - only the create/resize path is allowed to kill it.
   const pauseEffect = content.slice(content.indexOf("useEffect(() => {\n    if (isPaused)"));
   assert.doesNotMatch(pauseEffect.slice(0, 200), /\.kill\(\)|x: 0/);
 });

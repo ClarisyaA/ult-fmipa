@@ -18,7 +18,7 @@ import type { PendingSurveyRequest } from "@/lib/service-surveys";
 
 /**
  * Client-side half of the survey gate (Issue 9). Server-side enforcement
- * lives in the request-creation API route — this component only blocks
+ * lives in the request-creation API route - this component only blocks
  * navigation/UI so a student isn't stuck without knowing why. It relies on
  * `/api/student/surveys/pending`, which already scopes itself to the
  * MAHASISWA role and returns `{ data: null }` for anyone else (including

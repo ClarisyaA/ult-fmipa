@@ -60,8 +60,14 @@ Do not document real passwords. Store secrets in local env/CI secrets.
 
 ## Docker/Host Differences
 
-- Docker app storage root is `/app/storage` mounted from `./storage`.
-- Host dev falls back to `process.cwd()/storage`.
-- Docker exposes app `3000`, DB host `13306`, Adminer `8081`.
-- Host and container servers can both run; always record base URL.
+- File storage is MinIO (object storage, private bucket) for both host dev
+  and Docker - there is no `/app/storage` filesystem mount anymore. See
+  `docs/minio-storage-deployment.md`.
+- `MINIO_ENDPOINT` differs by context: `localhost` when Next.js runs on the
+  host (MinIO still in Docker), `minio` when the `app` service itself runs
+  in Docker Compose. Do not mix the two.
+- Docker exposes app `3000`, DB host `13306`, Adminer `8081`, MinIO API
+  `9000`, MinIO console `9001`.
+- Host and container servers can both run (not simultaneously against the
+  same port); always record base URL and which `MINIO_ENDPOINT` was active.
 

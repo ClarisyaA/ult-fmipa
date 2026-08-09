@@ -1,4 +1,4 @@
-# HANDOUT FE — ULT FMIPA Unpad
+# HANDOUT FE - ULT FMIPA Unpad
 
 Dokumen ini adalah pegangan frontend untuk repo `ult-fmipa`. Isinya disusun dari route dan helper yang benar-benar ada di repo: `src/app`, `src/lib/legacy-services.ts`, `src/lib/service-upload-config.ts`, `src/lib/letters/*`, dan komponen frontend terkait.
 
@@ -130,15 +130,17 @@ Jika user login sebagai mahasiswa dan session menyediakan `session.user.npm`, NP
 
 Loading state: tampilkan skeleton atau fallback content. Empty state: tampilkan pesan netral seperti "Belum ada informasi." Error state: tampilkan pesan ramah; jangan tampilkan raw DB error.
 
-Catatan storage lokal:
+Catatan storage:
 
-- Upload runtime tidak di-commit.
-- DB dump lokal bisa menunjuk file yang tidak ada di laptop.
-- Folder yang relevan: `storage/uploads`, `storage/information`, `storage/home-activities`, `storage/profile`.
-- Missing file boleh membuat API image return 404; UI harus menampilkan placeholder/fallback.
-- Khusus Informasi CMS, jika gambar lama hilang di local setup, buka admin
-  Informasi edit page lalu unggah ulang gambar pengganti. Jangan commit file
-  upload runtime asli.
+- Seluruh file upload (attachment, gambar Informasi/Kegiatan Mahasiswa/Profil)
+  disimpan di MinIO (object storage), bukan filesystem lokal. Lihat
+  `README.md` § MinIO Object Storage dan `docs/minio-storage-deployment.md`.
+- Missing object MinIO membuat API image return 404 secara aman; UI harus
+  menampilkan placeholder/fallback, bukan crash.
+- Khusus Informasi CMS, jika gambar lama hilang, buka admin Informasi edit
+  page lalu unggah ulang gambar pengganti.
+- Gunakan `pnpm storage:audit` untuk mengecek konsistensi metadata DB vs
+  object MinIO.
 
 ## 5. Student Frontend
 

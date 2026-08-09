@@ -82,12 +82,12 @@ Upload gambar Profil mengikuti aturan CMS image upload:
 
 SVG yang mengandung script, event handler, `javascript:`, `foreignObject`, atau referensi remote ditolak oleh validasi safe SVG.
 
-Storage:
+Storage: object MinIO (bukan filesystem lokal), prefix:
 
-- `storage/profile/organization`
-- `storage/profile/location`
+- `profile/organization/`
+- `profile/location/`
 
-Folder storage di-ignore dari git kecuali `.gitkeep`.
+Lihat `docs/minio-storage-deployment.md` untuk detail arsitektur storage.
 
 ## Image Fit
 

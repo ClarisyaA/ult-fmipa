@@ -1,69 +1,73 @@
 # ULT FMIPA Unpad
 
-Website ULT SBAK/FMIPA Unpad adalah revitalisasi aplikasi layanan ULT berbasis
-Next.js App Router. Aplikasi ini memakai database legacy MariaDB `fmipa_sbpk`
-untuk data layanan lama, lalu menambahkan tabel support non-legacy untuk
-lampiran, survei kepuasan, dan informasi/pengumuman.
+Website Unit Layanan Terpadu (ULT) FMIPA Unpad - aplikasi layanan akademik dan
+kemahasiswaan berbasis Next.js App Router. Aplikasi memakai database legacy
+MariaDB `fmipa_sbpk` untuk data layanan/pengguna lama, ditambah tabel support
+non-legacy untuk lampiran, survei, CMS informasi, CMS beranda, dan CMS profil.
+Seluruh file yang diunggah pengguna (lampiran layanan, gambar kegiatan,
+gambar informasi, foto profil) disimpan di **MinIO** (S3-compatible object
+storage), bukan filesystem lokal.
 
-README ini ditulis sebagai handout praktis untuk frontend developer dan anggota
-tim yang perlu menjalankan, memahami route, dan memakai API aplikasi.
+Dokumen ini adalah referensi utama repository. Untuk langkah setup praktis
+step-by-step, lihat [`SETUP.md`](./SETUP.md).
 
-## Tech Stack
+## 1. Project Overview
+
+- **Tujuan**: portal layanan ULT FMIPA Unpad untuk mahasiswa (pengajuan
+  layanan, riwayat, survei kepuasan), staff (proses pengajuan, CMS konten),
+  dan admin (semua akses staff plus manajemen penuh).
+- **Database**: MariaDB legacy `fmipa_sbpk` (tabel layanan/`data_users` lama)
+  digabung dengan tabel support baru yang dikelola lewat migration runner
+  kustom (bukan `prisma db push`).
+- **Storage**: MinIO private bucket. Browser tidak pernah mengakses MinIO
+  secara langsung - semua file diproksi lewat route API aplikasi.
+- **Auth**: NextAuth Credentials Provider (login lokal untuk admin/staff/dev
+  account) dengan fondasi PAUS OAuth (Unpad SSO) yang belum diaktifkan untuk
+  production.
+
+## 2. Main Features
+
+- Katalog layanan publik dan pengajuan layanan oleh mahasiswa, dengan upload
+  lampiran (PDF/JPG/PNG) ke MinIO.
+- Riwayat pengajuan mahasiswa dan survei kepuasan untuk request yang selesai.
+- Dashboard admin/staff: list, detail, update status, hapus (admin-only)
+  pengajuan layanan; ringkasan survei.
+- **CMS Informasi/Pengumuman** - draft/published/archived, jadwal tayang,
+  galeri multi-gambar (maksimal 5 gambar) dengan cover, alt text, dan
+  image-fit per gambar.
+- **CMS Kegiatan Mahasiswa (Beranda)** - kegiatan dengan **multi-gambar**
+  (maksimal 10 gambar per kegiatan), cover otomatis/manual, image-fit per
+  gambar, ditampilkan sebagai carousel di homepage.
+- **CMS Struktur Profil** - hierarki node organisasi (parent-child bebas,
+  bukan tabel tetap), judul/subjudul section, item per node, dikelola dari
+  admin/staff dan dirender rekursif di halaman publik `/profil`.
+- **CMS Lokasi Profil** - jam layanan dan info lokasi ULT.
+- Notifikasi request real-time (in-app) untuk admin/staff.
+- Storage integrity audit read-only untuk membandingkan metadata database
+  dengan object MinIO aktual.
+
+## 3. Tech Stack
 
 | Area | Teknologi |
 | --- | --- |
 | Framework | Next.js 16 App Router |
 | UI | React 19, TypeScript, Tailwind CSS 4, shadcn/ui, lucide-react |
-| Auth | NextAuth Credentials Provider untuk admin/staff legacy DB dan development, PAUS OAuth disiapkan |
-| Database | MariaDB/MySQL legacy `fmipa_sbpk` |
-| ORM/DB Client | Prisma 7 dengan raw SQL untuk beberapa tabel support |
-| Local infra | Docker Compose, Adminer |
-| Testing/checks | `pnpm typecheck`, `pnpm lint`, `pnpm build`; Playwright dapat ditambahkan untuk E2E |
+| Auth | NextAuth v4 Credentials Provider (admin/staff/dev), fondasi PAUS OAuth |
+| Database | MariaDB 11 (`fmipa_sbpk`), Prisma 7 (client + raw SQL untuk tabel support) |
+| Object storage | MinIO (S3-compatible), private bucket |
+| Local infra | Docker Compose (app, db, minio, minio-init, adminer) |
+| Testing | `pnpm test:unit` (Node test runner, source-level checks), Playwright E2E (manual, tidak berjalan otomatis di CI) |
+| Checks | `pnpm typecheck`, `pnpm lint`, `pnpm build` |
 
-Package manager: `pnpm`.
+Package manager: **pnpm** (dipakai lewat Corepack, lihat [`Dockerfile`](./Dockerfile)).
 
-## Core Features
-
-- Katalog layanan publik ULT FMIPA.
-- Pengajuan layanan oleh mahasiswa.
-- Upload lampiran layanan: maksimal 3 file, PDF/JPG/PNG, 5 MB per file.
-- Riwayat pengajuan mahasiswa.
-- Dashboard admin/staff.
-- List, detail, update status, dan delete pengajuan untuk admin.
-- List, detail, dan update status pengajuan untuk staff.
-- Survei kepuasan layanan untuk request yang selesai/diambil/dikirim.
-- Ringkasan survei admin/staff.
-- CRUD informasi/pengumuman untuk admin dan staff.
-- Galeri gambar informasi: maksimal 5 gambar, WebP/PNG/JPG/JPEG, 2 MB per gambar.
-- Status informasi: draft, published, archived, aktif/non-aktif, unggulan, dan jadwal tayang.
-
-## User Roles
-
-| Role | Akses utama |
-| --- | --- |
-| Guest | Halaman publik, katalog layanan, informasi, login |
-| Student/Mahasiswa | Ajukan layanan, riwayat sendiri, lampiran sendiri, survei untuk request sendiri |
-| Staff | Dashboard staff, request list/detail, update status request, CRUD informasi, summary survei |
-| Admin | Semua akses staff plus delete pengajuan layanan dan dashboard admin |
-
-Mahasiswa tidak boleh mengirim NPM manual untuk riwayat/survei. NPM selalu
-dibaca dari session. Admin/staff tidak boleh melihat data master mahasiswa/alumni
-mentah di UI.
-
-## Setup di Laptop Lain
-
-Bagian ini adalah alur paling aman untuk menjalankan project dari nol di laptop
-lain setelah arsitektur project dipindah ke Docker Compose + migrasi support
-table.
-
-### 1. Install kebutuhan dasar
-
-Pastikan laptop tujuan sudah punya:
+## 4. Prerequisites
 
 - Git
-- Docker Desktop
-- Node.js 22 LTS
-- `pnpm`
+- Node.js 22 LTS (image runtime memakai `node:22-bookworm-slim`, lihat
+  [`Dockerfile`](./Dockerfile))
+- pnpm (aktifkan lewat `corepack enable` jika belum ada)
+- Docker Desktop (untuk MariaDB, MinIO, dan Adminer lokal)
 
 Cek cepat:
 
@@ -75,1006 +79,687 @@ docker compose version
 git --version
 ```
 
-### 2. Clone repository dan pindah ke branch kerja
+## 5. Local Development Setup
+
+Ringkasan singkat - untuk langkah detail per-step (termasuk penjelasan
+lengkap dua mode) lihat [`SETUP.md`](./SETUP.md). Ada dua mode, jangan
+dicampur:
+
+- **Mode A - Host Development (direkomendasikan)**: Next.js jalan di host
+  lewat `pnpm dev`, hanya service infra (`db`, `minio`, `minio-init`,
+  `adminer`) yang jalan di Docker. Service `app` **tidak** dijalankan.
+- **Mode B - Full Docker**: seluruh stack termasuk `app` jalan sebagai
+  container (`docker compose up -d --build`), tidak perlu `pnpm dev`.
+
+Ringkasan Mode A:
 
 ```powershell
 git clone <repo-url>
 cd ult-fmipa
-git checkout dev
-```
-
-Kalau branch aktif tim bukan `dev`, ganti sesuai branch yang sedang dipakai.
-
-### 3. Install dependency project
-
-```powershell
 pnpm install
-```
-
-### 4. Buat file environment lokal
-
-```powershell
 Copy-Item .env.example .env
+# isi/sesuaikan nilai di .env (lihat bagian Environment Variables)
+docker compose up -d db minio minio-init adminer
+pnpm prisma generate
+pnpm db:prisma-migrate
+pnpm db:support-migrate
+pnpm dev
 ```
 
-Minimal cek dan sesuaikan nilai berikut di `.env`:
+Buka <http://localhost:3000>. Jika port `3000` terpakai, Next.js biasanya
+pindah otomatis ke `3001` (perhatikan port yang benar-benar tercetak di
+terminal) - jika itu terjadi, **sesuaikan `NEXTAUTH_URL` di `.env`** ke port
+aktual tersebut, karena login akan gagal callback jika `NEXTAUTH_URL` tidak
+cocok dengan port yang sedang dipakai.
 
-- `NEXTAUTH_URL="http://localhost:3000"`
-- `NEXTAUTH_SECRET`
-- `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD`
-- `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD`
-- `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`
-- `DB_ADMIN_ACCESS_CODES`
-- `DB_STAFF_ACCESS_CODES`
+## 6. Environment Variables
 
-Kalau port dev nanti pindah ke `3001` karena `3000` sedang dipakai, ubah juga
-`NEXTAUTH_URL` menjadi `http://localhost:3001`.
+Gunakan [`.env.example`](./.env.example) sebagai template. **Jangan pernah
+commit `.env`** atau nilai secret asli - nilai di bawah ini semuanya
+placeholder/nilai development yang sudah ada di repository (`docker-compose.yml`,
+`.env.example`), bukan credential production.
 
-### 5. Nyalakan service Docker
+### Application
 
-Project ini sekarang bisa dijalankan penuh lewat Docker Compose: Next.js app,
-MariaDB, dan Adminer.
+| Variable | Wajib? | Contoh nilai aman | Keterangan |
+| --- | --- | --- | --- |
+| `NODE_ENV` | Optional | `development` / `production` | `.env.example` men-default `production`; untuk `pnpm dev` biarkan Next.js yang menentukan, tidak perlu diisi manual secara lokal. |
+| `NEXTAUTH_URL` | Wajib | `http://localhost:3000` | Base URL aplikasi. Ganti ke `http://localhost:3001` jika port pindah. |
+| `NEXTAUTH_SECRET` | Wajib | `local-dev-secret-change-me` | Secret sesi NextAuth. Placeholder saja untuk lokal; **wajib** nilai acak kuat di staging/production. |
+| `MAX_UPLOAD_SIZE_MB` | Optional | `10` | Batas ukuran upload umum, dibaca `src/lib/service-upload-config.ts`. |
+| `AUTH_DEBUG` | Optional | `true` / `false` | Aktifkan log debug NextAuth (`src/lib/auth.ts`). Default off. |
+| `DB_CONNECTION_LIMIT` | Optional | `10` | Pool size Prisma (`src/lib/prisma.ts`), default `10` jika kosong. |
+| `PRISMA_QUERY_LOG` | Optional | `true` / `false` | Log query Prisma ke console, default off. |
+
+### Database
+
+| Variable | Wajib? | Contoh nilai aman | Keterangan |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | Wajib | `mysql://ult_user:ult_password@localhost:13306/fmipa_sbpk` | Dibaca `prisma.config.ts`. Host `localhost:13306` untuk app di host; `db:3306` untuk app di dalam Docker Compose. |
+| `DB_HOST` | Wajib | `localhost` (host) / `db` (Compose) | Dipakai runner migration mandiri (`mariadb` client), bukan Prisma. |
+| `DB_PORT` | Wajib | `13306` (host) / `3306` (Compose) | - |
+| `DB_USER` | Wajib | `ult_user` | - |
+| `DB_PASSWORD` | Wajib | `ult_password` | Placeholder dev di `docker-compose.yml`; ganti di staging/production. |
+| `DB_NAME` | Wajib | `fmipa_sbpk` | - |
+
+### Authentication
+
+| Variable | Wajib? | Contoh nilai aman | Keterangan |
+| --- | --- | --- | --- |
+| `NEXTAUTH_URL`, `NEXTAUTH_SECRET` | Wajib | Lihat di atas | - |
+| `AUTH_DEBUG` | Optional | Lihat di atas | - |
+
+### PAUS (Unpad SSO OAuth)
+
+PAUS OAuth sudah punya fondasi kode (provider, callback bridge), tetapi
+`PAUS_CLIENT_ID`/`PAUS_CLIENT_SECRET` di `.env.example` dan
+`docker-compose.yml` masih kosong secara default. **Status aktivasi PAUS
+pada staging/production perlu dikonfirmasi dengan tim Unpad** (credential,
+redirect URI resmi). Development lokal memakai Credentials Provider biasa
+lewat akun `DEV_*`.
+
+| Variable | Wajib? | Contoh nilai aman | Keterangan |
+| --- | --- | --- | --- |
+| `PAUS_MODE` | Optional | `modern` | `modern` atau `legacy`. |
+| `PAUS_CLIENT_ID` | Optional (wajib saat PAUS aktif) | *(kosongkan)* | Placeholder OAuth - jangan hardcode nilai asli. |
+| `PAUS_CLIENT_SECRET` | Optional (wajib saat PAUS aktif) | *(kosongkan)* | Secret OAuth - jangan pernah commit nilai asli. |
+| `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Optional | `https://paus.unpad.ac.id/...` | Endpoint resmi PAUS, sudah diisi default di `.env.example`. |
+| `PAUS_ISSUER` | Optional | *(sesuai konfigurasi PAUS)* | Dibaca `src/lib/auth.ts` untuk provider OAuth. |
+| `PAUS_LEGACY_LOGIN_URL` | Optional | *(kosongkan)* | Bridge ke login PHP legacy jika masih dipakai. |
+| `PAUS_BRIDGE_SECRET` | Optional | `local-bridge-secret-change-me` | Secret bridge PAUS legacy untuk testing. |
+| `PAUS_BRIDGE_TOKEN_TTL_SECONDS` | Optional | `120` | TTL token bridge. |
+
+### MinIO
+
+| Variable | Wajib? | Contoh nilai aman | Keterangan |
+| --- | --- | --- | --- |
+| `MINIO_ENDPOINT` | Wajib | `localhost` (app di host) / `minio` (app di Docker Compose) | **Jangan dicampur** - lihat bagian [MinIO Object Storage](#9-minio-object-storage). |
+| `MINIO_PORT` | Wajib | `9000` | Port API MinIO (bukan console `9001`). |
+| `MINIO_USE_SSL` | Wajib | `false` (lokal) | `"true"` hanya jika MinIO/S3 endpoint sudah TLS. |
+| `MINIO_ACCESS_KEY` | Wajib | `minioadmin` (dev) | Placeholder dev sudah ada di `docker-compose.yml`; **wajib** nilai unik di staging/production. |
+| `MINIO_SECRET_KEY` | Wajib | `minioadmin123` (dev) | Sama seperti di atas - jangan pernah pakai nilai dev di production. |
+| `MINIO_BUCKET` | Wajib | `ult-fmipa` | Nama bucket private. |
+
+### Development Accounts
+
+Dipakai NextAuth Credentials Provider untuk login lokal (lihat default di
+`docker-compose.yml`, semuanya nilai dev/testing, bukan credential nyata).
+
+| Variable | Wajib? (lokal) | Keterangan |
+| --- | --- | --- |
+| `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` | Wajib untuk login admin lokal | Akun admin development. |
+| `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` | Wajib untuk login staff lokal | Akun staff development. |
+| `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD` | Wajib untuk login mahasiswa lokal | Akun mahasiswa development (PAUS belum aktif). |
+| `DEV_STUDENT_NAME`, `DEV_STUDENT_NPM`, `DEV_STUDENT_PHONE` | Optional | Profil mahasiswa dev; `DEV_STUDENT_PHONE` boleh kosong. |
+
+> Catatan: `DB_ADMIN_ACCESS_CODES` dan `DB_STAFF_ACCESS_CODES` masih muncul
+> di `docker-compose.yml` sebagai environment variable legacy, tetapi
+> **sudah tidak dibaca oleh kode aplikasi manapun** di `src/`. Resolusi role
+> admin/staff saat ini memakai kolom `APP_ROLE` pada `data_users` (lihat
+> migration `009_add_app_role_to_data_users.sql` dan `src/lib/roles.ts`).
+> Kedua variable itu aman diabaikan; jangan menganggapnya sebagai mekanisme
+> role aktif saat menulis dokumentasi atau kode baru.
+
+### Upload Limits
+
+| Variable | Wajib? | Keterangan |
+| --- | --- | --- |
+| `MAX_UPLOAD_SIZE_MB` | Optional | Batas umum, default ditentukan di `src/lib/service-upload-config.ts`. Batas spesifik per fitur (contoh: gambar CMS 2 MB, maksimal 5 gambar Informasi, maksimal 10 gambar Kegiatan Mahasiswa) di-hardcode di masing-masing modul upload, bukan lewat environment variable. |
+
+### `MINIO_ENDPOINT` per konteks eksekusi
+
+**Jangan mencampurkan kedua nilai ini.**
+
+| Konteks | `MINIO_ENDPOINT` | Alasan |
+| --- | --- | --- |
+| Next.js dev server di host, MinIO di Docker | `localhost` | App tidak berada di network namespace Docker; mengakses MinIO lewat port `9000` yang di-publish ke host. |
+| Docker Compose (app dan MinIO sama-sama service Compose) | `minio` | DNS internal Compose me-resolve nama service; container tidak boleh memakai `localhost` untuk saling terhubung. |
+| Kubernetes | nama `Service` MinIO (`ult-fmipa-minio`) atau endpoint S3-compatible eksternal | Sama seperti Compose - resolve lewat DNS cluster, bukan `localhost`. |
+
+## 7. Docker Compose Setup
+
+`docker-compose.yml` menjalankan 5 service:
+
+| Service | Image | Peran |
+| --- | --- | --- |
+| `app` | build dari `Dockerfile` | Next.js standalone (`node server.js`), port `3000` |
+| `db` | `mariadb:11` | Database `fmipa_sbpk`, port host `13306` → container `3306` |
+| `minio` | `minio/minio:latest` | Object storage API `9000` + console `9001`, healthcheck `mc ready local` |
+| `minio-init` | `minio/mc:latest` | One-shot job idempoten: membuat bucket privat lalu keluar |
+| `adminer` | `adminer:latest` | UI database, port `8081` |
+
+Untuk **Mode B (Full Docker)** - seluruh stack termasuk `app`:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Service yang akan aktif:
+`app` menunggu (`depends_on`) `db` start, `minio` sehat (`healthy`), dan
+`minio-init` selesai sukses (`service_completed_successfully`) sebelum jalan.
+Pada mode ini **jangan** menjalankan `pnpm dev` terpisah - `app` sudah
+melayani port `3000` dari dalam container.
 
-| Service | URL / Host |
+| Akses | URL / Host |
 | --- | --- |
 | App | <http://localhost:3000> |
 | Adminer | <http://localhost:8081> |
 | MariaDB dari host | `localhost:13306` |
 | MariaDB antar-container | `db:3306` |
+| MinIO API | `localhost:9000` (host) / `minio:9000` (container) |
+| MinIO Console | <http://localhost:9001> |
 
-Kalau hanya ingin database + Adminer lalu FE dijalankan lokal dengan `pnpm run dev`,
-itu juga boleh. Compose tetap dipakai untuk MariaDB.
-
-### 6. Import database legacy
-
-Kalau database masih kosong, import dump legacy:
+Untuk **Mode A (Host Development, direkomendasikan)** - hanya service
+infra, Next.js jalan sendiri di host lewat `pnpm dev`:
 
 ```powershell
-docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database/fmipa_sbpk.sql
+docker compose up -d db minio minio-init adminer
+pnpm dev
 ```
 
-Kalau terminal Windows menahan command redirection, jalankan versi `cmd`:
+Jangan menjalankan Mode A dan Mode B bersamaan pada port `3000` yang sama.
 
-```powershell
-cmd /c "docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
-```
-
-Setelah import selesai, data user legacy, data layanan lama, dan data referensi
-akan ikut masuk.
-
-### 7. Jalankan migrasi aplikasi
-
-Jangan ubah dump legacy. Tabel tambahan aplikasi dipasang terpisah.
-
-Kalau app dijalankan di host:
-
-```powershell
-pnpm db:generate
-pnpm db:prisma-migrate
-pnpm db:support-migrate
-```
-
-Kalau semuanya dijalankan penuh di Docker:
-
-```powershell
-docker compose exec app pnpm db:generate
-docker compose exec app pnpm db:prisma-migrate
-docker compose exec app pnpm db:support-migrate
-```
-
-Script `db:support-migrate` akan menjalankan seluruh SQL di
-`database/migrations`, termasuk perubahan layanan terbaru.
-Runner support migration tidak menyimpan tabel riwayat applied migration, jadi
-file SQL aktif harus idempotent. Clean support migrations sekarang aktif di
-`database/migrations`, sedangkan chain kompatibilitas lama disimpan di
-`database/migrations_legacy_backup`. Jangan jalankan folder backup dan folder
-aktif pada DB yang sama. Catatan audit ada di
-[`docs/migration-audit.md`](docs/migration-audit.md).
-Rencana dan hasil validasi clean support migrations ada di
-[`docs/database-reset-baseline-plan.md`](docs/database-reset-baseline-plan.md)
-dan tetap bergantung pada import `database/fmipa_sbpk.sql` sebagai base legacy
-dump.
-
-## Local Setup
-
-Untuk setup lokal dari awal, gunakan panduan:
-
-[`docs/local-setup.md`](docs/local-setup.md)
-
-Catatan: `database/fmipa_sbpk.sql` adalah base legacy dump, sedangkan
-`database/migrations` berisi clean support migrations aktif. Jangan jalankan
-`database/migrations_legacy_backup`.
-
-### 8. Jalankan aplikasi
-
-Opsi A, full Docker:
-
-```powershell
-docker compose up -d
-```
-
-Opsi B, FE lokal:
-
-```powershell
-pnpm run dev
-```
-
-Buka:
-
-- App: <http://localhost:3000>
-- Adminer: <http://localhost:8081>
-
-Kalau muncul pesan port `3000` sedang dipakai, Next.js biasanya otomatis pindah
-ke `3001`. Sesuaikan `NEXTAUTH_URL` supaya login tidak error callback.
-
-### 9. Login akun development
-
-Ambil dari `.env`. Contoh default dari `.env.example`:
-
-```text
-Admin   : admin@example.com / change-me
-Staff   : staff@example.com / change-me
-Student : student@example.com / change-me
-```
-
-Di environment kerja tim, nilai ini biasanya sudah diganti menjadi akun dev
-yang lebih mudah dipakai untuk testing.
-
-Untuk admin/staff, selain akun dev, login juga bisa membaca user legacy dari
-`data_users` sesuai mapping:
-
-- `DB_ADMIN_ACCESS_CODES="SUPER_USER"`
-- `DB_STAFF_ACCESS_CODES="ADMIN,OPERATOR,KRS,PIMPINAN"`
-
-### 10. Cek apakah setup berhasil
-
-Urutan cek yang disarankan:
-
-1. Buka halaman login.
-2. Login sebagai `student`, pastikan bisa masuk ke halaman layanan mahasiswa.
-3. Login sebagai `staff`, pastikan dashboard staff dan daftar pengajuan terbuka.
-4. Login sebagai `admin`, pastikan dashboard admin, pengajuan layanan, dan report terbuka.
-5. Cek notifikasi request di dashboard admin/staff, lalu izinkan browser notification jika diminta.
-6. Cek halaman report layanan, kinerja staf, dan kinerja unit.
-7. Cek Adminer untuk memastikan tabel support sudah ada.
-
-Useful checks:
-
-```powershell
-pnpm typecheck
-pnpm lint
-pnpm build
-```
-
-## Environment Variables
-
-Gunakan `.env.example` sebagai template. Jangan commit `.env` atau secret asli.
-
-| Variable | Keterangan |
-| --- | --- |
-| `DATABASE_URL` | URL koneksi Prisma ke MariaDB lokal |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Konfigurasi database lokal |
-| `NEXTAUTH_URL` | URL aplikasi, lokal biasanya `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | Secret NextAuth lokal, isi dengan nilai development |
-| `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` | Credential admin development |
-| `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` | Credential staff development |
-| `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD` | Credential mahasiswa development |
-| `DEV_STUDENT_NAME`, `DEV_STUDENT_NPM`, `DEV_STUDENT_PHONE` | Profil mahasiswa development |
-| `DB_ADMIN_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role admin, default `SUPER_USER` |
-| `DB_STAFF_ACCESS_CODES` | Mapping `data_users.ACCESS_CODE` legacy ke role staff, default `ADMIN,OPERATOR,KRS,PIMPINAN` |
-| `PAUS_MODE` | `modern` atau `legacy`; saat ini PAUS belum diaktifkan untuk production |
-| `PAUS_CLIENT_ID`, `PAUS_CLIENT_SECRET` | Placeholder OAuth PAUS, jangan hardcode |
-| `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Endpoint PAUS |
-| `PAUS_LEGACY_LOGIN_URL`, `PAUS_BRIDGE_SECRET`, `PAUS_BRIDGE_TOKEN_TTL_SECONDS` | Bridge PAUS legacy untuk testing |
-
-## Database Setup
-
-Docker Compose menyediakan MariaDB dan Adminer.
-
-| Item | Nilai |
-| --- | --- |
-| MariaDB container | `ult-fmipa-db` |
-| Database | `fmipa_sbpk` |
-| Local DB port | `13306` |
-| Container DB port | `3306` |
-| User | `ult_user` |
-| Password | `ult_password` |
-| Adminer | <http://localhost:8081> |
-
-Adminer login:
-
-```text
-System: MySQL / MariaDB
-Server: db
-Username: ult_user
-Password: ult_password
-Database: fmipa_sbpk
-```
-
-Jika database masih kosong, import dump legacy:
-
-```powershell
-docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database/fmipa_sbpk.sql
-```
-
-Fallback untuk PowerShell Windows:
-
-```powershell
-cmd /c "docker compose exec -T db mariadb -u root -proot fmipa_sbpk < database\fmipa_sbpk.sql"
-```
-
-File dump bersifat sensitif dan tidak boleh masuk repository.
-
-## Support Table Migrations
-
-Jangan ubah SQL dump legacy. Tabel support aplikasi dibuat terpisah.
-
-Attachment table `ult_request_attachments` berada di Prisma migration:
-
-```powershell
-pnpm prisma migrate deploy
-```
-
-Custom support tables dan patch layanan terbaru sekarang dijalankan lewat script:
-
-```powershell
-pnpm db:generate
-pnpm db:prisma-migrate
-pnpm db:support-migrate
-```
-
-Kalau memakai full Docker Compose:
-
-```powershell
-docker compose exec app pnpm db:generate
-docker compose exec app pnpm db:prisma-migrate
-docker compose exec app pnpm db:support-migrate
-```
-
-Script ini lebih aman daripada menjalankan file SQL satu per satu karena sudah
-mengikuti urutan migrasi di repository saat ini.
-
-## Running the Project
-
-```powershell
-docker compose up -d
-pnpm run dev
-```
-
-## Full Docker Compose
-
-Docker Compose can also run the full stack: Next.js app, MariaDB, and Adminer.
-
-```powershell
-docker compose up -d --build
-docker compose exec app pnpm db:generate
-docker compose exec app pnpm db:prisma-migrate
-docker compose exec app pnpm db:support-migrate
-```
-
-Services:
-
-| Service | URL / Host |
-| --- | --- |
-| App | <http://localhost:3000> |
-| Adminer | <http://localhost:8081> |
-| MariaDB from host | `localhost:13306` |
-| MariaDB from containers | `db:3306` |
-
-The app container reads and writes runtime uploads through the project storage
-bind mount:
+Volume Docker yang persist antar restart:
 
 ```yaml
-./storage:/app/storage
+volumes:
+  ult_fmipa_db_data:   # data MariaDB
+  minio_data:          # object MinIO
 ```
 
-This keeps files such as service attachments, homepage activity images,
-information images, and profile images in the host repository's ignored
-`storage/` directory while the container reads them from `/app/storage`.
-Rebuilding or recreating the app container preserves those files. Do not use
-`docker compose down -v` for environments where uploaded files must be kept.
-For production, mount a persistent host directory or persistent volume to
-`/app/storage`.
+Tidak ada bind mount storage lokal (`./storage:/app/storage`) lagi - arsitektur
+lama itu sudah digantikan sepenuhnya oleh MinIO. Lihat
+[bagian 9](#9-minio-object-storage).
 
-## Kubernetes Deployment
+## 8. Database Migration
 
-Kubernetes manifests are available in `k8s/`. They include:
+Aplikasi memakai **tiga lapis** skema database:
 
-- MariaDB `StatefulSet` with persistent storage.
-- Next.js app `Deployment` and `Service`.
-- Upload storage `PersistentVolumeClaim` mounted at `/app/storage`.
-- `ConfigMap` and `Secret` for environment variables.
-- One-off migration `Job` for Prisma migrations and support SQL migrations.
-- NGINX `Ingress` template.
+1. **Legacy dump** `database/fmipa_sbpk.sql` - tabel layanan dan `data_users`
+   lama. File ini sensitif dan **tidak boleh** masuk repository (lihat
+   `.gitignore`: `database/*.sql`).
+2. **Prisma migrations** (`prisma/migrations/`) - saat ini berisi
+   `20260612000000_create_ult_request_attachments` dan
+   `20260803000000_add_app_role_to_data_users`. Dijalankan lewat:
 
-Build the app image first:
+   ```powershell
+   pnpm db:prisma-migrate
+   ```
+
+   Script ini (`scripts/deploy-prisma-migrations.mjs`) menjalankan migration
+   Prisma secara manual lewat koneksi `mariadb` langsung (bukan
+   `prisma migrate deploy`), membuat tabel `_prisma_migrations` sendiri jika
+   belum ada, dan idempoten - migration yang sudah tercatat akan dilewati.
+
+3. **Support migrations aktif** di `database/migrations/` - SQL murni untuk
+   tabel non-legacy (CMS, survei, dsb). Dijalankan lewat:
+
+   ```powershell
+   pnpm db:support-migrate
+   ```
+
+   Script (`scripts/run-support-migrations.mjs`) membaca semua file `*.sql`
+   di `database/migrations/` **urut nama file**, lalu menjalankan setiap
+   statement lewat koneksi `mariadb`. Runner ini **tidak** menyimpan riwayat
+   applied-migration - setiap file harus idempoten sendiri (`CREATE TABLE IF
+   NOT EXISTS`, `INSERT ... WHERE NOT EXISTS`, dst.) supaya aman dijalankan
+   ulang di database yang sudah punya sebagian/seluruh tabelnya.
+
+   Migration aktif saat ini (011 file, urut, mencakup CMS Informasi, CMS
+   Beranda + multi-gambar Kegiatan Mahasiswa, CMS Profil + Struktur Profil
+   hierarkis, dan kolom `APP_ROLE`):
+
+   ```text
+   001_create_service_surveys.sql
+   002_create_information_cms.sql
+   003_create_homepage_cms.sql
+   004_create_profile_cms.sql
+   005_create_magang_sik_services.sql
+   006_create_service_links.sql
+   007_add_legacy_request_compat_columns.sql
+   008_create_service_suggestions.sql
+   009_add_app_role_to_data_users.sql
+   010_create_profile_structure_cms.sql
+   011_create_home_activity_images.sql
+   ```
+
+### Aturan keras
+
+- **Jangan** menjalankan `prisma db push` - walaupun script `db:push` ada di
+  `package.json` untuk kebutuhan darurat/manual, jalur migration yang benar
+  untuk workflow tim adalah `db:prisma-migrate` + `db:support-migrate` di
+  atas.
+- **Jangan** menjalankan file apa pun di `database/migrations_legacy_backup/`
+  - folder itu murni arsip chain migration lama, bukan bagian dari alur aktif.
+  Menjalankan folder backup dan folder aktif pada database yang sama bisa
+  menimbulkan konflik skema.
+- **Jangan** melakukan database reset pada database yang sudah berisi data
+  nyata.
+
+## 9. MinIO Object Storage
+
+Seluruh file upload (lampiran layanan, gambar Kegiatan Mahasiswa, gambar
+Informasi, foto profil) disimpan sebagai object MinIO, **bukan** di
+filesystem container/host.
+
+Fakta arsitektur yang harus dipahami:
+
+- **Bucket bersifat privat.** `minio-init` menjalankan `mc anonymous set
+  none` - tidak ada akses publik/anonim ke bucket, dan aplikasi tidak pernah
+  menerbitkan presigned URL.
+- **Browser tidak pernah mengakses MinIO secara langsung.** Semua file
+  diserve lewat route API aplikasi (`/api/attachments/[id]`,
+  `/api/profile/images/[type]/[id]`, `/api/home/activities/image/[imageId]`,
+  `/api/information/images/[imageId]`, dst.), yang men-stream object dari
+  MinIO ke client.
+- **Metadata file** (nama asli, stored name, mime type, ukuran, alt text,
+  image fit, cover flag, urutan) tersimpan di MariaDB. **Object file itu
+  sendiri** tersimpan di MinIO. Keduanya harus tetap sinkron - lihat
+  [bagian 11](#11-storage-integrity-audit).
+- **Volume MinIO harus persistent.** Di Docker Compose ini adalah named
+  volume `minio_data`; di Kubernetes ini adalah PVC lewat
+  `volumeClaimTemplates` pada `StatefulSet` (`k8s/04-storage.yaml`).
+- **`minio-init` idempoten** - aman dijalankan ulang setiap `docker compose
+  up`, tidak menghapus/menimpa bucket yang sudah ada.
+- **Console lokal** tersedia di <http://localhost:9001> saat Compose
+  meng-expose port `9001` (default di `docker-compose.yml`).
+- **Port MinIO tidak boleh dibuka publik di production** - baik port API
+  `9000` maupun terutama console `9001`. Di Kubernetes, hanya `Service`
+  internal cluster yang mengarah ke MinIO; jangan pernah membuat `Ingress`
+  untuk console.
+
+Referensi detail (object key format, mapping folder lama → prefix MinIO,
+dan histori keputusan migrasi): [`docs/minio-storage-audit.md`](docs/minio-storage-audit.md)
+dan [`docs/minio-storage-deployment.md`](docs/minio-storage-deployment.md).
+
+## 10. Legacy Storage Migration
+
+Jika ada file lama yang masih tersisa di filesystem lokal (dari sebelum
+migrasi ke MinIO), pindahkan dengan `scripts/migrate-local-storage-to-minio.ts`
+lewat:
 
 ```powershell
-docker build -t ult-fmipa:latest .
+pnpm storage:migrate:minio -- --dry-run
 ```
 
-For a remote cluster, tag and push the image to your registry, then update the
-image in `k8s/05-migration-job.yaml` and `k8s/06-app.yaml`.
+Flag yang didukung script ini (lihat `scripts/migrate-local-storage-to-minio.ts`):
 
-Before production deploy, replace:
+| Flag | Efek |
+| --- | --- |
+| *(tanpa flag, atau `--dry-run`)* | **Default.** Hanya menampilkan apa yang akan diunggah - tidak ada upload. |
+| `--execute` | Benar-benar mengunggah file yang ditemukan ke MinIO. |
+| `--overwrite` | Menimpa object yang sudah ada di MinIO (default: object yang sudah ada dilewati). |
 
-- `ult-fmipa.example.com` in `k8s/02-configmap.yaml` and `k8s/07-ingress.yaml`.
-- Placeholder values in `k8s/01-secrets.yaml`.
-- The MariaDB manifest with a managed database or a hardened StatefulSet if the
-  deployment is not just for demo/internal use.
+Sifat script (baca sumbernya untuk detail lengkap):
 
-Apply in order:
+- Memindai lima folder lokal langsung (`storage/uploads`,
+  `storage/information`, `storage/home-activities`,
+  `storage/profile/organization`, `storage/profile/location`) - bukan dari
+  database, jadi baris DB yang menunjuk file yang sudah hilang tidak
+  menggagalkan run.
+- **Tidak pernah** menghapus file lokal.
+- **Tidak pernah** menyentuh database.
+- Melewati object yang sudah ada di MinIO kecuali `--overwrite` diberikan -
+  aman dijalankan berulang kali.
+
+Contoh alur lengkap:
 
 ```powershell
-kubectl apply -f k8s/00-namespace.yaml
-kubectl apply -f k8s/01-secrets.yaml
-kubectl apply -f k8s/02-configmap.yaml
-kubectl apply -f k8s/03-mariadb.yaml
-kubectl apply -f k8s/04-storage.yaml
-kubectl -n ult-fmipa wait --for=condition=ready pod -l app=ult-fmipa-mariadb --timeout=180s
-kubectl apply -f k8s/05-migration-job.yaml
-kubectl -n ult-fmipa wait --for=condition=complete job/ult-fmipa-migrate --timeout=180s
-kubectl apply -f k8s/06-app.yaml
-kubectl apply -f k8s/07-ingress.yaml
+pnpm storage:migrate:minio -- --dry-run
+pnpm storage:migrate:minio -- --execute
 ```
 
-Quality checks:
+## 11. Storage Integrity Audit
+
+Audit read-only yang membandingkan metadata `ult_request_attachments` di
+database dengan object aktual di MinIO (prefix `uploads/`):
+
+```powershell
+pnpm storage:audit
+```
+
+Mode strict (exit code non-zero jika ada discrepancy - cocok untuk CI/gate
+deployment):
+
+```powershell
+pnpm storage:audit -- --strict
+```
+
+Audit ini mendeteksi dan melaporkan:
+
+- **Missing object** - baris DB ada, object MinIO tidak ada.
+- **Orphan object** - object MinIO ada, tidak ada baris DB yang mengacu.
+- **Size mismatch** - ukuran di DB dan di MinIO berbeda.
+- **Invalid metadata path** - `STORED_NAME` mengandung karakter path yang
+  tidak valid (`..`, `/`, `\`).
+
+Script ini **read-only** - tidak pernah menghapus/menulis apa pun ke
+database atau MinIO. Cakupannya saat ini adalah tabel `ult_request_attachments`
+(prefix `uploads/`) - lihat `scripts/audit-storage-integrity.mjs` untuk
+detail implementasi sebelum mengasumsikan cakupan yang lebih luas.
+
+## 12. Available Scripts
+
+Semua script berikut terdaftar di `package.json`:
+
+| Command | Menjalankan | Keterangan |
+| --- | --- | --- |
+| `pnpm dev` | `node scripts/next-with-dist.mjs .next-dev dev` | Dev server Next.js |
+| `pnpm build` | `next build` | Production build |
+| `pnpm start` | `next start` | Jalankan hasil build |
+| `pnpm lint` | `eslint .` | Lint |
+| `pnpm typecheck` | `node scripts/typecheck.mjs` | Type-check project |
+| `pnpm test:unit` | `node scripts/run-unit-tests.mjs` | Unit/source-level test (Node test runner) |
+| `pnpm test:e2e` | `node scripts/run-e2e.mjs` | Playwright smoke test (manual, tidak di CI) |
+| `pnpm test:e2e:full-services` | `node scripts/run-e2e.mjs --full-service` | Playwright full submission test tiap service (manual) |
+| `pnpm test:e2e:ui` / `:headed` / `:debug` / `:trace` / `:report` | Playwright | Mode debugging Playwright |
+| `pnpm storage:audit` | `node scripts/audit-storage-integrity.mjs` | Lihat bagian 11 |
+| `pnpm storage:migrate:minio` | `node scripts/run-storage-migration.mjs` | Lihat bagian 10 |
+| `pnpm db:generate` | `prisma generate` | Generate Prisma Client |
+| `pnpm db:prisma-migrate` | `node scripts/deploy-prisma-migrations.mjs` | Lihat bagian 8 |
+| `pnpm db:support-migrate` | `node scripts/run-support-migrations.mjs` | Lihat bagian 8 |
+| `pnpm db:push` | `prisma db push` | **Jangan dipakai** untuk alur tim normal - lihat bagian 8 |
+| `pnpm format` / `pnpm format:check` | `prettier --write .` / `prettier --check .` | Format kode |
+| `pnpm optimize:home-hero` | `node scripts/optimize-home-hero-assets.mjs` | Build-time asset optimizer untuk hero homepage |
+
+`pnpm prisma generate` (tanpa `db:` prefix) juga valid - memanggil binary
+Prisma CLI langsung dan setara dengan `pnpm db:generate`.
+
+## 13. Testing and Validation
+
+Minimal sebelum push/PR:
 
 ```powershell
 pnpm typecheck
 pnpm lint
+pnpm test:unit
 pnpm build
 ```
 
-## E2E Testing
+Standar lulus: typecheck tanpa error, lint 0 error (warning yang sudah ada
+sebelumnya di luar perubahanmu boleh tetap dilaporkan - tidak wajib nol),
+seluruh unit test lulus, build sukses.
 
-Playwright E2E saat ini tersedia untuk manual smoke testing, tetapi sengaja
-tidak dijalankan otomatis di GitHub Actions, Husky pre-push, `build`, `lint`,
-atau `typecheck`. FE masih dalam tahap polishing sehingga selector, route, dan
-alur form dapat berubah cepat. E2E dapat diaktifkan kembali di CI setelah UI
-routes, forms, dan buttons stabil.
+CI (`.github/workflows/ci.yml`) saat ini menjalankan `pnpm typecheck`,
+`pnpm lint`, dan `pnpm build` pada setiap push/PR ke `main`/`dev`/`feature/**`
+- `pnpm test:unit` belum termasuk di job CI, jadi jalankan manual sebelum
+push.
 
-1. **Default E2E (Smoke + Read-Only Matrix)**:
-   Menjalankan test ringan yang memverifikasi halaman utama, login, riwayat, visual dashboard admin/staff, survey page, serta memverifikasi 15 service slug API dan route tanpa submit form data.
-   Jalankan dengan:
-   ```powershell
-   pnpm test:e2e
-   ```
-
-2. **Full Service Submission E2E (Optional)**:
-   Menjalankan pengujian POST submission data secara end-to-end untuk seluruh 15 service slug yang didukung. Test ini otomatis menghapus data pengajuan yang baru dibuat via admin API setelah assertion selesai.
-   > [!WARNING]
-   > Jangan jalankan full-service submission tests terhadap database production karena test ini menulis records pengajuan meskipun langsung dihapus kembali.
-   Jalankan dengan:
-   ```powershell
-   pnpm test:e2e:full-services
-   ```
-
-3. **Playwright UI Mode**:
-   Membuka visual runner UI Playwright untuk debugging dan inspection secara visual.
-   Jalankan dengan:
-   ```powershell
-   pnpm test:e2e:ui
-   ```
-
-Perintah manual lain:
+Jika migration baru ditambahkan di `database/migrations/`, jalankan juga:
 
 ```powershell
-pnpm test:e2e:headed
-pnpm test:e2e:debug
-pnpm test:e2e:trace
-pnpm test:e2e:report
+pnpm db:support-migrate
 ```
 
-Sebelum menjalankan E2E, pastikan Docker DB aktif dan support migrations sudah diterapkan:
+Playwright E2E tersedia untuk smoke testing manual tetapi **sengaja tidak
+dijalankan otomatis** di CI/pre-push - UI masih dalam tahap polishing
+sehingga selector/route/form dapat berubah cepat.
 
 ```powershell
-docker compose up -d
-pnpm prisma migrate deploy
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\002_create_ult_service_surveys.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\005_create_ult_information_post_images.sql"
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\006_alter_information_posts_schedule_archive.sql"
+docker compose up -d db minio minio-init adminer
+pnpm db:prisma-migrate
+pnpm db:support-migrate
+pnpm test:e2e
 ```
 
-## Auth Accounts
+Jika database Docker lokal sudah punya seluruh migration terpasang
+(sudah pernah menjalankan langkah di [bagian 8](#8-database-migration)
+sebelumnya), cukup:
 
-Credential development dibaca dari `.env`.
+```powershell
+docker compose up -d db minio minio-init adminer
+pnpm test:e2e
+```
 
-| Role | Variable |
-| --- | --- |
-| Admin | `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD` |
-| Staff | `DEV_STAFF_EMAIL`, `DEV_STAFF_PASSWORD` |
-| Student | `DEV_STUDENT_EMAIL`, `DEV_STUDENT_PASSWORD`, `DEV_STUDENT_NPM` |
+> [!WARNING]
+> Jangan jalankan `pnpm test:e2e:full-services` terhadap database berisi
+> data nyata - test ini menulis record pengajuan sungguhan (walaupun
+> otomatis dihapus lagi via admin API setelah assertion selesai).
 
-Admin/staff juga dapat login memakai `USER_NAME` atau `EMAIL` dari tabel legacy
-`data_users`, selama `CONFIRMED = 1` dan password cocok dengan hash legacy.
-Mapping role default:
-
-| Legacy `ACCESS_CODE` | Role aplikasi baru |
-| --- | --- |
-| `SUPER_USER` | Admin |
-| `ADMIN`, `OPERATOR`, `KRS`, `PIMPINAN` | Staff |
-
-Mahasiswa production tidak memakai password lokal aplikasi. Mahasiswa login
-melalui PAUS/SIAT/Unpad SSO, lalu aplikasi memakai NPM dari session untuk
-riwayat dan pengajuan layanan. Credential student di `.env` hanya untuk testing
-lokal selama PAUS belum aktif.
-
-## Folder Structure
+## 14. Project Structure
 
 | Path | Keterangan |
 | --- | --- |
-| `src/app/(public)` | Halaman publik: beranda, layanan, informasi, survei |
-| `src/app/admin` | Dashboard, request, informasi, survei admin |
-| `src/app/staff` | Dashboard, request, informasi, survei staff |
+| `src/app/(public)` | Halaman publik: beranda, profil, layanan, informasi, survei |
+| `src/app/admin` | Dashboard dan CMS admin |
+| `src/app/staff` | Dashboard dan CMS staff |
 | `src/app/mahasiswa` | Riwayat pengajuan mahasiswa |
-| `src/app/api` | Route handlers API App Router |
-| `src/components` | Komponen UI, layout, request, service, informasi, survey |
-| `src/lib` | Helper auth, legacy request, upload, survey, informasi, Prisma |
+| `src/app/api` | Route handlers App Router - lihat subfolder `admin/`, `staff/`, `student/`, `home/`, `information/`, `profile/`, `requests/`, `services/`, `attachments/`, `auth/`, `health/` |
+| `src/components` | Komponen UI, request, service, informasi, home-activities, profile, survey |
+| `src/lib` | Helper: auth, roles, upload (per-domain), MinIO client, CMS (informasi/beranda/profil/struktur), storage-paths, Prisma client |
 | `src/types` | TypeScript types shared |
 | `src/constants` | Navigasi dan konstanta UI |
-| `prisma` | Prisma schema/config dan migration attachment |
-| `database/migrations` | SQL support table non-legacy |
-| `storage/uploads` | File lampiran layanan lokal, ignored by git |
-| `storage/information` | File gambar informasi lokal, ignored by git |
+| `prisma/schema.prisma`, `prisma.config.ts` | Skema Prisma (introspeksi tabel legacy + model support) dan config |
+| `prisma/migrations/` | Migration Prisma (attachment, `APP_ROLE`) |
+| `database/migrations/` | SQL support table aktif - lihat bagian 8 |
+| `database/migrations_legacy_backup/` | Arsip migration lama - **jangan dijalankan** |
+| `k8s/` | Manifest Kubernetes (lihat [`k8s/README.md`](k8s/README.md)) |
+| `docs/` | Dokumentasi tambahan (audit MinIO, deployment, QA, dsb.) |
+| `tests/` | Test source-level (`*.test.mjs`, dijalankan `pnpm test:unit`) |
+| `e2e/` | Test Playwright |
 
-## Frontend Route Map
+## 15. Role Overview
 
-### Public
-
-| Route | Keterangan |
+| Role | Akses utama |
 | --- | --- |
-| `/` | Beranda |
-| `/profil` | Profil |
-| `/layanan` | Katalog layanan |
-| `/layanan/[slug]` | Detail layanan |
-| `/layanan/[slug]/ajukan` | Form pengajuan layanan, student-only |
-| `/informasi` | Daftar informasi published, aktif, dan dalam jadwal tayang |
-| `/informasi/[slug]` | Detail informasi publik |
-| `/survei` | Entry page survei |
-| `/login` | Login development credentials dan PAUS placeholder |
-
-### Student
-
-| Route | Keterangan |
-| --- | --- |
-| `/mahasiswa/riwayat` | Riwayat pengajuan milik session mahasiswa |
-| `/mahasiswa/riwayat/[serviceSlug]/[id]` | Detail pengajuan milik mahasiswa |
-| `/survei` | Arahan survei; survei juga tersedia dari request selesai |
-
-### Staff
-
-| Route | Keterangan |
-| --- | --- |
-| `/staff/dashboard` | Dashboard agregat staff |
-| `/staff/requests` | List pengajuan dan aksi status |
-| `/staff/requests/[serviceSlug]/[id]` | Detail pengajuan |
-| `/staff/informasi` | Kelola informasi |
-| `/staff/informasi/tambah` | Tambah informasi |
-| `/staff/informasi/[id]/edit` | Edit informasi |
-| `/staff/surveys` | Summary survei |
-
-### Admin
-
-| Route | Keterangan |
-| --- | --- |
-| `/admin/dashboard` | Dashboard agregat admin |
-| `/admin/requests` | List pengajuan, aksi status, dan hapus request |
-| `/admin/requests/[serviceSlug]/[id]` | Detail pengajuan dan hapus request |
-| `/admin/informasi` | Kelola informasi |
-| `/admin/informasi/tambah` | Tambah informasi |
-| `/admin/informasi/[id]/edit` | Edit informasi |
-| `/admin/surveys` | Summary survei |
-
-## API Documentation
-
-Semua API berada di `src/app/api`. Response error umum:
-
-```json
-{ "error": "Pesan error" }
-```
-
-### Auth
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET/POST` | `/api/auth/[...nextauth]` | Public | NextAuth credentials dan PAUS provider |
-| `GET` | `/api/health` | Public | Health check |
-
-### Services
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/services` | Public | Daftar layanan publik |
-| `GET` | `/api/services/[slug]` | Public | Detail layanan |
-| `POST` | `/api/services/[slug]/requests` | Student | Buat pengajuan layanan |
-
-`POST /api/services/[slug]/requests` memakai `multipart/form-data`.
-NPM dan identitas student diambil dari session.
-
-FormData penting:
-
-```text
-attachments: File[]  // optional, append dengan key sama
-```
-
-Rules lampiran:
-
-- key FormData: `attachments`
-- maksimal 3 file
-- maksimal 5 MB per file
-- format: PDF, JPG/JPEG, PNG
-
-Contoh FE:
-
-```ts
-const formData = new FormData();
-formData.append("description", "Keperluan administrasi");
-files.forEach((file) => formData.append("attachments", file));
-
-await fetch("/api/services/kartu-prestasi-akademik/requests", {
-  method: "POST",
-  body: formData,
-});
-```
-
-Contoh response sukses:
-
-```json
-{
-  "data": {
-    "requestId": "123",
-    "attachmentCount": 2
-  },
-  "message": "Pengajuan layanan berhasil dikirim."
-}
-```
-
-Field FormData yang dibaca API pengajuan layanan:
-
-```text
-description
-email
-phone
-scholarshipName
-semester
-tahunAkademik
-namaOrangTua
-nipNrp
-pangkatGolongan
-instansi
-pengantar
-ditujukan
-dasarSuratNo
-dasarSuratPerihal
-dasarSuratTgl
-tempatLahir
-tanggalLahir
-tanggalLulus
-tglLulus
-ipk
-yudisium
-jumlahTranskrip
-jumlahIjazah
-jumlahTranslet
-```
-
-Kirim hanya field yang relevan untuk layanan yang dipilih.
-
-### Student Requests
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/student/requests` | Student | List request milik session mahasiswa |
-| `GET` | `/api/student/requests/[serviceSlug]/[id]` | Student | Detail request milik session mahasiswa |
-| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Survey untuk request tertentu |
-| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Upsert survey dari detail request |
-| `GET` | `/api/student/surveys/pending` | Student | Request selesai terbaru yang belum disurvei |
-| `GET` | `/api/student/surveys/requests` | Student | Daftar request yang eligible/tersurvei |
-| `POST` | `/api/student/surveys` | Student | Submit/update survey |
-
-Catatan FE:
-
-- Jangan kirim NPM dari client.
-- Student tidak dapat membuka request NPM lain.
-- Gunakan empty state saat list kosong.
-- `GET /api/student/requests` mengembalikan `{ data, pagination }`.
-
-### Admin Requests
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/admin/summary` | Admin | Summary dashboard |
-| `GET` | `/api/admin/requests` | Admin | List request dengan filter query |
-| `GET` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Detail request |
-| `PATCH` | `/api/admin/requests/[serviceSlug]/[id]/status` | Admin | Update status request |
-| `DELETE` | `/api/admin/requests/[serviceSlug]/[id]` | Admin | Hapus request permanen |
-
-Payload status:
-
-```json
-{
-  "action": "process",
-  "staffName": "Admin ULT"
-}
-```
-
-Supported `action`:
-
-- `process` -> Proses
-- `complete` -> Selesai
-- `deliver` -> Diambil/Dikirim
-
-Delete request admin membersihkan metadata lampiran, file lokal lampiran,
-survey terkait jika ada, lalu row request legacy dari tabel whitelisted.
-
-Query params list admin:
-
-```text
-service=<serviceSlug>
-status=pending | inProgress | completed | delivered
-page=1
-limit=10
-```
-
-Response list admin/staff berbentuk:
-
-```json
-{
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 0,
-    "totalPages": 0
-  }
-}
-```
-
-### Staff Requests
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/staff/summary` | Staff | Summary dashboard |
-| `GET` | `/api/staff/requests` | Staff | List request dengan filter query |
-| `GET` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Detail request |
-| `PATCH` | `/api/staff/requests/[serviceSlug]/[id]/status` | Staff | Update status request |
-| `DELETE` | `/api/staff/requests/[serviceSlug]/[id]` | Staff | Selalu 403; jangan dipakai FE |
-
-Staff dapat memproses, menyelesaikan, dan menandai diambil/dikirim untuk
-workflow yang didukung. Staff tidak dapat menghapus service request. Jika
-endpoint delete staff dipanggil, response adalah 403.
-
-Query params list staff sama seperti admin:
-
-```text
-service=<serviceSlug>
-status=pending | inProgress | completed | delivered
-page=1
-limit=10
-```
-
-### Attachments
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/attachments/[id]` | Admin/Staff/owning Student | Download/view lampiran |
-
-Catatan:
-
-- Path lokal tidak pernah diekspos ke client.
-- Admin/staff dapat membuka lampiran operasional.
-- Student hanya dapat membuka lampiran request miliknya sendiri.
-
-### Surveys
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/admin/surveys/summary` | Admin | Summary survei |
-| `GET` | `/api/staff/surveys/summary` | Staff | Summary survei |
-| `GET` | `/api/student/surveys/pending` | Student | Pending survey modal |
-| `GET` | `/api/student/surveys/requests` | Student | Request eligible/submitted |
-| `POST` | `/api/student/surveys` | Student | Submit/update survey |
-| `GET` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Survey per request |
-| `POST` | `/api/student/requests/[serviceSlug]/[id]/survey` | Student | Submit/update survey per request |
-
-Payload survey:
-
-```json
-{
-  "serviceSlug": "kartu-prestasi-akademik",
-  "requestId": "123",
-  "overallRating": 5,
-  "ratingTangibility": 5,
-  "ratingReliability": 5,
-  "ratingResponsiveness": 4,
-  "ratingAssurance": 5,
-  "ratingEmpathy": 5,
-  "comment": "Pelayanan cepat."
-}
-```
-
-Rules:
-
-- Rating integer 1 sampai 5.
-- `overallRating` wajib.
-- `comment` optional maksimal 500 karakter.
-- Survey hanya untuk request milik student dan status selesai/diambil/dikirim.
-
-### Information Posts
-
-Admin:
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/admin/information` | Admin | List semua informasi |
-| `POST` | `/api/admin/information` | Admin | Buat informasi |
-| `GET` | `/api/admin/information/[id]` | Admin | Detail informasi |
-| `PATCH` | `/api/admin/information/[id]` | Admin | Update informasi |
-| `DELETE` | `/api/admin/information/[id]` | Admin | Hapus informasi |
-
-Staff:
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/staff/information` | Staff | List semua informasi |
-| `POST` | `/api/staff/information` | Staff | Buat informasi |
-| `GET` | `/api/staff/information/[id]` | Staff | Detail informasi |
-| `PATCH` | `/api/staff/information/[id]` | Staff | Update informasi |
-| `DELETE` | `/api/staff/information/[id]` | Staff | Hapus informasi |
-
-Information create/update mendukung JSON dan `multipart/form-data`. Gunakan
-FormData jika ada gambar.
-
-FormData fields:
-
-```text
-title
-category
-summary
-content
-status          // draft | published | archived
-featured        // true | false
-isActive        // true | false
-displayStartAt  // optional datetime-local
-displayEndAt    // optional datetime-local
-images          // File[], optional
-```
-
-Rules:
-
-- Slug dibuat otomatis dari `title`.
-- `title` wajib dan unik setelah normalisasi.
-- `content` wajib.
-- `archived`, non-active, dan scheduled-hidden tidak muncul di publik.
-- `displayEndAt` harus setelah `displayStartAt`.
-- gambar maksimal 5 per informasi.
-- gambar maksimal 2 MB per file.
-- format gambar: WebP, PNG, JPG/JPEG.
-- SVG tidak diizinkan.
-
-### Information Images
-
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/information/images/[imageId]` | Public if post visible, admin/staff for draft | Serve image aman |
-| `POST` | `/api/admin/information/[id]/images` | Admin | Tambah gambar |
-| `PATCH` | `/api/admin/information/[id]/images/[imageId]` | Admin | Update alt text |
-| `DELETE` | `/api/admin/information/[id]/images/[imageId]` | Admin | Hapus gambar |
-| `POST` | `/api/admin/information/[id]/images/[imageId]/cover` | Admin | Set cover |
-| `POST` | `/api/staff/information/[id]/images` | Staff | Tambah gambar |
-| `PATCH` | `/api/staff/information/[id]/images/[imageId]` | Staff | Update alt text |
-| `DELETE` | `/api/staff/information/[id]/images/[imageId]` | Staff | Hapus gambar |
-| `POST` | `/api/staff/information/[id]/images/[imageId]/cover` | Staff | Set cover |
-
-Public pages `/informasi` dan `/informasi/[slug]` memakai server helper dan
-route image aman. Storage path tidak diekspos.
-
-## Service Request Flow
-
-1. Student login.
-2. Student membuka `/layanan`.
-3. Student memilih layanan dan membuka `/layanan/[slug]`.
-4. Student membuka `/layanan/[slug]/ajukan`.
-5. Student submit form dan optional lampiran.
-6. Success diarahkan ke `/mahasiswa/riwayat`.
-7. Admin/staff memproses request dari dashboard request.
-8. Jika request selesai/diambil/dikirim, student dapat mengisi survei.
-
-## Attachment Upload Flow
-
-- FE wajib memakai `FormData`.
-- Append setiap file dengan key yang sama: `attachments`.
-- Jangan membaca hanya `files[0]`.
-- Tampilkan daftar file terpilih, ukuran, dan count.
-- Backend tetap memvalidasi jumlah, tipe, dan ukuran file.
-
-## Survey Flow
-
-- Survey hanya untuk request milik student.
-- Survey muncul untuk status selesai/diambil/dikirim.
-- Student dapat submit dan update survey.
-- Admin/staff melihat summary, rata-rata dimensi, komentar terbaru, dan breakdown layanan.
-
-## Information/Pengumuman Flow
-
-- Admin/staff membuat informasi dari `/admin/informasi/tambah` atau `/staff/informasi/tambah`.
-- Slug otomatis dari judul.
-- Editor dapat memilih draft/published/archived, aktif/non-aktif, unggulan, dan jadwal tayang.
-- Gambar dapat ditambah, dihapus, diberi alt text, dan dipilih sebagai cover.
-- Public hanya melihat informasi `published`, aktif, tidak archived, dan berada dalam jadwal tayang.
-
-## Admin/Staff Workflow
-
-Request table menampilkan tombol:
-
-```text
-Proses | Selesai | Diambil/Dikirim | Detail
-```
-
-Admin request table menambahkan:
-
-```text
-Hapus
-```
-
-Rules status:
-
-| Status saat ini | Aksi aktif |
-| --- | --- |
-| Menunggu | Proses |
-| Diproses | Selesai |
-| Selesai | Diambil/Dikirim |
-| Diambil/Dikirim | Tidak ada aksi status aktif |
-
-Untuk layanan yang workflow statusnya belum didukung, tombol status tetap
-terlihat tetapi disabled. Detail tetap aktif.
-
-## PAUS OAuth Status
-
-PAUS OAuth foundation sudah ada tetapi belum diaktifkan untuk production karena
-callback URI dan credential harus dikonfirmasi Unpad.
-
-Development saat ini memakai NextAuth Credentials Provider.
-
-Callback lokal yang harus didaftarkan untuk mode modern:
-
-```text
-http://localhost:3000/api/auth/callback/paus
-```
-
-Callback production harus dikonfirmasi oleh Unpad:
-
-```text
-https://<production-domain>/api/auth/callback/paus
-```
-
-Jika PAUS lama hanya mengenali callback PHP legacy, login NextAuth dapat gagal
-dengan `invalid_client`. Jangan implementasikan PAUS lebih lanjut tanpa data
-client ID, secret, dan callback URI resmi.
-
-## Testing Checklist
-
-Minimal sebelum push:
-
-```powershell
-pnpm typecheck
-pnpm lint
-pnpm build
-```
-
-Manual smoke test:
-
-- Guest membuka `/`, `/layanan`, `/informasi`, `/survei`.
-- Student submit request tanpa lampiran.
-- Student submit request dengan 1-3 lampiran.
-- Student melihat `/mahasiswa/riwayat`.
-- Admin/staff membuka request list dan detail.
-- Admin/staff menjalankan Proses, Selesai, Diambil/Dikirim.
-- Admin menghapus request test.
-- Student mengisi survei untuk request selesai.
-- Admin/staff melihat survey summary.
-- Admin/staff membuat, edit, archive, restore, delete informasi.
-- Public hanya melihat informasi yang visible.
-
-## Git Workflow
-
-- `main`: branch stable.
-- `dev`: branch integration.
-- `feature/*`: branch fitur.
-
-Alur umum:
-
-```powershell
-git checkout dev
-git pull origin dev
-git checkout -b feature/nama-fitur
-pnpm typecheck
-pnpm lint
-pnpm build
-```
-
-Jangan commit:
-
-- `.env`
-- `database/*.sql`
-- `database/*.zip`
-- `storage/uploads`
-- `storage/information`
-
-## Notes for FE Developers
-
-- Jangan panggil API admin/staff dari UI student.
-- Jangan kirim NPM manual untuk riwayat/survei student.
-- Gunakan `FormData` untuk upload file.
-- Gunakan JSON untuk update status dan submit survey.
-- Selalu handle empty state.
-- Selalu tampilkan konfirmasi sebelum aksi destructive.
-- Jangan tampilkan field teknis seperti `sourceTable` kepada user.
-- `serviceSlug` boleh dipakai internal route/link, tetapi label UI harus memakai nama layanan.
-- Jangan expose local storage path ke UI.
-- Jangan render raw HTML dari informasi.
-
-## Troubleshooting
-
-### Docker daemon tidak berjalan
-
-Jalankan Docker Desktop, lalu:
+| **Guest** | Halaman publik: beranda, profil, katalog layanan, informasi, login |
+| **Mahasiswa** | Ajukan layanan, riwayat pengajuan sendiri, lampiran sendiri, survei untuk request sendiri. NPM selalu dibaca dari session, tidak pernah dari input client. |
+| **Staff** | Dashboard staff, list/detail request, update status request, CRUD Informasi, CRUD Kegiatan Mahasiswa, CRUD Struktur/Lokasi Profil, ringkasan survei. Tidak bisa menghapus pengajuan layanan. |
+| **Admin** | Semua akses Staff, plus hapus pengajuan layanan dan dashboard admin. |
+
+Role aplikasi (`APP_ROLE`: `MAHASISWA` | `STAFF` | `ADMIN`) diselesaikan lewat
+`src/lib/roles.ts`. Untuk user legacy dari `data_users`, role default
+dipetakan dari kode posisi lama (`SUPER_USER`/`PIMPINAN`/`ADMIN` → Admin;
+`OPERATOR`/`KRS`/`STAFF` → Staff) jika kolom `APP_ROLE` belum diisi eksplisit
+- lihat `getDefaultAppRoleForPosition` di `src/lib/roles.ts` dan migration
+`009_add_app_role_to_data_users.sql`.
+
+## 16. Staging and Production Notes
+
+> Bagian ini adalah **panduan**, bukan laporan status deployment.
+> Konfigurasi/prosedur staging dan production di bawah **belum diverifikasi
+> dalam perubahan dokumentasi ini** - harus divalidasi langsung pada
+> environment staging aktual sebelum dianggap siap pakai.
+
+Setiap environment (local / staging / production) **harus** punya:
+
+- Database berbeda (nama database, credential, dan idealnya host berbeda).
+- Bucket MinIO berbeda (atau prefix terisolasi jika terpaksa berbagi
+  instance MinIO).
+- Secret berbeda: `NEXTAUTH_SECRET`, `DB_PASSWORD`, `MINIO_ACCESS_KEY` /
+  `MINIO_SECRET_KEY`, `PAUS_CLIENT_SECRET`, `PAUS_BRIDGE_SECRET` - **tidak
+  boleh** memakai nilai dev (`minioadmin`, `change-me`, dsb.) di luar lokal.
+- Domain berbeda per environment, dan `NEXTAUTH_URL` + redirect URI PAUS
+  didaftarkan sesuai domain masing-masing.
+- Persistent storage terpisah (volume database dan volume MinIO tidak boleh
+  dibagi antar environment).
+- Image container ditag berdasarkan commit SHA (bukan `:latest`) supaya
+  rollback presisi.
+- HTTPS di depan aplikasi (reverse proxy/ingress) - repository ini tidak
+  menyertakan konfigurasi TLS/reverse proxy siap pakai.
+- Prosedur backup dan rollback yang terdefinisi (database + object storage)
+  sebelum menerima trafik nyata.
+
+Placeholder yang **masih harus diisi tim** sebelum staging/production
+berjalan (lihat juga bagian 17 dan `k8s/README.md`):
+
+- Domain staging.
+- Domain production.
+- Container registry tujuan push image.
+- Namespace Kubernetes final (manifest memakai `ult-fmipa`).
+- Seluruh credential di `k8s/01-secrets.yaml` (nilai `change-me` di file itu
+  adalah placeholder, bukan default yang aman dipakai).
+- Image tag berbasis commit SHA di `k8s/05-migration-job.yaml` dan
+  `k8s/06-app.yaml` (saat ini memakai `ult-fmipa:latest` sebagai contoh).
+- Client ID/secret PAUS untuk staging dan production, plus redirect URI yang
+  didaftarkan ke tim PAUS Unpad.
+
+Detail arsitektur deployment (Docker Compose penuh, Kubernetes, VPS) ada di:
+
+- [`k8s/README.md`](k8s/README.md) - apply order manifest Kubernetes.
+- [`docs/minio-storage-deployment.md`](docs/minio-storage-deployment.md) -
+  perbedaan `MINIO_ENDPOINT` per environment, detail Compose & Kubernetes.
+- [`docs/production-deployment-guide.md`](docs/production-deployment-guide.md)
+  dan [`docs/vps-deployment-backup.md`](docs/vps-deployment-backup.md) - catatan
+  operasional VPS. **Peringatan:** kedua dokumen ini ditulis sebelum migrasi
+  ke MinIO; bagian yang membahas bind-mount storage lokal (`STORAGE_ROOT`,
+  `ULT_STORAGE_HOST_PATH`, `/app/storage`) sudah tidak berlaku - ikuti
+  `docs/minio-storage-deployment.md` untuk topik storage, bukan bagian
+  storage di dua dokumen tersebut.
+
+## 17. Security Notes
+
+- **Jangan commit** `.env`, dump `.sql`/`.zip`/`.dump`, atau file backup apa
+  pun - semua sudah di-`.gitignore`.
+- **Jangan** menaruh credential asli di dokumentasi, commit message, atau
+  issue tracker. Gunakan placeholder (`<NAMA_PLACEHOLDER>`) di setiap
+  panduan deployment.
+- Bucket MinIO privat secara default (`mc anonymous set none`) - jangan
+  pernah mengubahnya jadi publik atau menerbitkan presigned URL tanpa
+  alasan kuat yang direview.
+- Semua file diakses lewat route API aplikasi, bukan URL MinIO langsung -
+  pertahankan pola ini untuk fitur baru yang menambah upload.
+- Jangan expose port MinIO (`9000`/`9001`) ke publik di production;
+  `9001` (console) khususnya tidak boleh pernah keluar dari jaringan
+  internal/cluster.
+- `NEXTAUTH_SECRET`, `MINIO_SECRET_KEY`, `PAUS_CLIENT_SECRET`,
+  `PAUS_BRIDGE_SECRET`, dan `DB_PASSWORD` production harus unik per
+  environment dan tidak pernah memakai nilai default yang ada di
+  `docker-compose.yml`/`.env.example` (nilai-nilai itu murni untuk lokal).
+- Mahasiswa tidak boleh mengirim NPM secara manual untuk riwayat/survei -
+  NPM selalu dibaca dari session. Admin/staff tidak menampilkan data master
+  mahasiswa/alumni mentah di UI.
+
+## 18. Troubleshooting
+
+### Docker Desktop belum berjalan
 
 ```powershell
 docker compose up -d
 ```
 
-### PowerShell error saat memakai `<` redirection
+Jika gagal dengan error koneksi ke Docker daemon, buka Docker Desktop
+terlebih dahulu lalu ulangi.
 
-Gunakan `cmd /c`:
-
-```powershell
-cmd /c "docker exec -i ult-fmipa-db mariadb -u ult_user -pult_password fmipa_sbpk < database\migrations\003_create_ult_information_posts.sql"
-```
-
-### Prisma client model support table undefined
-
-Beberapa support table sengaja diakses dengan raw SQL karena database legacy
-diintrospeksi. Jalankan migration support table, lalu:
+### MinIO tidak healthy
 
 ```powershell
-pnpm prisma generate
+docker compose ps
+docker compose logs minio
 ```
 
-### Missing custom support table migration
+Healthcheck memakai `mc ready local`. Jika terus gagal, cek apakah volume
+`minio_data` korup atau port `9000` konflik (lihat bagian port bentrok di
+bawah), lalu `docker compose restart minio`.
 
-Gejala umum: halaman survei/informasi kosong atau warning table belum tersedia.
-Jalankan SQL di `database/migrations` sesuai bagian Support Table Migrations.
-
-### PAUS `invalid_client`
-
-Callback URI atau credential PAUS belum cocok dengan NextAuth callback:
-
-```text
-http://localhost:3000/api/auth/callback/paus
-```
-
-Minta Unpad mengonfirmasi client ID, client secret, dan callback URI.
-
-### Port `13306` conflict
-
-Ubah mapping port di `docker-compose.yml` atau hentikan service lokal lain yang
-memakai port tersebut.
-
-### Build gagal karena halaman membaca database
-
-Pastikan container database hidup dan migration support table sudah dijalankan.
-Beberapa halaman memakai data DB saat build. Jalankan:
+### `minio-init` gagal
 
 ```powershell
-docker compose up -d
-pnpm build
+docker compose logs minio-init
 ```
+
+Job ini menunggu `minio` sehat dulu (`condition: service_healthy`). Jika
+`minio` belum sehat, `minio-init` akan terus gagal/retry - perbaiki `minio`
+dulu, baru jalankan ulang:
+
+```powershell
+docker compose up -d minio-init
+```
+
+### Bucket tidak ditemukan
+
+Pastikan `minio-init` sudah selesai sukses (`docker compose ps` menunjukkan
+`Exited (0)` untuk `ult-fmipa-minio-init`, bukan status error). Jika bucket
+memang belum ada, jalankan ulang `minio-init` seperti di atas - perintahnya
+idempoten (`mc mb ... || true`).
+
+### Migration gagal
+
+- Pastikan hanya menjalankan `database/migrations/` (aktif), **bukan**
+  `database/migrations_legacy_backup/`.
+- Cek apakah file SQL yang baru ditambahkan benar-benar idempoten - runner
+  support migration tidak menyimpan riwayat applied migration, jadi statement
+  yang gagal di-re-run harus aman dijalankan ulang.
+- Untuk Prisma migration, cek `_prisma_migrations` di database (dibuat
+  otomatis oleh `scripts/deploy-prisma-migrations.mjs`) untuk melihat migration
+  mana yang sudah tercatat.
+
+### Database unavailable
+
+Beberapa halaman CMS menampilkan pesan "Koneksi database sedang tidak
+tersedia" saat tabel support belum ada. Jalankan `pnpm db:support-migrate`
+lalu refresh. Jika masih gagal, cek `docker compose logs db` dan pastikan
+`.env`/`DATABASE_URL` mengarah ke host+port yang benar (lihat bagian
+"penggunaan `localhost` yang salah" di bawah).
+
+### File metadata ada tetapi object hilang / object orphan
+
+Jalankan `pnpm storage:audit` (bagian 11) untuk mendeteksi `MISSING_OBJECT`
+(baris DB tanpa object MinIO) dan `ORPHAN_OBJECT` (object MinIO tanpa baris
+DB). Audit ini read-only - tidak memperbaiki apa pun secara otomatis;
+tindak lanjuti secara manual sesuai kasus (upload ulang lewat CMS untuk
+missing object, atau investigasi manual sebelum menghapus orphan object).
+
+### Certificate Git di Windows
+
+Jika `git clone`/`git pull` gagal dengan error SSL/certificate di Windows
+(sering terjadi di jaringan kampus/korporat dengan proxy SSL-inspection):
+
+```powershell
+git config --global http.sslBackend schannel
+```
+
+Jangan menonaktifkan verifikasi SSL (`http.sslVerify=false`) sebagai
+solusi permanen - itu membuka celah man-in-the-middle.
+
+### Port `3000` / `9000` / `9001` / `13306` bentrok
+
+Cek proses/container lain yang memakai port tersebut:
+
+```powershell
+netstat -ano | findstr :3000
+```
+
+Next.js otomatis pindah ke `3001` jika `3000` terpakai (sesuaikan
+`NEXTAUTH_URL`). Untuk port lain, hentikan service yang bentrok atau ubah
+mapping port di `docker-compose.yml` (ingat: mengubah port MinIO/DB berarti
+`.env` lokal juga harus disesuaikan).
+
+### `.env` tidak terbaca
+
+- Pastikan file bernama persis `.env` (bukan `.env.txt` atau `.env.local`)
+  di root project, sejajar dengan `package.json`.
+- Restart dev server/terminal setelah mengubah `.env` - Next.js dan script
+  Node lain membaca env var saat proses start, bukan live-reload.
+- Untuk script mandiri (`scripts/*.mjs`), env dimuat lewat `dotenv/config` -
+  pastikan menjalankan script dari root repository, bukan dari subfolder.
+
+### Penggunaan `localhost` yang salah dari container
+
+Gejala umum: app di dalam Docker Compose gagal konek ke MinIO atau database
+dengan error connection refused meskipun service terlihat jalan. Penyebab
+hampir selalu: `.env`/environment container memakai `MINIO_ENDPOINT=localhost`
+atau `DB_HOST=localhost` padahal app berjalan **di dalam** Compose. Di dalam
+Compose, gunakan nama service (`minio`, `db`), bukan `localhost` - lihat
+tabel [`MINIO_ENDPOINT` per konteks eksekusi](#minio_endpoint-per-konteks-eksekusi)
+di bagian 6.
+
+---
+
+Dokumentasi tambahan yang masih relevan (audit teknis, panduan operasional,
+QA):
+
+- [`SETUP.md`](./SETUP.md) - langkah setup lokal step-by-step.
+- [`docs/minio-storage-audit.md`](docs/minio-storage-audit.md) - detail teknis
+  migrasi storage ke MinIO.
+- [`docs/minio-storage-deployment.md`](docs/minio-storage-deployment.md) -
+  referensi environment variable dan deployment MinIO per environment.
+- [`docs/homepage-content-management.md`](docs/homepage-content-management.md),
+  [`docs/profile-content-management.md`](docs/profile-content-management.md) -
+  catatan CMS Beranda/Kegiatan Mahasiswa dan CMS Profil.
+- [`docs/qa/`](docs/qa) - catatan QA manual per fitur.
+- [`k8s/README.md`](k8s/README.md) - deployment Kubernetes.
+
+Untuk API route reference lengkap, baca langsung `src/app/api/**` - daftar
+endpoint berubah cukup sering seiring fitur baru (CMS Struktur Profil,
+multi-gambar Kegiatan Mahasiswa, dsb.) sehingga dokumen ini sengaja tidak
+menduplikasi katalog endpoint yang mudah kedaluwarsa.

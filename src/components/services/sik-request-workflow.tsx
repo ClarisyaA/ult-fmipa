@@ -340,7 +340,7 @@ export function SikRequestWorkflow({
     latestRequest?.status === "sikApprovalVerified" &&
     !latestRequest.finalSubmittedDate;
   const isFinalSubmitted = Boolean(latestRequest?.finalSubmittedDate);
-  // A finished cycle is never "the" current request for step/state display —
+  // A finished cycle is never "the" current request for step/state display -
   // it stays visible in history, but this workflow should present as a
   // fresh request (matching canUploadProof above).
   const activeStep = getActiveStep(isFinishedCycle ? null : latestRequest);

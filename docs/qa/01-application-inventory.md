@@ -90,11 +90,15 @@ All discovered API route files are in scope for API/integration coverage unless 
 
 ## CMS and Storage Inventory
 
-- Homepage activities: `ult_home_activities`, storage `storage/home-activities`, safe SVG allowed, image fit `cover|contain`.
-- Information: `ult_information_posts`, `ult_information_post_images`, storage `storage/information`, multi-image, cover, replace, delete, alt, image fit.
-- Profile organization/location: profile CMS tables, storage `storage/profile/organization` and `storage/profile/location`, safe image rendering.
+> Storage note: all file storage below is MinIO (object storage, private
+> bucket), not local filesystem - see `docs/minio-storage-deployment.md`.
+> Prefixes listed are MinIO object key prefixes, not `storage/` directories.
+
+- Homepage activities: `ult_home_activities` + `ult_home_activity_images` (multi-image), MinIO prefix `home-activities/`, safe SVG allowed, image fit `cover|contain`.
+- Information: `ult_information_posts`, `ult_information_post_images`, MinIO prefix `information/`, multi-image, cover, replace, delete, alt, image fit.
+- Profile organization/location: profile CMS tables, MinIO prefixes `profile/organization/` and `profile/location/`, safe image rendering.
 - Service links/home links: CMS-managed external URLs.
-- Runtime upload attachments: `storage/uploads`, service-specific rules; official attachments do not accept SVG.
+- Runtime upload attachments: MinIO prefix `uploads/`, service-specific rules; official attachments do not accept SVG.
 
 ## PDF and Integration Inventory
 
