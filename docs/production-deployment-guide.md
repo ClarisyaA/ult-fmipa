@@ -524,12 +524,15 @@ docker compose exec app printenv | grep MINIO
 | Variable | Wajib | Fungsi | Contoh Aman | Sumber Nilai | Masuk Git? | Beda Staging/Prod? |
 |---|---|---|---|---|---|---|
 | `NODE_ENV` | Ya | Mode runtime Next.js | `production` | Developer | Tidak (via Compose) | Tidak |
+| `AUTH_DEBUG` | Tidak | Aktifkan log debug NextAuth/PAUS (`src/lib/auth.ts:47`) | `false` | Developer | Tidak | Tidak (harus `false` di staging/prod) |
 | `DATABASE_URL` | Ya | Koneksi MariaDB untuk Prisma | `mysql://ult_user:<PASS>@db:3306/fmipa_sbpk` | Tim infra | **Tidak** | Ya (nama user/pass/host) |
 | `DB_HOST` | Ya | Host database untuk script migration | `db` | `docker-compose.yml` | Tidak | Ya (jika nama container berbeda) |
 | `DB_PORT` | Ya | Port database | `3306` | `docker-compose.yml` | Tidak | Tidak |
 | `DB_USER` | Ya | Username database | `ult_user` | Tim infra | **Tidak** | Ya |
 | `DB_PASSWORD` | Ya | Password database | `<generate-kuat>` | Tim infra | **Tidak** | Ya |
 | `DB_NAME` | Ya | Nama database | `fmipa_sbpk` | Tim infra | **Tidak** | Ya (nama berbeda per env) |
+| `DB_CONNECTION_LIMIT` | Tidak | Ukuran connection pool Prisma (`src/lib/prisma.ts:4`) | `10` | Developer/infra | Tidak | Tidak |
+| `PRISMA_QUERY_LOG` | Tidak | Log setiap query Prisma (`src/lib/prisma.ts:20`) | `false` | Developer | Tidak | Tidak (harus `false` di staging/prod) |
 | `NEXTAUTH_URL` | Ya | URL publik aplikasi (harus HTTPS di prod) | `https://<DOMAIN_PRODUCTION>` | Tim infra | **Tidak** | **Ya** |
 | `NEXTAUTH_SECRET` | Ya | Secret untuk JWT/session NextAuth | `<generate-random-64-chars>` | Generate: `openssl rand -base64 48` | **Tidak** | **Ya (harus berbeda)** |
 | `MINIO_ENDPOINT` | Ya | Hostname MinIO tanpa scheme | `minio` (Compose) | `docker-compose.yml` | Tidak | Tidak (nama service tetap sama) |
@@ -548,6 +551,7 @@ docker compose exec app printenv | grep MINIO
 | `PAUS_TOKEN_URL` | Tidak | URL token PAUS | `https://paus.unpad.ac.id/oauth/access-token` | `.env.example` | Tidak | Tidak |
 | `PAUS_USERINFO_URL` | Tidak | URL userinfo PAUS | `https://paus.unpad.ac.id/api/` | `.env.example` | Tidak | Tidak |
 | `PAUS_SIGN_OUT_URL` | Tidak | URL logout global PAUS | `https://paus.unpad.ac.id/oauth/sign-out` | `.env.example` | Tidak | Tidak |
+| `PAUS_ISSUER` | Ya (prod, mode `modern`) | OIDC issuer PAUS (`src/lib/auth.ts:78`, tidak ada default di kode) | `<dari PAUS Unpad>` | Tim PAUS Unpad | **Tidak** | **Ya** |
 | `PAUS_LEGACY_LOGIN_URL` | Tidak | URL login legacy PAUS (jika mode legacy) | Kosongkan jika modern | Tim PAUS Unpad | **Tidak** | Ya |
 | `PAUS_BRIDGE_SECRET` | Ya | Secret untuk token bridge PAUS (HMAC-SHA256) | `<generate-random-48-chars>` | Generate: `openssl rand -base64 36` | **Tidak** | **Ya (harus berbeda)** |
 | `PAUS_BRIDGE_TOKEN_TTL_SECONDS` | Tidak | TTL token bridge PAUS | `120` | Developer | Tidak | Tidak |
@@ -559,6 +563,7 @@ docker compose exec app printenv | grep MINIO
 | `DEV_STUDENT_PASSWORD` | Dev only | Password mahasiswa development | Kosongkan di production | Developer | **Tidak** | - |
 | `DEV_STUDENT_NAME` | Dev only | Nama mahasiswa development | Kosongkan | Developer | Tidak | - |
 | `DEV_STUDENT_NPM` | Dev only | NPM mahasiswa development | Kosongkan | Developer | **Tidak** | - |
+| `DEV_STUDENT_PHONE` | Dev only | No. HP mahasiswa development | Kosongkan | Developer | Tidak | - |
 
 > [!IMPORTANT]
 > Di production, variabel `DEV_*` (admin, staff, student) **boleh dikosongkan atau dihapus dari .env production**. Provider `CredentialsProvider` untuk development login tetap ada di kode tetapi tidak dapat digunakan jika variabelnya kosong.
@@ -1143,6 +1148,8 @@ docker compose exec app pnpm storage:audit -- --strict
 
 ## 14. Smoke Test Wajib
 
+> Tabel di bawah adalah smoke test minimum wajib sebelum go-live. Untuk cakupan fungsional, CMS, workflow, dan security yang lebih lengkap (termasuk UAT per-role dan severity gate), gunakan `docs/qa/06-manual-test-execution-guide.md` bersama `docs/qa/04-functional-test-scenarios.md`, `docs/qa/05-non-functional-test-plan.md`, dan template eksekusi di `docs/qa/templates/` (`test-execution-report.md`, `defect-report.md`, `release-readiness-report.md`). Definisi severity dan exit criteria acuan ada di `docs/qa/03-master-test-plan.md`.
+
 | No | Skenario | Role | Langkah | Expected Result | Severity Jika Gagal |
 |---|---|---|---|---|---|
 | 1 | Halaman utama terbuka | Publik | Buka `https://<DOMAIN>` | Halaman tampil, tidak ada error 500 | Critical |
@@ -1388,6 +1395,8 @@ PIC yang ditetapkan saat maintenance window, atau lead developer jika PIC tidak 
 - [ ] User non-root terkonfigurasi
 - [ ] SSH key authentication aktif, password SSH dinonaktifkan
 - [ ] Firewall aktif - port 13306 dan 8081 **diblokir**
+- [ ] Firewall aktif - port MinIO 9000 dan 9001 **diblokir** dari akses publik (tidak hanya bergantung pada `docker-compose.yml`)
+- [ ] Image aplikasi di-tag dengan commit SHA (bukan `:latest`) sebelum dipromosikan ke staging/production (`docker-compose.yml`, `k8s/06-app.yaml`, `k8s/05-migration-job.yaml` saat ini masih `:latest`)
 
 ### Domain/HTTPS
 
@@ -1451,6 +1460,7 @@ PIC yang ditetapkan saat maintenance window, atau lead developer jika PIC tidak 
 - [ ] Semua smoke test wajib (Bagian 14) lulus
 - [ ] Storage audit `--strict` mengembalikan exit code 0 dan `Integrity Status: CLEAN`
 - [ ] Health check `/api/health` mengembalikan `{"status":"ok"}`
+- [ ] UAT staging selesai dan disetujui: tidak ada defect **Blocker/Critical** terbuka, defect **Major** memiliki keputusan tertulis dari owner (lihat `docs/qa/03-master-test-plan.md` § Defect Severity dan Exit Criteria)
 
 ### Monitoring
 
