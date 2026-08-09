@@ -32,6 +32,7 @@ const code = await run(process.execPath, [
   "tests/home-activity-images.test.mjs",
   "tests/mobile-hotspot-dialog.test.mjs",
   "tests/request-completion-dialog.test.mjs",
+  "tests/staging-local-rehearsal.test.mjs",
 ]);
 
 process.exit(code);
