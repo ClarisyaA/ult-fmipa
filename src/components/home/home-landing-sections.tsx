@@ -1228,10 +1228,10 @@ export function HomeLandingSections() {
       <FmipaLogoBanner />
 
       {/* ══════════════════════════════════════════════
-          SECTION 1 — HERO / DEKANAT
+          SECTION 1 - HERO / DEKANAT
       ══════════════════════════════════════════════ */}
       <section className="dekanat-sec relative overflow-hidden bg-[#FEFDF9] px-4 py-20 sm:px-6 sm:py-22 lg:px-8 lg:py-24">
-        {/* Ambient orbs — purely decorative, aria-hidden */}
+        {/* Ambient orbs - purely decorative, aria-hidden */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -1365,7 +1365,7 @@ export function HomeLandingSections() {
       {activities.length > 0 ? (
         <>
           {/* ══════════════════════════════════════════════
-          SECTION 2 — KEGIATAN MAHASISWA
+          SECTION 2 - KEGIATAN MAHASISWA
       ══════════════════════════════════════════════ */}
           <section className="kegiatan-sec relative border-t border-[#EAE2D4] bg-[#F7F3EA] px-4 py-6 sm:px-6 sm:py-24 sm:overflow-hidden lg:px-8">
             {/* Subtle grid texture */}
@@ -1578,7 +1578,7 @@ export function HomeLandingSections() {
       ) : null}
 
       {/* ══════════════════════════════════════════════
-          SECTION 3 — LAYANAN
+          SECTION 3 - LAYANAN
       ══════════════════════════════════════════════ */}
       <section className="layanan-sec border-t border-[#EAE2D4] bg-[#FEFDF9] px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
@@ -1686,7 +1686,7 @@ export function HomeLandingSections() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          SECTION 4 — INFORMASI
+          SECTION 4 - INFORMASI
       ══════════════════════════════════════════════ */}
       <section className="info-sec relative border-t border-[#EAE2D4] bg-[#F7F3EA] px-4 py-24 sm:px-6 lg:px-8 overflow-hidden">
         <div

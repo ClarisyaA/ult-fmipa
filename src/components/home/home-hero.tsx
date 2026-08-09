@@ -282,7 +282,7 @@ function useIsDesktopViewport() {
 
   useEffect(() => {
     // Desktop hover preview should only ever engage for pointer devices
-    // that can actually hover (mouse/trackpad) — a touch device that
+    // that can actually hover (mouse/trackpad) - a touch device that
     // happens to be >=1024px wide (large tablet, split-screen) should
     // still fall back to the tap-friendly mobile dialog.
     const hoverQuery = window.matchMedia("(hover: hover)");
@@ -759,8 +759,8 @@ function TurahPatrol({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
 
-  // Freeze the walking/mirroring sprite exactly where it is — not reset,
-  // not killed — whenever a hotspot dialog is open on mobile, so nothing
+  // Freeze the walking/mirroring sprite exactly where it is - not reset,
+  // not killed - whenever a hotspot dialog is open on mobile, so nothing
   // keeps moving or mirroring behind the dialog's overlay. Resumes from
   // the same spot once the dialog closes, so the hero never visibly jumps.
   useEffect(() => {

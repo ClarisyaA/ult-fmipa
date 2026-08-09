@@ -165,8 +165,8 @@ async function toPublicActivityWithImages(activity: HomeActivity): Promise<Publi
   const childImages = await getAvailableHomeActivityImages(activity.id);
 
   // Child table is the source of truth once populated (migration 011 has
-  // run and backfilled). Until then — or for any activity that somehow
-  // has zero child rows — fall back to the legacy single-image columns on
+  // run and backfilled). Until then - or for any activity that somehow
+  // has zero child rows - fall back to the legacy single-image columns on
   // the parent row so the page never renders empty for pre-migration data.
   const images =
     childImages.length > 0

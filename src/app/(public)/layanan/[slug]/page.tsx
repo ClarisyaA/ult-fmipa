@@ -27,7 +27,7 @@ import {
 } from "@/lib/legacy-services";
 
 /* ================================================================
- * DEKORASI DINAMIS — berdasarkan slug
+ * DEKORASI DINAMIS - berdasarkan slug
  * ================================================================ */
 
 const ICON_RULES: Array<{ test: RegExp; icon: LucideIcon }> = [

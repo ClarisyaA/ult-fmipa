@@ -28,7 +28,7 @@ Before applying to production:
   / `MINIO_SECRET_KEY` (must match `ult-fmipa-minio-secret`'s
   `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`).
 - Use a managed database, or a managed/external S3-compatible object store,
-  for real production traffic — the in-cluster MariaDB `StatefulSet` and
+  for real production traffic - the in-cluster MariaDB `StatefulSet` and
   MinIO `StatefulSet` here are sized for small deployments. If object
   storage is provided externally, skip `04-storage.yaml` and
   `04b-minio-init-job.yaml` and point `MINIO_ENDPOINT`/`MINIO_PORT`/

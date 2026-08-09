@@ -10,7 +10,7 @@ async function source(path) {
 // also opening the completion email dialog. On a status-filtered requests
 // list, the freshly-completed row no longer matched the filter, so the
 // refreshed server data removed the row (and the dialog inside it) right
-// after it opened — the dialog flashed and disappeared. Fix: defer
+// after it opened - the dialog flashed and disappeared. Fix: defer
 // router.refresh() until the dialog actually closes (RequestEmailHelper's
 // onClose), so the row stays mounted while the dialog is in use.
 

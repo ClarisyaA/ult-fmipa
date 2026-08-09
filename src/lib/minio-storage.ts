@@ -151,7 +151,7 @@ export async function getObjectStream(key: string): Promise<Readable> {
 
 /**
  * Buffers an entire object in memory. Only use this for small, bounded
- * payloads (e.g. server-side re-processing) — prefer getObjectStream for
+ * payloads (e.g. server-side re-processing) - prefer getObjectStream for
  * anything served back to a client.
  */
 export async function getObjectBuffer(key: string): Promise<Buffer> {
