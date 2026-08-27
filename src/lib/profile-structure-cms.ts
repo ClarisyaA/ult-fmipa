@@ -17,7 +17,7 @@ export type ProfileStructureItem = {
 
 export type ProfileStructureNode = {
   id: string;
-  parentId: string | null;
+  parentIds: string[];
   label: string;
   nodeType: ProfileStructureNodeType;
   sortOrder: number;
@@ -28,6 +28,13 @@ export type ProfileStructureNode = {
   updatedBy: string | null;
   items: ProfileStructureItem[];
   children: ProfileStructureNode[];
+};
+
+export type ProfileStructureEdge = { parentId: string; childId: string };
+
+export type ProfileStructureLayout = {
+  levels: ProfileStructureNode[][];
+  edges: ProfileStructureEdge[];
 };
 
 export type ProfileStructureSettings = {
@@ -45,7 +52,7 @@ export type ProfileStructureSettingsInput = {
 };
 
 export type ProfileStructureNodeInput = {
-  parentId?: string | null;
+  parentIds?: string[] | string | null;
   label: string;
   nodeType?: string | null;
   sortOrder?: number | string | null;
@@ -89,6 +96,11 @@ type NodeRecord = {
   UPDATED_BY: string | null;
 };
 
+type NodeParentEdgeRecord = {
+  NODE_ID: bigint | number | string;
+  PARENT_ID: bigint | number | string;
+};
+
 type ItemRecord = {
   ID: bigint | number | string;
   NODE_ID: bigint | number | string;
@@ -114,7 +126,7 @@ export class ProfileStructureTableUnavailableError extends Error {
 
   constructor() {
     super(
-      "Tabel CMS struktur profil belum tersedia. Jalankan migration 010_create_profile_structure_cms.sql."
+      "Tabel CMS struktur profil belum tersedia. Jalankan migration 010_create_profile_structure_cms.sql dan 012_add_profile_structure_node_multi_parent.sql."
     );
     this.name = "ProfileStructureTableUnavailableError";
   }
@@ -204,22 +216,21 @@ function optionalActor(value: string | null | undefined) {
   return trimmed ? trimmed.slice(0, 100) : null;
 }
 
-function normalizeParentId(value: string | null | undefined) {
-  const trimmed = value?.trim() ?? "";
+function normalizeParentIds(value: string[] | string | null | undefined): string[] {
+  const list = Array.isArray(value) ? value : value == null ? [] : [value];
+  const ids = list
+    .map((entry) => entry?.trim() ?? "")
+    .filter((entry) => entry && entry !== "root" && entry !== "none");
 
-  if (!trimmed || trimmed === "root" || trimmed === "none") {
-    return null;
-  }
-
-  assertValidId(trimmed);
-  return trimmed;
+  ids.forEach(assertValidId);
+  return Array.from(new Set(ids));
 }
 
 function isMissingProfileStructureTableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
 
   return (
-    /ult_profile_structure_(settings|nodes|node_items)/.test(message) &&
+    /ult_profile_structure_(settings|nodes|node_items|node_parents)/.test(message) &&
     (message.includes("doesn't exist") ||
       message.includes("does not exist") ||
       message.includes("1146"))
@@ -258,11 +269,12 @@ async function hasProfileStructureTables() {
         AND TABLE_NAME IN (
           'ult_profile_structure_settings',
           'ult_profile_structure_nodes',
-          'ult_profile_structure_node_items'
+          'ult_profile_structure_node_items',
+          'ult_profile_structure_node_parents'
         )
     `;
 
-    return Number(rows[0]?.tableCount ?? 0) === 3;
+    return Number(rows[0]?.tableCount ?? 0) === 4;
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
       warnReadError("Database CMS struktur profil sementara tidak tersedia.", error);
@@ -293,10 +305,14 @@ function toItem(record: ItemRecord): ProfileStructureItem {
   };
 }
 
-function toNode(record: NodeRecord, items: ProfileStructureItem[]): ProfileStructureNode {
+function toNode(
+  record: NodeRecord,
+  items: ProfileStructureItem[],
+  parentIds: string[]
+): ProfileStructureNode {
   return {
     id: String(record.ID),
-    parentId: record.PARENT_ID === null ? null : String(record.PARENT_ID),
+    parentIds,
     label: record.LABEL,
     nodeType: normalizeNodeType(record.NODE_TYPE),
     sortOrder: Number(record.SORT_ORDER),
@@ -320,29 +336,56 @@ function toSettings(record: SettingsRecord): ProfileStructureSettings {
   };
 }
 
-function buildNodeTree(nodes: ProfileStructureNode[]) {
-  const byId = new Map<string, ProfileStructureNode>();
-  const roots: ProfileStructureNode[] = [];
+// Every node appears exactly once, placed in the row for its computed depth,
+// instead of nested under a single parent — this is what lets the renderer
+// draw one child box centered under multiple parent boxes (fan-in), which a
+// nested tree cannot express without either duplicating the box or arbitrarily
+// picking one parent. It's a strict generalization of a tree (a tree is just
+// a DAG where every non-root node has exactly one incoming edge), so existing
+// single-parent data lays out identically aside from the draw mechanism.
+function buildNodeLayout(nodes: ProfileStructureNode[]): ProfileStructureLayout {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const edges: ProfileStructureEdge[] = [];
 
   nodes.forEach((node) => {
-    byId.set(node.id, { ...node, children: [] });
+    node.parentIds.forEach((parentId) => {
+      if (byId.has(parentId)) {
+        edges.push({ parentId, childId: node.id });
+      }
+    });
   });
 
-  byId.forEach((node) => {
-    if (node.parentId && byId.has(node.parentId)) {
-      byId.get(node.parentId)?.children.push(node);
-    } else {
-      roots.push(node);
+  // Longest-path level assignment via fixed-point relaxation. The org chart
+  // is tiny (dozens of nodes), so this is cheap; the nodes.length+1 pass cap
+  // guards against a cycle that somehow slipped past assertParentIsValid
+  // instead of looping forever.
+  const level = new Map<string, number>(nodes.map((node) => [node.id, 0]));
+  for (let pass = 0; pass <= nodes.length; pass += 1) {
+    let changed = false;
+    for (const node of nodes) {
+      const parentLevels = node.parentIds
+        .filter((parentId) => byId.has(parentId))
+        .map((parentId) => level.get(parentId) ?? 0);
+      const target = parentLevels.length ? Math.max(...parentLevels) + 1 : 0;
+      if (target !== level.get(node.id)) {
+        level.set(node.id, target);
+        changed = true;
+      }
     }
+    if (!changed) break;
+  }
+
+  const levels: ProfileStructureNode[][] = [];
+  nodes.forEach((node) => {
+    const lv = level.get(node.id) ?? 0;
+    (levels[lv] ??= []).push(node);
   });
 
-  const sortTree = (items: ProfileStructureNode[]) => {
-    items.sort((a, b) => a.sortOrder - b.sortOrder || Number(a.id) - Number(b.id));
-    items.forEach((item) => sortTree(item.children));
-  };
+  levels.forEach((row) => {
+    row.sort((a, b) => a.sortOrder - b.sortOrder || Number(a.id) - Number(b.id));
+  });
 
-  sortTree(roots);
-  return roots;
+  return { levels, edges };
 }
 
 async function getNodeRecords(activeOnly: boolean) {
@@ -389,10 +432,26 @@ async function getItemRecords(activeOnly: boolean) {
   }
 }
 
+async function getNodeParentEdgeRecords(): Promise<NodeParentEdgeRecord[]> {
+  if (!(await hasProfileStructureTables())) {
+    return [];
+  }
+
+  try {
+    return await prisma.$queryRaw<NodeParentEdgeRecord[]>`
+      SELECT NODE_ID, PARENT_ID FROM ult_profile_structure_node_parents
+    `;
+  } catch (error) {
+    handleReadError(error);
+    return [];
+  }
+}
+
 async function getNodesWithItems(activeOnly: boolean) {
-  const [nodeRecords, itemRecords] = await Promise.all([
+  const [nodeRecords, itemRecords, edgeRecords] = await Promise.all([
     getNodeRecords(activeOnly),
     getItemRecords(activeOnly),
+    getNodeParentEdgeRecords(),
   ]);
 
   const itemsByNodeId = new Map<string, ProfileStructureItem[]>();
@@ -403,8 +462,20 @@ async function getNodesWithItems(activeOnly: boolean) {
     itemsByNodeId.set(item.nodeId, list);
   });
 
+  const parentIdsByNodeId = new Map<string, string[]>();
+  edgeRecords.forEach((record) => {
+    const nodeId = String(record.NODE_ID);
+    const list = parentIdsByNodeId.get(nodeId) ?? [];
+    list.push(String(record.PARENT_ID));
+    parentIdsByNodeId.set(nodeId, list);
+  });
+
   return nodeRecords.map((record) =>
-    toNode(record, itemsByNodeId.get(String(record.ID)) ?? [])
+    toNode(
+      record,
+      itemsByNodeId.get(String(record.ID)) ?? [],
+      parentIdsByNodeId.get(String(record.ID)) ?? []
+    )
   );
 }
 
@@ -430,24 +501,28 @@ export async function getPublicProfileStructure() {
     getNodesWithItems(true),
   ]);
 
-  // Public tree must not surface active nodes whose parent is inactive
-  // (or missing) as false roots, so filter to only nodes whose entire
-  // ancestor chain is active before building the tree.
+  // Public tree must not surface active nodes whose only parents are
+  // inactive (or missing) as false roots, so filter to only nodes with at
+  // least one fully-active ancestor chain before building the layout. A
+  // multi-parent node stays visible as long as ANY of its parent chains
+  // is active.
   const activeIds = new Set(nodes.map((node) => node.id));
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
   function isChainActive(node: ProfileStructureNode): boolean {
-    if (!node.parentId) return true;
-    if (!activeIds.has(node.parentId)) return false;
-    const parent = byId.get(node.parentId);
-    return parent ? isChainActive(parent) : false;
+    if (node.parentIds.length === 0) return true;
+    return node.parentIds.some((parentId) => {
+      if (!activeIds.has(parentId)) return false;
+      const parent = byId.get(parentId);
+      return parent ? isChainActive(parent) : false;
+    });
   }
 
   const visibleNodes = nodes.filter((node) => isChainActive(node));
 
   return {
     settings: settingsRecord ? toSettings(settingsRecord) : null,
-    tree: buildNodeTree(visibleNodes),
+    layout: buildNodeLayout(visibleNodes),
   };
 }
 
@@ -455,7 +530,7 @@ export async function getAdminProfileStructureState() {
   const tableAvailable = await hasProfileStructureTables();
 
   if (!tableAvailable) {
-    return { settings: null, nodes: [], tree: [], unavailable: true };
+    return { settings: null, nodes: [], layout: { levels: [], edges: [] }, unavailable: true };
   }
 
   const [settingsRecord, nodes] = await Promise.all([
@@ -466,7 +541,7 @@ export async function getAdminProfileStructureState() {
   return {
     settings: settingsRecord ? toSettings(settingsRecord) : null,
     nodes,
-    tree: buildNodeTree(nodes),
+    layout: buildNodeLayout(nodes),
     unavailable: false,
   };
 }
@@ -517,43 +592,68 @@ export async function getProfileStructureNodeById(id: string) {
       ORDER BY SORT_ORDER ASC, ID ASC
     `;
 
-    return toNode(rows[0], items.map(toItem));
+    const edges = await prisma.$queryRaw<NodeParentEdgeRecord[]>`
+      SELECT NODE_ID, PARENT_ID FROM ult_profile_structure_node_parents
+      WHERE NODE_ID = ${BigInt(id)}
+    `;
+
+    return toNode(
+      rows[0],
+      items.map(toItem),
+      edges.map((edge) => String(edge.PARENT_ID))
+    );
   } catch (error) {
     handleReadError(error);
     return null;
   }
 }
 
-async function assertParentIsValid(parentId: string | null, selfId?: string) {
-  if (!parentId) return;
+async function assertParentIsValid(parentIds: string[], selfId?: string) {
+  for (const parentId of parentIds) {
+    if (selfId && parentId === selfId) {
+      throw new ProfileStructureConflictError("Node tidak bisa menjadi atasan dirinya sendiri.");
+    }
 
-  if (selfId && parentId === selfId) {
-    throw new ProfileStructureConflictError("Node tidak bisa menjadi atasan dirinya sendiri.");
-  }
-
-  const parent = await getProfileStructureNodeById(parentId);
-  if (!parent) {
-    throw new ProfileStructureValidationError("Atasan (parent) tidak ditemukan.");
+    const parent = await getProfileStructureNodeById(parentId);
+    if (!parent) {
+      throw new ProfileStructureValidationError("Atasan (parent) tidak ditemukan.");
+    }
   }
 
   if (!selfId) return;
 
-  let currentParentId = parent.parentId;
-  while (currentParentId) {
-    if (currentParentId === selfId) {
+  // Would linking any of these candidate parents make selfId its own
+  // ancestor? Walk upward via parentIds from each candidate; diamonds
+  // (shared ancestors reached through multiple paths) are expected now, so
+  // a shared `visited` set avoids re-walking the same node repeatedly.
+  async function isAncestorOfSelf(nodeId: string, visited: Set<string>): Promise<boolean> {
+    if (nodeId === selfId) return true;
+    if (visited.has(nodeId)) return false;
+    visited.add(nodeId);
+
+    const node = await getProfileStructureNodeById(nodeId);
+    if (!node) return false;
+
+    for (const parentId of node.parentIds) {
+      if (await isAncestorOfSelf(parentId, visited)) return true;
+    }
+
+    return false;
+  }
+
+  const visited = new Set<string>();
+  for (const parentId of parentIds) {
+    if (await isAncestorOfSelf(parentId, visited)) {
       throw new ProfileStructureConflictError(
         "Perubahan ini akan membuat struktur melingkar (circular hierarchy)."
       );
     }
-
-    const currentParent = await getProfileStructureNodeById(currentParentId);
-    currentParentId = currentParent?.parentId ?? null;
   }
 }
 
 function normalizeNodeInput(input: ProfileStructureNodeInput) {
   return {
-    parentId: normalizeParentId(input.parentId),
+    parentIds: normalizeParentIds(input.parentIds),
     label: requiredLabel(input.label),
     nodeType: normalizeNodeType(input.nodeType),
     sortOrder: normalizeSortOrder(input.sortOrder),
@@ -562,16 +662,34 @@ function normalizeNodeInput(input: ProfileStructureNodeInput) {
   };
 }
 
+// PARENT_ID stays populated as a non-authoritative "primary parent" cache
+// (first entry of parentIds) — the junction table is the source of truth for
+// hierarchy; see database/migrations/012_add_profile_structure_node_multi_parent.sql.
+async function syncNodeParentEdges(nodeId: string, parentIds: string[], actor: string | null) {
+  await prisma.$executeRaw`
+    DELETE FROM ult_profile_structure_node_parents WHERE NODE_ID = ${BigInt(nodeId)}
+  `;
+
+  for (const parentId of parentIds) {
+    await prisma.$executeRaw`
+      INSERT INTO ult_profile_structure_node_parents (NODE_ID, PARENT_ID, CREATED_BY)
+      VALUES (${BigInt(nodeId)}, ${BigInt(parentId)}, ${actor})
+    `;
+  }
+}
+
 export async function createProfileStructureNode(input: ProfileStructureNodeInput) {
   await ensureProfileStructureTablesAvailable();
   const data = normalizeNodeInput(input);
-  await assertParentIsValid(data.parentId);
+  await assertParentIsValid(data.parentIds);
+
+  const primaryParentId = data.parentIds[0] ?? null;
 
   await prisma.$executeRaw`
     INSERT INTO ult_profile_structure_nodes (
       PARENT_ID, LABEL, NODE_TYPE, SORT_ORDER, IS_ACTIVE, CREATED_BY
     ) VALUES (
-      ${data.parentId ? BigInt(data.parentId) : null},
+      ${primaryParentId ? BigInt(primaryParentId) : null},
       ${data.label},
       ${data.nodeType},
       ${data.sortOrder},
@@ -583,8 +701,13 @@ export async function createProfileStructureNode(input: ProfileStructureNodeInpu
   const rows = await prisma.$queryRaw<Array<{ ID: bigint | number | string }>>`
     SELECT ID FROM ult_profile_structure_nodes ORDER BY ID DESC LIMIT 1
   `;
+  const newId = rows[0] ? String(rows[0].ID) : null;
 
-  return rows[0] ? getProfileStructureNodeById(String(rows[0].ID)) : null;
+  if (newId) {
+    await syncNodeParentEdges(newId, data.parentIds, data.actor);
+  }
+
+  return newId ? getProfileStructureNodeById(newId) : null;
 }
 
 export async function updateProfileStructureNode(id: string, input: ProfileStructureNodeInput) {
@@ -597,12 +720,14 @@ export async function updateProfileStructureNode(id: string, input: ProfileStruc
   }
 
   const data = normalizeNodeInput(input);
-  await assertParentIsValid(data.parentId, id);
+  await assertParentIsValid(data.parentIds, id);
+
+  const primaryParentId = data.parentIds[0] ?? null;
 
   await prisma.$executeRaw`
     UPDATE ult_profile_structure_nodes
     SET
-      PARENT_ID = ${data.parentId ? BigInt(data.parentId) : null},
+      PARENT_ID = ${primaryParentId ? BigInt(primaryParentId) : null},
       LABEL = ${data.label},
       NODE_TYPE = ${data.nodeType},
       SORT_ORDER = ${data.sortOrder},
@@ -612,6 +737,8 @@ export async function updateProfileStructureNode(id: string, input: ProfileStruc
     WHERE ID = ${BigInt(id)}
     LIMIT 1
   `;
+
+  await syncNodeParentEdges(id, data.parentIds, data.actor);
 
   return getProfileStructureNodeById(id);
 }
@@ -625,33 +752,53 @@ export async function deleteProfileStructureNode(id: string, options?: { cascade
     return false;
   }
 
-  const childRows = await prisma.$queryRaw<Array<{ childCount: bigint | number }>>`
-    SELECT COUNT(*) AS childCount FROM ult_profile_structure_nodes WHERE PARENT_ID = ${BigInt(id)}
-  `;
-  const childCount = Number(childRows[0]?.childCount ?? 0);
+  // A descendant only needs to be deleted alongside `id` if, once `id` is
+  // removed, it has zero parents left — a child that survives via another
+  // parent outside this subtree (e.g. shares a second parent unrelated to
+  // `id`) must not be touched. Computed as a two-phase fixed point over the
+  // full node set: first collect everything reachable from `id` via child
+  // edges (candidates), then mark a candidate deletable once every one of
+  // its parents is itself either `id` or already marked deletable.
+  const allNodes = await getNodesWithItems(false);
+  const byId = new Map(allNodes.map((node) => [node.id, node]));
 
-  if (childCount > 0 && !options?.cascade) {
+  const candidates = new Set<string>();
+  (function collectDescendants(nodeId: string) {
+    allNodes.forEach((node) => {
+      if (node.parentIds.includes(nodeId) && !candidates.has(node.id)) {
+        candidates.add(node.id);
+        collectDescendants(node.id);
+      }
+    });
+  })(id);
+
+  const deleting = new Set<string>([id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const candidateId of candidates) {
+      if (deleting.has(candidateId)) continue;
+      const node = byId.get(candidateId);
+      if (node && node.parentIds.every((parentId) => deleting.has(parentId))) {
+        deleting.add(candidateId);
+        changed = true;
+      }
+    }
+  }
+
+  const otherIdsToDelete = [...deleting].filter((deleteId) => deleteId !== id);
+
+  if (otherIdsToDelete.length > 0 && !options?.cascade) {
     throw new ProfileStructureConflictError(
-      `Node ini masih memiliki ${childCount} node turunan. Pindahkan atau hapus turunannya terlebih dahulu, atau gunakan hapus beserta turunan.`
+      `Node ini masih memiliki ${otherIdsToDelete.length} node turunan yang akan ikut terhapus. ` +
+        `Pindahkan/lepas turunan yang masih dipakai node lain, atau gunakan hapus beserta turunan.`
     );
   }
 
-  if (childCount > 0 && options?.cascade) {
-    async function collectDescendantIds(nodeId: string): Promise<string[]> {
-      const rows = await prisma.$queryRaw<Array<{ ID: bigint | number | string }>>`
-        SELECT ID FROM ult_profile_structure_nodes WHERE PARENT_ID = ${BigInt(nodeId)}
-      `;
-      const directChildIds = rows.map((row) => String(row.ID));
-      const nested = await Promise.all(directChildIds.map(collectDescendantIds));
-      return [...directChildIds, ...nested.flat()];
-    }
-
-    const descendantIds = await collectDescendantIds(id);
-
-    // Delete deepest-first so FK RESTRICT on PARENT_ID never blocks a delete.
-    for (const descendantId of descendantIds.reverse()) {
-      await prisma.$executeRaw`DELETE FROM ult_profile_structure_nodes WHERE ID = ${BigInt(descendantId)} LIMIT 1`;
-    }
+  // Junction-table FKs are ON DELETE CASCADE, so deleting a node row already
+  // clears its edge rows in both directions — no manual edge cleanup needed.
+  for (const otherId of otherIdsToDelete) {
+    await prisma.$executeRaw`DELETE FROM ult_profile_structure_nodes WHERE ID = ${BigInt(otherId)} LIMIT 1`;
   }
 
   await prisma.$executeRaw`DELETE FROM ult_profile_structure_nodes WHERE ID = ${BigInt(id)} LIMIT 1`;

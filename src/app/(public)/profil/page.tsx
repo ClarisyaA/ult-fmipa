@@ -8,7 +8,7 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { Reveal } from "@/components/sections/reveal";
 import {
   OrganizationStructureTree,
-  type PublicStructureNode,
+  type PublicStructureLayout,
 } from "@/components/profile/organization-structure-tree";
 
 const missionItems = [
@@ -24,12 +24,12 @@ type ProfileStructureSettingsData = {
 
 type ProfileStructureApiResponse = {
   settings: ProfileStructureSettingsData | null;
-  tree: PublicStructureNode[];
+  layout: PublicStructureLayout;
 };
 
 type ProfileStructureState = {
   settings: ProfileStructureSettingsData;
-  tree: PublicStructureNode[];
+  layout: PublicStructureLayout;
   loaded: boolean;
 };
 
@@ -56,7 +56,7 @@ const defaultStructureState: ProfileStructureState = {
     title: "Struktur Organisasi ULT",
     subtitle: "Sinergi kepemimpinan dan eksekusi layanan yang tertata.",
   },
-  tree: [],
+  layout: { levels: [], edges: [] },
   loaded: false,
 };
 
@@ -163,7 +163,7 @@ export default function ProfilPage() {
           if (isMounted && body?.data) {
             setStructure({
               settings: body.data.settings ?? defaultStructureState.settings,
-              tree: body.data.tree ?? [],
+              layout: body.data.layout ?? defaultStructureState.layout,
               loaded: true,
             });
           }
@@ -771,8 +771,8 @@ export default function ProfilPage() {
             className="relative mx-auto mt-12 max-w-5xl lg:mt-16"
             delay={120}
           >
-            {structure.tree.length > 0 ? (
-              <OrganizationStructureTree roots={structure.tree} />
+            {structure.layout.levels.length > 0 ? (
+              <OrganizationStructureTree layout={structure.layout} />
             ) : structure.loaded ? (
               <p className="mx-auto max-w-md rounded-2xl border border-[#E5E2DB] bg-white/70 px-6 py-8 text-center text-sm text-[#8A7A6E]">
                 Struktur organisasi belum tersedia.

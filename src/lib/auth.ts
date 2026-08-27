@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 import { writeAuditLog } from "@/lib/audit-log";
 import {
+  isEligiblePausStudentUser,
   mapDevUserToSessionUser,
   type AppRole,
 } from "@/lib/auth-user-mapper";
@@ -250,12 +251,28 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     // TODO(PAUS): Use this as the production provider after OAuth credentials
-    // are confirmed by Unpad. PAUS profile should provide or map name, email,
-    // NPM/identifier, and role if available.
+    // are confirmed by Unpad. PAUS is student-only (business rule, final) -
+    // see mapPausProfileToSessionUser and the signIn callback below.
     // TODO(PAUS): PAUS_SIGN_OUT_URL is available for future global SSO logout.
     ...(hasPausOAuthConfig() ? [createPausProvider()] : []),
   ],
   callbacks: {
+    // Defense in depth: PAUS OAuth and PAUS Bridge are student-only by
+    // business rule. The mappers (mapPausProfileToSessionUser,
+    // mapPausBridgePayloadToSessionUser) already reject any profile/payload
+    // without a valid NPM by throwing, but this callback independently
+    // re-checks the mapped user before a session is ever created, so a
+    // future change to either mapper can't silently reintroduce a
+    // STAFF/ADMIN role via PAUS. Credentials (DB-backed Admin/Staff/dev) is
+    // untouched - APP_ROLE from data_users remains the sole source of
+    // Staff/Admin authorization.
+    async signIn({ user, account }) {
+      if (account?.provider === "paus" || account?.provider === "paus-bridge") {
+        return isEligiblePausStudentUser(user);
+      }
+
+      return true;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
