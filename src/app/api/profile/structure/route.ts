@@ -5,10 +5,10 @@ import { getPublicProfileStructure } from "@/lib/profile-structure-cms";
 
 export async function GET() {
   try {
-    const { settings, tree } = await getPublicProfileStructure();
+    const { settings, layout } = await getPublicProfileStructure();
 
     return NextResponse.json(
-      { data: { settings, tree } },
+      { data: { settings, layout } },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (error) {

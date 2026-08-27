@@ -68,27 +68,32 @@ export function verifyPausBridgeToken(token: string) {
   return payload;
 }
 
+// PAUS Bridge is a legacy, non-OAuth mechanism (see src/lib/auth.ts) used
+// to bridge sessions from an external legacy system. It is student-only,
+// the same business rule as the modern PAUS OAuth provider: a session can
+// only be created for a payload that carries a non-empty NPM. NIP alone
+// must never grant STAFF - Staff/Admin authorization comes exclusively
+// from data_users.APP_ROLE via the Credentials provider.
 export function mapPausBridgePayloadToSessionUser(
   payload: PausBridgePayload
 ): AppSessionUser {
   const npm = payload.npm?.trim() || undefined;
+
+  if (!npm) {
+    throw new Error(
+      "Token bridge PAUS hanya berlaku untuk mahasiswa dengan NPM yang valid."
+    );
+  }
+
   const nip = payload.nip?.trim() || undefined;
-
-  if (!npm && !nip) {
-    throw new Error("Token bridge PAUS tidak memuat NPM atau NIP.");
-  }
-
-  const id = payload.pausId ?? npm ?? nip;
-
-  if (!id) {
-    throw new Error("Token bridge PAUS tidak memuat identifier.");
-  }
+  const email = payload.email?.trim() || undefined;
+  const id = payload.pausId ?? `paus-npm-${npm}`;
 
   return {
     id,
-    name: payload.name?.trim() || "Pengguna PAUS",
-    email: payload.email,
-    role: npm ? "MAHASISWA" : "STAFF",
+    name: payload.name?.trim() || "Mahasiswa PAUS",
+    email,
+    role: "MAHASISWA",
     npm,
     nip,
     pausId: payload.pausId,

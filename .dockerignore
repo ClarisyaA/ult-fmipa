@@ -3,7 +3,14 @@
 .husky
 .vscode
 .next
+.next-dev
+.next-typecheck
+.next-dev-*.log
 node_modules
+test-results
+storage-audit-backup
+tsconfig.tsbuildinfo
+tsconfig.typecheck.tsbuildinfo
 playwright-report
 test-results
 coverage

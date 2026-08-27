@@ -103,7 +103,7 @@ export async function handleProfileStructureNodeCreate(request: Request, rolePre
 
   try {
     const body = (await request.json().catch(() => null)) as {
-      parentId?: string | null;
+      parentIds?: string[] | string | null;
       label?: string;
       nodeType?: string | null;
       sortOrder?: number | string | null;
@@ -111,7 +111,7 @@ export async function handleProfileStructureNodeCreate(request: Request, rolePre
     } | null;
 
     const node = await createProfileStructureNode({
-      parentId: body?.parentId,
+      parentIds: body?.parentIds ?? [],
       label: body?.label ?? "",
       nodeType: body?.nodeType,
       sortOrder: body?.sortOrder,
@@ -148,7 +148,7 @@ export async function handleProfileStructureNodeUpdate(
 
   try {
     const body = (await request.json().catch(() => null)) as {
-      parentId?: string | null;
+      parentIds?: string[] | string | null;
       label?: string;
       nodeType?: string | null;
       sortOrder?: number | string | null;
@@ -156,7 +156,7 @@ export async function handleProfileStructureNodeUpdate(
     } | null;
 
     const node = await updateProfileStructureNode(id, {
-      parentId: body?.parentId,
+      parentIds: body?.parentIds ?? [],
       label: body?.label ?? "",
       nodeType: body?.nodeType,
       sortOrder: body?.sortOrder,

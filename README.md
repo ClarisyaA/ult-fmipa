@@ -151,12 +151,23 @@ placeholder/nilai development yang sudah ada di repository (`docker-compose.yml`
 
 ### PAUS (Unpad SSO OAuth)
 
+**PAUS hanya digunakan untuk login mahasiswa** (business rule final). Admin
+dan Staff selalu login melalui Credentials Provider internal (`data_users`),
+tidak pernah melalui PAUS - lihat
+[`docs/paus-integration-audit.md`](docs/paus-integration-audit.md) Finding
+S-1 untuk detail penegakan aturan ini di kode.
+
 PAUS OAuth sudah punya fondasi kode (provider, callback bridge), tetapi
 `PAUS_CLIENT_ID`/`PAUS_CLIENT_SECRET` di `.env.example` dan
 `docker-compose.yml` masih kosong secara default. **Status aktivasi PAUS
 pada staging/production perlu dikonfirmasi dengan tim Unpad** (credential,
 redirect URI resmi). Development lokal memakai Credentials Provider biasa
-lewat akun `DEV_*`.
+lewat akun `DEV_*`. Audit lengkap implementasi PAUS saat ini (state/scope/
+transport token, role mapping, security findings, dan pertanyaan yang perlu
+dikonfirmasi DPSI) ada di
+[`docs/paus-integration-audit.md`](docs/paus-integration-audit.md); checklist
+siap-bawa ke DPSI ada di
+[`docs/dpsi-paus-integration-checklist.md`](docs/dpsi-paus-integration-checklist.md).
 
 | Variable | Wajib? | Contoh nilai aman | Keterangan |
 | --- | --- | --- | --- |
@@ -164,7 +175,7 @@ lewat akun `DEV_*`.
 | `PAUS_CLIENT_ID` | Optional (wajib saat PAUS aktif) | *(kosongkan)* | Placeholder OAuth - jangan hardcode nilai asli. |
 | `PAUS_CLIENT_SECRET` | Optional (wajib saat PAUS aktif) | *(kosongkan)* | Secret OAuth - jangan pernah commit nilai asli. |
 | `PAUS_AUTHORIZATION_URL`, `PAUS_TOKEN_URL`, `PAUS_USERINFO_URL`, `PAUS_SIGN_OUT_URL` | Optional | `https://paus.unpad.ac.id/...` | Endpoint resmi PAUS, sudah diisi default di `.env.example`. |
-| `PAUS_ISSUER` | Optional | *(sesuai konfigurasi PAUS)* | Dibaca `src/lib/auth.ts` untuk provider OAuth. |
+| `PAUS_ISSUER` | Optional | *(sesuai konfigurasi PAUS)* | Diset di `src/lib/auth.ts` pada provider OAuth, tetapi saat ini **tidak berefek** karena provider bertipe `oauth` biasa (bukan `oidc`) dan tidak melakukan discovery - jangan diisi sebelum dikonfirmasi DPSI (lihat audit PAUS). |
 | `PAUS_LEGACY_LOGIN_URL` | Optional | *(kosongkan)* | Bridge ke login PHP legacy jika masih dipakai. |
 | `PAUS_BRIDGE_SECRET` | Optional | `local-bridge-secret-change-me` | Secret bridge PAUS legacy untuk testing. |
 | `PAUS_BRIDGE_TOKEN_TTL_SECONDS` | Optional | `120` | TTL token bridge. |

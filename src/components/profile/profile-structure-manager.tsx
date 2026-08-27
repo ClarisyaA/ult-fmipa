@@ -45,14 +45,20 @@ function flattenTree(
   ]);
 }
 
-function buildTree(nodes: ProfileStructureNode[]) {
+// A node can now have more than one parent, so nesting it under all of them
+// would duplicate list rows; nesting under none loses the at-a-glance
+// hierarchy grouping that's useful for editors. This groups each node under
+// its first parent only for indentation purposes — the parent picker below
+// still shows and edits the full multi-parent relationship.
+function buildDisplayTree(nodes: ProfileStructureNode[]) {
   const byId = new Map<string, ProfileStructureNode>();
   const roots: ProfileStructureNode[] = [];
 
   nodes.forEach((node) => byId.set(node.id, { ...node, children: [] }));
   byId.forEach((node) => {
-    if (node.parentId && byId.has(node.parentId)) {
-      byId.get(node.parentId)?.children.push(node);
+    const primaryParentId = node.parentIds[0] ?? null;
+    if (primaryParentId && byId.has(primaryParentId)) {
+      byId.get(primaryParentId)?.children.push(node);
     } else {
       roots.push(node);
     }
@@ -66,25 +72,35 @@ function buildTree(nodes: ProfileStructureNode[]) {
   return roots;
 }
 
+// Cycle-avoidance for the parent picker must walk the full multi-parent
+// graph (not the display-only single-parent nesting above), so this doesn't
+// under-block a would-be cycle. The server's own check remains the real
+// safety net regardless — this is just UX.
 function descendantsOf(nodes: ProfileStructureNode[], nodeId: string): Set<string> {
-  const result = new Set<string>();
-  const target = nodes.find((node) => node.id === nodeId);
-
-  function visit(node: ProfileStructureNode | undefined) {
-    node?.children.forEach((child) => {
-      result.add(child.id);
-      visit(child);
+  const childrenByParentId = new Map<string, string[]>();
+  nodes.forEach((node) => {
+    node.parentIds.forEach((parentId) => {
+      childrenByParentId.set(parentId, [...(childrenByParentId.get(parentId) ?? []), node.id]);
     });
+  });
+
+  const result = new Set<string>();
+  const queue = [...(childrenByParentId.get(nodeId) ?? [])];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (result.has(current)) continue;
+    result.add(current);
+    queue.push(...(childrenByParentId.get(current) ?? []));
   }
 
-  visit(target);
   return result;
 }
 
 function emptyNodeForm() {
   return {
     id: "",
-    parentId: "root",
+    parentIds: [] as string[],
     label: "",
     nodeType: "standard" as ProfileStructureNodeType,
     isActive: true,
@@ -119,10 +135,11 @@ export function ProfileStructureManager({
   const [editingItemContent, setEditingItemContent] = useState("");
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
 
-  const tree = useMemo(() => buildTree(nodes), [nodes]);
+  const tree = useMemo(() => buildDisplayTree(nodes), [nodes]);
   const flatNodes = useMemo(() => flattenTree(tree), [tree]);
-  const blockedParentIds = nodeForm.id ? descendantsOf(tree, nodeForm.id) : new Set<string>();
+  const blockedParentIds = nodeForm.id ? descendantsOf(nodes, nodeForm.id) : new Set<string>();
   const activeNode = activeNodeId ? nodes.find((node) => node.id === activeNodeId) ?? null : null;
+  const labelById = useMemo(() => new Map(nodes.map((node) => [node.id, node.label])), [nodes]);
 
   function flash(kind: "error" | "message", text: string) {
     if (kind === "error") {
@@ -181,7 +198,7 @@ export function ProfileStructureManager({
     setError("");
     setNodeForm({
       id: node.id,
-      parentId: node.parentId ?? "root",
+      parentIds: node.parentIds,
       label: node.label,
       nodeType: node.nodeType,
       isActive: node.isActive,
@@ -189,9 +206,9 @@ export function ProfileStructureManager({
     });
   }
 
-  function startAddChild(parentId: string) {
+  function startAddChild(parentId: string | null) {
     setError("");
-    setNodeForm({ ...emptyNodeForm(), parentId });
+    setNodeForm({ ...emptyNodeForm(), parentIds: parentId ? [parentId] : [] });
   }
 
   function resetNodeForm() {
@@ -206,7 +223,7 @@ export function ProfileStructureManager({
 
     try {
       const payload = {
-        parentId: nodeForm.parentId,
+        parentIds: nodeForm.parentIds,
         label: nodeForm.label,
         nodeType: nodeForm.nodeType,
         isActive: nodeForm.isActive,
@@ -245,7 +262,7 @@ export function ProfileStructureManager({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        parentId: node.parentId ?? "root",
+        parentIds: node.parentIds,
         label: node.label,
         nodeType: node.nodeType,
         isActive: !node.isActive,
@@ -516,7 +533,7 @@ export function ProfileStructureManager({
                 Atur parent, urutan, jenis tampilan, dan status aktif tiap node.
               </p>
             </div>
-            <Button type="button" size="sm" onClick={() => startAddChild("root")}>
+            <Button type="button" size="sm" onClick={() => startAddChild(null)}>
               <Plus className="size-4" />
               Tambah Node
             </Button>
@@ -562,8 +579,11 @@ export function ProfileStructureManager({
                     </Badge>
                   </div>
                   <p className="break-words text-[11px] text-[#7a7166]">
-                    Parent: {node.parentId ?? "Root"} | Urutan: {node.sortOrder} | Isian:{" "}
-                    {node.items.length}
+                    Parent:{" "}
+                    {node.parentIds.length
+                      ? node.parentIds.map((parentId) => labelById.get(parentId) ?? parentId).join(", ")
+                      : "Root"}{" "}
+                    | Urutan: {node.sortOrder} | Isian: {node.items.length}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -650,28 +670,51 @@ export function ProfileStructureManager({
             </div>
 
             <div className="grid gap-2">
-              <Label>Parent / Atasan</Label>
-              <Select
-                value={nodeForm.parentId}
-                onValueChange={(value) => setNodeForm({ ...nodeForm, parentId: value })}
+              <Label>Parent / Atasan (bisa lebih dari satu)</Label>
+              <div
+                className="grid max-h-56 gap-1 overflow-y-auto rounded-md border border-[#e3d9ca] bg-white p-2"
+                data-tour="admin-profile-structure-parent"
               >
-                <SelectTrigger className="w-full bg-white" data-tour="admin-profile-structure-parent">
-                  <SelectValue placeholder="Pilih parent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="root">Tidak ada parent / Root</SelectItem>
-                  {flatNodes.map(({ node, depth }) => (
-                    <SelectItem
+                <label className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-[#0f5b45]"
+                    checked={nodeForm.parentIds.length === 0}
+                    onChange={() => setNodeForm({ ...nodeForm, parentIds: [] })}
+                  />
+                  Tidak ada parent / Root
+                </label>
+                {flatNodes.map(({ node, depth }) => {
+                  const disabled = node.id === nodeForm.id || blockedParentIds.has(node.id);
+                  const checked = nodeForm.parentIds.includes(node.id);
+
+                  return (
+                    <label
                       key={node.id}
-                      value={node.id}
-                      disabled={node.id === nodeForm.id || blockedParentIds.has(node.id)}
+                      className={`inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+                        disabled ? "opacity-40" : ""
+                      }`}
                     >
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-[#0f5b45]"
+                        disabled={disabled}
+                        checked={checked}
+                        onChange={(event) =>
+                          setNodeForm({
+                            ...nodeForm,
+                            parentIds: event.currentTarget.checked
+                              ? [...nodeForm.parentIds, node.id]
+                              : nodeForm.parentIds.filter((id) => id !== node.id),
+                          })
+                        }
+                      />
                       {"- ".repeat(depth)}
                       {node.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -732,7 +775,7 @@ export function ProfileStructureManager({
                     ? "Simpan Perubahan"
                     : "Tambah Node"}
               </Button>
-              {nodeForm.id || nodeForm.parentId !== "root" ? (
+              {nodeForm.id || nodeForm.parentIds.length > 0 ? (
                 <Button type="button" variant="outline" onClick={resetNodeForm}>
                   Batal
                 </Button>

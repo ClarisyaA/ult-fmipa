@@ -22,7 +22,8 @@ VPS staging server (see [section 20](#20-delta-when-moving-to-real-vps-staging))
 | Database | `fmipa_sbpk` | `fmipa_sbpk_staging_local` | staging DB on the server | production DB |
 | MinIO bucket | `ult-fmipa` | `ult-fmipa-staging-local` | staging bucket on the server | production bucket |
 | App port | `3000` | `3100` | behind reverse proxy / HTTPS | behind reverse proxy / HTTPS |
-| Admin/Staff login | DB accounts, or `DEV_ADMIN_*`/`DEV_STAFF_*` bypass | DB accounts only (`DEV_*` blank) | DB accounts / PAUS SSO | DB accounts / PAUS SSO |
+| Admin/Staff login | DB accounts, or `DEV_ADMIN_*`/`DEV_STAFF_*` bypass | DB accounts only (`DEV_*` blank) | DB accounts (Credentials only - PAUS is student-only) | DB accounts (Credentials only - PAUS is student-only) |
+| Mahasiswa login | DB accounts, or `DEV_STUDENT_*` bypass | DB accounts only (`DEV_*` blank) | PAUS OAuth (student-only) | PAUS OAuth (student-only) |
 | Network exposure | localhost | localhost, debug ports on `127.0.0.1` only | public via HTTPS + firewall | public via HTTPS + firewall |
 
 ## 3. Files used

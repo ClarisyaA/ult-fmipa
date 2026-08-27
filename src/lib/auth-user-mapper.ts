@@ -15,6 +15,18 @@ export type AppSessionUser = {
   phone?: string;
 };
 
+// PAUS (OAuth and Bridge) is student-only, final business rule: a session
+// is only eligible if the mapped user is MAHASISWA with a non-empty NPM.
+// Used as a defense-in-depth re-check in the NextAuth signIn callback,
+// independent of the PAUS profile/payload mappers that already enforce
+// this.
+export function isEligiblePausStudentUser(user: {
+  role?: AppRole;
+  npm?: string | null;
+}) {
+  return user.role === "MAHASISWA" && Boolean(user.npm?.trim());
+}
+
 export function mapDevUserToSessionUser(
   role: AppRole,
   email: string

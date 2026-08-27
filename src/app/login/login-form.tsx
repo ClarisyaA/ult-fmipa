@@ -33,6 +33,15 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
     ClientSafeProvider
   > | null>(null);
 
+  // NextAuth redirects back here with ?error=... when the "paus" provider's
+  // sign-in flow fails (including our student-only signIn callback
+  // rejecting a profile without a valid NPM). Only a generic, safe message
+  // is derived - never the raw NextAuth error code, NPM, email, or any PAUS
+  // profile/token detail.
+  const pausError = searchParams.get("error")
+    ? "Login PAUS hanya tersedia untuk mahasiswa aktif dengan NPM yang valid."
+    : "";
+
   useEffect(() => {
     getProviders().then(setProviders);
 
@@ -141,19 +150,25 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
           </p>
         </div>
 
+        {pausError ? (
+          <p className="mx-auto mb-4 max-w-[26rem] rounded-xl border border-[#d6001c]/25 bg-[#d6001c]/8 px-4 py-3 text-center text-xs font-medium text-white sm:text-sm">
+            {pausError}
+          </p>
+        ) : null}
+
         <div className="mx-auto mt-[35px] grid w-full max-w-[26rem] gap-3 px-3 sm:mt-0 sm:gap-4 sm:px-0 lg:gap-3">
           <article className="login-access-card group relative overflow-hidden rounded-xl p-3 transition-all hover:-translate-y-1 sm:rounded-2xl sm:p-4 lg:p-2.5">
             <h3 className="text-center text-lg font-extrabold text-white sm:hidden">
-              Pengguna Layanan
+              Mahasiswa
             </h3>
             <div className="grid gap-2 sm:grid-cols-[1fr_0.9fr] sm:items-center sm:gap-4 lg:grid-cols-[1fr_0.72fr] lg:gap-3">
               <div className="order-2 px-1 text-center sm:order-1 sm:text-left">
                 <h3 className="hidden text-xl font-extrabold text-white sm:block lg:text-lg">
-                  Pengguna Layanan
+                  Mahasiswa
                 </h3>
                 <p className="mt-1 text-xs font-medium leading-5 text-white/75 sm:mt-2 sm:text-sm sm:leading-6 lg:mt-1 lg:text-xs lg:leading-5">
-                  Untuk mahasiswa dan alumni FMIPA Unpad yang ingin mengakses
-                  layanan akademik terpadu.
+                  Gunakan akun PAUS Unpad mahasiswa untuk mengakses layanan
+                  akademik terpadu.
                 </p>
                 <Button
                   type="button"
@@ -161,13 +176,13 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
                   className="mt-3 h-10 w-full rounded-xl bg-[#df001d] text-xs font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] hover:text-white disabled:opacity-60 disabled:hover:translate-y-0 sm:mt-5 sm:h-11 sm:text-sm lg:mt-3 lg:h-9 lg:text-xs"
                   onClick={handlePausLogin}
                 >
-                  Masuk sebagai Pengguna
+                  Masuk sebagai Mahasiswa
                 </Button>
               </div>
               <div className="order-1 flex h-full items-end justify-center self-stretch sm:order-2">
                 <Image
                   src="/login/mahasiswa.webp"
-                  alt="Ilustrasi pengguna layanan"
+                  alt="Ilustrasi login mahasiswa"
                   width={360}
                   height={245}
                   className="-mb-3 h-32 w-full object-contain object-bottom transition-transform duration-300 group-hover:scale-[1.03] sm:-mb-4 sm:h-52 lg:-mb-2.5 lg:h-36"
@@ -178,29 +193,29 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
 
           <article className="login-access-card group relative overflow-hidden rounded-xl p-3 transition-all hover:-translate-y-1 sm:rounded-2xl sm:p-4 lg:p-2.5">
             <h3 className="text-center text-lg font-extrabold text-white sm:hidden">
-              Administrator
+              Admin/Staff
             </h3>
             <div className="grid gap-2 sm:grid-cols-[1fr_0.9fr] sm:items-center sm:gap-4 lg:grid-cols-[1fr_0.72fr] lg:gap-3">
               <div className="order-2 px-1 text-center sm:order-1 sm:text-left">
                 <h3 className="hidden text-xl font-extrabold text-white sm:block lg:text-lg">
-                  Administrator
+                  Admin/Staff
                 </h3>
                 <p className="mt-1 text-xs font-medium leading-5 text-white/75 sm:mt-2 sm:text-sm sm:leading-6 lg:mt-1 lg:text-xs lg:leading-5">
-                  Untuk administrator ULT FMIPA Unpad dengan akun internal
-                  layanan.
+                  Gunakan akun internal ULT FMIPA Unpad untuk Admin maupun
+                  Staff.
                 </p>
                 <Button
                   type="button"
                   className="mt-3 h-10 w-full rounded-xl bg-[#df001d] text-xs font-extrabold text-white shadow-lg shadow-[#df001d]/20 transition-all hover:-translate-y-0.5 hover:bg-[#c9001a] hover:text-white sm:mt-5 sm:h-11 sm:text-sm lg:mt-3 lg:h-9 lg:text-xs"
                   onClick={() => setAccessMode("sivitas")}
                 >
-                  Masuk sebagai Administrator
+                  Masuk sebagai Admin/Staff
                 </Button>
               </div>
               <div className="order-1 flex h-full items-end justify-center self-stretch sm:order-2">
                 <Image
                   src="/login/sivitas.webp"
-                  alt="Ilustrasi sivitas akademika"
+                  alt="Ilustrasi login Admin/Staff"
                   width={360}
                   height={245}
                   className="-mb-3 h-32 w-full object-contain object-bottom transition-transform duration-300 group-hover:scale-[1.03] sm:-mb-4 sm:h-52 lg:-mb-2.5 lg:h-36"

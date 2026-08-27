@@ -711,23 +711,42 @@ docker compose start app
 
 ## 9. Setup PAUS SSO
 
+### Login Flows (Final)
+
+**PAUS hanya digunakan untuk autentikasi mahasiswa.** Ini adalah business
+rule final, bukan pilihan konfigurasi:
+
+| Pengguna | Metode Login | Sumber Role |
+|---|---|---|
+| Mahasiswa | PAUS OAuth (`paus`) atau PAUS Bridge (legacy) | Selalu `MAHASISWA` |
+| Staff | Credentials Provider (akun internal, `data_users`) | `data_users.APP_ROLE` |
+| Admin | Credentials Provider (akun internal, `data_users`) | `data_users.APP_ROLE` |
+
+Staff dan Admin **tidak pernah** login melalui PAUS - form "Masuk sebagai
+Admin/Staff" di `/login` selalu memakai akun internal, tidak pernah
+mengarah ke PAUS. Lihat
+[`docs/paus-integration-audit.md`](paus-integration-audit.md) Finding S-1
+untuk detail perbaikan yang menegakkan aturan ini di kode.
+
 ### Arsitektur PAUS yang Digunakan
 
 Berdasarkan `src/lib/auth.ts`:
 
-**Dua mode PAUS tersedia:**
+**Dua mode PAUS tersedia (keduanya student-only):**
 
 | Mode | Keterangan | Aktif Jika |
 |---|---|---|
 | `modern` | OAuth 2.0 penuh dengan provider `paus` via NextAuth | `PAUS_MODE=modern` DAN `PAUS_CLIENT_ID` + `PAUS_CLIENT_SECRET` tersedia |
-| `legacy` | Redirect ke URL login PAUS eksternal | `PAUS_MODE=legacy` dan `PAUS_LEGACY_LOGIN_URL` tersedia |
-| Bridge | Token HMAC dari sistem PAUS ke NextAuth | Selalu aktif - digunakan oleh rute `/auth/paus-bridge` |
+| `legacy` | Redirect ke URL login PAUS eksternal, lalu bridge kembali via `/auth/paus-bridge` | `PAUS_MODE=legacy` dan `PAUS_LEGACY_LOGIN_URL` tersedia |
 
-**Prioritas resolusi login:**
-1. PAUS OAuth modern (jika `PAUS_CLIENT_ID` dan `PAUS_CLIENT_SECRET` tersedia)
-2. PAUS Bridge (token dari sistem luar)
-3. Database credentials (legacy admin/staff via `data_users`)
-4. Dev credentials (hanya aktif jika variabel `DEV_*` terisi)
+PAUS Bridge (`/auth/paus-bridge`, provider `paus-bridge`) adalah mekanisme
+legacy terpisah dari sistem eksternal (bukan bagian integrasi OAuth DPSI)
+yang tetap harus melalui aturan student-only yang sama - lihat audit PAUS
+untuk detail.
+
+Provider `credentials` (Admin/Staff internal + akun `DEV_*` untuk
+development) selalu tersedia terlepas dari status PAUS, dan tidak
+terpengaruh oleh aturan student-only di atas.
 
 ### Endpoint PAUS Aktual (dari source code)
 
@@ -760,19 +779,32 @@ Berdasarkan `src/lib/paus-profile.ts`:
 | Atribut PAUS | Field Sesi | Keterangan |
 |---|---|---|
 | `attributes.nama` | `user.name` | Nama lengkap |
-| `attributes.npm` | `user.npm` | NPM mahasiswa |
-| `attributes.nip` | `user.nip` | NIP staf/dosen |
-| `attributes.paus_id` | `user.pausId` | ID PAUS |
-| `email` | `user.email` | Email pengguna |
-| `sub` / `id` | `user.id` | Identifier fallback |
+| `attributes.npm` | `user.npm` | NPM mahasiswa - **wajib**, lihat di bawah |
+| `attributes.nip` | `user.nip` | NIP staf/dosen - hanya informasional, **tidak pernah** menentukan role |
+| `attributes.paus_id` | `user.pausId` | ID PAUS, dipakai sebagai identifier utama bila tersedia |
+| `email` | `user.email` | Email pengguna - opsional, tidak memengaruhi role atau identity |
+| `sub` / `id` / NPM | `user.id` | Identifier fallback bila `pausId` tidak tersedia (email tidak pernah dipakai sebagai id) |
 
-**Logika resolusi role:**
+**Logika resolusi role (final, student-only):**
 ```typescript
-role: npm ? "MAHASISWA" : nip ? "STAFF" : "MAHASISWA"
+// src/lib/paus-profile.ts - normalizePausStudentProfile() menolak profil
+// tanpa NPM (mapPausProfileToSessionUser melempar error, sign-in gagal).
+// Setelah NPM tervalidasi, role SELALU "MAHASISWA".
+role: "MAHASISWA"
 ```
 
-> [!WARNING]
-> Jika atribut PAUS tidak mengirimkan `npm` maupun `nip`, pengguna otomatis ditetapkan sebagai `MAHASISWA`. Konfirmasi ke tim PAUS apakah atribut ini selalu tersedia untuk semua tipe pengguna.
+Profil PAUS yang **hanya** memiliki `nip` (tanpa `npm`) - misalnya profil
+dosen/staff - **ditolak sepenuhnya**, tidak diberi role apa pun. Ini
+ditegakkan dua lapis: di `mapPausProfileToSessionUser`/
+`mapPausBridgePayloadToSessionUser` (melempar error bila NPM tidak valid)
+dan sekali lagi di `callbacks.signIn` NextAuth (`src/lib/auth.ts`) sebagai
+defense-in-depth independen.
+
+> [!NOTE]
+> NPM wajib untuk setiap sesi PAUS - ini keputusan aplikasi kami sendiri,
+> bukan sesuatu yang perlu dikonfirmasi PAUS. Yang masih perlu dikonfirmasi
+> ke tim PAUS adalah field email (exact JSON path, apakah selalu tersedia)
+> - lihat [`docs/dpsi-paus-integration-checklist.md`](dpsi-paus-integration-checklist.md).
 
 ### Scope PAUS
 
@@ -787,6 +819,16 @@ scope: "user.basic"
 token_endpoint_auth_method: "client_secret_post"
 ```
 
+> [!NOTE]
+> Audit menyeluruh atas implementasi PAUS saat ini (state/PKCE/scope,
+> transport access token, role mapping, security findings, dan gap yang
+> perlu dikonfirmasi DPSI) ada di
+> [`docs/paus-integration-audit.md`](paus-integration-audit.md). Checklist
+> siap-bawa ke DPSI ada di
+> [`docs/dpsi-paus-integration-checklist.md`](dpsi-paus-integration-checklist.md) -
+> gunakan itu sebagai versi terkini/lebih lengkap; checklist ringkas di
+> bawah ini tetap dipertahankan sebagai ringkasan cepat.
+
 ### Checklist Koordinasi dengan Tim PAUS/Unpad
 
 **Informasi yang harus diperoleh dari tim PAUS:**
@@ -798,31 +840,66 @@ token_endpoint_auth_method: "client_secret_post"
 - [ ] Redirect URI staging yang sudah didaftarkan: `https://<DOMAIN_STAGING>/api/auth/callback/paus`
 - [ ] Redirect URI production yang sudah didaftarkan: `https://<DOMAIN_PRODUCTION>/api/auth/callback/paus`
 - [ ] Logout redirect URI jika diperlukan
-- [ ] Scope yang diizinkan (`user.basic`)
-- [ ] Atribut yang dikirimkan: apakah `npm`, `nip`, `nama`, `paus_id` selalu tersedia?
+- [ ] Scope yang diizinkan (`user.basic`) - apakah mencakup email?
+- [ ] Atribut yang dikirimkan: apakah `npm` dan `nama` selalu tersedia untuk mahasiswa? Exact JSON path untuk email?
 - [ ] Apakah HTTPS wajib untuk redirect URI? (Ya - harus HTTPS untuk production)
 - [ ] Apakah IP VPS perlu di-whitelist?
-- [ ] Akun uji: minimal 1 akun mahasiswa dan 1 akun staf untuk testing
+- [ ] Akun uji: minimal 1 akun mahasiswa aktif (positive test). Akun
+      dosen/staff (NIP tanpa NPM) opsional, hanya untuk memverifikasi
+      bahwa login tersebut **ditolak** - lihat
+      [`docs/dpsi-paus-integration-checklist.md`](dpsi-paus-integration-checklist.md).
+      Jangan meminta akun Staff/Admin PAUS - Staff/Admin login lewat
+      Credentials internal, bukan PAUS.
 - [ ] Masa berlaku access token
 - [ ] Timeout sesi
 
 ### Cara Pengujian PAUS di Staging
 
-1. **Login mahasiswa valid** → Harusnya masuk ke `/mahasiswa/riwayat`
-2. **Login staf valid** → Harusnya masuk ke `/staff/dashboard`
-3. **Logout** → Sesi hilang, redirect ke `/login`
-4. **User belum terdaftar di database** → Konfirmasi perilaku yang diharapkan (masih bisa login atau ditolak?)
-5. **Token expired** → Session harus invalid, redirect ke login
-6. **Session setelah restart container** → Session berbasis JWT disimpan di cookie, harus tetap valid
-7. **Callback di balik reverse proxy** → `NEXTAUTH_URL` harus sudah disetel ke domain HTTPS
-8. **Cookie secure pada HTTPS** → Verifikasi dengan browser DevTools → Application → Cookies
+1. **PAUS login mahasiswa valid** → Role `MAHASISWA`, masuk ke `/layanan`
+   (`getDefaultRedirectByRole`).
+2. **PAUS profile tanpa NPM ditolak** → Login gagal dengan pesan generik,
+   tidak ada session (`mapPausProfileToSessionUser` melempar error,
+   `signIn` callback juga menolak).
+3. **PAUS profile NIP-only (dosen/staff) tidak mendapat Staff** → Login
+   ditolak, bukan didowngrade atau diberi role apa pun.
+4. **Staff Credentials login berhasil** → Role `STAFF` dari
+   `data_users.APP_ROLE`, masuk ke `/staff/dashboard`.
+5. **Admin Credentials login berhasil** → Role `ADMIN` dari
+   `data_users.APP_ROLE`, masuk ke `/admin/dashboard`.
+6. **Mahasiswa tidak dapat membuka Staff/Admin** → `/staff/*` dan
+   `/admin/*` ditolak oleh `src/proxy.ts`.
+7. **Staff tidak dapat membuka Admin** → `/admin/*` ditolak untuk role
+   `STAFF`.
+8. **Role `APP_ROLE` tetap benar** → Perubahan PAUS tidak memengaruhi
+   resolusi role Credentials sama sekali (kode terpisah).
+9. **Logout** → Sesi hilang, redirect ke `/login`.
+10. **Token expired** (jika dapat disimulasikan) → Session harus invalid,
+    redirect ke login.
+11. **Session setelah restart container** → Session berbasis JWT disimpan
+    di cookie, harus tetap valid.
+12. **Callback di balik reverse proxy** → `NEXTAUTH_URL` harus sudah
+    disetel ke domain HTTPS.
+13. **Cookie secure pada HTTPS** → Verifikasi dengan browser DevTools →
+    Application → Cookies.
+
+### Smoke Test (tiga jalur login terpisah)
+
+- **Login PAUS mahasiswa** - via tombol "Masuk sebagai Mahasiswa" di
+  `/login`, hasil role `MAHASISWA`.
+- **Login Credentials Staff** - via tombol "Masuk sebagai Admin/Staff",
+  akun `data_users` dengan `APP_ROLE=STAFF`.
+- **Login Credentials Admin** - via tombol "Masuk sebagai Admin/Staff",
+  akun `data_users` dengan `APP_ROLE=ADMIN`.
+
+Jangan menguji login Staff atau Admin melalui PAUS - jalur tersebut tidak
+ada di aplikasi ini.
 
 ### Bagian Khusus: PAUS Belum Siap Saat Go-Live
 
 Jika PAUS belum siap saat jadwal go-live tiba:
 
 - **Jangan buka website ke publik** sebelum PAUS berfungsi - mahasiswa tidak akan bisa login.
-- **Admin/staf masih dapat login** via database credentials (`data_users` tabel) selama tabel dan user tersebut ada dan terisi.
+- **Admin/Staff tetap dapat login** via Credentials internal (`data_users` tabel) selama tabel dan user tersebut ada dan terisi - jalur ini sama sekali tidak bergantung pada PAUS.
 - **Jangan membuat bypass authentication baru** - ini menciptakan risiko keamanan.
 - **Jangan menaruh credential dummy di production.**
 - **Tunda go-live** sampai PAUS siap - ini lebih aman daripada membuka website setengah jadi.
@@ -1052,7 +1129,10 @@ docker compose exec app pnpm storage:audit -- --strict
 7. **Jalankan migration** (ikuti urutan di Bagian 8)
 8. **Setup reverse proxy** untuk `<DOMAIN_STAGING>` → port staging
 9. **Setup HTTPS** untuk `<DOMAIN_STAGING>`
-10. **Uji PAUS login** dengan akun uji mahasiswa dan staf
+10. **Uji PAUS login** dengan akun uji mahasiswa (dan opsional 1 akun
+    dosen/staff untuk memverifikasi penolakan - lihat
+    [`docs/dpsi-paus-integration-checklist.md`](dpsi-paus-integration-checklist.md)),
+    lalu uji Staff/Admin login terpisah lewat Credentials internal
 11. **Uji upload file** - pastikan file tersimpan di storage staging
 12. **Restart container** - verifikasi file masih ada
 13. **Rebuild container** - verifikasi file masih ada
@@ -1065,7 +1145,9 @@ docker compose exec app pnpm storage:audit -- --strict
 ### Checklist Staging Go/No-Go
 
 - [ ] PAUS login mahasiswa berhasil
-- [ ] PAUS login staf berhasil
+- [ ] PAUS profile tanpa NPM (dosen/staff) ditolak dengan aman
+- [ ] Staff Credentials login berhasil (bukan PAUS)
+- [ ] Admin Credentials login berhasil (bukan PAUS)
 - [ ] Upload file PDF berhasil
 - [ ] Upload file palsu (spoof MIME) ditolak
 - [ ] File dapat diakses oleh yang berhak
@@ -1438,11 +1520,13 @@ PIC yang ditetapkan saat maintenance window, atau lead developer jika PIC tidak 
 - [ ] `PAUS_CLIENT_SECRET` production tersedia
 - [ ] Redirect URI `https://<DOMAIN_PRODUCTION>/api/auth/callback/paus` terdaftar di PAUS
 - [ ] Login mahasiswa via PAUS berhasil diuji (minimal di staging)
-- [ ] Login staf via PAUS berhasil diuji (minimal di staging)
+- [ ] PAUS profile tanpa NPM (dosen/staff) ditolak dengan aman (minimal di staging)
 
 ### Authentication & Authorization
 
-- [ ] Login PAUS berfungsi
+- [ ] Login PAUS mahasiswa berfungsi (role selalu `MAHASISWA`)
+- [ ] Login Staff Credentials berfungsi (role dari `data_users.APP_ROLE`, bukan PAUS)
+- [ ] Login Admin Credentials berfungsi (role dari `data_users.APP_ROLE`, bukan PAUS)
 - [ ] Session valid setelah restart container
 - [ ] Cookie `Secure` aktif di HTTPS
 - [ ] Mahasiswa hanya dapat mengakses pengajuan dan file miliknya
