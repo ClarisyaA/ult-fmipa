@@ -4,6 +4,7 @@ import "dotenv/config";
 import mariadb from "mariadb";
 
 const migrationsDir = path.join(process.cwd(), "database", "migrations");
+const schemaOnly = process.argv.includes("--schema-only");
 
 const connection = await mariadb.createConnection({
   host: process.env.DB_HOST ?? "localhost",
@@ -22,10 +23,12 @@ try {
 
   for (const file of files) {
     const sql = await readFile(path.join(migrationsDir, file), "utf8");
-    const statements = sql
+    const statements = (schemaOnly ? sql.replace(/^\s*--.*$/gm, "") : sql)
       .split(";")
       .map((statement) => statement.trim())
-      .filter(Boolean);
+      .filter((statement) =>
+        schemaOnly ? /^(CREATE|ALTER)\b/i.test(statement) : Boolean(statement),
+      );
 
     for (const statement of statements) {
       await connection.query(statement);
