@@ -15,6 +15,7 @@ database preview, isi variabel database di bawah lalu jalankan sekali:
 
 ```powershell
 pnpm install --frozen-lockfile
+pnpm preview:create-db
 pnpm db:push
 pnpm preview:schema
 pnpm preview:check
