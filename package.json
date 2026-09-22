@@ -25,6 +25,8 @@
     "db:generate": "prisma generate",
     "preview:check": "node scripts/check-vercel-preview.mjs",
     "preview:create-db": "node scripts/create-preview-db.mjs",
+    "preview:setup-db": "node scripts/setup-preview-db.mjs",
+    "preview:configure": "node scripts/configure-preview-env.mjs",
     "db:prisma-migrate": "node scripts/deploy-prisma-migrations.mjs",
     "db:support-migrate": "node scripts/run-support-migrations.mjs",
     "preview:schema": "node scripts/run-support-migrations.mjs --schema-only",

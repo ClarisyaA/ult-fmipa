@@ -15,14 +15,18 @@ database preview, isi variabel database di bawah lalu jalankan sekali:
 
 ```powershell
 pnpm install --frozen-lockfile
-pnpm preview:create-db
-pnpm db:push
-pnpm preview:schema
+# Buat .env.preview.local dari .env.example, lalu isi DB_HOST, DB_PORT,
+# DB_USER, DB_PASSWORD, DB_NAME, dan DB_SSL sesuai service preview.
+pnpm preview:configure
+$env:DOTENV_CONFIG_PATH = ".env.preview.local"
+pnpm preview:setup-db
 pnpm preview:check
 ```
 
-`db:push` hanya untuk database preview **yang benar-benar baru dan kosong**;
-jangan arahkan ke database lama atau production. `preview:schema` menjalankan
+`preview:configure` membuat `DATABASE_URL` dari `DB_*` dan mengganti secret
+serta password akun contoh dengan nilai acak di file lokal yang diabaikan Git.
+`preview:setup-db` hanya untuk database preview **yang benar-benar baru dan kosong**;
+jangan arahkan ke database lama atau production. Perintah ini menjalankan
 struktur tabel dari migrasi pendukung tanpa data contoh. Semua isian tetap
 kosong, termasuk pengajuan, pengguna, konten CMS, dan data mahasiswa.
 Beberapa halaman yang membutuhkan data referensi lama mungkin menampilkan
