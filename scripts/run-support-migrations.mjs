@@ -14,6 +14,7 @@ const connection = await mariadb.createConnection({
   database: process.env.DB_NAME ?? "fmipa_sbpk",
   connectTimeout: 10000,
   multipleStatements: true,
+  ...(process.env.DB_SSL === "true" ? { ssl: true } : {}),
 });
 
 try {

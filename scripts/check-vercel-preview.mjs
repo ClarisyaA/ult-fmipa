@@ -54,6 +54,7 @@ const connection = await mariadb.createConnection({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   connectTimeout: 10000,
+  ...(process.env.DB_SSL === "true" ? { ssl: true } : {}),
 });
 
 try {

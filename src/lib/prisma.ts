@@ -10,6 +10,7 @@ const adapter = new PrismaMariaDb({
   password: process.env.DB_PASSWORD ?? "ult_password",
   database: process.env.DB_NAME ?? "fmipa_sbpk",
   connectionLimit,
+  ...(process.env.DB_SSL === "true" ? { ssl: true } : {}),
 });
 
 const globalForPrisma = globalThis as unknown as {
