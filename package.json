@@ -34,6 +34,7 @@
     "staging:local:logs": "node scripts/staging-local/logs.mjs",
     "staging:local:down": "node scripts/staging-local/down.mjs",
     "staging:local:import-baseline": "node scripts/staging-local/import-baseline.mjs",
+    "deploy:vps": "./scripts/deploy-vps.sh",
     "prepare": "husky"
   },
   "dependencies": {
