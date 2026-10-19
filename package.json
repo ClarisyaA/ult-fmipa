@@ -22,6 +22,7 @@
     "db:generate": "prisma generate",
     "db:prisma-migrate": "node scripts/deploy-prisma-migrations.mjs",
     "db:support-migrate": "node scripts/run-support-migrations.mjs",
+    "deploy:vps": "./scripts/deploy-vps.sh",
     "prepare": "husky"
   },
   "dependencies": {

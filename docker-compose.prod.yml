@@ -1,0 +1,74 @@
+# Production Compose — Runtime Only (No Source Code / Build context)
+# Digunakan di VPS FMIPA untuk menjalankan hasil kompilasi image Docker.
+services:
+  app:
+    image: ult-fmipa-app:latest
+    container_name: ult-fmipa-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@db:3306/${DB_NAME}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
+      STORAGE_ROOT: /app/storage
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ult_fmipa_next_cache:/app/.next/cache
+    depends_on:
+      - db
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  db:
+    image: mariadb:11
+    container_name: ult-fmipa-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-fmipa_sbpk}
+      MYSQL_USER: ${DB_USER:-ult_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ult_password}
+    command:
+      - --innodb-buffer-pool-size=512M
+      - --innodb-log-file-size=256M
+      - --innodb-flush-log-at-trx-commit=1
+      - --max-connections=50
+      - --skip-name-resolve
+    ports:
+      - "127.0.0.1:13306:3306"
+    volumes:
+      - ult_fmipa_db_data:/var/lib/mysql
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  minio:
+    image: minio/minio:latest
+    container_name: ult-fmipa-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_data:/data
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  ult_fmipa_db_data:
+  minio_data:
+    name: ult-fmipa_minio_data
+  ult_fmipa_next_cache:
