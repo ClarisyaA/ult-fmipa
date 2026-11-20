@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSafeRedirectUrl } from "@/lib/auth-redirect";
+import { getLoginErrorMessage } from "@/lib/paus-login-policy";
 
 type LoginFormProps = {
   pausMode: "modern" | "legacy";
@@ -38,9 +39,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
   // rejecting a profile without a valid NPM). Only a generic, safe message
   // is derived - never the raw NextAuth error code, NPM, email, or any PAUS
   // profile/token detail.
-  const pausError = searchParams.get("error")
-    ? "Login PAUS hanya tersedia untuk mahasiswa aktif dengan NPM yang valid."
-    : "";
+  const pausError = getLoginErrorMessage(searchParams.get("error"));
 
   useEffect(() => {
     getProviders().then(setProviders);

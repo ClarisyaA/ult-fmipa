@@ -10,6 +10,7 @@ import {
   AdminUnavailableState,
 } from "@/components/admin/admin-ui";
 import { CsvDownloadButton } from "@/components/admin/csv-download-button";
+import { SystemUsersTabs } from "@/components/admin/system-users-tabs";
 import {
   UserCreateButton,
   UserRowActions,
@@ -156,6 +157,7 @@ export default async function AdminSystemUsersPage({
 
   return (
     <AdminPageShell>
+      <SystemUsersTabs active="users" />
       <AdminPageHeader
         title="User List"
         description="Kelola field user yang aman. Password hash dan field sensitif tidak ditampilkan."

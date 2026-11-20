@@ -7,6 +7,7 @@ import {
 import { OpsRequestNotifier } from "@/components/requests/ops-request-notifier";
 import { staffNavItems } from "@/constants/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { hasStaffFeatureAccess } from "@/lib/feature-access";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,11 +21,25 @@ export default async function StaffLayout({
   const userName = user?.name ?? "Staff ULT";
   const userRole = user?.role ?? "staff";
 
+  // Menu "Import Data Mahasiswa" hanya muncul untuk staff yang diberi akses
+  // oleh Admin (tab Role & Akses). Menu ditaruh sebelum "Website Publik".
+  const canImportMahasiswa = await hasStaffFeatureAccess(
+    user,
+    "mahasiswa.import",
+  );
+  const navItems = canImportMahasiswa
+    ? [
+        ...staffNavItems.slice(0, -1),
+        { label: "Data Mahasiswa", href: "/staff/master/mahasiswa" },
+        ...staffNavItems.slice(-1),
+      ]
+    : staffNavItems;
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#f4f2fb]">
       <div className="flex h-full w-full overflow-hidden">
         <StaffSidebar
-          items={staffNavItems}
+          items={navItems}
           userName={userName}
           userRole={userRole}
         />
@@ -50,7 +65,7 @@ export default async function StaffLayout({
                 </div>
               </div>
               <StaffMobileMenu
-                items={staffNavItems}
+                items={navItems}
                 userName={userName}
                 userRole={userRole}
               />

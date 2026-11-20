@@ -35,6 +35,7 @@ const code = await run(process.execPath, [
   "tests/staging-local-rehearsal.test.mjs",
   "tests/admin-user-pagination.test.mjs",
   "tests/paus-integration-audit.test.mjs",
+  "tests/mahasiswa-sync.test.mjs",
 ]);
 
 process.exit(code);

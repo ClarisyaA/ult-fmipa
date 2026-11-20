@@ -241,7 +241,9 @@ test("NextAuth signIn callback wires the student-only guard for paus and paus-br
     callbacksBlock,
     /account\?\.provider === "paus" \|\| account\?\.provider === "paus-bridge"/,
   );
-  assert.match(callbacksBlock, /return isEligiblePausStudentUser\(user\);/);
+  assert.match(callbacksBlock, /if \(!isEligiblePausStudentUser\(user\)\) \{\s*return false;\s*\}/);
+  // Setelah lolos cek NPM dari PAUS, NPM juga harus ada di tabel `mahasiswa`.
+  assert.match(callbacksBlock, /return checkPausStudentRegistered\(user\.npm\);/);
   assert.match(callbacksBlock, /return true;/);
 });
 
@@ -283,9 +285,11 @@ test("login page offers 'Masuk sebagai Mahasiswa' for PAUS and 'Masuk sebagai Ad
 test("login page shows a generic, safe error message on a failed PAUS sign-in, with no raw profile/token detail", async () => {
   const loginForm = await source("src/app/login/login-form.tsx");
 
-  assert.match(loginForm, /searchParams\.get\("error"\)/);
+  const policy = await source("src/lib/paus-login-policy.ts");
+
+  assert.match(loginForm, /getLoginErrorMessage\(searchParams\.get\("error"\)\)/);
   assert.match(
-    loginForm,
+    policy,
     /Login PAUS hanya tersedia untuk mahasiswa aktif dengan NPM yang valid\./,
   );
   assert.doesNotMatch(loginForm, /errorCode\}/);

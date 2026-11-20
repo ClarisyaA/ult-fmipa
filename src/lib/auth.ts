@@ -10,6 +10,7 @@ import {
   type AppRole,
 } from "@/lib/auth-user-mapper";
 import { authorizeDbCredentialUser } from "@/lib/auth-db-users";
+import { checkPausStudentRegistered } from "@/lib/mahasiswa-registry";
 import {
   mapPausBridgePayloadToSessionUser,
   verifyPausBridgeToken,
@@ -268,7 +269,12 @@ export const authOptions: NextAuthOptions = {
     // Staff/Admin authorization.
     async signIn({ user, account }) {
       if (account?.provider === "paus" || account?.provider === "paus-bridge") {
-        return isEligiblePausStudentUser(user);
+        if (!isEligiblePausStudentUser(user)) {
+          return false;
+        }
+
+        // Sama seperti sistem lama: NPM harus ada di tabel `mahasiswa`.
+        return checkPausStudentRegistered(user.npm);
       }
 
       return true;

@@ -14,6 +14,7 @@ import {
   MahasiswaCreateButton,
   MahasiswaRowActions,
 } from "@/components/admin/master-actions/admin-master-actions";
+import { MahasiswaImportButton } from "@/components/admin/master-actions/mahasiswa-import-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -109,7 +110,12 @@ export default async function AdminMahasiswaPage({ searchParams }: PageProps) {
       <AdminPageHeader
         title="Daftar Mahasiswa"
         description="Kelola data mahasiswa aktif. Kolom dibatasi sesuai struktur tabel master."
-        action={<MahasiswaCreateButton />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <MahasiswaImportButton endpoint="/api/admin/master/mahasiswa/import" />
+            <MahasiswaCreateButton />
+          </div>
+        }
       />
 
       <AdminSectionCard
