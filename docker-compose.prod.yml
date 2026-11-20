@@ -16,13 +16,24 @@ services:
       DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
-      STORAGE_ROOT: /app/storage
+      # Object storage: MinIO di network compose ini (bukan localhost).
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?isi MINIO_ACCESS_KEY di .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?isi MINIO_SECRET_KEY di .env}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ult-fmipa}
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
       - ult_fmipa_next_cache:/app/.next/cache
     depends_on:
-      - db
+      db:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -32,10 +43,10 @@ services:
     container_name: ult-fmipa-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${DB_NAME:-fmipa_sbpk}
-      MYSQL_USER: ${DB_USER:-ult_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-ult_password}
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?isi MARIADB_ROOT_PASSWORD di .env}
+      MYSQL_DATABASE: ${DB_NAME:?isi DB_NAME di .env}
+      MYSQL_USER: ${DB_USER:?isi DB_USER di .env}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD di .env}
     command:
       - --innodb-buffer-pool-size=512M
       - --innodb-log-file-size=256M
@@ -56,16 +67,42 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?isi MINIO_ACCESS_KEY di .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?isi MINIO_SECRET_KEY di .env}
     ports:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
+
+  # Membuat bucket privat bila belum ada, lalu selesai. Aman dijalankan ulang.
+  minio-init:
+    image: minio/mc:latest
+    container_name: ult-fmipa-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?isi MINIO_ACCESS_KEY di .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?isi MINIO_SECRET_KEY di .env}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ult-fmipa}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 \"$$MINIO_ACCESS_KEY\" \"$$MINIO_SECRET_KEY\" &&
+      (mc mb local/$$MINIO_BUCKET || true) &&
+      mc anonymous set none local/$$MINIO_BUCKET &&
+      echo 'MinIO bucket ready (private):' \"$$MINIO_BUCKET\"
+      "
+    restart: "no"
 
 volumes:
   ult_fmipa_db_data:

@@ -66,7 +66,7 @@ echo "[3/6] Streaming image terkompresi ke VPS $VPS_HOST (docker save | gzip | d
 if [ -n "${VPS_PASSWORD:-}" ] && command -v sshpass >/dev/null 2>&1; then
   docker save "$IMAGE_NAME:latest" | gzip -1 | sshpass -e "${SSH_CMD[@]}" "$VPS_USER@$VPS_HOST" "docker load"
 else
-  docker save "$IMAGE_NAME:latest" | gzip -1 "${SSH_CMD[@]}" "$VPS_USER@$VPS_HOST" "docker load"
+  docker save "$IMAGE_NAME:latest" | gzip -1 | "${SSH_CMD[@]}" "$VPS_USER@$VPS_HOST" "docker load"
 fi
 
 echo "[4/6] Mengupdate runtime compose di VPS..."
