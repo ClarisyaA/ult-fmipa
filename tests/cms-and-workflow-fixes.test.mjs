@@ -340,7 +340,8 @@ test("survey gate dialog cannot be dismissed without completing the survey", asy
   assert.match(content, /onPointerDownOutside=\{\(event\) => event\.preventDefault\(\)\}/);
   assert.match(content, /onInteractOutside=\{\(event\) => event\.preventDefault\(\)\}/);
   assert.match(content, /href="\/survei"/);
-  assert.match(content, /signOut\(/);
+  // Keluar memakai logout() bersama (src/lib/client-logout.ts).
+  assert.match(content, /void logout\(\)/);
 });
 
 test("survey gate is mounted globally in the root layout", async () => {

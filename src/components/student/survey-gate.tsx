@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { logout } from "@/lib/client-logout";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -92,7 +92,7 @@ export function SurveyGate() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => void logout()}
           >
             Keluar
           </Button>

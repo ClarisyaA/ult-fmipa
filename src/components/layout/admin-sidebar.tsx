@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { logout } from "@/lib/client-logout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
@@ -244,7 +244,7 @@ export function AdminSidebar({ groups, userName, userRole }: AdminSidebarProps) 
             className={`mt-2 h-7 w-full rounded-lg text-xs text-white/76 hover:bg-white/10 hover:text-white ${
               isCollapsed ? "justify-center px-0" : "justify-start"
             }`}
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => void logout()}
             title="Keluar"
           >
             <LogOut className="size-3.5" />
@@ -456,7 +456,7 @@ export function AdminMobileMenu({
             <Button
               type="button"
               className="h-10 w-full rounded-lg bg-[#0f5b45] text-xs font-semibold text-white shadow-[0_8px_18px_rgba(15,91,69,0.22)] hover:bg-[#0f3d2e]"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => void logout()}
             >
               <LogOut className="size-4" />
               Keluar

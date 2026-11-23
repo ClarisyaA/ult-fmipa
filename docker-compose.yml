@@ -28,10 +28,18 @@ services:
       PAUS_MODE: ${PAUS_MODE:-modern}
       PAUS_CLIENT_ID: ${PAUS_CLIENT_ID:-}
       PAUS_CLIENT_SECRET: ${PAUS_CLIENT_SECRET:-}
-      PAUS_AUTHORIZATION_URL: ${PAUS_AUTHORIZATION_URL:-https://paus.unpad.ac.id/oauth}
-      PAUS_TOKEN_URL: ${PAUS_TOKEN_URL:-https://paus.unpad.ac.id/oauth/access-token}
-      PAUS_USERINFO_URL: ${PAUS_USERINFO_URL:-https://paus.unpad.ac.id/api/}
+      PAUS_AUTHORIZATION_URL: ${PAUS_AUTHORIZATION_URL:-https://paus.unpad.ac.id/oauth/authorize}
+      PAUS_TOKEN_URL: ${PAUS_TOKEN_URL:-https://paus.unpad.ac.id/oauth/token}
+      PAUS_USERINFO_URL: ${PAUS_USERINFO_URL:-https://paus.unpad.ac.id/api/user}
       PAUS_SIGN_OUT_URL: ${PAUS_SIGN_OUT_URL:-https://paus.unpad.ac.id/oauth/sign-out}
+      PAUS_SCOPE: ${PAUS_SCOPE:-read-user-info}
+      PAUS_USERINFO_AUTH: ${PAUS_USERINFO_AUTH:-bearer}
+      PAUS_GLOBAL_LOGOUT: ${PAUS_GLOBAL_LOGOUT:-true}
+      PAUS_SIGN_OUT_REDIRECT_PARAM: ${PAUS_SIGN_OUT_REDIRECT_PARAM:-redirect_uri}
+      PAUS_ALUMNI_FIELD: ${PAUS_ALUMNI_FIELD:-}
+      PAUS_ALUMNI_VALUES: ${PAUS_ALUMNI_VALUES:-alumni,lulus}
+      PAUS_ACTIVE_VALUES: ${PAUS_ACTIVE_VALUES:-}
+      PAUS_BRIDGE_ENABLED: ${PAUS_BRIDGE_ENABLED:-false}
       PAUS_LEGACY_LOGIN_URL: ${PAUS_LEGACY_LOGIN_URL:-}
       PAUS_BRIDGE_SECRET: ${PAUS_BRIDGE_SECRET:-change-me}
       PAUS_BRIDGE_TOKEN_TTL_SECONDS: ${PAUS_BRIDGE_TOKEN_TTL_SECONDS:-120}

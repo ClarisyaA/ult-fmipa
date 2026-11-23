@@ -235,13 +235,16 @@ test("NextAuth signIn callback wires the student-only guard for paus and paus-br
 
   assert.match(
     callbacksBlock,
-    /async signIn\(\{ user, account \}\) \{/,
+    /async signIn\(\{ user, account, profile \}\) \{/,
   );
   assert.match(
     callbacksBlock,
     /account\?\.provider === "paus" \|\| account\?\.provider === "paus-bridge"/,
   );
-  assert.match(callbacksBlock, /if \(!isEligiblePausStudentUser\(user\)\) \{\s*return false;\s*\}/);
+  assert.match(
+    callbacksBlock,
+    /if \(!isEligiblePausStudentUser\(user\)\) \{\s*return account\.provider === "paus"\s*\? `\/login\?error=\$\{LOGIN_ERROR_ACCESS_DENIED\}`\s*: false;\s*\}/,
+  );
   // Setelah lolos cek NPM dari PAUS, NPM juga harus ada di tabel `mahasiswa`.
   assert.match(callbacksBlock, /return checkPausStudentRegistered\(user\.npm\);/);
   assert.match(callbacksBlock, /return true;/);
@@ -255,7 +258,7 @@ test("Credentials provider still resolves ADMIN/STAFF from APP_ROLE and does not
   const credentialsBlock = block(
     auth,
     'CredentialsProvider({\n      name: "Development Credentials"',
-    'CredentialsProvider({\n      id: "paus-bridge"',
+    "...(isPausBridgeEnabled()",
   );
 
   assert.match(credentialsBlock, /authorizeDbCredentialUser\(email, password\)/);
@@ -340,16 +343,20 @@ test("access token and refresh token are never copied into the JWT token or clie
   assert.doesNotMatch(callbacksBlock, /account\.access_token/);
 });
 
-test("PAUS access token is currently sent as a query parameter to userinfo (documented in the audit as needing DPSI confirmation)", async () => {
+test("PAUS userinfo sends the access token as an Authorization: Bearer header (official guide); the legacy query-string style is opt-in", async () => {
   const auth = await source("src/lib/auth.ts");
   const providerBlock = block(
     auth,
     "function createPausProvider",
-    "export const authOptions",
+    "function createPausBridgeProvider",
   );
 
-  assert.match(providerBlock, /url\.searchParams\.set\("access_token", accessToken\)/);
-  assert.doesNotMatch(providerBlock, /Authorization:\s*`Bearer/);
+  assert.match(providerBlock, /headers\.Authorization = `Bearer \$\{accessToken\}`/);
+  assert.match(
+    providerBlock,
+    /if \(pausEndpoints\.userinfoAuth === "query"\) \{\s*url\.searchParams\.set\("access_token", accessToken\);/,
+  );
+  assert.match(providerBlock, /Accept: "application\/json"/);
 });
 
 test("token endpoint client authentication is client_secret_post via form-urlencoded body, not HTTP Basic", async () => {
@@ -389,10 +396,32 @@ test("callback URL validation still blocks protocol-relative and cross-origin re
   assert.match(redirect, /if \(url\.origin !== origin\)/);
 });
 
-test("PAUS_SIGN_OUT_URL is not wired into any sign-out call (documents the logout gap, Finding S-5)", async () => {
+test("logout: every Keluar button uses the shared logout(), PAuS users are sent through the server-built sign-out and land on beranda", async () => {
   const auth = await source("src/lib/auth.ts");
   const logoutButton = await source("src/components/layout/logout-button.tsx");
+  const clientLogout = await source("src/lib/client-logout.ts");
+  const route = await source("src/app/api/paus/logout/route.ts");
 
-  assert.doesNotMatch(auth, /fetch\(pausSignOutUrl/);
-  assert.match(logoutButton, /signOut\(\{ callbackUrl: "\/" \}\)/);
+  // Server never calls PAuS itself during logout; the browser is redirected.
+  assert.doesNotMatch(auth, /fetch\(pausEndpoints\.signOutUrl/);
+  assert.match(logoutButton, /void logout\(\)/);
+  assert.doesNotMatch(logoutButton, /signOut\(/);
+  assert.match(clientLogout, /session\?\.user\?\.provider !== "paus"/);
+  assert.match(clientLogout, /signOut\(\{ callbackUrl: "\/" \}\)/);
+  assert.match(clientLogout, /window\.location\.assign\("\/api\/paus\/logout"\)/);
+  assert.match(route, /resolvePausLogoutTarget\(process\.env, origin\)/);
+});
+
+test("no component calls next-auth signOut directly any more (all go through logout())", async () => {
+  for (const file of [
+    "src/components/auth/user-menu.tsx",
+    "src/components/layout/admin-sidebar.tsx",
+    "src/components/layout/staff-sidebar.tsx",
+    "src/components/student/survey-gate.tsx",
+  ]) {
+    const text = await source(file);
+
+    assert.doesNotMatch(text, /signOut\(/, file);
+    assert.match(text, /@\/lib\/client-logout/, file);
+  }
 });

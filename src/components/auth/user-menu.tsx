@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogOut, LayoutDashboard, History, ChevronDown } from "lucide-react";
-import { getSession, signOut } from "next-auth/react";
+import { getSession } from "next-auth/react";
 import type { Session } from "next-auth";
 
 import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/client-logout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +95,7 @@ export function UserMenu({ variant = "desktop", onNavigate }: UserMenuProps) {
             type="button"
             onClick={() => {
               onNavigate?.();
-              signOut({ callbackUrl: "/" });
+              void logout();
             }}
             className="flex items-center gap-2.5 rounded-none px-3.5 py-2.5 max-[350px]:py-2 text-xs max-[350px]:text-[10px] font-medium text-red-600 hover:bg-neutral-100 hover:text-red-700 transition-colors duration-200 text-left"
           >
@@ -154,7 +155,7 @@ export function UserMenu({ variant = "desktop", onNavigate }: UserMenuProps) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => void logout()}
             className="rounded-lg py-2.5 px-3 cursor-pointer text-sm mt-0.5 w-full flex items-center gap-2.5 hover:bg-neutral-100 hover:text-neutral-900 transition-colors duration-200 text-red-600"
           >
             <LogOut className="h-3.5 w-3.5" />

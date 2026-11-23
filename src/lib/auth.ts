@@ -11,11 +11,17 @@ import {
 } from "@/lib/auth-user-mapper";
 import { authorizeDbCredentialUser } from "@/lib/auth-db-users";
 import { checkPausStudentRegistered } from "@/lib/mahasiswa-registry";
+import { getPausEndpoints, isPausBridgeEnabled } from "@/lib/paus-config";
 import {
   mapPausBridgePayloadToSessionUser,
   verifyPausBridgeToken,
 } from "@/lib/paus-bridge-token";
 import {
+  LOGIN_ERROR_ACCESS_DENIED,
+  LOGIN_ERROR_ALUMNI_NOT_ALLOWED,
+} from "@/lib/paus-login-policy";
+import {
+  isPausAlumniProfile,
   mapPausProfileToSessionUser,
   type PausProfile,
 } from "@/lib/paus-profile";
@@ -34,14 +40,9 @@ function getPausMode() {
   return process.env.PAUS_MODE === "legacy" ? "legacy" : "modern";
 }
 
-const pausAuthorizationUrl =
-  process.env.PAUS_AUTHORIZATION_URL || "https://paus.unpad.ac.id/oauth";
-const pausTokenUrl =
-  process.env.PAUS_TOKEN_URL || "https://paus.unpad.ac.id/oauth/access-token";
-const pausUserinfoUrl =
-  process.env.PAUS_USERINFO_URL || "https://paus.unpad.ac.id/api/";
-const pausSignOutUrl =
-  process.env.PAUS_SIGN_OUT_URL || "https://paus.unpad.ac.id/oauth/sign-out";
+// Endpoint, scope, dan cara kirim token mengikuti panduan resmi PAuS SSO v1.0
+// dan bisa diganti lewat environment (lihat src/lib/paus-config.ts).
+const pausEndpoints = getPausEndpoints();
 
 function logPausProviderStatus() {
   if (
@@ -57,15 +58,21 @@ function logPausProviderStatus() {
 
   console.info("[auth:paus] provider enabled:", hasPausOAuthConfig());
   console.info("[auth:paus] mode:", getPausMode());
-  console.info("[auth:paus] authorization URL:", pausAuthorizationUrl);
-  console.info("[auth:paus] token URL:", pausTokenUrl);
+  console.info("[auth:paus] authorization URL:", pausEndpoints.authorizationUrl);
+  console.info("[auth:paus] token URL:", pausEndpoints.tokenUrl);
+  console.info("[auth:paus] userinfo URL:", pausEndpoints.userinfoUrl);
+  console.info("[auth:paus] userinfo auth:", pausEndpoints.userinfoAuth);
+  console.info("[auth:paus] scope:", pausEndpoints.scope);
   console.info("[auth:paus] callback URL:", callbackUrl);
   console.info("[auth:paus] client id exists:", Boolean(process.env.PAUS_CLIENT_ID));
   console.info(
     "[auth:paus] client secret exists:",
     Boolean(process.env.PAUS_CLIENT_SECRET)
   );
-  console.info("[auth:paus] sign-out URL configured:", Boolean(pausSignOutUrl));
+  console.info(
+    "[auth:paus] sign-out URL configured:",
+    Boolean(pausEndpoints.signOutUrl),
+  );
 }
 
 logPausProviderStatus();
@@ -79,17 +86,17 @@ function createPausProvider(): OAuthConfig<PausProfile> {
     clientSecret: process.env.PAUS_CLIENT_SECRET,
     issuer: process.env.PAUS_ISSUER,
     authorization: {
-      url: pausAuthorizationUrl,
+      url: pausEndpoints.authorizationUrl,
       params: {
         response_type: "code",
-        scope: "user.basic",
+        scope: pausEndpoints.scope,
       },
     },
     client: {
       token_endpoint_auth_method: "client_secret_post",
     },
     token: {
-      url: pausTokenUrl,
+      url: pausEndpoints.tokenUrl,
       async request({ params, provider }) {
         const code =
           typeof params.code === "string" ? params.code : undefined;
@@ -106,10 +113,11 @@ function createPausProvider(): OAuthConfig<PausProfile> {
           code,
         });
 
-        const response = await fetch(pausTokenUrl, {
+        const response = await fetch(pausEndpoints.tokenUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
           },
           body,
         });
@@ -134,7 +142,7 @@ function createPausProvider(): OAuthConfig<PausProfile> {
       },
     },
     userinfo: {
-      url: pausUserinfoUrl,
+      url: pausEndpoints.userinfoUrl,
       async request({ tokens }) {
         const accessToken = tokens.access_token;
 
@@ -142,12 +150,23 @@ function createPausProvider(): OAuthConfig<PausProfile> {
           throw new Error("PAUS access token tidak tersedia.");
         }
 
-        const url = new URL(pausUserinfoUrl);
-        url.searchParams.set("access_token", accessToken);
+        // Panduan resmi: header "Authorization: Bearer". Gaya lama (token di
+        // query string) tetap tersedia lewat PAUS_USERINFO_AUTH=query.
+        const url = new URL(pausEndpoints.userinfoUrl);
+        const headers: Record<string, string> = { Accept: "application/json" };
 
-        const response = await fetch(url);
+        if (pausEndpoints.userinfoAuth === "query") {
+          url.searchParams.set("access_token", accessToken);
+        } else {
+          headers.Authorization = `Bearer ${accessToken}`;
+        }
+
+        const response = await fetch(url, { headers });
 
         if (!response.ok) {
+          console.error("[auth:paus] userinfo request failed", {
+            status: response.status,
+          });
           throw new Error("Gagal mengambil profil PAUS.");
         }
 
@@ -155,9 +174,54 @@ function createPausProvider(): OAuthConfig<PausProfile> {
       },
     },
     profile(profile) {
-      return mapPausProfileToSessionUser(profile);
+      // Profil tanpa NPM (mis. dosen/tendik) TIDAK boleh melempar error di sini:
+      // NextAuth akan mencetak seluruh profil ke log dan mengembalikan pengguna
+      // ke /login tanpa kode error. Sebagai gantinya dikembalikan pengguna
+      // pengganti tanpa NPM; callback signIn di bawah menolaknya dengan
+      // redirect /login?error=AccessDenied sehingga tidak ada sesi yang dibuat.
+      try {
+        return mapPausProfileToSessionUser(profile);
+      } catch {
+        return {
+          id: "paus-ineligible",
+          name: "Tidak memenuhi syarat",
+          role: "MAHASISWA",
+        };
+      }
     },
   };
+}
+
+function createPausBridgeProvider() {
+  return CredentialsProvider({
+    id: "paus-bridge",
+    name: "PAUS Bridge",
+    credentials: {
+      bridgeToken: { label: "Bridge Token", type: "text" },
+    },
+    async authorize(credentials) {
+      const bridgeToken = credentials?.bridgeToken;
+
+      if (!bridgeToken) {
+        return null;
+      }
+
+      try {
+        const payload = verifyPausBridgeToken(bridgeToken);
+
+        return mapPausBridgePayloadToSessionUser(payload);
+      } catch (error) {
+        console.error("[auth:paus-bridge] login failed", {
+          message:
+            error instanceof Error
+              ? error.message
+              : "Token bridge PAUS tidak valid.",
+        });
+
+        return null;
+      }
+    },
+  });
 }
 
 export const authOptions: NextAuthOptions = {
@@ -222,39 +286,12 @@ export const authOptions: NextAuthOptions = {
         return null;
       },
     }),
-    CredentialsProvider({
-      id: "paus-bridge",
-      name: "PAUS Bridge",
-      credentials: {
-        bridgeToken: { label: "Bridge Token", type: "text" },
-      },
-      async authorize(credentials) {
-        const bridgeToken = credentials?.bridgeToken;
-
-        if (!bridgeToken) {
-          return null;
-        }
-
-        try {
-          const payload = verifyPausBridgeToken(bridgeToken);
-
-          return mapPausBridgePayloadToSessionUser(payload);
-        } catch (error) {
-          console.error("[auth:paus-bridge] login failed", {
-            message:
-              error instanceof Error
-                ? error.message
-                : "Token bridge PAUS tidak valid.",
-          });
-
-          return null;
-        }
-      },
-    }),
-    // TODO(PAUS): Use this as the production provider after OAuth credentials
-    // are confirmed by Unpad. PAUS is student-only (business rule, final) -
-    // see mapPausProfileToSessionUser and the signIn callback below.
-    // TODO(PAUS): PAUS_SIGN_OUT_URL is available for future global SSO logout.
+    // PAuS Bridge (alur PHP lama) mati secara default; nyalakan dengan
+    // PAUS_BRIDGE_ENABLED=true hanya bila sistem lama masih dipakai.
+    ...(isPausBridgeEnabled() ? [createPausBridgeProvider()] : []),
+    // Production provider. PAUS is student-only (business rule, final) - see
+    // mapPausProfileToSessionUser and the signIn callback below. Logout PAuS
+    // ditangani oleh /api/paus/logout (src/lib/paus-config.ts).
     ...(hasPausOAuthConfig() ? [createPausProvider()] : []),
   ],
   callbacks: {
@@ -267,10 +304,18 @@ export const authOptions: NextAuthOptions = {
     // STAFF/ADMIN role via PAUS. Credentials (DB-backed Admin/Staff/dev) is
     // untouched - APP_ROLE from data_users remains the sole source of
     // Staff/Admin authorization.
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "paus" || account?.provider === "paus-bridge") {
         if (!isEligiblePausStudentUser(user)) {
-          return false;
+          return account.provider === "paus"
+            ? `/login?error=${LOGIN_ERROR_ACCESS_DENIED}`
+            : false;
+        }
+
+        // Alumni / bukan mahasiswa aktif menurut penanda PAuS. Nonaktif sampai
+        // PAUS_ALUMNI_FIELD diisi (lihat src/lib/paus-profile.ts).
+        if (account.provider === "paus" && isPausAlumniProfile(profile)) {
+          return `/login?error=${LOGIN_ERROR_ALUMNI_NOT_ALLOWED}`;
         }
 
         // Sama seperti sistem lama: NPM harus ada di tabel `mahasiswa`.

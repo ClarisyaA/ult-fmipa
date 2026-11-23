@@ -382,5 +382,5 @@ test("pemeriksaan NPM ke tabel mahasiswa gagal tertutup dan hanya berlaku untuk 
   assert.match(registry, /LOGIN_ERROR_REGISTRY_UNAVAILABLE/);
   assert.match(auth, /checkPausStudentRegistered\(user\.npm\)/);
   // Login Admin/Staff (credentials) tidak terpengaruh.
-  assert.match(auth, /async signIn\(\{ user, account \}\) \{[\s\S]*return true;\s*\},\s*async jwt/);
+  assert.match(auth, /async signIn\(\{ user, account, profile \}\) \{[\s\S]*return true;\s*\},\s*async jwt/);
 });

@@ -7,6 +7,8 @@
  */
 export const LOGIN_ERROR_NPM_NOT_REGISTERED = "NpmNotRegistered";
 export const LOGIN_ERROR_REGISTRY_UNAVAILABLE = "RegistryUnavailable";
+export const LOGIN_ERROR_ALUMNI_NOT_ALLOWED = "AlumniNotAllowed";
+export const LOGIN_ERROR_ACCESS_DENIED = "AccessDenied";
 
 const GENERIC_PAUS_ERROR_MESSAGE =
   "Login PAUS hanya tersedia untuk mahasiswa aktif dengan NPM yang valid.";
@@ -20,6 +22,10 @@ export function getLoginErrorMessage(code: string | null | undefined): string {
 
   if (code === LOGIN_ERROR_NPM_NOT_REGISTERED) {
     return "NPM Anda belum terdaftar di data mahasiswa FMIPA. Silakan hubungi ULT FMIPA.";
+  }
+
+  if (code === LOGIN_ERROR_ALUMNI_NOT_ALLOWED) {
+    return "Akun alumni tidak dapat memakai layanan ini. Silakan hubungi ULT FMIPA.";
   }
 
   if (code === LOGIN_ERROR_REGISTRY_UNAVAILABLE) {
