@@ -1,5 +1,11 @@
 # PAUS Integration Audit
 
+> **Catatan (2026-11):** endpoint, scope, cara kirim token, logout, dan bentuk
+> profil pada dokumen ini mengacu pada API PAuS **lama**. Konfigurasi terkini
+> yang mengikuti panduan resmi PAuS SSO v1.0 ada di
+> [`paus-sso-alignment.md`](paus-sso-alignment.md). Aturan bisnis (PAuS
+> hanya untuk mahasiswa) tidak berubah.
+
 > Audit date: 2026-08-09, updated 2026-08-09 after the final business rule
 > below was confirmed and implemented. Scope: authentication/authorization
 > code only, no database schema change, no migration, no deployment. Every

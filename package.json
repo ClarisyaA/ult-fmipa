@@ -35,7 +35,9 @@
     "staging:local:down": "node scripts/staging-local/down.mjs",
     "staging:local:import-baseline": "node scripts/staging-local/import-baseline.mjs",
     "deploy:vps": "./scripts/deploy-vps.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "mock:paus": "node scripts/mock-paus.mjs",
+    "check:paus-flow": "node scripts/check-paus-flow.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
