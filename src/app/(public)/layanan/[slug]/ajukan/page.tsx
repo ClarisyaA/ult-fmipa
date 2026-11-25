@@ -107,7 +107,8 @@ export default async function SubmitServiceRequestPage({
                 Ajukan {service.title}
               </CardTitle>
               <CardDescription className="mt-2 text-[#7A6A5C]">
-                Versi awal. Autentikasi PAUS akan diaktifkan pada tahap berikutnya.
+                Lengkapi data pengajuan di bawah ini. Hasil layanan dikirim ke
+                email yang Anda isi, jadi pastikan email dan nomor HP aktif.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-8 pb-8 sm:px-10 sm:pb-10">

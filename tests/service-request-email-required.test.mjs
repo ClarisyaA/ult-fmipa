@@ -1,6 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import assert from "node:assert/strict";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 import { createServiceRequestSchema } from "@/lib/service-request-validation";
 
@@ -113,4 +115,53 @@ test("surat izin kegiatan (SIK): email wajib di form dan divalidasi di server", 
   assert.match(sik, /function normalizeEmail\(/);
   assert.match(sik, /normalizeRequiredText\(value, label\)/);
   assert.match(sik, /EMAIL_PENGIRIMAN: normalizeEmail\(/);
+});
+
+// --- Kebersihan: tidak ada email palsu bawaan dan tidak ada teks "versi awal" ---
+
+async function listSourceFiles(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...(await listSourceFiles(full)));
+    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+      files.push(full);
+    }
+  }
+
+  return files;
+}
+
+test("tidak ada alamat email contoh yang tertanam di kode aplikasi", async () => {
+  const srcDir = fileURLToPath(new URL("../src", import.meta.url));
+
+  for (const file of await listSourceFiles(srcDir)) {
+    const text = await readFile(file, "utf8");
+
+    assert.doesNotMatch(
+      text,
+      /nama\.mahasiswa@mail\.unpad\.ac\.id/,
+      `${path.relative(srcDir, file)} memuat email contoh`,
+    );
+  }
+});
+
+test("komponen service-flow yang tidak dipakai sudah dihapus", async () => {
+  for (const file of [
+    "src/components/services/service-flow.tsx",
+    "src/components/services/service-flow-config.ts",
+  ]) {
+    await assert.rejects(() => readFile(new URL(`../${file}`, import.meta.url), "utf8"), /ENOENT/, file);
+  }
+});
+
+test("halaman pengajuan tidak lagi menulis 'Versi awal / autentikasi PAUS akan diaktifkan'", async () => {
+  const page = await source("src/app/(public)/layanan/[slug]/ajukan/page.tsx");
+
+  assert.doesNotMatch(page, /Versi awal|akan diaktifkan pada tahap berikutnya/);
+  assert.match(page, /Hasil layanan dikirim ke\s+email yang Anda isi/);
 });
