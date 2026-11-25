@@ -1031,7 +1031,10 @@ export function HomeHero({ onLoadComplete }: { onLoadComplete?: () => void }) {
   return (
     <section
       ref={scrollRef}
-      className="animate-hero-fade-up relative overflow-x-auto overflow-y-hidden border-b border-[#eadfd1] bg-[#fff6e7] touch-pan-x overscroll-x-contain"
+      // touch-pan-y wajib ada: tanpa itu (hanya touch-pan-x) geser ke bawah yang
+      // dimulai di dalam scene ini tidak diteruskan ke halaman, sehingga scroll
+      // di HP macet kecuali dimulai dari luar scene (mis. area navbar).
+      className="animate-hero-fade-up relative overflow-x-auto overflow-y-hidden border-b border-[#eadfd1] bg-[#fff6e7] touch-pan-x touch-pan-y overscroll-x-contain"
     >
       <div
         ref={heroRef}

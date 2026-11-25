@@ -6,6 +6,19 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
+test("hero scene scroller allows vertical touch panning so the page can be scrolled from inside the scene on phones", async () => {
+  const content = await source("src/components/home/home-hero.tsx");
+  const tag = content.match(/<section[^>]*?className="[^"]*animate-hero-fade-up[^"]*"/s)?.[0] ?? "";
+
+  assert.ok(tag, "hero scroller <section> not found");
+  // Scene digeser horizontal, jadi touch-pan-x tetap ada...
+  assert.match(tag, /overflow-x-auto/);
+  assert.match(tag, /touch-pan-x/);
+  // ...tetapi touch-pan-y wajib ada. Hanya touch-pan-x membuat geser ke bawah
+  // yang dimulai di dalam scene tidak diteruskan ke halaman (scroll macet).
+  assert.match(tag, /touch-pan-y/);
+});
+
 test("mobile hotspot dialog does not use hotspot imageSrc or supportingImage as a background", async () => {
   const content = await source("src/components/home/home-hero.tsx");
   const dialogStart = content.indexOf("open={activeHotspotDialog !== null}");
