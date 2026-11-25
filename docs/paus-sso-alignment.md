@@ -31,6 +31,7 @@ Penolakan selalu berakhir di `/login?error=<kode>` supaya pesan tampil:
 | `AlumniNotAllowed` | Akun alumni (menurut penanda PAuS) |
 | `NpmNotRegistered` | NPM tidak ada di tabel `mahasiswa` |
 | `RegistryUnavailable` | Tabel `mahasiswa` tidak dapat diperiksa (gagal tertutup) |
+| `Callback`, `OAuthCallback`, `OAuthSignin`, dll. | Kegagalan teknis di sisi PAuS atau tukar token (mis. `invalid_scope`, tukar token gagal, pengguna membatalkan). Pesan: "Login PAuS sedang bermasalah...". Penyebab rinci hanya ada di log server (`docker logs`). |
 
 ## 2. Alur logout (tujuan akhir: beranda)
 

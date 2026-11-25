@@ -259,6 +259,23 @@ test("mode PAUS_ACTIVE_VALUES: hanya nilai yang disebut yang boleh masuk, kosong
   assert.equal(isPausAlumniProfile({}, env), true);
 });
 
+test("kegagalan teknis tidak lagi memakai pesan 'hanya untuk mahasiswa aktif' yang menyesatkan", () => {
+  for (const code of ["Callback", "OAuthCallback", "OAuthSignin", "Configuration", "Default", "KodeTidakDikenal"]) {
+    const message = getLoginErrorMessage(code);
+
+    assert.match(message, /Login PAuS sedang bermasalah/, code);
+    assert.match(message, /hubungi ULT FMIPA/i, code);
+    assert.doesNotMatch(message, /NPM yang valid|mahasiswa aktif/, code);
+  }
+});
+
+test("hanya AccessDenied yang memakai pesan 'hanya untuk mahasiswa aktif dengan NPM yang valid'", () => {
+  assert.match(getLoginErrorMessage("AccessDenied"), /hanya tersedia untuk mahasiswa aktif dengan NPM yang valid/);
+  assert.notEqual(getLoginErrorMessage("AccessDenied"), getLoginErrorMessage("Callback"));
+  assert.equal(getLoginErrorMessage(null), "");
+  assert.equal(getLoginErrorMessage(""), "");
+});
+
 test("pesan penolakan alumni jelas dan tidak memuat data pribadi", () => {
   assert.match(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /alumni.*hubungi ULT FMIPA/i);
   assert.doesNotMatch(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /\d{6,}/);
