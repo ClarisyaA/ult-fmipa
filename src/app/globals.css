@@ -385,6 +385,9 @@
     .login-root:has([data-login-mode="administrator"]) .login-content-shell {
       flex: 1 1 0%;
       align-items: center;
+      /* "safe": bila kartu lebih tinggi dari layar, rata atas (bisa discroll)
+         dan tidak terpotong di sisi atas. */
+      align-items: safe center;
       justify-content: center;
     }
   }

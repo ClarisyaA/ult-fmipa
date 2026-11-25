@@ -27,7 +27,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,23,42,0.28)_46%,rgba(15,23,42,0.76)_100%)]" />
       </section>
 
-      <section className="login-panel animate-login-panel-in flex min-h-dvh min-w-0 flex-col overflow-x-hidden bg-transparent px-4 pb-2 pt-5 min-[400px]:px-6 sm:px-10 sm:py-8 lg:h-dvh lg:min-h-0 lg:overflow-hidden lg:px-12 lg:py-4 xl:px-16">
+      <section className="login-panel animate-login-panel-in flex min-h-dvh min-w-0 flex-col overflow-x-hidden bg-transparent px-4 pb-2 pt-5 min-[400px]:px-6 sm:px-10 sm:py-8 lg:h-dvh lg:min-h-0 lg:overflow-y-auto lg:overflow-x-hidden lg:px-12 lg:py-4 xl:px-16">
         <div className="login-content-shell flex min-h-0 flex-none items-center justify-center sm:flex-1 sm:py-12 lg:py-0">
           <Suspense fallback={null}>
             <LoginForm

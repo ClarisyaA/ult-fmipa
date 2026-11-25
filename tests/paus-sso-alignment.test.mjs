@@ -276,6 +276,21 @@ test("hanya AccessDenied yang memakai pesan 'hanya untuk mahasiswa aktif dengan 
   assert.equal(getLoginErrorMessage(""), "");
 });
 
+test("kartu login desktop tumbuh mengikuti isi (min-h, bukan h tetap) dan panel bisa discroll di layar pendek", async () => {
+  const form = await source("src/app/login/login-form.tsx");
+  const page = await source("src/app/login/page.tsx");
+  const css = await source("src/app/globals.css");
+
+  // Dengan tinggi tetap (lg:h-[39rem]), kotak error membuat isi lebih tinggi dari kartu
+  // sehingga tulisan hak cipta meluber ke tepi bawah kartu.
+  assert.doesNotMatch(form, /lg:h-\[39rem\]/);
+  assert.equal((form.match(/lg:min-h-\[39rem\]/g) ?? []).length, 2);
+  // Panel kanan boleh discroll bila layar lebih pendek dari kartu...
+  assert.match(page, /lg:overflow-y-auto lg:overflow-x-hidden/);
+  // ...dan kartu tidak terpotong di sisi atas.
+  assert.match(css, /align-items:\s*safe center;/);
+});
+
 test("pesan penolakan alumni jelas dan tidak memuat data pribadi", () => {
   assert.match(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /alumni.*hubungi ULT FMIPA/i);
   assert.doesNotMatch(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /\d{6,}/);

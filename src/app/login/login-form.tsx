@@ -126,7 +126,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
       <div
         key="select-access"
         data-login-mode="select"
-        className="login-glass-panel login-access-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:h-[39rem] lg:max-w-[30rem] lg:p-4"
+        className="login-glass-panel login-access-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:min-h-[39rem] lg:max-w-[30rem] lg:p-4"
       >
         <nav
           aria-label="Navigasi login"
@@ -237,7 +237,7 @@ export function LoginForm({ pausMode, pausLegacyLoginUrl }: LoginFormProps) {
     <div
       key="administrator-login"
       data-login-mode="administrator"
-      className="login-glass-panel login-admin-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:h-[39rem] lg:max-w-[30rem] lg:p-4"
+      className="login-glass-panel login-admin-glass animate-login-content-in relative w-full max-w-xs rounded-[1.5rem] p-4 sm:max-w-[38rem] sm:p-6 lg:min-h-[39rem] lg:max-w-[30rem] lg:p-4"
     >
       <nav
         aria-label="Navigasi login"
