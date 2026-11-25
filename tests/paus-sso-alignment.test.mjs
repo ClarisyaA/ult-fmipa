@@ -16,6 +16,7 @@ import {
   getLoginErrorMessage,
 } from "@/lib/paus-login-policy";
 import {
+  describePausProfileShape,
   isPausAlumniProfile,
   mapPausProfileToSessionUser,
   normalizePausStudentProfile,
@@ -261,6 +262,40 @@ test("mode PAUS_ACTIVE_VALUES: hanya nilai yang disebut yang boleh masuk, kosong
 test("pesan penolakan alumni jelas dan tidak memuat data pribadi", () => {
   assert.match(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /alumni.*hubungi ULT FMIPA/i);
   assert.doesNotMatch(getLoginErrorMessage(LOGIN_ERROR_ALUMNI_NOT_ALLOWED), /\d{6,}/);
+});
+
+// --- Log diagnosis bentuk profil (tanpa nilai) ---
+
+test("describePausProfileShape hanya memuat nama field dan tipe, tidak pernah nilai", () => {
+  const profile = {
+    paus_id: "PAUS-RAHASIA-123",
+    nama: "Nama Pribadi Sungguhan",
+    npm: 140810269999,
+    email: null,
+    attributes: { nip: { attribute_value: ["198001012005011001"] } },
+    accounts: [{ is_active: true, npm: "140810269999" }],
+  };
+  const shape = describePausProfileShape(profile);
+
+  assert.match(shape, /paus_id:string/);
+  assert.match(shape, /npm:number/);
+  assert.match(shape, /email:null/);
+  assert.match(shape, /accounts:array\(1\)\[\{is_active:boolean, npm:string\}\]/);
+  assert.match(shape, /attributes:\{nip:\{attribute_value:array\(1\)\[string\]\}\}/);
+  assert.doesNotMatch(shape, /RAHASIA|Pribadi|1980|1408/);
+  assert.equal(describePausProfileShape(null), "null");
+  assert.equal(describePausProfileShape([]), "array(0)");
+});
+
+test("log bentuk profil hanya aktif bila AUTH_DEBUG=true dan tidak memanggil console dengan profil mentah", async () => {
+  const auth = await source("src/lib/auth.ts");
+  const logIndex = auth.indexOf("userinfo shape:");
+  const before = auth.slice(Math.max(0, logIndex - 400), logIndex);
+
+  assert.ok(logIndex > -1);
+  assert.match(before, /process\.env\.AUTH_DEBUG === "true"/);
+  assert.match(auth, /describePausProfileShape\(profile\)/);
+  assert.doesNotMatch(auth, /console\.\w+\([^)]*,\s*profile\s*\)/);
 });
 
 // --- Pengait di auth.ts dan file konfigurasi ---

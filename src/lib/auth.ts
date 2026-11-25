@@ -21,6 +21,7 @@ import {
   LOGIN_ERROR_ALUMNI_NOT_ALLOWED,
 } from "@/lib/paus-login-policy";
 import {
+  describePausProfileShape,
   isPausAlumniProfile,
   mapPausProfileToSessionUser,
   type PausProfile,
@@ -170,7 +171,17 @@ function createPausProvider(): OAuthConfig<PausProfile> {
           throw new Error("Gagal mengambil profil PAUS.");
         }
 
-        return response.json();
+        const profile = await response.json();
+
+        if (process.env.AUTH_DEBUG === "true") {
+          // Hanya NAMA field dan tipenya, tidak pernah nilainya (data pribadi).
+          console.info(
+            "[auth:paus] userinfo shape:",
+            describePausProfileShape(profile),
+          );
+        }
+
+        return profile;
       },
     },
     profile(profile) {

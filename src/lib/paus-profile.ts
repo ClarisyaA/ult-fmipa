@@ -137,6 +137,31 @@ export function mapPausProfileToSessionUser(profile: unknown): AppSessionUser {
   };
 }
 
+/**
+ * Gambaran bentuk profil untuk log diagnosis: hanya NAMA field dan TIPE
+ * nilainya, tidak pernah nilainya (nilai berisi data pribadi). Dipakai saat
+ * AUTH_DEBUG=true untuk melihat bentuk respons userinfo PAuS yang asli.
+ */
+export function describePausProfileShape(value: unknown, depth = 0): string {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "array(0)";
+    return depth >= 4
+      ? `array(${value.length})`
+      : `array(${value.length})[${describePausProfileShape(value[0], depth + 1)}]`;
+  }
+
+  if (isRecord(value)) {
+    if (depth >= 4) return "object";
+    const parts = Object.keys(value)
+      .sort()
+      .map((key) => `${key}:${describePausProfileShape(value[key], depth + 1)}`);
+    return `{${parts.join(", ")}}`;
+  }
+
+  if (value === null) return "null";
+  return typeof value;
+}
+
 type Env = Record<string, string | undefined>;
 
 function splitList(value: string | undefined) {

@@ -64,6 +64,8 @@ langsung ke beranda.
 | `PAUS_ALUMNI_VALUES` | `alumni,lulus` | Nilai yang berarti alumni. |
 | `PAUS_ACTIVE_VALUES` | kosong | Bila diisi, hanya nilai ini yang boleh masuk. |
 | `PAUS_BRIDGE_ENABLED` | `false` | PAuS Bridge (alur PHP lama) mati kecuali `true`. |
+| `PAUS_REQUIRE_REGISTERED_NPM` | `true` | `false` = NPM tidak dicek ke tabel `mahasiswa` (sementara saja). |
+| `AUTH_DEBUG` | `false` | `true` mencatat **bentuk** respons userinfo di log (hanya nama field dan tipe, tanpa nilai) untuk melihat format asli PAuS. Matikan lagi setelah selesai. |
 | `NEXTAUTH_URL` | - | Harus sama persis dengan redirect URI yang didaftarkan. |
 
 Kembali ke endpoint lama bila DPSI meminta: set `PAUS_AUTHORIZATION_URL=.../oauth`,
